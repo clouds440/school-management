@@ -64,7 +64,7 @@ export class AuthService {
         });
 
         if (!org) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new UnauthorizedException('Email does not exist');
         }
 
         const isMatch = await bcrypt.compare(loginDto.password, org.password);

@@ -26,16 +26,15 @@ export default function Navbar() {
             <div className="flex items-center space-x-3 md:space-x-4">
                 {token ? (
                     <div className="flex items-center space-x-2">
-                        <Link
-                            href="/dashboard"
-                            className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all duration-300 font-medium shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${pathname === '/dashboard'
-                                ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100'
-                                : 'bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-100'
-                                }`}
-                        >
-                            <LayoutDashboard className="w-4 h-4" />
-                            <span className="hidden sm:inline">Dashboard</span>
-                        </Link>
+                        {!pathname.startsWith('/dashboard') && (
+                            <Link
+                                href="/dashboard"
+                                className="flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all duration-300 font-medium shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-100"
+                            >
+                                <LayoutDashboard className="w-4 h-4" />
+                                <span className="hidden sm:inline">Dashboard</span>
+                            </Link>
+                        )}
                         <button
                             onClick={handleLogout}
                             className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white border border-gray-100 text-red-600 hover:bg-red-50 hover:border-red-100 transition-all duration-300 font-medium shadow-sm cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-red-500"
