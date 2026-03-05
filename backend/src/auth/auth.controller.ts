@@ -18,7 +18,7 @@ export class AuthController {
         return this.authService.login(loginDto);
     }
 
-    // Protected Route Example
+    // Protected Route
     @UseGuards(JwtAuthGuard)
     @Get('profile')
     getProfile(@Request() req: any) {
