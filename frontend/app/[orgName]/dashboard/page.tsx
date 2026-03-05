@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, CheckCircle, LayoutTemplate, Users, BookOpen } from 'lucide-react';
+import { Clock, CheckCircle, LayoutTemplate, Users, BookOpen, Key } from 'lucide-react';
+import Link from 'next/link';
 
 import { useAuth } from '@/context/AuthContext';
 
@@ -10,15 +11,10 @@ export default function DashboardPage() {
     const { user: payload, loading } = useAuth();
     const router = useRouter();
 
+    // Guards are now handled globally in AuthContext
     useEffect(() => {
-        if (!loading) {
-            if (!payload) {
-                router.push('/login');
-            } else if (payload.role === 'admin') {
-                router.replace('/dashboard/admin');
-            }
-        }
-    }, [loading, payload, router]);
+        // Any organization-specific initialization can go here
+    }, []);
 
     if (loading) {
         return (
@@ -34,9 +30,18 @@ export default function DashboardPage() {
         <div className="flex flex-1 flex-col p-6 sm:p-10 max-w-7xl mx-auto w-full">
             <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h1 className="text-3xl font-bold text-gray-300">Dashboard</h1>
-                <div className="text-sm font-medium px-4 py-2 rounded-full border border-gray-200 bg-white/70 shadow-sm flex items-center space-x-2">
-                    <span className="text-gray-700">Logged in as:</span>
-                    <span className="text-indigo-600 font-semibold truncate max-w-[200px]">{payload.email}</span>
+                <div className="flex items-center gap-3">
+                    <Link
+                        href={`/${payload.orgSlug}/change-password`}
+                        className="text-sm font-medium px-4 py-2 rounded-full border border-gray-200 bg-white/70 shadow-sm hover:bg-gray-50 flex items-center space-x-2 transition-colors text-gray-700 hover:text-indigo-600"
+                    >
+                        <Key className="w-4 h-4" />
+                        <span>Change Password</span>
+                    </Link>
+                    <div className="text-sm font-medium px-4 py-2 rounded-full border border-gray-200 bg-white/70 shadow-sm flex items-center space-x-2">
+                        <span className="text-gray-700">Logged in as:</span>
+                        <span className="text-indigo-600 font-semibold truncate max-w-[200px]">{payload.email}</span>
+                    </div>
                 </div>
             </div>
 

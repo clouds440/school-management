@@ -6,9 +6,12 @@ import { useRouter, usePathname } from 'next/navigation';
 export interface JwtPayload {
     sub: string;
     email: string;
-    role?: string;
+    name?: string;
+    orgSlug?: string;
+    role?: 'SUPER_ADMIN' | 'ORG_ADMIN' | 'TEACHER' | 'STUDENT';
     type?: string;
     approved?: boolean;
+    isFirstLogin?: boolean;
     iat: number;
     exp: number;
 }
@@ -43,11 +46,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         // Route guarding
         if (!loading) {
-            if (user && (pathname === '/login' || pathname === '/register')) {
-                if (user.role === 'admin') {
-                    router.replace('/dashboard/admin');
-                } else {
-                    router.replace('/dashboard');
+            const isAdminPath = pathname?.startsWith('/admin');
+            const isGuestPath = ['/login', '/register', '/'].includes(pathname || '');
+
+            // A user path is anything that's not guest and not admin
+            const isUserPath = pathname && !isAdminPath && !isGuestPath;
+
+            if (user) {
+                // If it's first login and admin, always force change password
+                if (user.role === 'SUPER_ADMIN' && user.isFirstLogin && pathname !== '/admin/change-password') {
+                    router.replace('/admin/change-password');
+                    return;
+                }
+
+                // Redirect away from login/register/home
+                if (isGuestPath) {
+                    if (user.role === 'SUPER_ADMIN') {
+                        router.replace('/admin/dashboard');
+                    } else if (user.orgSlug) {
+                        router.replace(`/${user.orgSlug}/dashboard`);
+                    }
+                    return;
+                }
+
+                // Cross-role protection
+                if (isAdminPath && user.role !== 'SUPER_ADMIN') {
+                    if (user.orgSlug) {
+                        router.replace(`/${user.orgSlug}/dashboard`);
+                    } else {
+                        router.replace('/');
+                    }
+                    return;
+                }
+
+                if (isUserPath && user.role === 'SUPER_ADMIN') {
+                    router.replace('/admin/dashboard');
+                    return;
+                }
+
+                // Verify organization slug matches the URL
+                if (isUserPath && user.role === 'ORG_ADMIN' && user.orgSlug) {
+                    const firstSegment = pathname.split('/')[1];
+                    if (firstSegment !== user.orgSlug) {
+                        router.replace(`/${user.orgSlug}/dashboard`);
+                        return;
+                    }
+                }
+            } else {
+                // Not logged in
+                if (isAdminPath || isUserPath) {
+                    router.replace('/login');
                 }
             }
         }

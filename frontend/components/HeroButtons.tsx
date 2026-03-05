@@ -14,7 +14,7 @@ export function HeroButtons() {
         return (
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
-                    href="/dashboard"
+                    href={user.role === 'SUPER_ADMIN' ? '/admin/dashboard' : `/${user.orgSlug}/dashboard`}
                     className="bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-indigo-700 transition-colors shadow-lg"
                 >
                     Go to Your Dashboard

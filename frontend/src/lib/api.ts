@@ -75,6 +75,22 @@ export const api = {
 
             return response.json();
         },
+        async changePassword(oldPassword: string, newPassword: string, token: string): Promise<{ access_token: string, role: string }> {
+            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ oldPassword, newPassword })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to change password');
+            }
+            return response.json();
+        }
     },
     admin: {
         async getPendingOrganizations(token: string): Promise<Organization[]> {
@@ -103,6 +119,22 @@ export const api = {
                 }
             });
             if (!response.ok) throw new Error('Failed to reject organization');
+        },
+        async changePassword(oldPassword: string, newPassword: string, token: string): Promise<{ access_token: string, role: string }> {
+            const response = await fetch(`${API_BASE_URL}/admin/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ oldPassword, newPassword })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to change password');
+            }
+            return response.json();
         }
     }
 };

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Check, X, Building, MapPin, Mail, Calendar } from 'lucide-react';
+import { Check, X, Building, MapPin, Mail, Calendar, Key } from 'lucide-react';
+import Link from 'next/link';
 import { api, Organization } from '@/src/lib/api';
 
 export default function AdminDashboardPage() {
@@ -14,16 +15,10 @@ export default function AdminDashboardPage() {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!loading) {
-            if (!user) {
-                router.push('/login');
-            } else if (user.role !== 'admin') {
-                router.push('/dashboard');
-            } else {
-                fetchPendingOrganizations();
-            }
+        if (!loading && user && user.role === 'SUPER_ADMIN') {
+            fetchPendingOrganizations();
         }
-    }, [loading, user, router]);
+    }, [loading, user]);
 
     const fetchPendingOrganizations = async () => {
         if (!token) return;
@@ -66,7 +61,7 @@ export default function AdminDashboardPage() {
         }
     };
 
-    if (loading || (user && user.role !== 'admin')) {
+    if (loading || (user && user.role !== 'SUPER_ADMIN')) {
         return (
             <div className="flex flex-1 items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -83,9 +78,18 @@ export default function AdminDashboardPage() {
                     <h1 className="text-3xl font-bold text-gray-300">Super Admin Dashboard</h1>
                     <p className="text-gray-400 mt-2">Manage pending school registrations</p>
                 </div>
-                <div className="text-sm font-medium px-4 py-2 rounded-full border border-gray-200 bg-white/70 shadow-sm flex items-center space-x-2">
-                    <span className="text-gray-700">Admin:</span>
-                    <span className="text-indigo-600 font-semibold truncate max-w-[200px]">{user.email}</span>
+                <div className="flex items-center gap-3">
+                    <Link
+                        href="/admin/change-password"
+                        className="text-sm font-medium px-4 py-2 rounded-full border border-gray-200 bg-white/70 shadow-sm hover:bg-gray-50 flex items-center space-x-2 transition-colors text-gray-700 hover:text-indigo-600"
+                    >
+                        <Key className="w-4 h-4" />
+                        <span>Change Password</span>
+                    </Link>
+                    <div className="text-sm font-medium px-4 py-2 rounded-full border border-gray-200 bg-white/70 shadow-sm flex items-center space-x-2">
+                        <span className="text-gray-700">Admin:</span>
+                        <span className="text-indigo-600 font-semibold truncate max-w-[200px]">{user.email}</span>
+                    </div>
                 </div>
             </div>
 

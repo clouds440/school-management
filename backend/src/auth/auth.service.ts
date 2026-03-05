@@ -12,7 +12,7 @@ export class AuthService {
     constructor(private jwtService: JwtService) { }
 
     async register(registerDto: RegisterDto) {
-        const existing = await prisma.organization.findUnique({
+        const existing = await prisma.user.findUnique({
             where: { email: registerDto.email },
         });
         if (existing) {
@@ -21,61 +21,92 @@ export class AuthService {
 
         const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-        const org = await prisma.organization.create({
-            data: {
-                name: registerDto.name,
-                location: registerDto.location,
-                type: registerDto.type,
-                email: registerDto.email,
-                password: hashedPassword,
-            },
+        // Transaction to ensure both Org and User are created
+        const result = await prisma.$transaction(async (tx) => {
+            const org = await tx.organization.create({
+                data: {
+                    name: registerDto.name,
+                    location: registerDto.location,
+                    type: registerDto.type,
+                },
+            });
+
+            const user = await tx.user.create({
+                data: {
+                    email: registerDto.email,
+                    password: hashedPassword,
+                    role: 'ORG_ADMIN',
+                    organizationId: org.id,
+                },
+            });
+
+            return { org, user };
         });
 
         return {
-            id: org.id,
-            name: org.name,
-            email: org.email,
+            id: result.user.id,
+            email: result.user.email,
+            orgName: result.org.name,
         };
     }
 
     async login(loginDto: LoginDto) {
-        // Check Admin
-        const admin = await prisma.user.findUnique({
-            where: { email: loginDto.email }
-        });
-
-        if (admin && admin.role === 'admin') {
-            const isMatch = await bcrypt.compare(loginDto.password, admin.password);
-            if (!isMatch) {
-                throw new UnauthorizedException('Invalid credentials');
-            }
-            const payload = { sub: admin.id, email: admin.email, role: admin.role };
-            return {
-                access_token: await this.jwtService.signAsync(payload, {
-                    secret: process.env.SUPER_ADMIN_JWT_SECRET
-                }),
-                role: admin.role
-            };
-        }
-
-        // Check Organization
-        const org = await prisma.organization.findUnique({
+        const user = await prisma.user.findUnique({
             where: { email: loginDto.email },
+            include: { organization: true }
         });
 
-        if (!org) {
-            throw new UnauthorizedException('Email does not exist');
+        if (!user) {
+            throw new UnauthorizedException('Invalid credentials');
         }
 
-        const isMatch = await bcrypt.compare(loginDto.password, org.password);
+        const isMatch = await bcrypt.compare(loginDto.password, user.password);
         if (!isMatch) {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        const payload = { sub: org.id, email: org.email, type: org.type, approved: org.approved, role: 'organization' };
+        return this.generateToken(user);
+    }
+
+    async generateToken(user: any) {
+        const slug = user.organization?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || null;
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+            orgSlug: slug,
+            orgId: user.organizationId,
+            approved: user.organization?.approved ?? true, // SuperAdmins don't need approval
+            isFirstLogin: user.isFirstLogin
+        };
+
         return {
             access_token: await this.jwtService.signAsync(payload),
-            role: 'organization'
+            role: user.role
         };
+    }
+
+    async changePassword(userId: string, oldPass: string, newPass: string) {
+        const user = await prisma.user.findUnique({ where: { id: userId }, include: { organization: true } });
+        if (!user) {
+            throw new UnauthorizedException('User not found');
+        }
+
+        const isMatch = await bcrypt.compare(oldPass, user.password);
+        if (!isMatch) {
+            throw new UnauthorizedException('Incorrect old password');
+        }
+
+        const hashedNew = await bcrypt.hash(newPass, 10);
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                password: hashedNew,
+                isFirstLogin: false
+            },
+            include: { organization: true }
+        });
+
+        return this.generateToken(updatedUser);
     }
 }

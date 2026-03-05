@@ -18,31 +18,16 @@ async function bootstrap() {
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     const existingAdmin = await prisma.user.findFirst({
-      where: { role: 'admin' }
+      where: { role: 'SUPER_ADMIN' }
     });
 
-    if (existingAdmin) {
-      if (existingAdmin.email !== adminEmail) {
-        await prisma.user.delete({ where: { id: existingAdmin.id } });
-        await prisma.user.create({
-          data: {
-            email: adminEmail,
-            password: hashedPassword,
-            role: 'admin',
-          }
-        });
-      } else {
-        await prisma.user.update({
-          where: { id: existingAdmin.id },
-          data: { password: hashedPassword }
-        });
-      }
-    } else {
+    if (!existingAdmin) {
       await prisma.user.create({
         data: {
           email: adminEmail,
           password: hashedPassword,
-          role: 'admin',
+          role: 'SUPER_ADMIN',
+          isFirstLogin: true,
         }
       });
     }
