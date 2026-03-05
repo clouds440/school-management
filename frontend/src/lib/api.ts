@@ -26,7 +26,19 @@ export interface AuthResponse {
     message?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+export interface Organization {
+    id: string;
+    name: string;
+    location: string;
+    type: string;
+    email: string;
+    createdAt: string;
+}
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_BASE_URL) {
+    throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
+}
 
 export const api = {
     auth: {
@@ -64,4 +76,33 @@ export const api = {
             return response.json();
         },
     },
+    admin: {
+        async getPendingOrganizations(token: string): Promise<Organization[]> {
+            const response = await fetch(`${API_BASE_URL}/admin/organizations/pending`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            if (!response.ok) throw new Error('Failed to fetch pending organizations');
+            return response.json();
+        },
+        async approveOrganization(id: string, token: string): Promise<void> {
+            const response = await fetch(`${API_BASE_URL}/admin/organizations/${id}/approve`, {
+                method: 'PATCH',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            if (!response.ok) throw new Error('Failed to approve organization');
+        },
+        async rejectOrganization(id: string, token: string): Promise<void> {
+            const response = await fetch(`${API_BASE_URL}/admin/organizations/${id}/reject`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            if (!response.ok) throw new Error('Failed to reject organization');
+        }
+    }
 };

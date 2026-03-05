@@ -6,8 +6,9 @@ import { useRouter, usePathname } from 'next/navigation';
 export interface JwtPayload {
     sub: string;
     email: string;
-    type: string;
-    approved: boolean;
+    role?: string;
+    type?: string;
+    approved?: boolean;
     iat: number;
     exp: number;
 }
@@ -43,7 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Route guarding
         if (!loading) {
             if (user && (pathname === '/login' || pathname === '/register')) {
-                router.replace('/dashboard');
+                if (user.role === 'admin') {
+                    router.replace('/dashboard/admin');
+                } else {
+                    router.replace('/dashboard');
+                }
             }
         }
     }, [user, loading, pathname, router]);

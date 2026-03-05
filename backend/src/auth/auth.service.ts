@@ -39,6 +39,26 @@ export class AuthService {
     }
 
     async login(loginDto: LoginDto) {
+        // Check Admin
+        const admin = await prisma.user.findUnique({
+            where: { email: loginDto.email }
+        });
+
+        if (admin && admin.role === 'admin') {
+            const isMatch = await bcrypt.compare(loginDto.password, admin.password);
+            if (!isMatch) {
+                throw new UnauthorizedException('Invalid credentials');
+            }
+            const payload = { sub: admin.id, email: admin.email, role: admin.role };
+            return {
+                access_token: await this.jwtService.signAsync(payload, {
+                    secret: process.env.SUPER_ADMIN_JWT_SECRET
+                }),
+                role: admin.role
+            };
+        }
+
+        // Check Organization
         const org = await prisma.organization.findUnique({
             where: { email: loginDto.email },
         });
@@ -52,9 +72,10 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        const payload = { sub: org.id, email: org.email, type: org.type, approved: org.approved };
+        const payload = { sub: org.id, email: org.email, type: org.type, approved: org.approved, role: 'organization' };
         return {
             access_token: await this.jwtService.signAsync(payload),
+            role: 'organization'
         };
     }
 }
