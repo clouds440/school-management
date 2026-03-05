@@ -1,0 +1,4 @@
+src/auth/auth.module.ts(5,10): error TS2305: Module '"@nestjs/passport"' has no exported member 'PassportModule'.
+src/auth/auth.service.ts(6,30): error TS2307: Cannot find module '../../generated/prisma' or its corresponding type declarations.
+src/auth/jwt.strategy.ts(2,10): error TS2305: Module '"@nestjs/passport"' has no exported member 'PassportStrategy'.
+src/auth/jwt.strategy.ts(4,30): error TS2307: Cannot find module '../../generated/prisma' or its corresponding type declarations.

@@ -1,147 +1,142 @@
-// app/register/page.tsx
-import Link from 'next/link';
-import { School, LogIn, UserPlus, Mail, Lock, User } from 'lucide-react';
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { api, OrganizationType } from '@/src/lib/api';
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    name: '',
+    location: '',
+    type: OrganizationType.HIGH_SCHOOL,
+    email: '',
+    password: '',
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await api.auth.register(formData);
+      router.push('/login');
+    } catch (err: any) {
+      setError(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   return (
-    <div className="relative min-h-screen bg-linear-to-br from-indigo-50 via-white to-purple-50 overflow-hidden">
-      {/* Decorative blobs */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
-      <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
-      <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000" />
-
-      {/* Navbar */}
-      <nav className="relative z-10 flex items-center justify-between px-6 py-4 md:px-10 backdrop-blur-md bg-white/70 border-b border-white/20 shadow-sm">
-        <Link href="/" className="flex items-center space-x-2">
-          <School className="w-8 h-8 text-indigo-600" />
-          <span className="text-xl font-semibold text-gray-800">EduManage</span>
-        </Link>
-        <div className="flex items-center space-x-4">
-          <Link
-            href="/login"
-            className="flex items-center space-x-1 text-gray-700 hover:text-indigo-600 transition-colors px-3 py-2 rounded-lg"
-          >
-            <LogIn className="w-4 h-4" />
-            <span>Login</span>
-          </Link>
-          <Link
-            href="/register"
-            className="flex items-center space-x-1 text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Register</span>
-          </Link>
-        </div>
-      </nav>
-
-      {/* Main content */}
-      <main className="relative z-10 flex items-center justify-center px-4 py-16">
-        <div className="w-full max-w-md backdrop-blur-md bg-white/30 border border-white/20 rounded-2xl p-8 shadow-xl">
-          <h2 className="text-3xl font-bold text-center mb-2 text-transparent bg-clip-text bg-linear-to-r from-indigo-600 to-purple-600">
-            Create Account
+    <div className="flex flex-1 items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8 bg-white/80 backdrop-blur-md p-8 rounded-xl shadow-xl border border-white/40">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
+            Register your School
           </h2>
-          <p className="text-center text-gray-600 mb-8">Join EduManage today</p>
-
-          <form className="space-y-5">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  id="name"
-                  placeholder="John Doe"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  id="email"
-                  placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="password"
-                  id="password"
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="password"
-                  id="confirm-password"
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center text-sm">
-              <input
-                type="checkbox"
-                id="terms"
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <label htmlFor="terms" className="ml-2 text-gray-600">
-                I agree to the{' '}
-                <Link href="/terms" className="text-indigo-600 hover:text-indigo-800">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link href="/privacy" className="text-indigo-600 hover:text-indigo-800">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors shadow-md font-medium"
-            >
-              Sign Up
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-gray-600">
-            Already have an account?{' '}
-            <Link href="/login" className="text-indigo-600 hover:text-indigo-800 font-medium">
-              Sign in
-            </Link>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Or{' '}
+            <a href="/login" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+              sign in to your existing account
+            </a>
           </p>
         </div>
-      </main>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {error && (
+            <div className="rounded-md bg-red-50 p-4 border border-red-200">
+              <div className="text-sm text-red-700">{error}</div>
+            </div>
+          )}
+          <div className="space-y-4 rounded-md shadow-sm">
+            <div>
+              <label htmlFor="name" className="sr-only">School Name</label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-all"
+                placeholder="School Name"
+                value={formData.name}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <label htmlFor="location" className="sr-only">Location</label>
+              <input
+                id="location"
+                name="location"
+                type="text"
+                required
+                className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-all"
+                placeholder="Location"
+                value={formData.location}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <label htmlFor="type" className="sr-only">Type</label>
+              <select
+                id="type"
+                name="type"
+                required
+                className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-all"
+                value={formData.type}
+                onChange={handleChange}
+              >
+                <option value={OrganizationType.HIGH_SCHOOL}>High School</option>
+                <option value={OrganizationType.UNIVERSITY}>University</option>
+                <option value={OrganizationType.PRIMARY_SCHOOL}>Primary School</option>
+                <option value={OrganizationType.OTHER}>Other</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="email-address" className="sr-only">Email address</label>
+              <input
+                id="email-address"
+                name="email"
+                type="email"
+                required
+                className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-all"
+                placeholder="Email address"
+                value={formData.email}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-all"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
 
-      {/* Footer */}
-      <footer className="relative z-10 text-center py-6 text-gray-500 border-t border-white/20 backdrop-blur-sm bg-white/30">
-        <p>© 2026 EduManage. All rights reserved.</p>
-      </footer>
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300 transition-colors"
+            >
+              {loading ? 'Registering...' : 'Register'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

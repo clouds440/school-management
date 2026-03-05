@@ -1,0 +1,4 @@
+src/auth/auth.module.ts(5,10): error TS2305: Module '"@nestjs/passport"' has no exported member 'PassportModule'.
+src/auth/auth.service.ts(6,10): error TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
+src/auth/jwt.strategy.ts(2,10): error TS2305: Module '"@nestjs/passport"' has no exported member 'PassportStrategy'.
+src/auth/jwt.strategy.ts(4,10): error TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
