@@ -6,27 +6,28 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/src/lib/api';
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/context/ToastContext';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
       const res = await api.auth.login(formData);
       login(res.access_token || '');
+      showToast('Welcome back! Logging in...', 'success');
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      showToast(err.message || 'Login failed', 'error');
     } finally {
       setLoading(false);
     }
@@ -62,13 +63,6 @@ export default function LoginPage() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-xl bg-red-50 p-4 border border-red-100 flex items-start space-x-3">
-              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
-              <div className="text-sm text-red-700 font-medium">{error}</div>
-            </div>
-          )}
-
           <div className="space-y-5">
             <div>
               <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1.5 pl-1">

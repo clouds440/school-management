@@ -23,7 +23,7 @@ export function Toast({ id, message, type, duration = 3000, onClose }: ToastProp
         const timer = setTimeout(() => {
             setIsVisible(false);
             // Wait for exit animation to complete before removing
-            setTimeout(() => onClose(id), 300);
+            setTimeout(() => onClose(id), 400);
         }, duration);
 
         return () => clearTimeout(timer);
@@ -48,17 +48,17 @@ export function Toast({ id, message, type, duration = 3000, onClose }: ToastProp
 
     return (
         <div
-            className={`flex items-center gap-3 p-4 mb-3 rounded-xl border shadow-lg transition-all duration-300 pointer-events-auto max-w-sm w-full backdrop-blur-md ${backgrounds[type]} ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+            className={`flex items-center gap-4 p-4 mb-3 rounded-2xl border shadow-2xl transition-all duration-500 pointer-events-auto max-w-sm w-full backdrop-blur-xl ${backgrounds[type]} ${isVisible ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-12 opacity-0 scale-95'
                 }`}
         >
-            <div className="shrink-0">{icons[type]}</div>
-            <p className="font-semibold text-sm flex-1 break-words">{message}</p>
+            <div className="shrink-0 p-2 bg-white/50 rounded-xl shadow-sm">{icons[type]}</div>
+            <p className="font-bold text-sm flex-1 break-words">{message}</p>
             <button
                 onClick={handleClose}
-                className="shrink-0 p-1 hover:bg-black/5 rounded-lg transition-colors"
+                className="shrink-0 p-1.5 hover:bg-black/5 rounded-xl transition-all active:scale-90"
                 title="Dismiss"
             >
-                <X className="w-4 h-4 opacity-70" />
+                <X className="w-4 h-4 opacity-60" />
             </button>
         </div>
     );

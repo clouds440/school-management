@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Lock, AlertCircle, ShieldCheck } from 'lucide-react';
+import { useToast } from '@/context/ToastContext';
 
 interface ChangePasswordFormProps {
     title?: string;
@@ -16,36 +17,36 @@ export default function ChangePasswordForm({
     onSubmit,
     onSuccess
 }: ChangePasswordFormProps) {
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         oldPassword: '',
         newPassword: '',
         confirmPassword: ''
     });
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
 
         if (formData.newPassword !== formData.confirmPassword) {
-            setError('New passwords do not match');
+            showToast('New passwords do not match', 'error');
             return;
         }
 
         if (formData.newPassword.length < 6) {
-            setError('Password must be at least 6 characters long');
+            showToast('Password must be at least 6 characters long', 'error');
             return;
         }
 
         setLoading(true);
         try {
             await onSubmit(formData.oldPassword, formData.newPassword);
+            showToast('Password changed successfully', 'success');
             if (onSuccess) {
                 onSuccess();
             }
         } catch (err: any) {
-            setError(err.message || 'Failed to change password');
+            showToast(err.message || 'Failed to change password', 'error');
         } finally {
             setLoading(false);
         }
@@ -70,13 +71,6 @@ export default function ChangePasswordForm({
             </div>
 
             <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                {error && (
-                    <div className="rounded-xl bg-red-50 p-4 border border-red-100 flex items-start space-x-3">
-                        <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
-                        <div className="text-sm text-red-700 font-medium">{error}</div>
-                    </div>
-                )}
-
                 <div className="space-y-5">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5 pl-1">

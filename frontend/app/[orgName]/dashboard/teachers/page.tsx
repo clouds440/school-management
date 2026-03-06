@@ -147,7 +147,7 @@ export default function TeachersPage() {
         {
             header: 'Actions',
             accessor: (row: Teacher) => (
-                <div className="flex gap-3">
+                <div className="flex gap-4">
                     <button
                         onClick={() => {
                             setEditingTeacher(row);
@@ -161,20 +161,20 @@ export default function TeachersPage() {
                             });
                             setEditModalOpen(true);
                         }}
-                        className="text-indigo-600 hover:text-indigo-900 p-1 hover:bg-indigo-50 rounded transition-colors"
+                        className="text-indigo-600 hover:text-white p-2.5 hover:bg-indigo-600 rounded-xl transition-all shadow-sm hover:shadow-indigo-200 active:scale-90"
                         title="Edit Teacher"
                     >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-5 h-5" />
                     </button>
                     <button
                         onClick={() => {
                             setDeletingTeacher(row);
                             setDeleteDialogOpen(true);
                         }}
-                        className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
+                        className="text-red-600 hover:text-white p-2.5 hover:bg-red-600 rounded-xl transition-all shadow-sm hover:shadow-red-200 active:scale-90"
                         title="Delete Teacher"
                     >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-5 h-5" />
                     </button>
                 </div>
             )
@@ -207,8 +207,8 @@ export default function TeachersPage() {
                 </div>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white/50 p-10 mb-10 overflow-hidden">
-                <div className="mb-8 flex">
+            <div className="bg-white/80 backdrop-blur-xl rounded-[3rem] shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-white/50 p-12 mb-10 overflow-hidden animate-fade-in-up">
+                <div className="mb-10 flex">
                     <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, email or subject..." />
                 </div>
 
@@ -225,70 +225,70 @@ export default function TeachersPage() {
             <ModalForm
                 isOpen={editModalOpen}
                 onClose={() => setEditModalOpen(false)}
-                title="Update Teacher Details"
+                title="Update Faculty Profile"
                 onSubmit={handleEditSubmit}
                 isSubmitting={isSaving}
-                submitText="Update Profile"
+                submitText="Save Changes"
             >
-                <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Full Name</label>
+                <div className="space-y-8 py-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Full Name</label>
                             <input
                                 type="text"
                                 value={editFormData.name}
                                 onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="John Doe"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Phone Number</label>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Phone Number</label>
                             <input
                                 type="text"
                                 value={editFormData.phone}
                                 onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="+1 (555) 000-0000"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Education</label>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Education</label>
                             <input
                                 type="text"
                                 value={editFormData.education}
                                 onChange={(e) => setEditFormData({ ...editFormData, education: e.target.value })}
-                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus://indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="M.S. Computer Science"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Designation</label>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Designation</label>
                             <input
                                 type="text"
                                 value={editFormData.designation}
                                 onChange={(e) => setEditFormData({ ...editFormData, designation: e.target.value })}
-                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="Senior Teacher"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Specialization / Subject</label>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Specialization / Subject</label>
                             <input
                                 type="text"
                                 value={editFormData.subject}
                                 onChange={(e) => setEditFormData({ ...editFormData, subject: e.target.value })}
-                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="e.g. Mathematics"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Annual Salary ($)</label>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Annual Salary ($)</label>
                             <input
                                 type="number"
                                 value={editFormData.salary}
                                 onChange={(e) => setEditFormData({ ...editFormData, salary: e.target.value })}
-                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="0.00"
                             />
                         </div>

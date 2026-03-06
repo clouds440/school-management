@@ -34,10 +34,14 @@ export function DataTable<T>({ data, columns, keyExtractor, isLoading }: DataTab
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
-                    {data.map((row) => (
-                        <tr key={keyExtractor(row)} className="hover:bg-gray-50 transition-colors">
+                    {data.map((row, rowIndex) => (
+                        <tr
+                            key={keyExtractor(row)}
+                            className="hover:bg-indigo-50/40 transition-all duration-200 group animate-scale-in"
+                            style={{ animationDelay: `${rowIndex * 50}ms` }}
+                        >
                             {columns.map((col, index) => (
-                                <td key={index} className="px-6 py-4">
+                                <td key={index} className="px-6 py-4 group-hover:px-7 transition-all">
                                     {typeof col.accessor === 'function'
                                         ? col.accessor(row)
                                         // @ts-ignore

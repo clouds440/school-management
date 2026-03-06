@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { api, OrganizationType } from '@/src/lib/api';
 import { School, MapPin, Building, Mail, Lock, UserPlus, AlertCircle, Phone } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/context/ToastContext';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     location: '',
@@ -18,12 +20,10 @@ export default function RegisterPage() {
     password: '',
   });
   const [sameAsLoginEmail, setSameAsLoginEmail] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
@@ -32,9 +32,10 @@ export default function RegisterPage() {
         contactEmail: sameAsLoginEmail ? formData.email : formData.contactEmail
       };
       await api.auth.register(payload);
+      showToast('Registration successful! Please login.', 'success');
       router.push('/login');
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      showToast(err.message || 'Registration failed', 'error');
     } finally {
       setLoading(false);
     }
@@ -70,13 +71,6 @@ export default function RegisterPage() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-xl bg-red-50 p-4 border border-red-100 flex items-start space-x-3">
-              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
-              <div className="text-sm text-red-700 font-medium">{error}</div>
-            </div>
-          )}
-
           <div className="space-y-5">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5 pl-1">

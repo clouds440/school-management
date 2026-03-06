@@ -292,60 +292,69 @@ export default function ClassesPage() {
                 isSubmitting={isSaving}
                 submitText="Save Changes"
             >
-                <div className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Class Name *</label>
+                <div className="space-y-8 py-2">
+                    <div className="space-y-2">
+                        <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Class Name *</label>
                         <input
                             type="text"
                             required
                             value={editFormData.name}
                             onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                            className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                            className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold"
+                            placeholder="e.g. Grade 10 - Science"
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Grade / Class Level</label>
+                    <div className="space-y-2">
+                        <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Grade / Class Level</label>
                         <input
                             type="text"
                             value={editFormData.grade}
                             onChange={(e) => setEditFormData({ ...editFormData, grade: e.target.value })}
-                            className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                            className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold"
                             placeholder="E.g., 10th Grade"
                         />
                     </div>
                     {user?.role === 'ORG_ADMIN' && (
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Assigned Teacher</label>
-                            <select
-                                value={editFormData.teacherId}
-                                onChange={(e) => setEditFormData({ ...editFormData, teacherId: e.target.value })}
-                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium appearance-none"
-                            >
-                                <option value="">Unassigned</option>
-                                {teachers.map((t) => (
-                                    <option key={t.id} value={t.id}>
-                                        {t.user.name || t.user.email} ({t.subject || 'Faculty'})
-                                    </option>
-                                ))}
-                            </select>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Assigned Teacher</label>
+                            <div className="relative group">
+                                <select
+                                    value={editFormData.teacherId}
+                                    onChange={(e) => setEditFormData({ ...editFormData, teacherId: e.target.value })}
+                                    className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold appearance-none"
+                                >
+                                    <option value="">Unassigned</option>
+                                    {teachers.map((t) => (
+                                        <option key={t.id} value={t.id}>
+                                            {t.user.name || t.user.email} ({t.subject || 'Faculty'})
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-5 text-gray-400">
+                                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
                     )}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Courses (comma-separated)</label>
+                    <div className="space-y-2">
+                        <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Courses (comma-separated)</label>
                         <input
                             type="text"
                             value={editFormData.courses}
                             onChange={(e) => setEditFormData({ ...editFormData, courses: e.target.value })}
-                            className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                            className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold"
                             placeholder="E.g., Math, Science, English"
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Description</label>
+                    <div className="space-y-2">
+                        <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Description</label>
                         <textarea
                             value={editFormData.description}
                             onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                            className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[120px] text-gray-900 font-medium"
+                            className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all min-h-[120px] text-gray-900 font-bold resize-none"
+                            placeholder="Briefly describe this class..."
                         />
                     </div>
                 </div>
