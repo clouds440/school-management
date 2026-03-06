@@ -28,6 +28,8 @@ export class AuthService {
                     name: registerDto.name,
                     location: registerDto.location,
                     type: registerDto.type,
+                    contactEmail: registerDto.contactEmail,
+                    phone: registerDto.phone,
                 },
             });
 

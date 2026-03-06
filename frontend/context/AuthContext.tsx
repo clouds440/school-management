@@ -47,10 +47,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Route guarding
         if (!loading) {
             const isAdminPath = pathname?.startsWith('/admin');
-            const isGuestPath = ['/login', '/register', '/'].includes(pathname || '');
+            const isGuestPath = ['/login', '/register'].includes(pathname || '');
+            const isHomePage = pathname === '/';
 
-            // A user path is anything that's not guest and not admin
-            const isUserPath = pathname && !isAdminPath && !isGuestPath;
+            // A user path is anything that's not guest, not admin, and not home
+            const isUserPath = pathname && !isAdminPath && !isGuestPath && !isHomePage;
 
             if (user) {
                 // If it's first login and admin, always force change password
@@ -84,12 +85,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     return;
                 }
 
-                // Verify organization slug matches the URL
-                if (isUserPath && user.role === 'ORG_ADMIN' && user.orgSlug) {
+                // Verify organization slug matches the URL for Org roles
+                if (isUserPath && (user.role === 'ORG_ADMIN' || user.role === 'TEACHER') && user.orgSlug) {
                     const firstSegment = pathname.split('/')[1];
                     if (firstSegment !== user.orgSlug) {
                         router.replace(`/${user.orgSlug}/dashboard`);
                         return;
+                    }
+
+                    // Restrict TEACHER from accessing settings and teachers management pages
+                    if (user.role === 'TEACHER') {
+                        const pathSegments = pathname.split('/');
+                        if (pathSegments.includes('settings') || pathSegments.includes('teachers')) {
+                            router.replace(`/${user.orgSlug}/dashboard`);
+                            return;
+                        }
                     }
                 }
             } else {

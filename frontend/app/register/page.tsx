@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, OrganizationType } from '@/src/lib/api';
-import { School, MapPin, Building, Mail, Lock, UserPlus, AlertCircle } from 'lucide-react';
+import { School, MapPin, Building, Mail, Lock, UserPlus, AlertCircle, Phone } from 'lucide-react';
 import Link from 'next/link';
 
 export default function RegisterPage() {
@@ -13,8 +13,11 @@ export default function RegisterPage() {
     location: '',
     type: OrganizationType.HIGH_SCHOOL,
     email: '',
+    contactEmail: '',
+    phone: '',
     password: '',
   });
+  const [sameAsLoginEmail, setSameAsLoginEmail] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -24,7 +27,11 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await api.auth.register(formData);
+      const payload = {
+        ...formData,
+        contactEmail: sameAsLoginEmail ? formData.email : formData.contactEmail
+      };
+      await api.auth.register(payload);
       router.push('/login');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
@@ -46,17 +53,17 @@ export default function RegisterPage() {
         <div className="absolute -bottom-8 left-40 w-80 h-80 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
-      <div className="w-full max-w-lg space-y-8 bg-white/80 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.04)] border border-white relative z-10 transition-all duration-300">
+      <div className="w-full max-w-lg space-y-8 bg-white/70 backdrop-blur-2xl p-10 sm:p-12 rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-white/50 relative z-10 mx-auto transition-all duration-500">
         <div className="text-center">
-          <div className="mx-auto bg-indigo-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-indigo-100">
-            <UserPlus className="w-8 h-8 text-indigo-600" />
+          <div className="mx-auto bg-indigo-500/10 w-20 h-20 rounded-3xl flex items-center justify-center mb-8 shadow-inner border border-white/20">
+            <UserPlus className="w-10 h-10 text-indigo-100 drop-shadow-sm" />
           </div>
-          <h2 className="mt-2 text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700 tracking-tight">
-            Register your School
+          <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-4">
+            Register School
           </h2>
-          <p className="mt-3 text-sm text-gray-500">
+          <p className="text-gray-600 font-medium text-lg mb-2">
             Already have an account?{' '}
-            <Link href="/login" className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors">
+            <Link href="/login" className="font-bold text-indigo-600 hover:text-indigo-500 transition-colors underline decoration-2 underline-offset-4">
               Sign in here
             </Link>
           </p>
@@ -145,8 +152,8 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1.5 pl-1">
-                Email Address
+              <label htmlFor="email-address" className="block text-sm font-semibold text-gray-700 mb-1.5 pl-1">
+                Admin Login Email
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
@@ -160,6 +167,61 @@ export default function RegisterPage() {
                   className="block w-full rounded-xl border-gray-200 bg-gray-50/50 pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm"
                   placeholder="admin@school.edu"
                   value={formData.email}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5 pl-1 pr-1">
+                <label className="block text-sm font-semibold text-gray-700">
+                  School Contact Email
+                </label>
+                <label className="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sameAsLoginEmail}
+                    onChange={(e) => setSameAsLoginEmail(e.target.checked)}
+                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>Same as Login</span>
+                </label>
+              </div>
+              {!sameAsLoginEmail && (
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
+                    <Mail className="h-5 w-5" />
+                  </div>
+                  <input
+                    id="contactEmail"
+                    name="contactEmail"
+                    type="email"
+                    required={!sameAsLoginEmail}
+                    className="block w-full rounded-xl border-gray-200 bg-gray-50/50 pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm"
+                    placeholder="contact@school.edu"
+                    value={formData.contactEmail}
+                    onChange={handleChange}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-1.5 pl-1">
+                School Phone Number
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
+                  <Phone className="h-5 w-5" />
+                </div>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="text"
+                  required
+                  className="block w-full rounded-xl border-gray-200 bg-gray-50/50 pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm"
+                  placeholder="+1 (555) 000-0000"
+                  value={formData.phone}
                   onChange={handleChange}
                 />
               </div>
@@ -191,18 +253,18 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative flex w-full justify-center items-center space-x-2 rounded-xl border border-transparent bg-indigo-600 py-3 px-4 text-sm font-semibold text-white hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-300 disabled:hover:translate-y-0 transition-all duration-200"
+              className="group relative flex w-full justify-center items-center space-x-3 rounded-2xl border border-transparent bg-indigo-600 py-4 px-6 text-lg font-bold text-white hover:bg-indigo-700 hover:shadow-2xl hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 disabled:bg-indigo-300 disabled:hover:translate-y-0 transition-all duration-300 shadow-xl"
             >
               {loading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span>Registering...</span>
+                  <span>REGISTERING...</span>
                 </>
               ) : (
-                <span>Create Account</span>
+                <span>CREATE ACCOUNT</span>
               )}
             </button>
           </div>

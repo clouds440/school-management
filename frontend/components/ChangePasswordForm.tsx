@@ -56,15 +56,15 @@ export default function ChangePasswordForm({
     };
 
     return (
-        <div className="w-full max-w-md space-y-8 bg-white/80 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.04)] border border-white relative z-10 transition-all duration-300 mx-auto">
+        <div className="w-full max-w-lg space-y-8 bg-white/70 backdrop-blur-2xl p-10 sm:p-12 rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-white/50 relative z-10 mx-auto transition-all duration-500">
             <div className="text-center">
-                <div className="mx-auto bg-indigo-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-indigo-100">
-                    <ShieldCheck className="w-8 h-8 text-indigo-600" />
+                <div className="mx-auto bg-indigo-500/10 w-20 h-20 rounded-3xl flex items-center justify-center mb-8 shadow-inner border border-white/20">
+                    <ShieldCheck className="w-10 h-10 text-indigo-100 drop-shadow-sm" />
                 </div>
-                <h2 className="mt-2 text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700 tracking-tight">
+                <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-4">
                     {title}
                 </h2>
-                <p className="mt-3 text-sm text-gray-500">
+                <p className="text-gray-600 font-medium text-lg">
                     {description}
                 </p>
             </div>
@@ -143,7 +143,7 @@ export default function ChangePasswordForm({
                     <button
                         type="submit"
                         disabled={loading}
-                        className="group relative flex w-full justify-center items-center space-x-2 rounded-xl border border-transparent bg-indigo-600 py-3 px-4 text-sm font-semibold text-white hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-300 disabled:hover:translate-y-0 transition-all duration-200"
+                        className="group relative flex w-full justify-center items-center space-x-3 rounded-2xl border border-transparent bg-indigo-600 py-4 px-6 text-lg font-bold text-white hover:bg-indigo-700 hover:shadow-2xl hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 disabled:bg-indigo-300 disabled:hover:translate-y-0 transition-all duration-300 shadow-xl"
                     >
                         {loading ? (
                             <>

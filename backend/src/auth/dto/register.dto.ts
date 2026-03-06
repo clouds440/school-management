@@ -24,6 +24,14 @@ export class RegisterDto {
     @IsNotEmpty()
     email!: string;
 
+    @IsEmail()
+    @IsNotEmpty()
+    contactEmail!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    phone!: string;
+
     @IsString()
     @IsNotEmpty()
     @MinLength(8, { message: 'Password must be at least 8 characters long' })

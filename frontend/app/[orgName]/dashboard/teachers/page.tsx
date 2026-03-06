@@ -1,0 +1,301 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { Users, Plus, Edit2, Trash2, UserPlus } from 'lucide-react';
+import { DataTable } from '@/components/ui/DataTable';
+import { ModalForm } from '@/components/ui/ModalForm';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { SearchBar } from '@/components/ui/SearchBar';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { BackButton } from '@/components/ui/BackButton';
+import { useToast } from '@/context/ToastContext';
+
+export default function TeachersPage() {
+    const { token, user } = useAuth();
+    const pathname = usePathname();
+    const { showToast } = useToast();
+    const [teachers, setTeachers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editingTeacher, setEditingTeacher] = useState<any>(null);
+    const [editFormData, setEditFormData] = useState({
+        name: '',
+        phone: '',
+        education: '',
+        designation: '',
+        salary: '',
+        subject: ''
+    });
+    const [isSaving, setIsSaving] = useState(false);
+
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deletingTeacher, setDeletingTeacher] = useState<any>(null);
+
+    const fetchTeachers = useCallback(async () => {
+        if (!token) return;
+        try {
+            const res = await fetch('http://localhost:3000/org/teachers', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setTeachers(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    }, [token]);
+
+    useEffect(() => {
+        fetchTeachers();
+    }, [fetchTeachers]);
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        try {
+            const response = await fetch(`http://localhost:3000/org/teachers/${editingTeacher.id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: editFormData.name || null,
+                    phone: editFormData.phone || null,
+                    education: editFormData.education || null,
+                    designation: editFormData.designation || null,
+                    salary: Number(editFormData.salary) || null,
+                    subject: editFormData.subject || null
+                })
+            });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.message || 'Failed to update teacher profile');
+            }
+            setEditModalOpen(false);
+            showToast('Teacher profile updated successfully', 'success');
+            fetchTeachers();
+        } catch (err: any) {
+            showToast(err.message || 'Error occurred while updating', 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deletingTeacher) return;
+        try {
+            const response = await fetch(`http://localhost:3000/org/teachers/${deletingTeacher.id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.message || 'Failed to delete teacher');
+            }
+            showToast('Teacher removed from organization', 'success');
+            setDeleteDialogOpen(false);
+            fetchTeachers();
+        } catch (err: any) {
+            showToast(err.message || 'Failed to delete teacher', 'error');
+        }
+    };
+
+    const filteredTeachers = teachers.filter(t =>
+        t.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (t.user.name && t.user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (t.designation && t.designation.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (t.subject && t.subject.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    const columns = [
+        {
+            header: 'Teacher',
+            accessor: (row: any) => (
+                <div>
+                    <div className="font-semibold text-gray-900">{row.user.name || 'No Name'}</div>
+                    <div className="text-sm text-gray-500">{row.user.email}</div>
+                </div>
+            )
+        },
+        {
+            header: 'Role & Subject',
+            accessor: (row: any) => (
+                <div className="flex flex-col">
+                    <span className="font-medium text-gray-800">{row.designation || <span className="text-gray-400 italic">No Designation</span>}</span>
+                    <span className="text-sm text-gray-500">{row.subject || 'No Subject'}</span>
+                </div>
+            )
+        },
+        { header: 'Education', accessor: (row: any) => row.education || <span className="text-gray-400 italic">-</span> },
+        { header: 'Contact', accessor: (row: any) => row.user.phone || <span className="text-gray-400 italic">-</span> },
+        { header: 'Salary', accessor: (row: any) => row.salary ? `$${row.salary}` : <span className="text-gray-400 italic">Not set</span> },
+        {
+            header: 'Actions',
+            accessor: (row: any) => (
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => {
+                            setEditingTeacher(row);
+                            setEditFormData({
+                                name: row.user.name || '',
+                                phone: row.user.phone || '',
+                                education: row.education || '',
+                                designation: row.designation || '',
+                                salary: row.salary ? String(row.salary) : '',
+                                subject: row.subject || ''
+                            });
+                            setEditModalOpen(true);
+                        }}
+                        className="text-indigo-600 hover:text-indigo-900 p-1 hover:bg-indigo-50 rounded transition-colors"
+                        title="Edit Teacher"
+                    >
+                        <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => {
+                            setDeletingTeacher(row);
+                            setDeleteDialogOpen(true);
+                        }}
+                        className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
+                        title="Delete Teacher"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
+            )
+        }
+    ];
+
+    const orgSlug = user?.orgSlug || pathname.split('/')[1];
+
+    return (
+        <div className="flex flex-1 flex-col p-6 sm:p-10 max-w-7xl mx-auto w-full">
+            <div className="mb-8">
+                <BackButton />
+                <div className="mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="flex items-center gap-5">
+                        <div className="p-4 bg-white/20 backdrop-blur-md rounded-3xl border border-white/30 shadow-xl">
+                            <Users className="w-10 h-10 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-5xl font-black text-white tracking-tight drop-shadow-lg">Teachers</h1>
+                            <p className="text-indigo-100 font-bold opacity-90 mt-1">ORGANIZATION FACULTY MANAGEMENT</p>
+                        </div>
+                    </div>
+                    <Link
+                        href={`/${orgSlug}/dashboard/teachers/add`}
+                        className="flex items-center gap-3 bg-white text-indigo-600 px-8 py-4 rounded-2xl font-bold transition-all shadow-2xl hover:shadow-indigo-500/40 hover:-translate-y-1 active:scale-95"
+                    >
+                        <UserPlus className="w-6 h-6" />
+                        Add Teacher
+                    </Link>
+                </div>
+            </div>
+
+            <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white/50 p-10 mb-10 overflow-hidden">
+                <div className="mb-8 flex">
+                    <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, email or subject..." />
+                </div>
+
+                <div className="relative">
+                    <DataTable
+                        data={filteredTeachers}
+                        columns={columns}
+                        keyExtractor={(row) => row.id}
+                        isLoading={loading}
+                    />
+                </div>
+            </div>
+
+            <ModalForm
+                isOpen={editModalOpen}
+                onClose={() => setEditModalOpen(false)}
+                title="Update Teacher Details"
+                onSubmit={handleEditSubmit}
+                isSubmitting={isSaving}
+                submitText="Update Profile"
+            >
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Full Name</label>
+                            <input
+                                type="text"
+                                value={editFormData.name}
+                                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                placeholder="John Doe"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Phone Number</label>
+                            <input
+                                type="text"
+                                value={editFormData.phone}
+                                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                placeholder="+1 (555) 000-0000"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Education</label>
+                            <input
+                                type="text"
+                                value={editFormData.education}
+                                onChange={(e) => setEditFormData({ ...editFormData, education: e.target.value })}
+                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                placeholder="M.S. Computer Science"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Designation</label>
+                            <input
+                                type="text"
+                                value={editFormData.designation}
+                                onChange={(e) => setEditFormData({ ...editFormData, designation: e.target.value })}
+                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                placeholder="Senior Teacher"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Specialization / Subject</label>
+                            <input
+                                type="text"
+                                value={editFormData.subject}
+                                onChange={(e) => setEditFormData({ ...editFormData, subject: e.target.value })}
+                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                placeholder="e.g. Mathematics"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Annual Salary ($)</label>
+                            <input
+                                type="number"
+                                value={editFormData.salary}
+                                onChange={(e) => setEditFormData({ ...editFormData, salary: e.target.value })}
+                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                placeholder="0.00"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </ModalForm>
+
+            <ConfirmDialog
+                isOpen={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+                onConfirm={handleDeleteConfirm}
+                title="Remove Faculty Member"
+                description={`Are you really sure you want to remove ${deletingTeacher?.user?.email}? This action is permanent and cannot be reversed.`}
+                confirmText="Permanently Delete"
+                isDestructive={true}
+            />
+        </div>
+    );
+}

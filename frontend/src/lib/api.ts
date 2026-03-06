@@ -10,6 +10,8 @@ export interface RegisterRequest {
     location: string;
     type: OrganizationType;
     email: string;
+    contactEmail?: string;
+    phone?: string;
     password: string;
 }
 
