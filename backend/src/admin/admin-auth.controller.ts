@@ -9,7 +9,7 @@ export class AdminAuthController {
     constructor(private readonly adminService: AdminService) { }
 
     @Post('change-password')
-    async changePassword(@Request() req: any, @Body() body: ChangePasswordDto) {
+    async changePassword(@Request() req: { user: { id: string } }, @Body() body: ChangePasswordDto) {
         if (!body.oldPassword || !body.newPassword) {
             throw new BadRequestException('Validation failed');
         }

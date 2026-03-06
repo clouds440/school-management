@@ -11,6 +11,8 @@ export interface Teacher {
     id: string;
     education?: string;
     designation?: string;
+    subject?: string;
+    salary?: number;
     userId: string;
     user: User;
 }
@@ -23,6 +25,8 @@ export interface Class {
     courses: string[];
     teacherId?: string;
     teacher?: Teacher;
+    updatedBy?: string;
+    updatedAt?: string;
 }
 
 export interface Student {
@@ -37,4 +41,6 @@ export interface Student {
     user: User;
     classId?: string;
     class?: Class;
+    updatedBy?: string;
+    updatedAt?: string;
 }

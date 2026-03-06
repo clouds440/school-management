@@ -5,10 +5,12 @@ import { useRouter, usePathname } from 'next/navigation';
 
 export interface JwtPayload {
     sub: string;
+    id: string; // Add id to avoid mapping issues
     email: string;
     name?: string;
     orgSlug?: string;
     role?: 'SUPER_ADMIN' | 'ORG_ADMIN' | 'TEACHER' | 'STUDENT';
+    designation?: string;
     type?: string;
     approved?: boolean;
     isFirstLogin?: boolean;

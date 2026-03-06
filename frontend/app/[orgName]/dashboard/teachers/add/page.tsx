@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { UserPlus, AlertCircle, User, Mail, Lock, BookOpen, DollarSign, Phone } from 'lucide-react';
+import { UserPlus, User, Mail, Lock, BookOpen, DollarSign, Phone } from 'lucide-react';
 import { BackButton } from '@/components/ui/BackButton';
 import Link from 'next/link';
 
@@ -15,6 +15,12 @@ export default function AddTeacherPage() {
     const pathname = usePathname();
     const { showToast } = useToast();
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
+
+    useEffect(() => {
+        if (user && user.role !== 'ORG_ADMIN') {
+            router.replace(`/${orgSlug}/dashboard`);
+        }
+    }, [user, router, orgSlug]);
 
     const [isSaving, setIsSaving] = useState(false);
 
@@ -69,8 +75,8 @@ export default function AddTeacherPage() {
 
             showToast('Teacher account created successfully', 'success');
             router.push(`/${orgSlug}/dashboard/teachers`);
-        } catch (error: any) {
-            showToast(error.message || 'Failed to create teacher', 'error');
+        } catch (error: unknown) {
+            showToast(error instanceof Error ? error.message : 'Failed to create teacher', 'error');
             setIsSaving(false);
         }
     };

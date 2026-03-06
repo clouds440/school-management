@@ -8,20 +8,22 @@ import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { BackButton } from '@/components/ui/BackButton';
 import { useToast } from '@/context/ToastContext';
+import { Teacher } from '@/types';
 
 export default function TeachersPage() {
     const { token, user } = useAuth();
     const pathname = usePathname();
+    const router = useRouter(); // Import useRouter
     const { showToast } = useToast();
-    const [teachers, setTeachers] = useState<any[]>([]);
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
     const [editModalOpen, setEditModalOpen] = useState(false);
-    const [editingTeacher, setEditingTeacher] = useState<any>(null);
+    const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
     const [editFormData, setEditFormData] = useState({
         name: '',
         phone: '',
@@ -33,10 +35,16 @@ export default function TeachersPage() {
     const [isSaving, setIsSaving] = useState(false);
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [deletingTeacher, setDeletingTeacher] = useState<any>(null);
+    const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
+
+    useEffect(() => {
+        if (user && user.role !== 'ORG_ADMIN') {
+            router.replace(`/${user.orgSlug || pathname.split('/')[1]}/dashboard`);
+        }
+    }, [user, router, pathname]);
 
     const fetchTeachers = useCallback(async () => {
-        if (!token) return;
+        if (!token || user?.role !== 'ORG_ADMIN') return;
         try {
             const res = await fetch('http://localhost:3000/org/teachers', {
                 headers: { Authorization: `Bearer ${token}` }
@@ -56,6 +64,7 @@ export default function TeachersPage() {
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!editingTeacher) return;
         setIsSaving(true);
         try {
             const response = await fetch(`http://localhost:3000/org/teachers/${editingTeacher.id}`, {
@@ -80,8 +89,8 @@ export default function TeachersPage() {
             setEditModalOpen(false);
             showToast('Teacher profile updated successfully', 'success');
             fetchTeachers();
-        } catch (err: any) {
-            showToast(err.message || 'Error occurred while updating', 'error');
+        } catch (err: unknown) {
+            showToast(err instanceof Error ? err.message : 'Error occurred while updating', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -101,8 +110,8 @@ export default function TeachersPage() {
             showToast('Teacher removed from organization', 'success');
             setDeleteDialogOpen(false);
             fetchTeachers();
-        } catch (err: any) {
-            showToast(err.message || 'Failed to delete teacher', 'error');
+        } catch (err: unknown) {
+            showToast(err instanceof Error ? err.message : 'Failed to delete teacher', 'error');
         }
     };
 
@@ -116,7 +125,7 @@ export default function TeachersPage() {
     const columns = [
         {
             header: 'Teacher',
-            accessor: (row: any) => (
+            accessor: (row: Teacher) => (
                 <div>
                     <div className="font-semibold text-gray-900">{row.user.name || 'No Name'}</div>
                     <div className="text-sm text-gray-500">{row.user.email}</div>
@@ -125,19 +134,19 @@ export default function TeachersPage() {
         },
         {
             header: 'Role & Subject',
-            accessor: (row: any) => (
+            accessor: (row: Teacher) => (
                 <div className="flex flex-col">
                     <span className="font-medium text-gray-800">{row.designation || <span className="text-gray-400 italic">No Designation</span>}</span>
                     <span className="text-sm text-gray-500">{row.subject || 'No Subject'}</span>
                 </div>
             )
         },
-        { header: 'Education', accessor: (row: any) => row.education || <span className="text-gray-400 italic">-</span> },
-        { header: 'Contact', accessor: (row: any) => row.user.phone || <span className="text-gray-400 italic">-</span> },
-        { header: 'Salary', accessor: (row: any) => row.salary ? `$${row.salary}` : <span className="text-gray-400 italic">Not set</span> },
+        { header: 'Education', accessor: (row: Teacher) => row.education || <span className="text-gray-400 italic">-</span> },
+        { header: 'Contact', accessor: (row: Teacher) => row.user.phone || <span className="text-gray-400 italic">-</span> },
+        { header: 'Salary', accessor: (row: Teacher) => row.salary ? `$${row.salary}` : <span className="text-gray-400 italic">Not set</span> },
         {
             header: 'Actions',
-            accessor: (row: any) => (
+            accessor: (row: Teacher) => (
                 <div className="flex gap-3">
                     <button
                         onClick={() => {
@@ -249,7 +258,7 @@ export default function TeachersPage() {
                                 type="text"
                                 value={editFormData.education}
                                 onChange={(e) => setEditFormData({ ...editFormData, education: e.target.value })}
-                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                                className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus://indigo-500 outline-none transition-all text-gray-900 font-medium"
                                 placeholder="M.S. Computer Science"
                             />
                         </div>
@@ -291,8 +300,8 @@ export default function TeachersPage() {
                 isOpen={deleteDialogOpen}
                 onClose={() => setDeleteDialogOpen(false)}
                 onConfirm={handleDeleteConfirm}
-                title="Remove Faculty Member"
-                description={`Are you really sure you want to remove ${deletingTeacher?.user?.email}? This action is permanent and cannot be reversed.`}
+                title={<>Remove Faculty Member <strong>{deletingTeacher?.user?.name}</strong></>}
+                description={<>Are you really sure you want to remove <strong>{deletingTeacher?.user?.email}</strong>? This action is permanent and cannot be reversed.</>}
                 confirmText="Permanently Delete"
                 isDestructive={true}
             />

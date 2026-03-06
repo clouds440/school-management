@@ -78,6 +78,7 @@ model Class {
   teacherId      String?
   teacher        Teacher?     @relation(fields: [teacherId], references: [id], onDelete: SetNull)
   students       Student[]    // One-to-Many relation with Student
+  updatedBy      String?      // Tracks name of user who last modified this record
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
@@ -96,6 +97,7 @@ model Student {
   major              String?
   classId            String?
   class              Class?       @relation(fields: [classId], references: [id], onDelete: SetNull)
+  updatedBy          String?      // Tracks name of user who last modified this record
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 }

@@ -29,14 +29,23 @@ export default function CreateClassPage() {
     });
 
     useEffect(() => {
-        if (!token) return;
-        fetch('http://localhost:3000/org/teachers', {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-            .then(res => res.json())
-            .then(data => setTeachers(Array.isArray(data) ? data : []))
-            .catch(err => console.error('Failed to load teachers', err));
-    }, [token]);
+        if (!token || !user) return;
+
+        // Teachers should not be able to create classes
+        if (user.role === 'TEACHER') {
+            router.replace(`/${orgSlug}/dashboard/classes`);
+            return;
+        }
+
+        if (user.role === 'ORG_ADMIN') {
+            fetch('http://localhost:3000/org/teachers', {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(data => setTeachers(Array.isArray(data) ? data : []))
+                .catch(err => console.error('Failed to load teachers', err));
+        }
+    }, [token, user, router, orgSlug]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -47,12 +56,12 @@ export default function CreateClassPage() {
         setIsSaving(true);
 
         try {
-            const submitData: any = { ...formData };
+            const submitData: Record<string, string | string[]> = { ...formData };
             if (!submitData.teacherId) delete submitData.teacherId;
             if (!submitData.grade) delete submitData.grade;
 
             // Format courses into an array
-            submitData.courses = submitData.courses
+            submitData.courses = typeof submitData.courses === 'string'
                 ? submitData.courses.split(',').map((c: string) => c.trim()).filter((c: string) => c.length > 0)
                 : [];
 
@@ -72,8 +81,8 @@ export default function CreateClassPage() {
 
             showToast('Class created successfully Component', 'success');
             router.push(`/${orgSlug}/dashboard/classes`);
-        } catch (error: any) {
-            showToast(error.message || 'Failed to create class', 'error');
+        } catch (error: unknown) {
+            showToast(error instanceof Error ? error.message : 'Failed to create class', 'error');
             setIsSaving(false);
         }
     };
@@ -175,7 +184,7 @@ export default function CreateClassPage() {
                                 <select
                                     name="teacherId"
                                     value={formData.teacherId}
-                                    onChange={handleChange as any}
+                                    onChange={handleChange as unknown as React.ChangeEventHandler<HTMLSelectElement>}
                                     className="w-full pl-12 pr-10 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/30 shadow-sm appearance-none cursor-pointer"
                                 >
                                     <option value="" className="text-gray-500">Select a teacher...</option>

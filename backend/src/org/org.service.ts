@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException, ForbiddenException } from '@nestjs/common';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
@@ -168,12 +168,7 @@ export class OrgService {
 
     // --- Classes ---
     async getClasses(orgId: string, user?: { id: string; role: string }) {
-        const whereClause: any = { organizationId: orgId };
-
-        // If it's a standard teacher, only show their classes
-        if (user && user.role === 'TEACHER') {
-            whereClause.teacher = { userId: user.id };
-        }
+        const whereClause: Prisma.ClassWhereInput = { organizationId: orgId };
 
         return this.prisma.class.findMany({
             where: whereClause,
@@ -187,7 +182,7 @@ export class OrgService {
         });
     }
 
-    async createClass(orgId: string, data: CreateClassDto) {
+    async createClass(orgId: string, data: CreateClassDto, user: { name?: string | null; email: string }) {
         return this.prisma.class.create({
             data: {
                 name: data.name,
@@ -196,16 +191,29 @@ export class OrgService {
                 teacherId: data.teacherId,
                 courses: data.courses || [],
                 organizationId: orgId,
+                updatedBy: user.name || user.email,
             },
         });
     }
 
-    async updateClass(orgId: string, id: string, data: UpdateClassDto) {
+    async updateClass(orgId: string, id: string, data: UpdateClassDto, user: { id: string; role: string; name?: string | null; email: string }) {
         const cls = await this.prisma.class.findFirst({
-            where: { id, organizationId: orgId }
+            where: { id, organizationId: orgId },
+            include: { teacher: true }
         });
 
         if (!cls) throw new NotFoundException('Class not found');
+
+        // Permission check for teachers
+        if (user.role === 'TEACHER') {
+            if (!cls.teacher || cls.teacher.userId !== user.id) {
+                throw new ForbiddenException('You are not assigned to this class');
+            }
+            // Teachers cannot change the assigned teacher
+            if (data.teacherId !== undefined && data.teacherId !== cls.teacherId) {
+                throw new ForbiddenException('Teachers cannot change the assigned teacher');
+            }
+        }
 
         return this.prisma.class.update({
             where: { id },
@@ -213,8 +221,9 @@ export class OrgService {
                 name: data.name,
                 description: data.description,
                 grade: data.grade,
-                teacherId: data.teacherId,
+                teacherId: user.role === 'ORG_ADMIN' ? data.teacherId : undefined, // Only admin can update teacherId
                 courses: data.courses !== undefined ? data.courses : undefined,
+                updatedBy: user.name || user.email,
             },
         });
     }
@@ -247,13 +256,17 @@ export class OrgService {
                     },
                 },
                 class: {
-                    select: { id: true, name: true, grade: true, courses: true }
+                    include: {
+                        teacher: {
+                            select: { id: true, userId: true }
+                        }
+                    }
                 }
             },
         });
     }
 
-    async createStudent(orgId: string, data: CreateStudentDto) {
+    async createStudent(orgId: string, data: CreateStudentDto, userContext: { name?: string | null; email: string }) {
         const existingUser = await this.prisma.user.findUnique({
             where: { email: data.email },
         });
@@ -287,7 +300,8 @@ export class OrgService {
                         age: data.age,
                         address: data.address,
                         major: data.major,
-                        classId: data.classId || undefined
+                        classId: data.classId || undefined,
+                        updatedBy: userContext.name || userContext.email
                     },
                     include: {
                         user: { select: { email: true, name: true, phone: true } },
@@ -303,7 +317,7 @@ export class OrgService {
         }
     }
 
-    async updateStudent(orgId: string, id: string, data: UpdateStudentDto) {
+    async updateStudent(orgId: string, id: string, data: UpdateStudentDto, user: { name?: string | null; email: string }) {
         const student = await this.prisma.student.findFirst({
             where: { id, organizationId: orgId }
         });
@@ -330,7 +344,8 @@ export class OrgService {
                     age: data.age,
                     address: data.address,
                     major: data.major,
-                    classId: data.classId !== undefined ? (data.classId || null) : undefined
+                    classId: data.classId !== undefined ? (data.classId || null) : undefined,
+                    updatedBy: user.name || user.email
                 },
                 include: {
                     user: { select: { email: true, name: true, phone: true } },

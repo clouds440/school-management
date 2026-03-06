@@ -3,7 +3,12 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User, Organization, Teacher } from '@prisma/client';
+
+export type TokenUser = User & {
+    organization?: Organization | null;
+    teacherProfile?: Teacher | null;
+};
 
 const prisma = new PrismaClient();
 
@@ -56,7 +61,7 @@ export class AuthService {
     async login(loginDto: LoginDto) {
         const user = await prisma.user.findUnique({
             where: { email: loginDto.email },
-            include: { organization: true }
+            include: { organization: true, teacherProfile: true }
         });
 
         if (!user) {
@@ -71,13 +76,14 @@ export class AuthService {
         return this.generateToken(user);
     }
 
-    async generateToken(user: any) {
+    async generateToken(user: TokenUser) {
         const slug = user.organization?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || null;
         const payload = {
             sub: user.id,
             email: user.email,
             name: user.name, // Include name in JWT payload
             role: user.role,
+            designation: user.teacherProfile?.designation || null, // Added for teacher personalization
             orgSlug: slug,
             orgId: user.organizationId,
             approved: user.organization?.approved ?? true, // SuperAdmins don't need approval
@@ -108,7 +114,7 @@ export class AuthService {
                 password: hashedNew,
                 isFirstLogin: false
             },
-            include: { organization: true }
+            include: { organization: true, teacherProfile: true }
         });
 
         return this.generateToken(updatedUser);

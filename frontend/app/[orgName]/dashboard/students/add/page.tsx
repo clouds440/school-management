@@ -96,8 +96,8 @@ export default function AddStudentPage() {
 
             showToast('Student registered and assigned successfully.', 'success');
             router.push(`/${orgSlug}/dashboard/students`);
-        } catch (error: any) {
-            showToast(error.message, 'error');
+        } catch (error: unknown) {
+            showToast(error instanceof Error ? error.message : 'Failed to register student', 'error');
             setIsSaving(false);
         }
     };

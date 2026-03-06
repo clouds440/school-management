@@ -21,7 +21,7 @@ export class AuthController {
     // Protected Route
     @UseGuards(JwtAuthGuard)
     @Get('profile')
-    getProfile(@Request() req: any) {
+    getProfile(@Request() req: { user: unknown }) {
         // req.user is automatically populated by the JwtStrategy's validate() method
         return {
             message: 'You have accessed a protected route successfully!',
@@ -31,7 +31,7 @@ export class AuthController {
 
     @UseGuards(JwtAuthGuard)
     @Post('change-password')
-    async changePassword(@Request() req: any, @Body() body: any) {
+    async changePassword(@Request() req: { user: { id: string } }, @Body() body: Record<string, string>) {
         return this.authService.changePassword(req.user.id, body.oldPassword, body.newPassword);
     }
 }

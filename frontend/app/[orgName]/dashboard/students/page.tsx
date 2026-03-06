@@ -22,6 +22,7 @@ export default function StudentsPage() {
     const [classes, setClasses] = useState<Class[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showOnlyMyStudents, setShowOnlyMyStudents] = useState(false);
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -80,11 +81,18 @@ export default function StudentsPage() {
     // Filter students
     const filteredStudents = students.filter((student: Student) => {
         const search = searchTerm.toLowerCase();
-        return (
+        const matchesSearch =
             student.user?.name?.toLowerCase().includes(search) ||
             student.registrationNumber?.toLowerCase().includes(search) ||
-            student.major?.toLowerCase().includes(search)
-        );
+            student.major?.toLowerCase().includes(search);
+
+        // A student is "mine" if they belong to a class where I am the teacher
+        const teacherUserId = student.class?.teacher?.userId;
+        const loggedInUserId = user?.sub || user?.id;
+        const isMyStudent = teacherUserId && loggedInUserId && teacherUserId === loggedInUserId;
+        const matchesFilter = !showOnlyMyStudents || isMyStudent;
+
+        return matchesSearch && matchesFilter;
     });
 
     // Formatting for Table
@@ -97,6 +105,12 @@ export default function StudentsPage() {
         major: student.major || '-',
         feeAge: `${student.fee ? '$' + student.fee : '-'} / ${student.age ? student.age + ' yrs' : '-'}`,
         classInfo: student.class ? `${student.class.name} ${student.class.courses && student.class.courses.length > 0 ? `(${student.class.courses.length} courses)` : ''}` : 'Unassigned',
+        lastUpdated: student.updatedBy ? (
+            <div className="flex flex-col">
+                <span className="font-medium text-gray-800">{student.updatedBy}</span>
+                <span className="text-xs text-gray-500">{new Date(student.updatedAt || '').toLocaleDateString()}</span>
+            </div>
+        ) : <span className="text-gray-400 italic text-sm text-center">Never</span>,
         originalData: student
     }));
 
@@ -159,8 +173,8 @@ export default function StudentsPage() {
             showToast('Student record updated successfully', 'success');
             setIsEditModalOpen(false);
             fetchStudents();
-        } catch (error: any) {
-            showToast(error.message, 'error');
+        } catch (error: unknown) {
+            showToast(error instanceof Error ? error.message : 'Failed to update student', 'error');
         }
     };
 
@@ -179,8 +193,8 @@ export default function StudentsPage() {
             showToast('Student removed successfully', 'success');
             setIsDeleteDialogOpen(false);
             fetchStudents();
-        } catch (error: any) {
-            showToast(error.message, 'error');
+        } catch (error: unknown) {
+            showToast(error instanceof Error ? error.message : 'Failed to delete student', 'error');
         }
     };
 
@@ -220,8 +234,26 @@ export default function StudentsPage() {
             </div>
 
             <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white/50 p-10 mb-10 overflow-hidden">
-                <div className="mb-8 flex">
-                    <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, registration # or major..." />
+                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex-1 max-w-xl">
+                        <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, registration or major..." />
+                    </div>
+
+                    {user?.role === 'TEACHER' && (
+                        <div className="flex items-center gap-3 bg-indigo-50/50 p-2 pr-4 rounded-2xl border border-indigo-100">
+                            <button
+                                onClick={() => setShowOnlyMyStudents(!showOnlyMyStudents)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${showOnlyMyStudents ? 'bg-indigo-600' : 'bg-gray-200'
+                                    }`}
+                            >
+                                <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showOnlyMyStudents ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
+                                />
+                            </button>
+                            <span className="text-sm font-bold text-indigo-900 uppercase tracking-wider">My Students</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="relative">
@@ -236,13 +268,14 @@ export default function StudentsPage() {
                                     <th className="px-6 py-4">Contact</th>
                                     <th className="px-6 py-4">Enrolled Classes</th>
                                     <th className="px-6 py-4">Fee / Age</th>
+                                    <th className="px-6 py-4">Last Updated</th>
                                     {(user?.role === 'ORG_ADMIN' || user?.role === 'TEACHER') && <th className="px-6 py-4 text-right">Actions</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {formattedData.length === 0 ? (
                                     <tr>
-                                        <td colSpan={(user?.role === 'ORG_ADMIN' || user?.role === 'TEACHER') ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
+                                        <td colSpan={(user?.role === 'ORG_ADMIN' || user?.role === 'TEACHER') ? 8 : 7} className="px-6 py-8 text-center text-gray-500">
                                             No students found matching your search.
                                         </td>
                                     </tr>
@@ -260,6 +293,7 @@ export default function StudentsPage() {
                                             <td className="px-6 py-4">{student.contact}</td>
                                             <td className="px-6 py-4 max-w-[200px] truncate" title={student.classInfo}>{student.classInfo}</td>
                                             <td className="px-6 py-4 whitespace-nowrap">{student.feeAge}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap">{student.lastUpdated}</td>
                                             {(user?.role === 'ORG_ADMIN' || user?.role === 'TEACHER') && (
                                                 <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
                                                     <button
@@ -401,8 +435,8 @@ export default function StudentsPage() {
                 isOpen={isDeleteDialogOpen}
                 onClose={() => setIsDeleteDialogOpen(false)}
                 onConfirm={handleDeleteConfirm}
-                title="Remove Student"
-                description={`Are you sure you want to completely remove ${selectedStudent?.user?.name || 'this student'}? This will also delete their login account.`}
+                title={<>Remove Student <strong>{selectedStudent?.user?.name}</strong></>}
+                description={<>Are you sure you want to completely remove <strong>{selectedStudent?.user?.name || 'this student'}</strong>? This will also delete their login account.</>}
                 confirmText="Yes, Remove Student"
             />
         </div>

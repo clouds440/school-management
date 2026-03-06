@@ -72,14 +72,14 @@ export class OrgController {
     @Post('classes')
     createClass(@Request() req: AuthenticatedRequest, @Body() createClassDto: CreateClassDto) {
         if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.createClass(req.user.organizationId, createClassDto);
+        return this.orgService.createClass(req.user.organizationId, createClassDto, req.user);
     }
 
-    @Roles('ORG_ADMIN')
+    @Roles('ORG_ADMIN', 'TEACHER')
     @Patch('classes/:id')
     updateClass(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateClassDto: UpdateClassDto) {
         if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.updateClass(req.user.organizationId, id, updateClassDto);
+        return this.orgService.updateClass(req.user.organizationId, id, updateClassDto, req.user);
     }
 
     @Roles('ORG_ADMIN')
@@ -100,14 +100,14 @@ export class OrgController {
     @Post('students')
     createStudent(@Request() req: AuthenticatedRequest, @Body() createStudentDto: CreateStudentDto) {
         if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.createStudent(req.user.organizationId, createStudentDto);
+        return this.orgService.createStudent(req.user.organizationId, createStudentDto, req.user);
     }
 
     @Roles('ORG_ADMIN', 'TEACHER')
     @Patch('students/:id')
     updateStudent(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto) {
         if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.updateStudent(req.user.organizationId, id, updateStudentDto);
+        return this.orgService.updateStudent(req.user.organizationId, id, updateStudentDto, req.user);
     }
 
     @Roles('ORG_ADMIN', 'TEACHER')

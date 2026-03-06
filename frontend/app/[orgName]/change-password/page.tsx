@@ -24,7 +24,7 @@ export default function OrganizationChangePasswordPage() {
 
             <div className="flex flex-1 items-center justify-center">
                 <ChangePasswordForm
-                    title={user?.role === 'ORG_ADMIN' ? 'Admin Security' : user?.role === 'TEACHER' ? 'Teacher Security' : 'Student Security'}
+                    title="Change Password"
                     description={
                         user?.role === 'ORG_ADMIN'
                             ? `Update administrative password for ${user?.name || 'Organization'}`

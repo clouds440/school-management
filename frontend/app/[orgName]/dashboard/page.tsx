@@ -109,8 +109,17 @@ export default function DashboardPage() {
                                     <CheckCircle className="w-10 h-10 text-indigo-600" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-black text-gray-900 leading-tight">{orgName}</h2>
-                                    <p className="text-gray-600 font-medium">Organization Management Dashboard Overview</p>
+                                    {payload.role === 'TEACHER' ? (
+                                        <>
+                                            <h2 className="text-2xl font-black text-gray-900 leading-tight">Welcome, {payload.name || payload.email}</h2>
+                                            <p className="text-gray-600 font-medium">{payload.designation || 'Teacher'} - {orgName}</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <h2 className="text-2xl font-black text-gray-900 leading-tight">{orgName}</h2>
+                                            <p className="text-gray-600 font-medium">Organization Management Dashboard Overview</p>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )}

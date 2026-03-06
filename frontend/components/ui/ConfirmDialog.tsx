@@ -4,8 +4,8 @@ interface ConfirmDialogProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
-    title: string;
-    description: string;
+    title: React.ReactNode;
+    description: React.ReactNode;
     confirmText?: string;
     isDestructive?: boolean;
 }
@@ -40,8 +40,8 @@ export function ConfirmDialog({
                             onClose();
                         }}
                         className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors shadow-sm ${isDestructive
-                                ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-                                : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+                            ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                            : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
                             }`}
                     >
                         {confirmText}
