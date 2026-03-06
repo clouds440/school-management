@@ -11,23 +11,24 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BackButton } from '@/components/ui/BackButton';
 import { useToast } from '@/context/ToastContext';
+import { Class, Teacher } from '@/types';
 
 export default function ClassesPage() {
     const { token, user } = useAuth();
     const pathname = usePathname();
     const { showToast } = useToast();
-    const [classes, setClasses] = useState<any[]>([]);
-    const [teachers, setTeachers] = useState<any[]>([]);
+    const [classes, setClasses] = useState<Class[]>([]);
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
     const [editModalOpen, setEditModalOpen] = useState(false);
-    const [editingClass, setEditingClass] = useState<any>(null);
-    const [editFormData, setEditFormData] = useState({ name: '', description: '', grade: '', teacherId: '' });
+    const [editingClass, setEditingClass] = useState<Class | null>(null);
+    const [editFormData, setEditFormData] = useState({ name: '', description: '', grade: '', teacherId: '', courses: '' });
     const [isSaving, setIsSaving] = useState(false);
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [deletingClass, setDeletingClass] = useState<any>(null);
+    const [deletingClass, setDeletingClass] = useState<Class | null>(null);
 
     const fetchClassesAndTeachers = useCallback(async () => {
         if (!token) return;
@@ -59,11 +60,15 @@ export default function ClassesPage() {
         e.preventDefault();
         setIsSaving(true);
         try {
-            const submitData = { ...editFormData };
-            if (!submitData.teacherId) delete (submitData as any).teacherId;
-            if (!submitData.grade) delete (submitData as any).grade;
+            const submitData: any = { ...editFormData };
+            if (!submitData.teacherId) delete submitData.teacherId;
+            if (!submitData.grade) delete submitData.grade;
 
-            const response = await fetch(`http://localhost:3000/org/classes/${editingClass.id}`, {
+            submitData.courses = submitData.courses
+                ? submitData.courses.split(',').map((c: string) => c.trim()).filter((c: string) => c.length > 0)
+                : [];
+
+            const response = await fetch(`http://localhost:3000/org/classes/${editingClass?.id}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -121,10 +126,26 @@ export default function ClassesPage() {
                 </div>
             )
         },
-        { header: 'Description', accessor: (row: any) => row.description || <span className="text-gray-400 italic">No description</span> },
+        {
+            header: 'Courses',
+            accessor: (row: Class) => (
+                <div className="flex flex-wrap gap-1">
+                    {row.courses && row.courses.length > 0 ? (
+                        row.courses.map((course, idx) => (
+                            <span key={idx} className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md text-xs font-medium border border-indigo-100">
+                                {course}
+                            </span>
+                        ))
+                    ) : (
+                        <span className="text-gray-400 italic text-sm">No courses</span>
+                    )}
+                </div>
+            )
+        },
+        { header: 'Description', accessor: (row: Class) => row.description || <span className="text-gray-400 italic">No description</span> },
         {
             header: 'Assigned Teacher',
-            accessor: (row: any) => row.teacher ? (
+            accessor: (row: Class) => row.teacher ? (
                 <div className="flex flex-col">
                     <span className="font-medium text-gray-800">{row.teacher.user.name || row.teacher.user.email}</span>
                     <span className="text-sm text-gray-500">{row.teacher.education || row.teacher.designation || 'Faculty'}</span>
@@ -133,7 +154,7 @@ export default function ClassesPage() {
         },
         {
             header: 'Actions',
-            accessor: (row: any) => (
+            accessor: (row: Class) => (
                 <div className="flex gap-3">
                     <button
                         onClick={() => {
@@ -142,7 +163,8 @@ export default function ClassesPage() {
                                 name: row.name,
                                 description: row.description || '',
                                 grade: row.grade || '',
-                                teacherId: row.teacherId || ''
+                                teacherId: row.teacherId || '',
+                                courses: row.courses?.join(', ') || ''
                             });
                             setEditModalOpen(true);
                         }}
@@ -250,6 +272,16 @@ export default function ClassesPage() {
                                 </option>
                             ))}
                         </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Courses (comma-separated)</label>
+                        <input
+                            type="text"
+                            value={editFormData.courses}
+                            onChange={(e) => setEditFormData({ ...editFormData, courses: e.target.value })}
+                            className="w-full px-5 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-gray-900 font-medium"
+                            placeholder="E.g., Math, Science, English"
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">Description</label>

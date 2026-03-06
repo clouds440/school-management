@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { BookOpen, AlertCircle, FileText, User } from 'lucide-react';
+import { BookOpen, AlertCircle, FileText, User as UserIcon } from 'lucide-react';
 import { BackButton } from '@/components/ui/BackButton';
 import Link from 'next/link';
+import { Teacher } from '@/types';
 
 import { useToast } from '@/context/ToastContext';
 
@@ -17,13 +18,14 @@ export default function CreateClassPage() {
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
     const [isSaving, setIsSaving] = useState(false);
-    const [teachers, setTeachers] = useState<any[]>([]);
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
 
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         grade: '',
-        teacherId: ''
+        teacherId: '',
+        courses: ''
     });
 
     useEffect(() => {
@@ -45,9 +47,14 @@ export default function CreateClassPage() {
         setIsSaving(true);
 
         try {
-            const submitData = { ...formData };
-            if (!submitData.teacherId) delete (submitData as any).teacherId;
-            if (!submitData.grade) delete (submitData as any).grade;
+            const submitData: any = { ...formData };
+            if (!submitData.teacherId) delete submitData.teacherId;
+            if (!submitData.grade) delete submitData.grade;
+
+            // Format courses into an array
+            submitData.courses = submitData.courses
+                ? submitData.courses.split(',').map((c: string) => c.trim()).filter((c: string) => c.length > 0)
+                : [];
 
             const response = await fetch('http://localhost:3000/org/classes', {
                 method: 'POST',
@@ -143,10 +150,27 @@ export default function CreateClassPage() {
                         </div>
 
                         <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Courses (comma-separated)</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+                                    <FileText className="w-5 h-5" />
+                                </div>
+                                <input
+                                    type="text"
+                                    name="courses"
+                                    value={formData.courses}
+                                    onChange={handleChange}
+                                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/30 shadow-sm"
+                                    placeholder="E.g., Math, Science, English"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Assign Teacher (Optional)</label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <User className="w-5 h-5" />
+                                    <UserIcon className="w-5 h-5" />
                                 </div>
                                 <select
                                     name="teacherId"

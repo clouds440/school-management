@@ -9,6 +9,8 @@ import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
+import { CreateStudentDto } from './dto/create-student.dto';
+import { UpdateStudentDto } from './dto/update-student.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('org')
@@ -85,5 +87,33 @@ export class OrgController {
     deleteClass(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         if (!req.user.organizationId) throw new Error('No organization');
         return this.orgService.deleteClass(req.user.organizationId, id);
+    }
+
+    // --- Students ---
+    @Get('students')
+    getStudents(@Request() req: AuthenticatedRequest) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.getStudents(req.user.organizationId);
+    }
+
+    @Roles('ORG_ADMIN', 'TEACHER')
+    @Post('students')
+    createStudent(@Request() req: AuthenticatedRequest, @Body() createStudentDto: CreateStudentDto) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.createStudent(req.user.organizationId, createStudentDto);
+    }
+
+    @Roles('ORG_ADMIN', 'TEACHER')
+    @Patch('students/:id')
+    updateStudent(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.updateStudent(req.user.organizationId, id, updateStudentDto);
+    }
+
+    @Roles('ORG_ADMIN', 'TEACHER')
+    @Delete('students/:id')
+    deleteStudent(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.deleteStudent(req.user.organizationId, id);
     }
 }

@@ -60,12 +60,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     return;
                 }
 
-                // Redirect away from login/register/home
+                // Redirect away from guest paths (login/register/home)
                 if (isGuestPath) {
                     if (user.role === 'SUPER_ADMIN') {
                         router.replace('/admin/dashboard');
                     } else if (user.orgSlug) {
-                        router.replace(`/${user.orgSlug}/dashboard`);
+                        if (user.role === 'STUDENT' && user.name) {
+                            const nameSlug = user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+                            router.replace(`/${user.orgSlug}/${nameSlug}`);
+                        } else {
+                            router.replace(`/${user.orgSlug}/dashboard`);
+                        }
                     }
                     return;
                 }
@@ -86,19 +91,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 // Verify organization slug matches the URL for Org roles
-                if (isUserPath && (user.role === 'ORG_ADMIN' || user.role === 'TEACHER') && user.orgSlug) {
+                if (isUserPath && user.orgSlug) {
                     const firstSegment = pathname.split('/')[1];
-                    if (firstSegment !== user.orgSlug) {
-                        router.replace(`/${user.orgSlug}/dashboard`);
-                        return;
-                    }
 
-                    // Restrict TEACHER from accessing settings and teachers management pages
-                    if (user.role === 'TEACHER') {
-                        const pathSegments = pathname.split('/');
-                        if (pathSegments.includes('settings') || pathSegments.includes('teachers')) {
+                    // Check if student is on their personalized page or dashboard (redirect to personalized if on dashboard)
+                    if (user.role === 'STUDENT') {
+                        const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : '';
+
+                        if (firstSegment !== user.orgSlug) {
+                            router.replace(`/${user.orgSlug}/${nameSlug || 'dashboard'}`);
+                            return;
+                        }
+
+                        // If student hits generic /dashboard, redirect to personalized name route or fallback
+                        if (pathname === `/${user.orgSlug}/dashboard` || pathname === `/${user.orgSlug}`) {
+                            if (nameSlug) {
+                                router.replace(`/${user.orgSlug}/${nameSlug}`);
+                                return;
+                            }
+                        }
+                    } else if (user.role === 'ORG_ADMIN' || user.role === 'TEACHER') {
+                        if (firstSegment !== user.orgSlug) {
                             router.replace(`/${user.orgSlug}/dashboard`);
                             return;
+                        }
+
+                        // Restrict TEACHER from accessing settings and teachers management pages
+                        if (user.role === 'TEACHER') {
+                            const pathSegments = pathname.split('/');
+                            if (pathSegments.includes('settings') || pathSegments.includes('teachers')) {
+                                router.replace(`/${user.orgSlug}/dashboard`);
+                                return;
+                            }
                         }
                     }
                 }

@@ -93,50 +93,67 @@ export default function DashboardPage() {
                     </div>
                 ) : (
                     <div className="space-y-8">
-                        <div className="p-8 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 border-l-[12px] border-l-indigo-500 flex items-center space-x-6">
-                            <div className="p-4 bg-indigo-50 rounded-2xl">
-                                <CheckCircle className="w-10 h-10 text-indigo-600" />
+                        {payload.role === 'STUDENT' ? (
+                            <div className="p-8 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 border-l-[12px] border-l-emerald-500 flex items-center space-x-6">
+                                <div className="p-4 bg-emerald-50 rounded-2xl">
+                                    <GraduationCap className="w-10 h-10 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-gray-900 leading-tight">Welcome, {payload.name || payload.email}</h2>
+                                    <p className="text-gray-600 font-medium">Your student portal is currently being prepared.</p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-2xl font-black text-gray-900 leading-tight">{orgName}</h2>
-                                <p className="text-gray-600 font-medium">Organization Management Dashboard Overview</p>
+                        ) : (
+                            <div className="p-8 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 border-l-[12px] border-l-indigo-500 flex items-center space-x-6">
+                                <div className="p-4 bg-indigo-50 rounded-2xl">
+                                    <CheckCircle className="w-10 h-10 text-indigo-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-gray-900 leading-tight">{orgName}</h2>
+                                    <p className="text-gray-600 font-medium">Organization Management Dashboard Overview</p>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Dashboard Navigation Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {payload.role !== 'TEACHER' && (
-                                <Link href={`/${payload.orgSlug}/dashboard/teachers`} className="p-8 bg-white/70 backdrop-blur-md rounded-3xl shadow-xl border border-white/40 hover:-translate-y-2 hover:shadow-2xl transition-all group block relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
-                                    <div className="flex items-center space-x-4 mb-6 relative z-10">
-                                        <div className="p-4 bg-indigo-100 text-indigo-600 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                                            <Users className="w-8 h-8" />
+                        {payload.role !== 'STUDENT' && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                {payload.role === 'ORG_ADMIN' && (
+                                    <Link href={`/${payload.orgSlug}/dashboard/teachers`} className="p-8 bg-white/70 backdrop-blur-md rounded-3xl shadow-xl border border-white/40 hover:-translate-y-2 hover:shadow-2xl transition-all group block relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+                                        <div className="flex items-center space-x-4 mb-6 relative z-10">
+                                            <div className="p-4 bg-indigo-100 text-indigo-600 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                                                <Users className="w-8 h-8" />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">Teachers</h3>
                                         </div>
-                                        <h3 className="text-xl font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">Teachers</h3>
+                                        <p className="text-gray-600 leading-relaxed font-medium relative z-10">Add, edit, or remove teaching staff from your organization.</p>
+                                    </Link>
+                                )}
+
+                                <Link href={`/${payload.orgSlug}/dashboard/classes`} className="p-8 bg-white/70 backdrop-blur-md rounded-3xl shadow-xl border border-white/40 hover:-translate-y-2 hover:shadow-2xl transition-all group block relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+                                    <div className="flex items-center space-x-4 mb-6 relative z-10">
+                                        <div className="p-4 bg-purple-100 text-purple-600 rounded-2xl group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm">
+                                            <BookOpen className="w-8 h-8" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">Classes</h3>
                                     </div>
-                                    <p className="text-gray-600 leading-relaxed font-medium relative z-10">Add, edit, or remove teaching staff from your organization.</p>
+                                    <p className="text-gray-600 leading-relaxed font-medium relative z-10">Create and organize courses and academic classes.</p>
                                 </Link>
-                            )}
 
-                            <Link href={`/${payload.orgSlug}/dashboard/classes`} className="p-8 bg-white/70 backdrop-blur-md rounded-3xl shadow-xl border border-white/40 hover:-translate-y-2 hover:shadow-2xl transition-all group block relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
-                                <div className="flex items-center space-x-4 mb-6 relative z-10">
-                                    <div className="p-4 bg-purple-100 text-purple-600 rounded-2xl group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm">
-                                        <BookOpen className="w-8 h-8" />
+                                <Link href={`/${payload.orgSlug}/dashboard/students`} className="p-8 bg-white/70 backdrop-blur-md rounded-3xl shadow-xl border border-white/40 hover:-translate-y-2 hover:shadow-2xl transition-all group block relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+                                    <div className="flex items-center space-x-4 mb-6 relative z-10">
+                                        <div className="p-4 bg-emerald-100 text-emerald-600 rounded-2xl group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
+                                            <GraduationCap className="w-8 h-8" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-gray-800 group-hover:text-emerald-600 transition-colors">Students</h3>
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">Classes</h3>
-                                </div>
-                                <p className="text-gray-600 leading-relaxed font-medium relative z-10">Create and organize courses and academic classes.</p>
-                            </Link>
-
-                            <div className="p-8 bg-gray-100/30 backdrop-blur-sm rounded-3xl border border-gray-200/50 flex flex-col justify-center items-center text-center">
-                                <div className="p-4 bg-gray-200/50 text-gray-400 rounded-2xl mb-4">
-                                    <GraduationCap className="w-10 h-10" />
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-400">Students</h3>
-                                <p className="text-gray-400 italic mt-2">Module coming soon</p>
+                                    <p className="text-gray-600 leading-relaxed font-medium relative z-10">Manage student profiles, enrollments, and academic associations.</p>
+                                </Link>
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
             </div>

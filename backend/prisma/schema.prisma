@@ -32,6 +32,7 @@ model Organization {
   updatedAt    DateTime  @updatedAt
   users        User[]
   teachers     Teacher[]
+  students     Student[]
   classes      Class[]
 }
 
@@ -46,6 +47,7 @@ model User {
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
   teacherProfile Teacher?
+  studentProfile Student?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 }
@@ -70,10 +72,30 @@ model Class {
   name           String
   description    String?
   grade          String?      // Added: Optional grade/level
+  courses        String[]     @default([])
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   teacherId      String?
   teacher        Teacher?     @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  students       Student[]    // One-to-Many relation with Student
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+}
+
+model Student {
+  id                 String       @id @default(uuid())
+  userId             String       @unique
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  registrationNumber String?
+  fatherName         String?
+  fee                Float?
+  age                Int?
+  address            String?
+  major              String?
+  classId            String?
+  class              Class?       @relation(fields: [classId], references: [id], onDelete: SetNull)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 }

@@ -28,7 +28,13 @@ export default function Navbar() {
                     <div className="flex items-center space-x-2">
                         {!pathname.endsWith('/dashboard') && (
                             <Link
-                                href={user.role === 'SUPER_ADMIN' ? '/admin/dashboard' : `/${user.orgSlug}/dashboard`}
+                                href={
+                                    user.role === 'SUPER_ADMIN'
+                                        ? '/admin/dashboard'
+                                        : user.role === 'STUDENT' && user.name
+                                            ? `/${user.orgSlug}/${user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`
+                                            : `/${user.orgSlug}/dashboard`
+                                }
                                 className="flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all duration-300 font-medium shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-100"
                             >
                                 <LayoutDashboard className="w-4 h-4" />

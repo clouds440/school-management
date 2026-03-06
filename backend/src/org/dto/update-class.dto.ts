@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsArray } from 'class-validator';
 
 export class UpdateClassDto {
     @IsString()
@@ -16,4 +16,9 @@ export class UpdateClassDto {
     @IsString()
     @IsOptional()
     teacherId?: string;
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    courses?: string[];
 }

@@ -39,6 +39,7 @@ export class AuthService {
                     password: hashedPassword,
                     role: 'ORG_ADMIN',
                     organizationId: org.id,
+                    name: registerDto.name, // Set name to Org name for ORG_ADMIN
                 },
             });
 
@@ -75,6 +76,7 @@ export class AuthService {
         const payload = {
             sub: user.id,
             email: user.email,
+            name: user.name, // Include name in JWT payload
             role: user.role,
             orgSlug: slug,
             orgId: user.organizationId,

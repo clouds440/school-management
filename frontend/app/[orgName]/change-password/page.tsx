@@ -24,10 +24,21 @@ export default function OrganizationChangePasswordPage() {
 
             <div className="flex flex-1 items-center justify-center">
                 <ChangePasswordForm
-                    title="Security Settings"
-                    description="Update your organization administrative password"
+                    title={user?.role === 'ORG_ADMIN' ? 'Admin Security' : user?.role === 'TEACHER' ? 'Teacher Security' : 'Student Security'}
+                    description={
+                        user?.role === 'ORG_ADMIN'
+                            ? `Update administrative password for ${user?.name || 'Organization'}`
+                            : user?.role === 'TEACHER'
+                                ? `Update teacher portal password for ${user?.name || 'User'}`
+                                : `Update student portal password for ${user?.name || 'User'}`
+                    }
                     onSubmit={handleSubmit}
-                    onSuccess={() => router.push(`/${user?.orgSlug}/dashboard`)}
+                    onSuccess={() => {
+                        const nameSlug = user?.role === 'STUDENT' && user?.name
+                            ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+                            : 'dashboard';
+                        router.push(`/${user?.orgSlug || ''}/${nameSlug}`);
+                    }}
                 />
             </div>
         </div>
