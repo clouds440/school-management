@@ -3,7 +3,9 @@ export interface JwtPayload {
     email: string;
     role: string;
     orgSlug: string | null;
-    orgId: string | null;
-    approved: boolean;
-    isFirstLogin: boolean;
+    designation?: string;
+    type?: string;
+    status?: string;
+    isFirstLogin?: boolean;
+
 }

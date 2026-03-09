@@ -2,16 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, CheckCircle, LayoutTemplate, Users, BookOpen, Key, Settings, GraduationCap } from 'lucide-react';
+import { Clock, CheckCircle, LayoutTemplate, Users, BookOpen, Key, Settings, GraduationCap, AlertTriangle, XCircle, RefreshCw, Mail, LayoutDashboard, ShieldAlert, ShieldCheck, ShieldOff, Search, Filter, Check, X, Building, MapPin, Calendar } from 'lucide-react';
+
+
 import Link from 'next/link';
 
 import { useAuth } from '@/context/AuthContext';
 import { BackButton } from '@/components/ui/BackButton';
+import { api, Organization } from '@/src/lib/api';
+
 
 export default function DashboardPage() {
     const { user: payload, loading, token } = useAuth();
     const router = useRouter();
     const [orgName, setOrgName] = useState('Organization');
+    const [orgData, setOrgData] = useState<Organization | null>(null);
+
+
 
     useEffect(() => {
         if (!payload || !token) return;
@@ -22,17 +29,24 @@ export default function DashboardPage() {
         })
             .then(res => res.json())
             .then(data => {
+                setOrgData(data);
                 if (data?.name) setOrgName(data.name);
                 else if (payload.orgSlug) {
+
                     // Formatting fallback
                     const fallback = payload.orgSlug.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
                     setOrgName(fallback);
                 }
             })
             .catch(() => {
-                if (payload.orgSlug) setOrgName(payload.orgSlug);
+                if (payload.orgSlug) {
+                    const fallback = payload.orgSlug.split('-').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+                    setOrgName(fallback);
+                }
             });
+
     }, [payload, token]);
+
     useEffect(() => {
         // Any organization-specific initialization can go here
     }, []);
@@ -79,7 +93,8 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex-1 space-y-8 animate-fade-in-up">
-                {!payload.approved ? (
+                {(orgData?.status || payload.status) === 'PENDING' && (
+
                     <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-white/40 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                         <div className="p-6 bg-yellow-50 rounded-full mb-6 relative">
                             <Clock className="w-20 h-20 text-yellow-500 animate-pulse" />
@@ -88,14 +103,65 @@ export default function DashboardPage() {
                         <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Awaiting Approval</h2>
                         <p className="text-gray-600 text-lg mb-8 font-medium">
                             Your organization registration is currently being verified.
-                            You'll have full dashboard access once a super admin confirms your details.
+                            You'll have full dashboard access once EduManage confirms your details.
                         </p>
                         <div className="animate-pulse-orange text-white px-10 py-5 rounded-3xl font-black text-xl border border-yellow-300 w-full shadow-2xl flex items-center justify-center gap-3">
                             <div className="w-3 h-3 bg-white rounded-full animate-ping"></div>
                             Status: Pending Verification
                         </div>
                     </div>
-                ) : (
+                )}
+
+                {(orgData?.status || payload.status) === 'REJECTED' && (
+
+                    <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-white/40 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
+                        <div className="p-6 bg-yellow-50 rounded-full mb-6 relative">
+                            <Clock className="w-20 h-20 text-yellow-500 animate-pulse" />
+                            <div className="absolute inset-0 bg-yellow-400 rounded-full animate-ping opacity-20"></div>
+                        </div>
+                        <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Application Denied</h2>
+                        <div className="bg-red-50 border border-red-100 p-6 rounded-3xl mb-8 text-left">
+                            <p className="text-xs font-bold text-red-400 uppercase tracking-widest mb-2">Rejection Reason</p>
+                            <p className="text-red-700 font-medium italic">"{orgData?.statusMessage || 'No specific reason provided.'}"</p>
+                        </div>
+                        <p className="text-gray-600 text-lg mb-8 font-medium">
+                            Please update your organization details and submit your application again for verification.
+                        </p>
+                        <Link
+                            href={`/${payload.orgSlug}/dashboard/settings`}
+                            className="inline-flex items-center gap-3 bg-red-600 hover:bg-red-700 text-white px-10 py-5 rounded-3xl font-black text-xl shadow-2xl shadow-red-600/30 transition-all hover:-translate-y-1 active:scale-95"
+                        >
+                            <RefreshCw className="w-6 h-6" />
+                            EDIT & RE-APPLY
+                        </Link>
+                    </div>
+                )}
+
+                {(orgData?.status || payload.status) === 'SUSPENDED' && (
+                    <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-orange-200 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
+                        <div className="p-6 bg-orange-50 rounded-full mb-6">
+                            <AlertTriangle className="w-20 h-20 text-orange-500" />
+                        </div>
+                        <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Account Suspended</h2>
+                        <div className="bg-orange-50 text-orange-800 p-6 rounded-2xl border border-orange-100 w-full mb-8 text-left">
+                            <h3 className="font-bold mb-2 flex items-center gap-2"><AlertTriangle className="w-5 h-5" /> Reason for Suspension:</h3>
+                            <p className="italic">{orgData?.statusMessage || 'Your organization account has been temporarily suspended. Please contact administration.'}</p>
+                        </div>
+                        <Link
+                            href="/support"
+                            className="inline-flex items-center gap-3 bg-gray-900 hover:bg-black text-white px-10 py-5 rounded-3xl font-black text-xl shadow-2xl transition-all hover:-translate-y-1 active:scale-95"
+                        >
+
+                            <Mail className="w-6 h-6" />
+                            CONTACT SUPPORT
+                        </Link>
+                    </div>
+                )}
+
+
+                {(orgData?.status || payload.status) === 'APPROVED' && (
+
+
                     <div className="space-y-12">
                         {payload.role === 'STUDENT' ? (
                             <div className="p-10 bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/50 border-l-[16px] border-l-emerald-500 flex items-center space-x-8 hover:translate-x-2 transition-transform">
@@ -134,7 +200,7 @@ export default function DashboardPage() {
                         {/* Dashboard Navigation Cards */}
                         {payload.role !== 'STUDENT' && (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                                {payload.role === 'ORG_ADMIN' && (
+                                {(payload.role === 'ORG_ADMIN' || payload.role === 'ORG_MANAGER') && (
                                     <Link href={`/${payload.orgSlug}/dashboard/teachers`} className="p-10 bg-white/70 backdrop-blur-md rounded-[2.5rem] shadow-xl border border-white/40 hover:-translate-y-4 hover:shadow-[0_40px_80px_-20px_rgba(79,70,229,0.3)] transition-all duration-500 group block relative overflow-hidden">
                                         <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
                                         <div className="flex items-center space-x-5 mb-8 relative z-10">

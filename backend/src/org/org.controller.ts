@@ -1,4 +1,6 @@
 import { Controller, Get, Patch, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { SupportTopic } from '@prisma/client';
+
 import { OrgService } from './org.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -24,40 +26,57 @@ export class OrgController {
         return this.orgService.getSettings(req.user.organizationId);
     }
 
-    @Roles('ORG_ADMIN')
+    @Roles('ORG_ADMIN', 'ORG_MANAGER')
     @Patch('settings')
     updateSettings(@Request() req: AuthenticatedRequest, @Body() updateSettingsDto: UpdateSettingsDto) {
         if (!req.user.organizationId) throw new Error('No organization');
         return this.orgService.updateSettings(req.user.organizationId, updateSettingsDto);
     }
 
+    @Post('support')
+    submitSupportTicket(
+        @Request() req: AuthenticatedRequest,
+        @Body() body: { topic: SupportTopic, message: string }
+    ) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.submitSupportTicket(req.user.organizationId, body.topic, body.message);
+    }
+
+    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Patch('reapply')
+    reapply(@Request() req: AuthenticatedRequest) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.reapply(req.user.organizationId);
+    }
+
+
     // --- Teachers ---
-    @Roles('ORG_ADMIN')
+    @Roles('ORG_ADMIN', 'ORG_MANAGER')
     @Get('teachers')
     getTeachers(@Request() req: AuthenticatedRequest) {
         if (!req.user.organizationId) throw new Error('No organization');
         return this.orgService.getTeachers(req.user.organizationId);
     }
 
-    @Roles('ORG_ADMIN')
+    @Roles('ORG_ADMIN', 'ORG_MANAGER')
     @Post('teachers')
     createTeacher(@Request() req: AuthenticatedRequest, @Body() createTeacherDto: CreateTeacherDto) {
         if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.createTeacher(req.user.organizationId, createTeacherDto);
+        return this.orgService.createTeacher(req.user.organizationId, createTeacherDto, req.user);
     }
 
-    @Roles('ORG_ADMIN')
+    @Roles('ORG_ADMIN', 'ORG_MANAGER')
     @Patch('teachers/:id')
     updateTeacher(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateTeacherDto: UpdateTeacherDto) {
         if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.updateTeacher(req.user.organizationId, id, updateTeacherDto);
+        return this.orgService.updateTeacher(req.user.organizationId, id, updateTeacherDto, req.user);
     }
 
-    @Roles('ORG_ADMIN')
+    @Roles('ORG_ADMIN', 'ORG_MANAGER')
     @Delete('teachers/:id')
     deleteTeacher(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.deleteTeacher(req.user.organizationId, id);
+        return this.orgService.deleteTeacher(req.user.organizationId, id, req.user);
     }
 
     // --- Classes ---
@@ -68,21 +87,21 @@ export class OrgController {
         return this.orgService.getClasses(req.user.organizationId, req.user);
     }
 
-    @Roles('ORG_ADMIN')
+    @Roles('ORG_ADMIN', 'ORG_MANAGER')
     @Post('classes')
     createClass(@Request() req: AuthenticatedRequest, @Body() createClassDto: CreateClassDto) {
         if (!req.user.organizationId) throw new Error('No organization');
         return this.orgService.createClass(req.user.organizationId, createClassDto, req.user);
     }
 
-    @Roles('ORG_ADMIN', 'TEACHER')
+    @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
     @Patch('classes/:id')
     updateClass(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateClassDto: UpdateClassDto) {
         if (!req.user.organizationId) throw new Error('No organization');
         return this.orgService.updateClass(req.user.organizationId, id, updateClassDto, req.user);
     }
 
-    @Roles('ORG_ADMIN')
+    @Roles('ORG_ADMIN', 'ORG_MANAGER')
     @Delete('classes/:id')
     deleteClass(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         if (!req.user.organizationId) throw new Error('No organization');
@@ -96,21 +115,21 @@ export class OrgController {
         return this.orgService.getStudents(req.user.organizationId);
     }
 
-    @Roles('ORG_ADMIN', 'TEACHER')
+    @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
     @Post('students')
     createStudent(@Request() req: AuthenticatedRequest, @Body() createStudentDto: CreateStudentDto) {
         if (!req.user.organizationId) throw new Error('No organization');
         return this.orgService.createStudent(req.user.organizationId, createStudentDto, req.user);
     }
 
-    @Roles('ORG_ADMIN', 'TEACHER')
+    @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
     @Patch('students/:id')
     updateStudent(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto) {
         if (!req.user.organizationId) throw new Error('No organization');
         return this.orgService.updateStudent(req.user.organizationId, id, updateStudentDto, req.user);
     }
 
-    @Roles('ORG_ADMIN', 'TEACHER')
+    @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
     @Delete('students/:id')
     deleteStudent(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         if (!req.user.organizationId) throw new Error('No organization');

@@ -37,7 +37,7 @@ export default function CreateClassPage() {
             return;
         }
 
-        if (user.role === 'ORG_ADMIN') {
+        if (user.role === 'ORG_ADMIN' || user.role === 'ORG_MANAGER') {
             fetch('http://localhost:3000/org/teachers', {
                 headers: { Authorization: `Bearer ${token}` }
             })

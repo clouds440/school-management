@@ -73,10 +73,14 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        return this.generateToken(user);
+        const rememberMe = loginDto.rememberMe === true;
+        return this.generateToken(user, rememberMe);
     }
 
-    async generateToken(user: TokenUser) {
+
+
+
+    async generateToken(user: TokenUser, rememberMe: boolean = false) {
         const slug = user.organization?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || null;
         const payload = {
             sub: user.id,
@@ -86,15 +90,19 @@ export class AuthService {
             designation: user.teacherProfile?.designation || null, // Added for teacher personalization
             orgSlug: slug,
             orgId: user.organizationId,
-            approved: user.organization?.approved ?? true, // SuperAdmins don't need approval
+            status: user.organization ? user.organization.status : 'APPROVED', // Keep SUPER_ADMIN as APPROVED
             isFirstLogin: user.isFirstLogin
         };
 
+
         return {
-            access_token: await this.jwtService.signAsync(payload),
+            access_token: await this.jwtService.signAsync(payload, {
+                expiresIn: rememberMe ? '30d' : '1d'
+            }),
             role: user.role
         };
     }
+
 
     async changePassword(userId: string, oldPass: string, newPass: string) {
         const user = await prisma.user.findUnique({ where: { id: userId }, include: { organization: true } });

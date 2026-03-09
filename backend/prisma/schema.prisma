@@ -15,10 +15,28 @@ datasource db {
 
 enum Role {
   SUPER_ADMIN
+  PLATFORM_ADMIN
   ORG_ADMIN
+  ORG_MANAGER
   TEACHER
   STUDENT
 }
+
+enum OrgStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum SupportTopic {
+  ACCOUNT_STATUS
+  GENERAL_SUPPORT
+  BUG_ISSUE
+  SUGGESTION
+}
+
+
 
 model Organization {
   id           String    @id @default(uuid())
@@ -27,14 +45,29 @@ model Organization {
   type         String
   contactEmail String?
   phone        String?
-  approved     Boolean   @default(false)
+  status       OrgStatus @default(PENDING)
+  statusMessage String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
   users        User[]
   teachers     Teacher[]
   students     Student[]
   classes      Class[]
+  supportTickets SupportTicket[]
 }
+
+model SupportTicket {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  topic          SupportTopic
+  message        String
+  isResolved     Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
 
 model User {
   id             String        @id @default(uuid())

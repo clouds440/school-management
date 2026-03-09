@@ -36,5 +36,5 @@ export class CreateTeacherDto {
 
     @IsBoolean()
     @IsOptional()
-    isAdmin?: boolean;
+    isManager?: boolean;
 }

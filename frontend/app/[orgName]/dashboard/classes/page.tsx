@@ -41,7 +41,7 @@ export default function ClassesPage() {
             ];
 
             // Only admins should fetch the full teacher list
-            if (user?.role === 'ORG_ADMIN') {
+            if (user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER') {
                 fetchPromises.push(
                     fetch('http://localhost:3000/org/teachers', {
                         headers: { Authorization: `Bearer ${token}` }
@@ -53,7 +53,7 @@ export default function ClassesPage() {
             const classesData = await results[0].json();
             setClasses(Array.isArray(classesData) ? classesData : []);
 
-            if (user?.role === 'ORG_ADMIN' && results[1]) {
+            if ((user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER') && results[1]) {
                 const teachersData = await results[1].json();
                 setTeachers(Array.isArray(teachersData) ? teachersData : []);
             }
@@ -181,7 +181,7 @@ export default function ClassesPage() {
         {
             header: 'Actions',
             accessor: (row: Class) => {
-                const isAdmin = user?.role === 'ORG_ADMIN';
+                const isAdmin = user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER';
                 const isAssignedTeacher = user?.role === 'TEACHER' && row.teacher && (row.teacher.userId === user.sub || row.teacher.userId === user.id);
 
                 return (
@@ -239,7 +239,7 @@ export default function ClassesPage() {
                             <p className="text-indigo-100 font-bold opacity-90 mt-1">CURRICULUM & COURSE MANAGEMENT</p>
                         </div>
                     </div>
-                    {user?.role === 'ORG_ADMIN' && (
+                    {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER') && (
                         <Link
                             href={`/${orgSlug}/dashboard/classes/create`}
                             className="flex items-center gap-3 bg-white text-indigo-600 px-8 py-4 rounded-2xl font-bold transition-all shadow-2xl hover:shadow-indigo-500/40 hover:-translate-y-1 active:scale-95"
@@ -314,7 +314,7 @@ export default function ClassesPage() {
                             placeholder="E.g., 10th Grade"
                         />
                     </div>
-                    {user?.role === 'ORG_ADMIN' && (
+                    {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER') && (
                         <div className="space-y-2">
                             <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Assigned Teacher</label>
                             <div className="relative group">

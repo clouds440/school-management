@@ -34,9 +34,11 @@ export default function RegisterPage() {
       await api.auth.register(payload);
       showToast('Registration successful! Please login.', 'success');
       router.push('/login');
-    } catch (err: any) {
-      showToast(err.message || 'Registration failed', 'error');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
+      showToast(errorMessage, 'error');
     } finally {
+
       setLoading(false);
     }
   };

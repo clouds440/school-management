@@ -38,13 +38,13 @@ export default function TeachersPage() {
     const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
 
     useEffect(() => {
-        if (user && user.role !== 'ORG_ADMIN') {
+        if (user && user.role !== 'ORG_ADMIN' && user.role !== 'ORG_MANAGER') {
             router.replace(`/${user.orgSlug || pathname.split('/')[1]}/dashboard`);
         }
     }, [user, router, pathname]);
 
     const fetchTeachers = useCallback(async () => {
-        if (!token || user?.role !== 'ORG_ADMIN') return;
+        if (!token || (user?.role !== 'ORG_ADMIN' && user?.role !== 'ORG_MANAGER')) return;
         try {
             const res = await fetch('http://localhost:3000/org/teachers', {
                 headers: { Authorization: `Bearer ${token}` }

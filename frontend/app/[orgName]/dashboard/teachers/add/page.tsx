@@ -17,7 +17,7 @@ export default function AddTeacherPage() {
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
     useEffect(() => {
-        if (user && user.role !== 'ORG_ADMIN') {
+        if (user && user.role !== 'ORG_ADMIN' && user.role !== 'ORG_MANAGER') {
             router.replace(`/${orgSlug}/dashboard`);
         }
     }, [user, router, orgSlug]);
@@ -33,7 +33,7 @@ export default function AddTeacherPage() {
         designation: '',
         subject: '',
         salary: '',
-        isAdmin: false
+        isManager: false
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +64,7 @@ export default function AddTeacherPage() {
                     designation: formData.designation || undefined,
                     subject: formData.subject || undefined,
                     salary: formData.salary ? Number(formData.salary) : undefined,
-                    isAdmin: formData.isAdmin
+                    isManager: formData.isManager
                 })
             });
 
@@ -243,20 +243,21 @@ export default function AddTeacherPage() {
                         <div className="md:col-span-2 mt-4 p-8 bg-indigo-50/50 border border-indigo-100/50 rounded-[2rem] flex items-start space-x-6">
                             <div className="flex items-center h-8">
                                 <input
-                                    id="isAdmin"
-                                    name="isAdmin"
+                                    id="isManager"
+                                    name="isManager"
                                     type="checkbox"
-                                    checked={formData.isAdmin}
+                                    checked={formData.isManager}
                                     onChange={handleChange}
-                                    className="w-6 h-6 text-indigo-600 border-gray-300 rounded-lg focus:ring-indigo-500 cursor-pointer"
+                                    disabled={user?.role === 'ORG_MANAGER'}
+                                    className="w-6 h-6 text-indigo-600 border-gray-300 rounded-lg focus:ring-indigo-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
                             <div className="flex flex-col">
-                                <label htmlFor="isAdmin" className="text-lg font-bold text-gray-900 cursor-pointer">
-                                    Make Co-Admin
+                                <label htmlFor="isManager" className={`text-lg font-bold text-gray-900 ${user?.role === 'ORG_MANAGER' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                                    Make Org-Manager
                                 </label>
-                                <p className="text-gray-500 font-medium mt-1">
-                                    Co-Admins have full access to organization settings and can manage other teachers.
+                                <p className={`text-gray-500 font-medium mt-1 ${user?.role === 'ORG_MANAGER' ? 'opacity-50' : ''}`}>
+                                    Org-Managers have full access to organization settings and can manage other teachers.
                                 </p>
                             </div>
                         </div>

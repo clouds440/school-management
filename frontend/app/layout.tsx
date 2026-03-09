@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-linear-to-br from-indigo-50 via-white to-purple-50 overflow-x-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col bg-linear-to-br from-indigo-50 via-white to-purple-50 overflow-hidden`}
       >
         <Providers>
           <div className="fixed inset-0 z-[-1] pointer-events-none">
@@ -39,10 +39,12 @@ export default function RootLayout({
           </div>
 
           <Navbar />
-          <main className="flex-grow flex flex-col relative z-10 w-full">
-            {children}
+          <main className="flex-grow overflow-y-auto relative z-10 w-full flex flex-col">
+            <div className="flex-grow">
+              {children}
+            </div>
+            <Footer />
           </main>
-          <Footer />
         </Providers>
       </body>
     </html>

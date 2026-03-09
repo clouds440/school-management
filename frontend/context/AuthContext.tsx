@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useToast } from '@/context/ToastContext';
+
 
 export interface JwtPayload {
     sub: string;
@@ -9,11 +11,12 @@ export interface JwtPayload {
     email: string;
     name?: string;
     orgSlug?: string;
-    role?: 'SUPER_ADMIN' | 'ORG_ADMIN' | 'TEACHER' | 'STUDENT';
+    role?: 'SUPER_ADMIN' | 'PLATFORM_ADMIN' | 'ORG_ADMIN' | 'ORG_MANAGER' | 'TEACHER' | 'STUDENT';
     designation?: string;
     type?: string;
-    approved?: boolean;
+    status?: string;
     isFirstLogin?: boolean;
+
     iat: number;
     exp: number;
 }
@@ -34,6 +37,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
     const pathname = usePathname();
+    const { showToast } = useToast();
+
 
     useEffect(() => {
         // Initialize token from storage
@@ -51,20 +56,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isAdminPath = pathname?.startsWith('/admin');
             const isGuestPath = ['/login', '/register'].includes(pathname || '');
             const isHomePage = pathname === '/';
+            const isSupportPage = pathname === '/support';
 
-            // A user path is anything that's not guest, not admin, and not home
-            const isUserPath = pathname && !isAdminPath && !isGuestPath && !isHomePage;
+            // A user path is anything that's not guest, not admin, and not home (and not support)
+            const isUserPath = pathname && !isAdminPath && !isGuestPath && !isHomePage && !isSupportPage;
+
 
             if (user) {
                 // If it's first login and admin, always force change password
-                if (user.role === 'SUPER_ADMIN' && user.isFirstLogin && pathname !== '/admin/change-password') {
+                if ((user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN') && user.isFirstLogin && pathname !== '/admin/change-password') {
                     router.replace('/admin/change-password');
                     return;
                 }
 
                 // Redirect away from guest paths (login/register/home)
                 if (isGuestPath) {
-                    if (user.role === 'SUPER_ADMIN') {
+                    if (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN') {
                         router.replace('/admin/dashboard');
                     } else if (user.orgSlug) {
                         if (user.role === 'STUDENT' && user.name) {
@@ -78,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 // Cross-role protection
-                if (isAdminPath && user.role !== 'SUPER_ADMIN') {
+                if (isAdminPath && user.role !== 'SUPER_ADMIN' && user.role !== 'PLATFORM_ADMIN') {
                     if (user.orgSlug) {
                         router.replace(`/${user.orgSlug}/dashboard`);
                     } else {
@@ -87,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     return;
                 }
 
-                if (isUserPath && user.role === 'SUPER_ADMIN') {
+                if (isUserPath && (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN')) {
                     router.replace('/admin/dashboard');
                     return;
                 }
@@ -112,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 return;
                             }
                         }
-                    } else if (user.role === 'ORG_ADMIN' || user.role === 'TEACHER') {
+                    } else if (user.role === 'ORG_ADMIN' || user.role === 'ORG_MANAGER' || user.role === 'TEACHER') {
                         if (firstSegment !== user.orgSlug) {
                             router.replace(`/${user.orgSlug}/dashboard`);
                             return;
@@ -130,14 +137,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
             } else {
                 // Not logged in
-                if (isAdminPath || isUserPath) {
+                if (isAdminPath || isUserPath || isSupportPage) {
                     router.replace('/login');
                 }
             }
+
         }
     }, [user, loading, pathname, router]);
 
     const processToken = (t: string) => {
+
         try {
             const base64Url = t.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -151,16 +160,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // Check expiration
             if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-                throw new Error('Token expired');
+                showToast('Your session has expired. Please log in again.', 'info');
+                logout();
+                return;
             }
+
 
             setToken(t);
             setUser(decoded);
             localStorage.setItem('token', t);
         } catch (e) {
-            console.error('Invalid token', e);
+            console.warn('Invalid or expired token sessions cleaned up.');
             logout();
         } finally {
+
             setLoading(false);
         }
     };

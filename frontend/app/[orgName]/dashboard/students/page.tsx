@@ -222,7 +222,7 @@ export default function StudentsPage() {
                     </div>
                 </div>
 
-                {(user?.role === 'ORG_ADMIN' || user?.role === 'TEACHER') && (
+                {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') && (
                     <button
                         onClick={() => router.push(`/${orgSlug}/dashboard/students/add`)}
                         className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-6 py-3 rounded-xl font-bold transition-all border border-white/30 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
@@ -269,13 +269,13 @@ export default function StudentsPage() {
                                     <th className="px-6 py-4">Enrolled Classes</th>
                                     <th className="px-6 py-4">Fee / Age</th>
                                     <th className="px-6 py-4">Last Updated</th>
-                                    {(user?.role === 'ORG_ADMIN' || user?.role === 'TEACHER') && <th className="px-6 py-4 text-right">Actions</th>}
+                                    {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') && <th className="px-6 py-4 text-right">Actions</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {formattedData.length === 0 ? (
                                     <tr>
-                                        <td colSpan={(user?.role === 'ORG_ADMIN' || user?.role === 'TEACHER') ? 8 : 7} className="px-6 py-8 text-center text-gray-500">
+                                        <td colSpan={(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') ? 8 : 7} className="px-6 py-8 text-center text-gray-500">
                                             No students found matching your search.
                                         </td>
                                     </tr>
@@ -294,7 +294,7 @@ export default function StudentsPage() {
                                             <td className="px-6 py-4 max-w-[200px] truncate" title={student.classInfo}>{student.classInfo}</td>
                                             <td className="px-6 py-4 whitespace-nowrap">{student.feeAge}</td>
                                             <td className="px-6 py-4 whitespace-nowrap">{student.lastUpdated}</td>
-                                            {(user?.role === 'ORG_ADMIN' || user?.role === 'TEACHER') && (
+                                            {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') && (
                                                 <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
                                                     <button
                                                         onClick={() => handleEditClick(student.id)}

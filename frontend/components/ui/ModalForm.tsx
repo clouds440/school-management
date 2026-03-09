@@ -8,7 +8,10 @@ interface ModalFormProps {
     onSubmit: (e: React.FormEvent) => void;
     submitText?: string;
     isSubmitting?: boolean;
+    variant?: 'info' | 'danger' | 'warning' | 'success';
+    showCancel?: boolean;
 }
+
 
 export function ModalForm({
     isOpen,
@@ -18,7 +21,10 @@ export function ModalForm({
     onSubmit,
     submitText = 'Save',
     isSubmitting = false,
+    variant = 'info',
+    showCancel = true,
 }: ModalFormProps) {
+
     if (!isOpen) return null;
 
     return (
@@ -42,19 +48,26 @@ export function ModalForm({
                     </div>
 
                     <div className="mt-10 pt-8 border-t border-gray-100 flex justify-end gap-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-8 py-3.5 text-sm font-bold text-gray-600 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all hover:scale-105 active:scale-95"
-                            disabled={isSubmitting}
-                        >
-                            Cancel
-                        </button>
+                        {showCancel && (
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-8 py-3.5 text-sm font-bold text-gray-600 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all hover:scale-105 active:scale-95"
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </button>
+                        )}
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-10 py-3.5 text-sm font-bold text-white bg-indigo-600 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-500/30 hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center gap-3"
+                            className={`px-10 py-3.5 text-sm font-bold text-white rounded-2xl transition-all shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center gap-3 ${variant === 'danger' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' :
+                                    variant === 'warning' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/30' :
+                                        variant === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/30' :
+                                            'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/30'
+                                }`}
                         >
+
                             {isSubmitting && (
                                 <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

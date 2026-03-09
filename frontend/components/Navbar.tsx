@@ -14,7 +14,7 @@ export default function Navbar() {
     };
 
     return (
-        <nav className="relative z-50 flex items-center justify-between px-6 py-4 md:px-10 backdrop-blur-xl bg-white/80 border-b border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.03)] w-full transition-all duration-300">
+        <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 md:px-10 backdrop-blur-xl bg-white/80 border-b border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-300">
             <Link href="/" className="flex items-center space-x-3 group outline-none">
                 <div className="bg-indigo-50 p-2.5 rounded-2xl group-hover:bg-indigo-100 group-hover:scale-105 group-focus-visible:ring-2 ring-indigo-500 transition-all duration-300">
                     <School className="w-7 h-7 text-indigo-600" />
@@ -29,7 +29,7 @@ export default function Navbar() {
                         {!pathname.endsWith('/dashboard') && (
                             <Link
                                 href={
-                                    user.role === 'SUPER_ADMIN'
+                                    user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN'
                                         ? '/admin/dashboard'
                                         : user.role === 'STUDENT' && user.name
                                             ? `/${user.orgSlug}/${user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`

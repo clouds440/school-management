@@ -45,9 +45,11 @@ export default function ChangePasswordForm({
             if (onSuccess) {
                 onSuccess();
             }
-        } catch (err: any) {
-            showToast(err.message || 'Failed to change password', 'error');
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to change password';
+            showToast(errorMessage, 'error');
         } finally {
+
             setLoading(false);
         }
     };

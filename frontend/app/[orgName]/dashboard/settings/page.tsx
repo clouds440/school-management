@@ -2,15 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School } from 'lucide-react';
+import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School, RefreshCw, ShieldOff } from 'lucide-react';
+
 import { BackButton } from '@/components/ui/BackButton';
+import { api } from '@/src/lib/api';
+import { useToast } from '@/context/ToastContext';
+
 
 export default function SettingsPage() {
     const { token } = useAuth();
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [successMsg, setSuccessMsg] = useState('');
-    const [errorMsg, setErrorMsg] = useState('');
+    const [reapplying, setReapplying] = useState(false);
+    const [orgData, setOrgData] = useState<any>(null);
+
 
     const [formData, setFormData] = useState({
         name: '',
@@ -27,6 +33,7 @@ export default function SettingsPage() {
         })
             .then(res => res.json())
             .then(data => {
+                setOrgData(data);
                 setFormData({
                     name: data.name || '',
                     location: data.location || '',
@@ -35,11 +42,13 @@ export default function SettingsPage() {
                 });
                 setLoading(false);
             })
+
             .catch(err => {
                 console.error('Failed to load settings', err);
-                setErrorMsg('Failed to load settings');
+                showToast('Failed to load settings', 'error');
                 setLoading(false);
             });
+
     }, [token]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,10 +58,8 @@ export default function SettingsPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
-        setSuccessMsg('');
-        setErrorMsg('');
-
         try {
+
             const response = await fetch('http://localhost:3000/org/settings', {
                 method: 'PATCH',
                 headers: {
@@ -64,14 +71,33 @@ export default function SettingsPage() {
 
             if (!response.ok) throw new Error('Failed to update settings');
 
-            setSuccessMsg('Settings updated successfully!');
-            setTimeout(() => setSuccessMsg(''), 3000);
+            showToast('Settings updated successfully!', 'success');
         } catch (error) {
-            setErrorMsg('Failed to update settings. Please try again.');
+            showToast('Failed to update settings. Please try again.', 'error');
         } finally {
             setSaving(false);
         }
     };
+
+    const handleReapply = async () => {
+        if (!token) return;
+        setReapplying(true);
+        try {
+            await api.org.reapply(token);
+            showToast('Your re-application has been submitted!', 'success');
+            // Refresh data
+            const res = await fetch('http://localhost:3000/org/settings', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setOrgData(data);
+        } catch (error) {
+            showToast('Failed to re-apply', 'error');
+        } finally {
+            setReapplying(false);
+        }
+    };
+
 
     if (loading) {
         return (
@@ -97,18 +123,34 @@ export default function SettingsPage() {
             </div>
 
             <div className="bg-white/70 backdrop-blur-md rounded-[2.5rem] shadow-2xl border border-white/40 p-10 mb-10">
-                {successMsg && (
-                    <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded flex items-center gap-3 text-green-700">
-                        <CheckCircle className="w-5 h-5" />
-                        <p>{successMsg}</p>
+                {orgData?.status === 'REJECTED' && (
+                    <div className="mb-8 p-6 bg-red-50 border border-red-100 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-red-100 rounded-2xl text-red-600">
+                                <ShieldOff className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h4 className="text-lg font-black text-gray-900 leading-tight">Your application was rejected</h4>
+                                <p className="text-sm text-gray-600 font-medium mt-1">
+                                    Please correct the details below and re-submit for review.
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleReapply}
+                            disabled={reapplying}
+                            className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-red-600/20 active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                        >
+                            {reapplying ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                            ) : (
+                                <RefreshCw className="w-4 h-4" />
+                            )}
+                            RE-SUBMIT FOR REVIEW
+                        </button>
                     </div>
                 )}
 
-                {errorMsg && (
-                    <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded text-red-700">
-                        <p>{errorMsg}</p>
-                    </div>
-                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

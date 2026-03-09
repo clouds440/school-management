@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException, ForbiddenException } from '@nestjs/common';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException, ForbiddenException, ConflictException } from '@nestjs/common';
+import { PrismaClient, Prisma, SupportTopic } from '@prisma/client';
+
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
@@ -24,7 +25,10 @@ export class OrgService {
                 type: true,
                 contactEmail: true,
                 phone: true,
+                status: true,
+                statusMessage: true,
             },
+
         });
         if (!org) throw new NotFoundException('Organization not found');
         return org;
@@ -41,7 +45,33 @@ export class OrgService {
                 type: true,
                 contactEmail: true,
                 phone: true,
+                status: true,
+                statusMessage: true,
             },
+
+        });
+    }
+
+    async submitSupportTicket(orgId: string, topic: SupportTopic, message: string) {
+        // Check for existing unresolved tickets
+        const existingTicket = await this.prisma.supportTicket.findFirst({
+            where: {
+                organizationId: orgId,
+                topic,
+                isResolved: false
+            }
+        });
+
+        if (existingTicket) {
+            throw new ConflictException(`You already have a pending ticket for ${topic.replace('_', ' ').toLowerCase()}. Please wait for it to be resolved.`);
+        }
+
+        return this.prisma.supportTicket.create({
+            data: {
+                organizationId: orgId,
+                topic,
+                message
+            }
         });
     }
 
@@ -62,7 +92,7 @@ export class OrgService {
         });
     }
 
-    async createTeacher(orgId: string, data: CreateTeacherDto) {
+    async createTeacher(orgId: string, data: CreateTeacherDto, userContext: { id: string, role: string }) {
         // 1. Check if user exists
         const existingUser = await this.prisma.user.findUnique({
             where: { email: data.email },
@@ -72,7 +102,12 @@ export class OrgService {
             throw new BadRequestException('User with this email already exists');
         }
 
+        if (data.isManager && userContext.role === 'ORG_MANAGER') {
+            throw new ForbiddenException('Only Organization Admins can create Managers');
+        }
+
         const hashedPassword = await bcrypt.hash(data.password, 10);
+
 
         // 2. Create User and Teacher in transaction
         try {
@@ -81,11 +116,12 @@ export class OrgService {
                     data: {
                         email: data.email,
                         password: hashedPassword,
-                        role: data.isAdmin ? 'ORG_ADMIN' : 'TEACHER',
+                        role: data.isManager ? 'ORG_MANAGER' : 'TEACHER',
                         organizationId: orgId,
                         name: data.name,
                         phone: data.phone,
                     },
+
                 });
 
                 const teacher = await prisma.teacher.create({
@@ -113,13 +149,21 @@ export class OrgService {
         }
     }
 
-    async updateTeacher(orgId: string, id: string, data: UpdateTeacherDto) {
+    async updateTeacher(orgId: string, id: string, data: UpdateTeacherDto, userContext: { id: string, role: string }) {
         // We only allow updating the teacher profile for now
         const teacher = await this.prisma.teacher.findFirst({
-            where: { id, organizationId: orgId }
+            where: { id, organizationId: orgId },
+            include: { user: true }
         });
 
         if (!teacher) throw new NotFoundException('Teacher not found');
+
+        if (userContext.role === 'ORG_MANAGER') {
+            if (teacher.user.role === 'ORG_ADMIN' || teacher.user.role === 'ORG_MANAGER') {
+                throw new ForbiddenException('Managers cannot modify Admin or Manager profiles');
+            }
+        }
+
 
         return this.prisma.$transaction(async (tx) => {
             // 1. Update User if name/phone provided
@@ -151,17 +195,25 @@ export class OrgService {
         });
     }
 
-    async deleteTeacher(orgId: string, id: string) {
+    async deleteTeacher(orgId: string, id: string, userContext: { id: string, role: string }) {
         const teacher = await this.prisma.teacher.findFirst({
             where: { id, organizationId: orgId },
+            include: { user: true }
         });
 
         if (!teacher) throw new NotFoundException('Teacher not found');
+
+        if (userContext.role === 'ORG_MANAGER') {
+            if (teacher.user.role === 'ORG_ADMIN' || teacher.user.role === 'ORG_MANAGER') {
+                throw new ForbiddenException('Managers cannot delete Admin or Manager profiles');
+            }
+        }
 
         // Deleting the user will cascade and delete the teacher record because of onDelete: Cascade
         await this.prisma.user.delete({
             where: { id: teacher.userId },
         });
+
 
         return { message: 'Teacher deleted successfully' };
     }
@@ -368,4 +420,24 @@ export class OrgService {
 
         return { message: 'Student deleted successfully' };
     }
+
+    async reapply(orgId: string) {
+        const org = await this.prisma.organization.findUnique({
+            where: { id: orgId },
+        });
+
+        if (!org) throw new NotFoundException('Organization not found');
+        if (org.status !== 'REJECTED') {
+            throw new BadRequestException('Only rejected organizations can re-apply');
+        }
+
+        return this.prisma.organization.update({
+            where: { id: orgId },
+            data: {
+                status: 'PENDING',
+                statusMessage: null,
+            },
+        });
+    }
 }
+

@@ -2,7 +2,7 @@ export interface User {
     id: string;
     name: string;
     email: string;
-    role: 'ADMIN' | 'ORG_ADMIN' | 'TEACHER' | 'STUDENT';
+    role: 'SUPER_ADMIN' | 'PLATFORM_ADMIN' | 'ORG_ADMIN' | 'ORG_MANAGER' | 'TEACHER' | 'STUDENT';
     phone?: string;
     orgSlug?: string;
 }

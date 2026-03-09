@@ -18,7 +18,7 @@ export default function AddStudentPage() {
 
     // Redirect if not authorized
     useEffect(() => {
-        if (user && user.role !== 'ORG_ADMIN' && user.role !== 'TEACHER') {
+        if (user && user.role !== 'ORG_ADMIN' && user.role !== 'ORG_MANAGER' && user.role !== 'TEACHER') {
             router.push(`/${orgSlug}/dashboard`);
         }
     }, [user, orgSlug, router]);
