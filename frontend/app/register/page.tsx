@@ -3,9 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, OrganizationType } from '@/src/lib/api';
-import { School, MapPin, Building, Mail, Lock, UserPlus, AlertCircle, Phone } from 'lucide-react';
+import { School, MapPin, Building, Mail, Lock, UserPlus, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/context/ToastContext';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { Label } from '@/components/ui/Label';
+import { Button } from '@/components/ui/Button';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -38,7 +42,6 @@ export default function RegisterPage() {
       const errorMessage = err instanceof Error ? err.message : 'Registration failed';
       showToast(errorMessage, 'error');
     } finally {
-
       setLoading(false);
     }
   };
@@ -61,12 +64,12 @@ export default function RegisterPage() {
           <div className="mx-auto bg-indigo-500/10 w-20 h-20 rounded-3xl flex items-center justify-center mb-8 shadow-inner border border-white/20">
             <UserPlus className="w-10 h-10 text-indigo-100 drop-shadow-sm" />
           </div>
-          <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-4">
-            Register School
+          <h2 className="mt-2 text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700 tracking-tight">
+            Register Organization
           </h2>
-          <p className="text-gray-600 font-medium text-lg mb-2">
+          <p className="mt-3 text-sm text-gray-500">
             Already have an account?{' '}
-            <Link href="/login" className="font-bold text-indigo-600 hover:text-indigo-500 transition-colors underline decoration-2 underline-offset-4">
+            <Link href="/login" className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors">
               Sign in here
             </Link>
           </p>
@@ -75,194 +78,148 @@ export default function RegisterPage() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-5">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5 pl-1">
-                School Name
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
-                  <School className="h-5 w-5" />
-                </div>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  className="block w-full rounded-xl border-gray-200 bg-gray-50/50 pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm"
-                  placeholder="Greenwood High School"
-                  value={formData.name}
-                  onChange={handleChange}
-                />
-              </div>
+              <Label htmlFor="name">Organization Name</Label>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                required
+                icon={School}
+                placeholder="Greenwood High School"
+                value={formData.name}
+                onChange={handleChange}
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1.5 pl-1">
-                  Institution Type
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
-                    <Building className="h-5 w-5" />
-                  </div>
-                  <select
-                    id="type"
-                    name="type"
-                    required
-                    className="block w-full rounded-xl border-gray-200 bg-gray-50/50 pl-11 pr-10 py-3 text-gray-900 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm appearance-none"
-                    value={formData.type}
-                    onChange={handleChange}
-                  >
-                    <option value={OrganizationType.HIGH_SCHOOL}>High School</option>
-                    <option value={OrganizationType.UNIVERSITY}>University</option>
-                    <option value={OrganizationType.PRIMARY_SCHOOL}>Primary School</option>
-                    <option value={OrganizationType.OTHER}>Other</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
+                <Label htmlFor="type">Organization Type</Label>
+                <Select
+                  id="type"
+                  name="type"
+                  required
+                  icon={Building}
+                  value={formData.type}
+                  onChange={handleChange}
+                >
+                  <option value={OrganizationType.HIGH_SCHOOL}>High School</option>
+                  <option value={OrganizationType.UNIVERSITY}>University</option>
+                  <option value={OrganizationType.PRIMARY_SCHOOL}>Primary School</option>
+                  <option value={OrganizationType.OTHER}>Other</option>
+                </Select>
               </div>
 
               <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1.5 pl-1">
-                  Location
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
-                    <MapPin className="h-5 w-5" />
-                  </div>
-                  <input
-                    id="location"
-                    name="location"
-                    type="text"
-                    required
-                    className="block w-full rounded-xl border-gray-200 bg-gray-50/50 pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm"
-                    placeholder="New York, NY"
-                    value={formData.location}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="email-address" className="block text-sm font-semibold text-gray-700 mb-1.5 pl-1">
-                Admin Login Email
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
-                  <Mail className="h-5 w-5" />
-                </div>
-                <input
-                  id="email-address"
-                  name="email"
-                  type="email"
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  name="location"
+                  type="text"
                   required
-                  className="block w-full rounded-xl border-gray-200 bg-gray-50/50 pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm"
-                  placeholder="admin@school.edu"
-                  value={formData.email}
+                  icon={MapPin}
+                  placeholder="New York, NY"
+                  value={formData.location}
                   onChange={handleChange}
                 />
               </div>
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5 pl-1 pr-1">
-                <label className="block text-sm font-semibold text-gray-700">
-                  School Contact Email
-                </label>
-                <label className="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={sameAsLoginEmail}
-                    onChange={(e) => setSameAsLoginEmail(e.target.checked)}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span>Same as Login</span>
+              <Label htmlFor="email-address">Admin Login Email</Label>
+              <Input
+                id="email-address"
+                name="email"
+                type="email"
+                required
+                icon={Mail}
+                placeholder="admin@school.edu"
+                value={formData.email}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2 pl-1 pr-1">
+                <Label className="mb-0">
+                  Organization Contact Email
+                </Label>
+                <label className="flex items-center group cursor-pointer select-none">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={sameAsLoginEmail}
+                      onChange={(e) => setSameAsLoginEmail(e.target.checked)}
+                      className="peer sr-only"
+                    />
+                    <div className="w-5 h-5 bg-gray-100 border-2 border-gray-200 rounded-lg peer-checked:bg-indigo-600 peer-checked:border-indigo-600 transition-all duration-200 group-hover:border-indigo-300 shadow-sm flex items-center justify-center">
+                      <svg
+                        className={`w-3.5 h-3.5 text-white transition-opacity duration-200 ${sameAsLoginEmail ? 'opacity-100' : 'opacity-0'}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth="3.5"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <span className="ml-3 text-sm font-medium text-gray-600 group-hover:text-gray-900 transition-colors">
+                    Same as login
+                  </span>
                 </label>
               </div>
               {!sameAsLoginEmail && (
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
-                    <Mail className="h-5 w-5" />
-                  </div>
-                  <input
-                    id="contactEmail"
-                    name="contactEmail"
-                    type="email"
-                    required={!sameAsLoginEmail}
-                    className="block w-full rounded-xl border-gray-200 bg-gray-50/50 pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm"
-                    placeholder="contact@school.edu"
-                    value={formData.contactEmail}
-                    onChange={handleChange}
-                  />
-                </div>
+                <Input
+                  id="contactEmail"
+                  name="contactEmail"
+                  type="email"
+                  required={!sameAsLoginEmail}
+                  icon={Mail}
+                  placeholder="contact@school.edu"
+                  value={formData.contactEmail}
+                  onChange={handleChange}
+                />
               )}
             </div>
 
             <div>
-              <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-1.5 pl-1">
-                School Phone Number
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
-                  <Phone className="h-5 w-5" />
-                </div>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="text"
-                  required
-                  className="block w-full rounded-xl border-gray-200 bg-gray-50/50 pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm"
-                  placeholder="+1 (555) 000-0000"
-                  value={formData.phone}
-                  onChange={handleChange}
-                />
-              </div>
+              <Label htmlFor="phone">Organization Phone Number</Label>
+              <Input
+                id="phone"
+                name="phone"
+                type="text"
+                required
+                icon={Phone}
+                placeholder="+1 (555) 000-0000"
+                value={formData.phone}
+                onChange={handleChange}
+              />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5 pl-1">
-                Password
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
-                  <Lock className="h-5 w-5" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="block w-full rounded-xl border-gray-200 bg-gray-50/50 pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-              </div>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                required
+                icon={Lock}
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+              />
             </div>
           </div>
 
           <div>
-            <button
+            <Button
               type="submit"
-              disabled={loading}
-              className="group relative flex w-full justify-center items-center space-x-3 rounded-2xl border border-transparent bg-indigo-600 py-4 px-6 text-lg font-bold text-white hover:bg-indigo-700 hover:shadow-2xl hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 disabled:bg-indigo-300 disabled:hover:translate-y-0 transition-all duration-300 shadow-xl"
+              isLoading={loading}
+              loadingText="REGISTERING..."
+              className="w-full py-4 text-lg"
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>REGISTERING...</span>
-                </>
-              ) : (
-                <span>CREATE ACCOUNT</span>
-              )}
-            </button>
+              CREATE ORGANIZATION ACCOUNT
+            </Button>
           </div>
         </form>
       </div>

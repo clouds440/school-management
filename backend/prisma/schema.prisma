@@ -77,6 +77,7 @@ model User {
   phone          String?       // Added for richer user profiles
   role           Role          @default(SUPER_ADMIN)
   isFirstLogin   Boolean       @default(true)
+  tokenVersion   Int           @default(0)
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
   teacherProfile Teacher?
@@ -95,6 +96,11 @@ model Teacher {
   subject        String?
   education      String?      // Added for richer teacher profiles
   designation    String?      // Added for richer teacher profiles
+  department     String?      // Added: Department for filtering
+  joiningDate    DateTime     @default(now()) // Added: Date of joining
+  emergencyContact String?    // Added: For safety
+  bloodGroup     String?      // Added: For medical info
+  address        String?      // Added: Personal address
   classes        Class[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -126,11 +132,18 @@ model Student {
   fatherName         String?
   fee                Float?
   age                Int?
-  address            String?
-  major              String?
-  classId            String?
-  class              Class?       @relation(fields: [classId], references: [id], onDelete: SetNull)
-  updatedBy          String?      // Tracks name of user who last modified this record
-  createdAt          DateTime     @default(now())
+  address                String?
+  major                  String?
+  department             String?      // Added: Department for filtering
+  admissionDate          DateTime     @default(now()) // Added: Date of admission
+  graduationDate         DateTime?    // Added: Expected graduation
+  emergencyContact       String?      // Added: For safety
+  bloodGroup             String?      // Added: For medical info
+  gender                 String?      // Added: For demographics
+  feePlan                String?      // Added: To track fee structure
+  classId                String?
+  class                  Class?       @relation(fields: [classId], references: [id], onDelete: SetNull)
+  updatedBy              String?      // Tracks name of user who last modified this record
+  createdAt              DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 }

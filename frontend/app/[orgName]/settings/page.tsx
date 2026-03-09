@@ -7,6 +7,9 @@ import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School, RefreshCw, Sh
 import { BackButton } from '@/components/ui/BackButton';
 import { api } from '@/src/lib/api';
 import { useToast } from '@/context/ToastContext';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Button } from '@/components/ui/Button';
 
 
 export default function SettingsPage() {
@@ -155,89 +158,66 @@ export default function SettingsPage() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Organization Name</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <School className="w-5 h-5" />
-                                </div>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-900 placeholder-gray-400 bg-gray-50/30"
-                                    placeholder="School Name"
-                                />
-                            </div>
+                            <Label>Organization Name</Label>
+                            <Input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                required
+                                icon={School}
+                                placeholder="School Name"
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Location</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <MapPin className="w-5 h-5" />
-                                </div>
-                                <input
-                                    type="text"
-                                    name="location"
-                                    value={formData.location}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-900 placeholder-gray-400 bg-gray-50/30"
-                                    placeholder="City, State"
-                                />
-                            </div>
+                            <Label>Location</Label>
+                            <Input
+                                type="text"
+                                name="location"
+                                value={formData.location}
+                                onChange={handleChange}
+                                required
+                                icon={MapPin}
+                                placeholder="City, State"
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Contact Email</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <Mail className="w-5 h-5" />
-                                </div>
-                                <input
-                                    type="email"
-                                    name="contactEmail"
-                                    value={formData.contactEmail}
-                                    onChange={handleChange}
-                                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-900 placeholder-gray-400 bg-gray-50/30"
-                                    placeholder="contact@example.com"
-                                />
-                            </div>
+                            <Label>Contact Email</Label>
+                            <Input
+                                type="email"
+                                name="contactEmail"
+                                value={formData.contactEmail}
+                                onChange={handleChange}
+                                icon={Mail}
+                                placeholder="contact@example.com"
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Phone Number</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <Phone className="w-5 h-5" />
-                                </div>
-                                <input
-                                    type="text"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-900 placeholder-gray-400 bg-gray-50/30"
-                                    placeholder="+1 (555) 000-0000"
-                                />
-                            </div>
+                            <Label>Phone Number</Label>
+                            <Input
+                                type="text"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                icon={Phone}
+                                placeholder="+1 (555) 000-0000"
+                            />
                         </div>
                     </div>
 
                     <div className="pt-8 border-t border-gray-100 flex justify-end">
-                        <button
+                        <Button
                             type="submit"
-                            disabled={saving}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-2xl font-bold transition-all shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-1 active:scale-95 disabled:opacity-50 flex items-center gap-3"
+                            isLoading={saving}
+                            loadingText="SAVING CHANGES..."
+                            className="px-10"
+                            icon={Save}
                         >
-                            {saving ? (
-                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                            ) : (
-                                <Save className="w-5 h-5" />
-                            )}
-                            {saving ? 'SAVING CHANGES...' : 'SAVE SETTINGS'}
-                        </button>
+                            SAVE SETTINGS
+                        </Button>
                     </div>
                 </form>
             </div>

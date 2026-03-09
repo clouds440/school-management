@@ -7,6 +7,9 @@ import { api } from '@/src/lib/api';
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/context/ToastContext';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Button } from '@/components/ui/Button';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -74,45 +77,31 @@ export default function LoginPage() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-5">
             <div>
-              <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1.5 pl-1">
-                Email Address
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
-                  <Mail className="h-5 w-5" />
-                </div>
-                <input
-                  id="email-address"
-                  name="email"
-                  type="email"
-                  required
-                  className="block w-full rounded-xl border-gray-200 bg-gray-50/50 pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm"
-                  placeholder="admin@school.edu"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-              </div>
+              <Label htmlFor="email-address">Email Address</Label>
+              <Input
+                id="email-address"
+                name="email"
+                type="email"
+                required
+                icon={Mail}
+                placeholder="admin@school.edu"
+                value={formData.email}
+                onChange={handleChange}
+              />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5 pl-1">
-                Password
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
-                  <Lock className="h-5 w-5" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="block w-full rounded-xl border-gray-200 bg-gray-50/50 pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-              </div>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                required
+                icon={Lock}
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+              />
             </div>
           </div>
 
@@ -145,26 +134,15 @@ export default function LoginPage() {
             </label>
           </div>
 
-
-
           <div>
-            <button
+            <Button
               type="submit"
-              disabled={loading}
-              className="group relative flex w-full justify-center items-center space-x-2 rounded-xl border border-transparent bg-indigo-600 py-3 px-4 text-sm font-semibold text-white hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-300 disabled:hover:translate-y-0 transition-all duration-200"
+              isLoading={loading}
+              loadingText="Signing in..."
+              className="w-full"
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>Signing in...</span>
-                </>
-              ) : (
-                <span>Sign in</span>
-              )}
-            </button>
+              Sign in
+            </Button>
           </div>
         </form>
       </div>

@@ -129,6 +129,21 @@ export const api = {
             return response.json();
         },
 
+        async logout(token: string): Promise<void> {
+            const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                // If it fails (e.g., token already invalid), we still want to log out locally, 
+                // so we don't throw an error that stops the local logout flow.
+                console.warn('Backend logout failed or token already invalid:', await response.text());
+            }
+        },
+
         async changePassword(oldPassword: string, newPassword: string, token: string): Promise<{ access_token: string, role: string }> {
             const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
                 method: 'POST',

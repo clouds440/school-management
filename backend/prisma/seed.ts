@@ -26,7 +26,7 @@ async function main() {
                 isFirstLogin: true
             }
         });
-        console.log('Super Admin created: admin@school.com / adminpassword123');
+        console.log(`Super Admin created: ${adminEmail} (password set via env)`);
     } else {
         console.log('Super Admin already exists');
     }

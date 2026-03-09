@@ -2,6 +2,7 @@
 
 import { Mail, MessageSquare, Phone, MapPin, ExternalLink } from 'lucide-react';
 import { BackButton } from '@/components/ui/BackButton';
+import { Button } from '@/components/ui/Button';
 
 export default function SupportPage() {
     return (
@@ -59,9 +60,13 @@ export default function SupportPage() {
                         Our technical support team is available 24/7 to help resolve account suspensions or technical issues.
                         Please have your organization ID ready for faster processing.
                     </p>
-                    <button className="mt-8 bg-indigo-600 text-white px-12 py-4 rounded-2xl font-black text-lg shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 hover:-translate-y-1 transition-all active:scale-95">
-                        OPEN LIVE CHAT
-                    </button>
+                    <div className="mt-8 flex justify-center">
+                        <Button
+                            className="px-12 py-6 rounded-2xl text-lg font-black"
+                        >
+                            OPEN LIVE CHAT
+                        </Button>
+                    </div>
                     <p className="mt-6 text-xs font-bold text-gray-400 uppercase tracking-widest">
                         Typical response time: <span className="text-indigo-600">under 5 minutes</span>
                     </p>

@@ -37,7 +37,14 @@ export default function StudentsPage() {
         age: '',
         address: '',
         major: '',
-        classId: ''
+        classId: '',
+        department: '',
+        admissionDate: '',
+        graduationDate: '',
+        gender: '',
+        bloodGroup: '',
+        emergencyContact: '',
+        feePlan: ''
     });
 
     useEffect(() => {
@@ -84,7 +91,8 @@ export default function StudentsPage() {
         const matchesSearch =
             student.user?.name?.toLowerCase().includes(search) ||
             student.registrationNumber?.toLowerCase().includes(search) ||
-            student.major?.toLowerCase().includes(search);
+            student.major?.toLowerCase().includes(search) ||
+            student.department?.toLowerCase().includes(search);
 
         // A student is "mine" if they belong to a class where I am the teacher
         const teacherUserId = student.class?.teacher?.userId;
@@ -129,7 +137,14 @@ export default function StudentsPage() {
                 age: student.age?.toString() || '',
                 address: student.address || '',
                 major: student.major || '',
-                classId: student.class?.id || ''
+                classId: student.class?.id || '',
+                department: student.department || '',
+                admissionDate: student.admissionDate ? student.admissionDate.split('T')[0] : '',
+                graduationDate: student.graduationDate ? student.graduationDate.split('T')[0] : '',
+                gender: student.gender || '',
+                bloodGroup: student.bloodGroup || '',
+                emergencyContact: student.emergencyContact || '',
+                feePlan: student.feePlan || ''
             });
             setIsEditModalOpen(true);
         }
@@ -161,7 +176,14 @@ export default function StudentsPage() {
                     age: editFormData.age ? Number(editFormData.age) : undefined,
                     address: editFormData.address || undefined,
                     major: editFormData.major || undefined,
-                    classId: editFormData.classId || undefined
+                    classId: editFormData.classId || undefined,
+                    department: editFormData.department || undefined,
+                    admissionDate: editFormData.admissionDate || undefined,
+                    graduationDate: editFormData.graduationDate || undefined,
+                    gender: editFormData.gender || undefined,
+                    bloodGroup: editFormData.bloodGroup || undefined,
+                    emergencyContact: editFormData.emergencyContact || undefined,
+                    feePlan: editFormData.feePlan || undefined
                 })
             });
 
@@ -409,6 +431,83 @@ export default function StudentsPage() {
                             onChange={e => setEditFormData({ ...editFormData, address: e.target.value })}
                             className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             rows={2}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Department</label>
+                            <input
+                                type="text"
+                                value={editFormData.department}
+                                onChange={e => setEditFormData({ ...editFormData, department: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Fee Plan Type</label>
+                            <input
+                                type="text"
+                                value={editFormData.feePlan}
+                                onChange={e => setEditFormData({ ...editFormData, feePlan: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Admission Date</label>
+                            <input
+                                type="date"
+                                value={editFormData.admissionDate}
+                                onChange={e => setEditFormData({ ...editFormData, admissionDate: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Expected Graduation</label>
+                            <input
+                                type="date"
+                                value={editFormData.graduationDate}
+                                onChange={e => setEditFormData({ ...editFormData, graduationDate: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Gender</label>
+                            <select
+                                value={editFormData.gender}
+                                onChange={e => setEditFormData({ ...editFormData, gender: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                            >
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Blood Group</label>
+                            <input
+                                type="text"
+                                value={editFormData.bloodGroup}
+                                onChange={e => setEditFormData({ ...editFormData, bloodGroup: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Emergency Contact</label>
+                        <input
+                            type="text"
+                            value={editFormData.emergencyContact}
+                            onChange={e => setEditFormData({ ...editFormData, emergencyContact: e.target.value })}
+                            className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                         />
                     </div>
 

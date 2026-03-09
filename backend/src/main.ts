@@ -6,7 +6,8 @@ import * as bcrypt from 'bcrypt';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors({ origin: '*' });
+  const frontendUrl = process.env.FRONTEND_URL; // Default to permissive in dev if not set, but restrict in prod
+  app.enableCors({ origin: frontendUrl });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
 
   // Initialize Super Admin

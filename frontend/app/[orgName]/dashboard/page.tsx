@@ -70,7 +70,7 @@ export default function DashboardPage() {
                     <div className="flex flex-wrap items-center gap-3">
                         {payload.role !== 'TEACHER' && (
                             <Link
-                                href={`/${payload.orgSlug}/dashboard/settings`}
+                                href={`/${payload.orgSlug}/settings`}
                                 className="text-sm font-semibold px-5 py-2.5 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md shadow-lg hover:bg-white/20 flex items-center space-x-2 transition-all text-white"
                             >
                                 <Settings className="w-4 h-4" />
@@ -128,7 +128,7 @@ export default function DashboardPage() {
                             Please update your organization details and submit your application again for verification.
                         </p>
                         <Link
-                            href={`/${payload.orgSlug}/dashboard/settings`}
+                            href={`/${payload.orgSlug}/settings`}
                             className="inline-flex items-center gap-3 bg-red-600 hover:bg-red-700 text-white px-10 py-5 rounded-3xl font-black text-xl shadow-2xl shadow-red-600/30 transition-all hover:-translate-y-1 active:scale-95"
                         >
                             <RefreshCw className="w-6 h-6" />
@@ -138,20 +138,24 @@ export default function DashboardPage() {
                 )}
 
                 {(orgData?.status || payload.status) === 'SUSPENDED' && (
-                    <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-orange-200 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
+                    <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-orange-200 text-center max-w-2xmx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                         <div className="p-6 bg-orange-50 rounded-full mb-6">
-                            <AlertTriangle className="w-20 h-20 text-orange-500" />
+                            <ShieldOff className="w-20 h-20 text-orange-500" />
                         </div>
-                        <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Account Suspended</h2>
-                        <div className="bg-orange-50 text-orange-800 p-6 rounded-2xl border border-orange-100 w-full mb-8 text-left">
-                            <h3 className="font-bold mb-2 flex items-center gap-2"><AlertTriangle className="w-5 h-5" /> Reason for Suspension:</h3>
-                            <p className="italic">{orgData?.statusMessage || 'Your organization account has been temporarily suspended. Please contact administration.'}</p>
+                        <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Access Restricted</h2>
+                        <p className="text-gray-600 text-lg mb-8 font-medium">
+                            {payload.role === 'TEACHER' || payload.role === 'ORG_MANAGER'
+                                ? "Service for your organization is temporarily paused. Your records and data are safe, but management actions are currently restricted."
+                                : "Your organization account has been temporarily suspended due to administrative reasons."}
+                        </p>
+                        <div className="bg-orange-50 text-orange-800 p-6 rounded-3xl border border-orange-100 w-full mb-8 text-left shadow-inner">
+                            <h3 className="font-bold mb-2 flex items-center gap-2 text-sm uppercase tracking-wider text-orange-900/60 font-black"><AlertTriangle className="w-4 h-4" /> Administrative Notice</h3>
+                            <p className="italic font-bold text-orange-900">{orgData?.statusMessage || 'Please contact your institution\'s administration or EduManage support for more details.'}</p>
                         </div>
                         <Link
                             href="/support"
                             className="inline-flex items-center gap-3 bg-gray-900 hover:bg-black text-white px-10 py-5 rounded-3xl font-black text-xl shadow-2xl transition-all hover:-translate-y-1 active:scale-95"
                         >
-
                             <Mail className="w-6 h-6" />
                             CONTACT SUPPORT
                         </Link>

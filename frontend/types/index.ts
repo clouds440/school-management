@@ -14,6 +14,11 @@ export interface Teacher {
     subject?: string;
     salary?: number;
     userId: string;
+    department?: string;
+    joiningDate?: string;
+    emergencyContact?: string;
+    bloodGroup?: string;
+    address?: string;
     user: User;
 }
 
@@ -38,6 +43,13 @@ export interface Student {
     address?: string;
     major?: string;
     userId: string;
+    department?: string;
+    admissionDate?: string;
+    graduationDate?: string;
+    emergencyContact?: string;
+    bloodGroup?: string;
+    gender?: string;
+    feePlan?: string;
     user: User;
     classId?: string;
     class?: Class;

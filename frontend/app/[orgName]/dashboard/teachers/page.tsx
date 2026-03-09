@@ -12,6 +12,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { BackButton } from '@/components/ui/BackButton';
 import { useToast } from '@/context/ToastContext';
 import { Teacher } from '@/types';
+import { Button } from '@/components/ui/Button';
 
 export default function TeachersPage() {
     const { token, user } = useAuth();
@@ -30,7 +31,12 @@ export default function TeachersPage() {
         education: '',
         designation: '',
         salary: '',
-        subject: ''
+        subject: '',
+        department: '',
+        joiningDate: '',
+        address: '',
+        emergencyContact: '',
+        bloodGroup: ''
     });
     const [isSaving, setIsSaving] = useState(false);
 
@@ -79,7 +85,12 @@ export default function TeachersPage() {
                     education: editFormData.education || null,
                     designation: editFormData.designation || null,
                     salary: Number(editFormData.salary) || null,
-                    subject: editFormData.subject || null
+                    subject: editFormData.subject || null,
+                    department: editFormData.department || null,
+                    joiningDate: editFormData.joiningDate || null,
+                    address: editFormData.address || null,
+                    emergencyContact: editFormData.emergencyContact || null,
+                    bloodGroup: editFormData.bloodGroup || null
                 })
             });
             if (!response.ok) {
@@ -119,7 +130,8 @@ export default function TeachersPage() {
         t.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (t.user.name && t.user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (t.designation && t.designation.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (t.subject && t.subject.toLowerCase().includes(searchTerm.toLowerCase()))
+        (t.subject && t.subject.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (t.department && t.department.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const columns = [
@@ -157,7 +169,12 @@ export default function TeachersPage() {
                                 education: row.education || '',
                                 designation: row.designation || '',
                                 salary: row.salary ? String(row.salary) : '',
-                                subject: row.subject || ''
+                                subject: row.subject || '',
+                                department: row.department || '',
+                                joiningDate: row.joiningDate ? row.joiningDate.split('T')[0] : '',
+                                address: row.address || '',
+                                emergencyContact: row.emergencyContact || '',
+                                bloodGroup: row.bloodGroup || ''
                             });
                             setEditModalOpen(true);
                         }}
@@ -197,13 +214,13 @@ export default function TeachersPage() {
                             <p className="text-indigo-100 font-bold opacity-90 mt-1">ORGANIZATION FACULTY MANAGEMENT</p>
                         </div>
                     </div>
-                    <Link
-                        href={`/${orgSlug}/dashboard/teachers/add`}
-                        className="flex items-center gap-3 bg-white text-indigo-600 px-8 py-4 rounded-2xl font-bold transition-all shadow-2xl hover:shadow-indigo-500/40 hover:-translate-y-1 active:scale-95"
+                    <Button
+                        onClick={() => router.push(`/${orgSlug}/dashboard/teachers/add`)}
+                        icon={UserPlus}
+                        className="px-8 py-4"
                     >
-                        <UserPlus className="w-6 h-6" />
                         Add Teacher
-                    </Link>
+                    </Button>
                 </div>
             </div>
 
@@ -290,6 +307,55 @@ export default function TeachersPage() {
                                 onChange={(e) => setEditFormData({ ...editFormData, salary: e.target.value })}
                                 className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="0.00"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Department</label>
+                            <input
+                                type="text"
+                                value={editFormData.department}
+                                onChange={(e) => setEditFormData({ ...editFormData, department: e.target.value })}
+                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                placeholder="e.g. Science"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Joining Date</label>
+                            <input
+                                type="date"
+                                value={editFormData.joiningDate}
+                                onChange={(e) => setEditFormData({ ...editFormData, joiningDate: e.target.value })}
+                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                            />
+                        </div>
+                        <div className="md:col-span-2 space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Residential Address</label>
+                            <input
+                                type="text"
+                                value={editFormData.address}
+                                onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                placeholder="123 Main St, City, Country"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Emergency Contact</label>
+                            <input
+                                type="text"
+                                value={editFormData.emergencyContact}
+                                onChange={(e) => setEditFormData({ ...editFormData, emergencyContact: e.target.value })}
+                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                placeholder="Name - Relationship - Phone"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Blood Group</label>
+                            <input
+                                type="text"
+                                value={editFormData.bloodGroup}
+                                onChange={(e) => setEditFormData({ ...editFormData, bloodGroup: e.target.value })}
+                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                placeholder="O+, A-, etc."
                             />
                         </div>
                     </div>

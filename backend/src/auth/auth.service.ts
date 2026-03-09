@@ -8,6 +8,7 @@ import { PrismaClient, User, Organization, Teacher } from '@prisma/client';
 export type TokenUser = User & {
     organization?: Organization | null;
     teacherProfile?: Teacher | null;
+    tokenVersion?: number;
 };
 
 const prisma = new PrismaClient();
@@ -91,7 +92,8 @@ export class AuthService {
             orgSlug: slug,
             orgId: user.organizationId,
             status: user.organization ? user.organization.status : 'APPROVED', // Keep SUPER_ADMIN as APPROVED
-            isFirstLogin: user.isFirstLogin
+            isFirstLogin: user.isFirstLogin,
+            tokenVersion: user.tokenVersion
         };
 
 
@@ -120,11 +122,22 @@ export class AuthService {
             where: { id: userId },
             data: {
                 password: hashedNew,
-                isFirstLogin: false
+                isFirstLogin: false,
+                tokenVersion: { increment: 1 } // Invalidate all existing sessions
             },
             include: { organization: true, teacherProfile: true }
         });
 
         return this.generateToken(updatedUser);
+    }
+
+    async logout(userId: string) {
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                tokenVersion: { increment: 1 }
+            }
+        });
+        return { message: 'Logged out successfully' };
     }
 }

@@ -132,6 +132,11 @@ export class OrgService {
                         subject: data.subject,
                         education: data.education,
                         designation: data.designation,
+                        department: data.department,
+                        joiningDate: data.joiningDate ? new Date(data.joiningDate) : undefined,
+                        emergencyContact: data.emergencyContact,
+                        bloodGroup: data.bloodGroup,
+                        address: data.address,
                     },
                     include: {
                         user: {
@@ -185,6 +190,11 @@ export class OrgService {
                     subject: data.subject,
                     education: data.education,
                     designation: data.designation,
+                    department: data.department,
+                    joiningDate: data.joiningDate ? new Date(data.joiningDate) : undefined,
+                    emergencyContact: data.emergencyContact,
+                    bloodGroup: data.bloodGroup,
+                    address: data.address,
                 },
                 include: {
                     user: {
@@ -352,6 +362,13 @@ export class OrgService {
                         age: data.age,
                         address: data.address,
                         major: data.major,
+                        department: data.department,
+                        admissionDate: data.admissionDate ? new Date(data.admissionDate) : undefined,
+                        graduationDate: data.graduationDate ? new Date(data.graduationDate) : undefined,
+                        emergencyContact: data.emergencyContact,
+                        bloodGroup: data.bloodGroup,
+                        gender: data.gender,
+                        feePlan: data.feePlan,
                         classId: data.classId || undefined,
                         updatedBy: userContext.name || userContext.email
                     },
@@ -396,6 +413,13 @@ export class OrgService {
                     age: data.age,
                     address: data.address,
                     major: data.major,
+                    department: data.department,
+                    admissionDate: data.admissionDate ? new Date(data.admissionDate) : undefined,
+                    graduationDate: data.graduationDate ? new Date(data.graduationDate) : undefined,
+                    emergencyContact: data.emergencyContact,
+                    bloodGroup: data.bloodGroup,
+                    gender: data.gender,
+                    feePlan: data.feePlan,
                     classId: data.classId !== undefined ? (data.classId || null) : undefined,
                     updatedBy: user.name || user.email
                 },

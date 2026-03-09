@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsString, MinLength, Matches } from 'class-validator';
 
 export enum OrganizationType {
     HIGH_SCHOOL = 'HIGH_SCHOOL',
@@ -35,5 +35,8 @@ export class RegisterDto {
     @IsString()
     @IsNotEmpty()
     @MinLength(8, { message: 'Password must be at least 8 characters long' })
+    @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/, {
+        message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+    })
     password!: string;
 }

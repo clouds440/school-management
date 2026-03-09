@@ -7,8 +7,11 @@ import { BookOpen, AlertCircle, FileText, User as UserIcon } from 'lucide-react'
 import { BackButton } from '@/components/ui/BackButton';
 import Link from 'next/link';
 import { Teacher } from '@/types';
-
 import { useToast } from '@/context/ToastContext';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 
 export default function CreateClassPage() {
     const { token, user } = useAuth();
@@ -107,35 +110,30 @@ export default function CreateClassPage() {
                 <form onSubmit={handleSubmit} className="space-y-8">
                     <div className="space-y-8">
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Class Name *</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <BookOpen className="w-6 h-6" />
-                                </div>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/50 font-medium shadow-sm"
-                                    placeholder="E.g., Computer Science 101"
-                                />
-                            </div>
+                            <Label>Class Name *</Label>
+                            <Input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                required
+                                icon={BookOpen}
+                                placeholder="E.g., Computer Science 101"
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Description</label>
+                            <Label>Description</Label>
                             <div className="relative group">
-                                <div className="absolute top-4 left-0 pl-5 flex items-start pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <FileText className="w-6 h-6" />
+                                <div className="absolute top-3.5 left-0 pl-3.5 flex items-start pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+                                    <FileText className="w-5 h-5" />
                                 </div>
                                 <textarea
                                     name="description"
                                     value={formData.description}
                                     onChange={handleChange}
                                     rows={4}
-                                    className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 resize-none text-gray-900 bg-gray-50/50 font-medium shadow-sm"
+                                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm resize-none"
                                     placeholder="Brief description of the course content..."
                                 />
                             </div>
@@ -143,86 +141,63 @@ export default function CreateClassPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Grade / Class Level</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                        <BookOpen className="w-6 h-6" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="grade"
-                                        value={formData.grade}
-                                        onChange={handleChange}
-                                        className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/50 font-medium shadow-sm"
-                                        placeholder="E.g., 10th Grade"
-                                    />
-                                </div>
+                                <Label>Grade / Class Level</Label>
+                                <Input
+                                    type="text"
+                                    name="grade"
+                                    value={formData.grade}
+                                    onChange={handleChange}
+                                    icon={BookOpen}
+                                    placeholder="E.g., 10th Grade"
+                                />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Courses (comma-separated)</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                        <FileText className="w-6 h-6" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="courses"
-                                        value={formData.courses}
-                                        onChange={handleChange}
-                                        className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/50 font-medium shadow-sm"
-                                        placeholder="E.g., Math, Science"
-                                    />
-                                </div>
+                                <Label>Courses (comma-separated)</Label>
+                                <Input
+                                    type="text"
+                                    name="courses"
+                                    value={formData.courses}
+                                    onChange={handleChange}
+                                    icon={FileText}
+                                    placeholder="E.g., Math, Science"
+                                />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Assign Teacher (Optional)</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <UserIcon className="w-6 h-6" />
-                                </div>
-                                <select
-                                    name="teacherId"
-                                    value={formData.teacherId}
-                                    onChange={handleChange as unknown as React.ChangeEventHandler<HTMLSelectElement>}
-                                    className="w-full pl-14 pr-12 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/50 font-medium shadow-sm appearance-none cursor-pointer"
-                                >
-                                    <option value="" className="text-gray-500 font-medium">Select a teacher...</option>
-                                    {teachers.map(t => (
-                                        <option key={t.id} value={t.id} className="text-gray-900">
-                                            {t.user.name || t.user.email} {t.education ? `- ${t.education}` : ''}
-                                        </option>
-                                    ))}
-                                </select>
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-5 pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                            </div>
+                            <Label>Assign Teacher (Optional)</Label>
+                            <Select
+                                name="teacherId"
+                                value={formData.teacherId}
+                                onChange={handleChange as unknown as React.ChangeEventHandler<HTMLSelectElement>}
+                                icon={UserIcon}
+                            >
+                                <option value="" className="text-gray-500 font-medium">Select a teacher...</option>
+                                {teachers.map(t => (
+                                    <option key={t.id} value={t.id} className="text-gray-900">
+                                        {t.user.name || t.user.email} {t.education ? `- ${t.education}` : ''}
+                                    </option>
+                                ))}
+                            </Select>
                         </div>
                     </div>
 
                     <div className="pt-10 mt-10 border-t border-gray-100 flex justify-end gap-5">
                         <Link
                             href={`/${orgSlug}/dashboard/classes`}
-                            className="px-8 py-4 text-sm font-bold text-gray-600 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all hover:scale-105 active:scale-95"
+                            className="px-8 py-3 text-base font-bold text-gray-600 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 flex items-center shadow-lg border border-transparent"
                         >
                             Cancel
                         </Link>
-                        <button
+                        <Button
                             type="submit"
-                            disabled={isSaving}
-                            className="flex items-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-2xl font-bold transition-all disabled:opacity-50 shadow-lg hover:shadow-indigo-500/30 hover:scale-105 active:scale-95"
+                            isLoading={isSaving}
+                            loadingText="Creating..."
+                            className="px-10"
                         >
-                            {isSaving && (
-                                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            )}
                             Create Class
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </div >

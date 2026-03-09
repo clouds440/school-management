@@ -6,6 +6,10 @@ import { PrismaClient } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
+interface ExtendedJwtPayload extends JwtPayload {
+    tokenVersion?: number;
+}
+
 const prisma = new PrismaClient();
 
 @Injectable()
@@ -18,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         } as any);
     }
 
-    async validate(payload: JwtPayload) {
+    async validate(payload: ExtendedJwtPayload) {
         const user = await prisma.user.findUnique({
             where: { id: payload.sub },
             include: { organization: true }
@@ -26,6 +30,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         if (!user) {
             throw new UnauthorizedException();
         }
+
+        // Token Versioning check
+        if (user.tokenVersion !== payload.tokenVersion) {
+            throw new UnauthorizedException('Session expired or revoked. Please log in again.');
+        }
+
         return user;
     }
 }

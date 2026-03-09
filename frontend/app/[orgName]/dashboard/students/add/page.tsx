@@ -3,10 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { UserPlus, User, Mail, Lock, Phone, MapPin, Hash, BookOpen, GraduationCap, DollarSign } from 'lucide-react';
+import { UserPlus, User, Mail, Lock, Phone, MapPin, Hash, BookOpen, GraduationCap, DollarSign, Plus } from 'lucide-react';
 import { BackButton } from '@/components/ui/BackButton';
 import Link from 'next/link';
 import { useToast } from '@/context/ToastContext';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { Class } from '@/types';
 
 export default function AddStudentPage() {
@@ -37,7 +41,14 @@ export default function AddStudentPage() {
         age: '',
         address: '',
         major: '',
-        classId: ''
+        classId: '',
+        department: '',
+        admissionDate: new Date().toISOString().split('T')[0],
+        graduationDate: '',
+        gender: '',
+        bloodGroup: '',
+        emergencyContact: '',
+        feePlan: ''
     });
 
     useEffect(() => {
@@ -85,7 +96,14 @@ export default function AddStudentPage() {
                     age: formData.age ? Number(formData.age) : undefined,
                     address: formData.address || undefined,
                     major: formData.major || undefined,
-                    classId: formData.classId || undefined
+                    classId: formData.classId || undefined,
+                    department: formData.department || undefined,
+                    admissionDate: formData.admissionDate || undefined,
+                    graduationDate: formData.graduationDate || undefined,
+                    gender: formData.gender || undefined,
+                    bloodGroup: formData.bloodGroup || undefined,
+                    emergencyContact: formData.emergencyContact || undefined,
+                    feePlan: formData.feePlan || undefined
                 })
             });
 
@@ -125,75 +143,55 @@ export default function AddStudentPage() {
                         <h3 className="text-lg font-bold text-gray-900 border-b border-gray-200 pb-2 mb-4">Account Information</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="col-span-1 md:col-span-3">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Full Name *</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                        <User className="w-5 h-5" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 bg-gray-50/50 text-gray-900"
-                                        placeholder="Alex Johnson"
-                                    />
-                                </div>
+                                <Label>Full Name *</Label>
+                                <Input
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    required
+                                    icon={User}
+                                    placeholder="Alex Johnson"
+                                />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Email Address *</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                        <Mail className="w-5 h-5" />
-                                    </div>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 bg-gray-50/50 text-gray-900"
-                                        placeholder="student@example.com"
-                                    />
-                                </div>
+                                <Label>Email Address *</Label>
+                                <Input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required
+                                    icon={Mail}
+                                    placeholder="student@example.com"
+                                />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Temporary Password *</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                        <Lock className="w-5 h-5" />
-                                    </div>
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        required
-                                        minLength={6}
-                                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 bg-gray-50/50 text-gray-900"
-                                        placeholder="Min 6 characters"
-                                    />
-                                </div>
+                                <Label>Temporary Password *</Label>
+                                <Input
+                                    type="password"
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    required
+                                    minLength={8}
+                                    icon={Lock}
+                                    placeholder="Min 8 characters (1 upper, 1 lower, 1 number)"
+                                />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Contact Number</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                        <Phone className="w-5 h-5" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 bg-gray-50/50 text-gray-900"
-                                        placeholder="+1 555-0123"
-                                    />
-                                </div>
+                                <Label>Contact Number</Label>
+                                <Input
+                                    type="text"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    icon={Phone}
+                                    placeholder="+1 555-0123"
+                                />
                             </div>
                         </div>
                     </div>
@@ -203,37 +201,60 @@ export default function AddStudentPage() {
                         <h3 className="text-lg font-bold text-gray-900 border-b border-gray-200 pb-2 mb-4 mt-8">Academic Profile</h3>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                             <div className="col-span-2">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Major / Course of Study</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                        <GraduationCap className="w-5 h-5" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="major"
-                                        value={formData.major}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 bg-gray-50/50 text-gray-900"
-                                        placeholder="Intermediate Computer Science"
-                                    />
-                                </div>
+                                <Label>Major / Course of Study</Label>
+                                <Input
+                                    type="text"
+                                    name="major"
+                                    value={formData.major}
+                                    onChange={handleChange}
+                                    icon={GraduationCap}
+                                    placeholder="Intermediate Computer Science"
+                                />
                             </div>
 
                             <div className="col-span-2">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Registration #</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                        <Hash className="w-5 h-5" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="registrationNumber"
-                                        value={formData.registrationNumber}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 bg-gray-50/50 text-gray-900"
-                                        placeholder="CS-2026-001"
-                                    />
-                                </div>
+                                <Label>Registration #</Label>
+                                <Input
+                                    type="text"
+                                    name="registrationNumber"
+                                    value={formData.registrationNumber}
+                                    onChange={handleChange}
+                                    icon={Hash}
+                                    placeholder="CS-2026-001"
+                                />
+                            </div>
+
+                            <div className="col-span-2">
+                                <Label>Department</Label>
+                                <Input
+                                    type="text"
+                                    name="department"
+                                    value={formData.department}
+                                    onChange={handleChange}
+                                    icon={BookOpen}
+                                    placeholder="Science / Humanities / Arts"
+                                />
+                            </div>
+
+                            <div>
+                                <Label>Admission Date</Label>
+                                <Input
+                                    type="date"
+                                    name="admissionDate"
+                                    value={formData.admissionDate}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <Label>Expected Graduation</Label>
+                                <Input
+                                    type="date"
+                                    name="graduationDate"
+                                    value={formData.graduationDate}
+                                    onChange={handleChange}
+                                />
                             </div>
                         </div>
                     </div>
@@ -243,26 +264,20 @@ export default function AddStudentPage() {
                         <h3 className="text-lg font-bold text-gray-900 border-b border-gray-200 pb-2 mb-4 mt-8">Class Association</h3>
                         <p className="text-sm text-gray-500 mb-4 pl-1">Select the class/grade this student is enrolling in. They will automatically be associated with all courses in this class.</p>
 
-                        <div className="relative group max-w-xl">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                <BookOpen className="w-5 h-5" />
-                            </div>
-                            <select
+                        <div className="max-w-xl">
+                            <Select
                                 name="classId"
                                 value={formData.classId}
                                 onChange={handleChange}
-                                className="w-full pl-12 pr-10 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-900 bg-white shadow-sm appearance-none cursor-pointer"
+                                icon={BookOpen}
                             >
-                                <option value="" className="text-gray-500" disabled>Select Class/Grade</option>
+                                <option value="" disabled>Select Class/Grade</option>
                                 {classes.map(cls => (
                                     <option key={cls.id} value={cls.id} className="text-gray-900">
                                         {cls.name} {cls.grade ? `(${cls.grade})` : ''} - {cls.courses?.length || 0} courses
                                     </option>
                                 ))}
-                            </select>
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
+                            </Select>
                         </div>
                     </div>
 
@@ -272,67 +287,102 @@ export default function AddStudentPage() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Father's Name</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                        <User className="w-5 h-5" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="fatherName"
-                                        value={formData.fatherName}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 bg-gray-50/50 text-gray-900"
-                                        placeholder="Thomas Johnson"
-                                    />
-                                </div>
+                                <Label>Father's Name</Label>
+                                <Input
+                                    type="text"
+                                    name="fatherName"
+                                    value={formData.fatherName}
+                                    onChange={handleChange}
+                                    icon={User}
+                                    placeholder="Thomas Johnson"
+                                />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Age</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                        <User className="w-5 h-5" />
-                                    </div>
-                                    <input
-                                        type="number"
-                                        name="age"
-                                        value={formData.age}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 bg-gray-50/50 text-gray-900"
-                                        placeholder="16"
-                                    />
-                                </div>
+                                <Label>Age</Label>
+                                <Input
+                                    type="number"
+                                    name="age"
+                                    value={formData.age}
+                                    onChange={handleChange}
+                                    icon={User}
+                                    placeholder="16"
+                                />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Fee Plan (Monthly)</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                        <DollarSign className="w-5 h-5" />
-                                    </div>
-                                    <input
-                                        type="number"
-                                        name="fee"
-                                        value={formData.fee}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 bg-gray-50/50 text-gray-900"
-                                        placeholder="200"
-                                    />
-                                </div>
+                                <Label>Monthly Fee</Label>
+                                <Input
+                                    type="number"
+                                    name="fee"
+                                    value={formData.fee}
+                                    onChange={handleChange}
+                                    icon={DollarSign}
+                                    placeholder="200"
+                                />
+                            </div>
+
+                            <div>
+                                <Label>Fee Plan Type</Label>
+                                <Input
+                                    type="text"
+                                    name="feePlan"
+                                    value={formData.feePlan}
+                                    onChange={handleChange}
+                                    icon={BookOpen}
+                                    placeholder="Standard / Scholarship / etc."
+                                />
+                            </div>
+
+                            <div>
+                                <Label>Gender</Label>
+                                <Select
+                                    name="gender"
+                                    value={formData.gender}
+                                    onChange={handleChange}
+                                >
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </Select>
+                            </div>
+
+                            <div>
+                                <Label>Blood Group</Label>
+                                <Input
+                                    type="text"
+                                    name="bloodGroup"
+                                    value={formData.bloodGroup}
+                                    onChange={handleChange}
+                                    icon={Plus}
+                                    placeholder="O+, A-, etc."
+                                />
+                            </div>
+
+                            <div>
+                                <Label>Emergency Contact</Label>
+                                <Input
+                                    type="text"
+                                    name="emergencyContact"
+                                    value={formData.emergencyContact}
+                                    onChange={handleChange}
+                                    icon={Phone}
+                                    placeholder="Name - Relation - Phone"
+                                />
                             </div>
 
                             <div className="col-span-1 md:col-span-3">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Home Address</label>
+                                <Label>Home Address</Label>
                                 <div className="relative group">
-                                    <div className="absolute top-3 left-0 pl-4 flex items-start pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+                                    <div className="absolute top-3.5 left-0 pl-3.5 flex items-start pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
                                         <MapPin className="w-5 h-5" />
                                     </div>
                                     <textarea
                                         name="address"
                                         value={formData.address}
                                         onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 bg-gray-50/50 text-gray-900 min-h-[100px]"
+                                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm min-h-[100px]"
                                         placeholder="123 Education Lane, Learning City"
                                     />
                                 </div>
@@ -341,26 +391,21 @@ export default function AddStudentPage() {
                         </div>
                     </div>
 
-                    <div className="pt-8 mt-8 border-t border-gray-100 flex justify-end gap-3">
+                    <div className="pt-8 mt-8 border-t border-gray-100 flex justify-end gap-5">
                         <Link
                             href={`/${orgSlug}/dashboard/students`}
-                            className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                            className="px-8 py-3 text-base font-bold text-gray-600 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 flex items-center shadow-lg border border-transparent"
                         >
                             Cancel
                         </Link>
-                        <button
+                        <Button
                             type="submit"
-                            disabled={isSaving}
-                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 shadow-sm"
+                            isLoading={isSaving}
+                            loadingText="Admitting..."
+                            className="px-10"
                         >
-                            {isSaving && (
-                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            )}
                             Admit Student
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </div >

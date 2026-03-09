@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { UserPlus, User, Mail, Lock, BookOpen, DollarSign, Phone } from 'lucide-react';
+import { UserPlus, User, Mail, Lock, BookOpen, DollarSign, Phone, Plus } from 'lucide-react';
 import { BackButton } from '@/components/ui/BackButton';
 import Link from 'next/link';
 
 import { useToast } from '@/context/ToastContext';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Button } from '@/components/ui/Button';
 
 export default function AddTeacherPage() {
     const { token, user } = useAuth();
@@ -33,7 +36,12 @@ export default function AddTeacherPage() {
         designation: '',
         subject: '',
         salary: '',
-        isManager: false
+        isManager: false,
+        department: '',
+        joiningDate: new Date().toISOString().split('T')[0],
+        address: '',
+        emergencyContact: '',
+        bloodGroup: ''
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +72,12 @@ export default function AddTeacherPage() {
                     designation: formData.designation || undefined,
                     subject: formData.subject || undefined,
                     salary: formData.salary ? Number(formData.salary) : undefined,
-                    isManager: formData.isManager
+                    isManager: formData.isManager,
+                    department: formData.department || undefined,
+                    joiningDate: formData.joiningDate || undefined,
+                    address: formData.address || undefined,
+                    emergencyContact: formData.emergencyContact || undefined,
+                    bloodGroup: formData.bloodGroup || undefined
                 })
             });
 
@@ -101,143 +114,162 @@ export default function AddTeacherPage() {
                 <form onSubmit={handleSubmit} className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Full Name</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <User className="w-6 h-6" />
-                                </div>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/50 font-medium shadow-sm"
-                                    placeholder="John Doe"
-                                />
-                            </div>
+                            <Label>Full Name</Label>
+                            <Input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                required
+                                icon={User}
+                                placeholder="John Doe"
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Email Address</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <Mail className="w-6 h-6" />
-                                </div>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/50 font-medium shadow-sm"
-                                    placeholder="john.doe@example.com"
-                                />
-                            </div>
+                            <Label>Email Address</Label>
+                            <Input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                required
+                                icon={Mail}
+                                placeholder="john.doe@example.com"
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Initial Password</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
-                                    <Lock className="w-6 h-6" />
-                                </div>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    required
-                                    minLength={6}
-                                    className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/50 font-medium shadow-sm"
-                                    placeholder="Min 6 characters"
-                                />
-                            </div>
+                            <Label>Initial Password</Label>
+                            <Input
+                                type="password"
+                                name="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                required
+                                minLength={8}
+                                icon={Lock}
+                                placeholder="Min 8 characters (1 upper, 1 lower, 1 number)"
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Phone Number</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <Phone className="w-6 h-6" />
-                                </div>
-                                <input
-                                    type="text"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/50 font-medium shadow-sm"
-                                    placeholder="+1 (555) 000-0000"
-                                />
-                            </div>
+                            <Label>Department</Label>
+                            <Input
+                                type="text"
+                                name="department"
+                                value={formData.department}
+                                onChange={handleChange}
+                                icon={BookOpen}
+                                placeholder="Science / Arts / Engineering"
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Education</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <BookOpen className="w-6 h-6" />
-                                </div>
-                                <input
-                                    type="text"
-                                    name="education"
-                                    value={formData.education}
-                                    onChange={handleChange}
-                                    className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/50 font-medium shadow-sm"
-                                    placeholder="M.S. Computer Science"
-                                />
-                            </div>
+                            <Label>Joining Date</Label>
+                            <Input
+                                type="date"
+                                name="joiningDate"
+                                value={formData.joiningDate}
+                                onChange={handleChange}
+                                required
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Designation</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <User className="w-6 h-6" />
-                                </div>
-                                <input
-                                    type="text"
-                                    name="designation"
-                                    value={formData.designation}
-                                    onChange={handleChange}
-                                    className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/50 font-medium shadow-sm"
-                                    placeholder="Senior Teacher"
-                                />
-                            </div>
+                            <Label>Phone Number</Label>
+                            <Input
+                                type="text"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                icon={Phone}
+                                placeholder="+1 (555) 000-0000"
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Subject Specialization</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <BookOpen className="w-6 h-6" />
-                                </div>
-                                <input
-                                    type="text"
-                                    name="subject"
-                                    value={formData.subject}
-                                    onChange={handleChange}
-                                    className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/50 font-medium shadow-sm"
-                                    placeholder="E.g., Mathematics"
-                                />
-                            </div>
+                            <Label>Education</Label>
+                            <Input
+                                type="text"
+                                name="education"
+                                value={formData.education}
+                                onChange={handleChange}
+                                icon={BookOpen}
+                                placeholder="M.S. Computer Science"
+                            />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3 ml-1">Base Salary</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <DollarSign className="w-6 h-6" />
-                                </div>
-                                <input
-                                    type="number"
-                                    name="salary"
-                                    value={formData.salary}
-                                    onChange={handleChange}
-                                    className="w-full pl-14 pr-6 py-4 rounded-2xl border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder-gray-400 text-gray-900 bg-gray-50/50 font-medium shadow-sm"
-                                    placeholder="50000"
-                                />
-                            </div>
+                            <Label>Designation</Label>
+                            <Input
+                                type="text"
+                                name="designation"
+                                value={formData.designation}
+                                onChange={handleChange}
+                                icon={User}
+                                placeholder="Senior Teacher"
+                            />
+                        </div>
+
+                        <div>
+                            <Label>Subject Specialization</Label>
+                            <Input
+                                type="text"
+                                name="subject"
+                                value={formData.subject}
+                                onChange={handleChange}
+                                icon={BookOpen}
+                                placeholder="E.g., Mathematics"
+                            />
+                        </div>
+
+                        <div>
+                            <Label>Base Salary</Label>
+                            <Input
+                                type="number"
+                                name="salary"
+                                value={formData.salary}
+                                onChange={handleChange}
+                                icon={DollarSign}
+                                placeholder="50000"
+                            />
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <Label>Residential Address</Label>
+                            <Input
+                                type="text"
+                                name="address"
+                                value={formData.address}
+                                onChange={handleChange}
+                                icon={User}
+                                placeholder="123 Main St, City, Country"
+                            />
+                        </div>
+
+                        <div>
+                            <Label>Emergency Contact</Label>
+                            <Input
+                                type="text"
+                                name="emergencyContact"
+                                value={formData.emergencyContact}
+                                onChange={handleChange}
+                                icon={Phone}
+                                placeholder="Name - Relationship - Phone"
+                            />
+                        </div>
+
+                        <div>
+                            <Label>Blood Group</Label>
+                            <Input
+                                type="text"
+                                name="bloodGroup"
+                                value={formData.bloodGroup}
+                                onChange={handleChange}
+                                icon={Plus}
+                                placeholder="O+, A-, etc."
+                            />
                         </div>
 
                         <div className="md:col-span-2 mt-4 p-8 bg-indigo-50/50 border border-indigo-100/50 rounded-[2rem] flex items-start space-x-6">
@@ -266,23 +298,18 @@ export default function AddTeacherPage() {
                     <div className="pt-10 mt-10 border-t border-gray-100 flex justify-end gap-5">
                         <Link
                             href={`/${orgSlug}/dashboard/teachers`}
-                            className="px-8 py-4 text-sm font-bold text-gray-600 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all hover:scale-105 active:scale-95"
+                            className="px-8 py-3 text-base font-bold text-gray-600 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 flex items-center shadow-lg border border-transparent"
                         >
                             Cancel
                         </Link>
-                        <button
+                        <Button
                             type="submit"
-                            disabled={isSaving}
-                            className="flex items-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-2xl font-bold transition-all disabled:opacity-50 shadow-lg hover:shadow-indigo-500/30 hover:scale-105 active:scale-95"
+                            isLoading={isSaving}
+                            loadingText="Creating..."
+                            className="px-10"
                         >
-                            {isSaving && (
-                                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            )}
                             Create Teacher Account
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </div >

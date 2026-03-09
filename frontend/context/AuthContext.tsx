@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
+import { api } from '@/src/lib/api';
 
 
 export interface JwtPayload {
@@ -141,7 +142,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     router.replace('/login');
                 }
             }
-
         }
     }, [user, loading, pathname, router]);
 
@@ -182,7 +182,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         processToken(newToken);
     };
 
-    const logout = () => {
+    const logout = async () => {
+        if (token) {
+            try {
+                await api.auth.logout(token);
+            } catch (error) {
+                console.error("Backend logout failed", error);
+            }
+        }
         setToken(null);
         setUser(null);
         localStorage.removeItem('token');
