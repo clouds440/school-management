@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { UserPlus, User, Mail, Lock, BookOpen, DollarSign, Phone, Plus } from 'lucide-react';
+import { UserPlus, User, Mail, Lock, BookOpen, DollarSign, Phone, Plus, ShieldCheck, UserX, CalendarClock } from 'lucide-react';
 import Link from 'next/link';
 import { Section } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 
 export default function AddTeacherPage() {
     const { token, user } = useAuth();
@@ -300,16 +301,20 @@ export default function AddTeacherPage() {
 
                         <div>
                             <Label>Status</Label>
-                            <select
+                            <Select
                                 name="status"
                                 value={formData.status}
                                 onChange={handleChange as any}
-                                className="w-full px-4 py-3 mt-1 rounded-sm border border-gray-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                icon={
+                                    formData.status === 'ACTIVE' ? ShieldCheck :
+                                        formData.status === 'SUSPENDED' ? UserX :
+                                            CalendarClock
+                                }
                             >
-                                <option value="ACTIVE">Active</option>
-                                <option value="SUSPENDED">Suspended</option>
-                                <option value="ON_LEAVE">On Leave</option>
-                            </select>
+                                <option value="ACTIVE" className="text-gray-900 font-bold">Active</option>
+                                <option value="SUSPENDED" className="text-gray-900 font-bold">Suspended</option>
+                                <option value="ON_LEAVE" className="text-gray-900 font-bold">On Leave</option>
+                            </Select>
                         </div>
 
                         <div className="md:col-span-2">

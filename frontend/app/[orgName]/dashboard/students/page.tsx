@@ -3,13 +3,16 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { Plus, Users, Pencil, Trash2, BookOpen } from 'lucide-react';
+import { Plus, Users, Pencil, Trash2, BookOpen, ShieldCheck, GraduationCap, UserX } from 'lucide-react';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
+import Link from 'next/link';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { Student, Section } from '@/types';
+import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 
 export default function StudentsPage() {
     const { token, user } = useAuth();
@@ -522,17 +525,21 @@ export default function StudentsPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Status</label>
-                            <select
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Status</label>
+                            <Select
                                 value={editFormData.status}
-                                onChange={e => setEditFormData({ ...editFormData, status: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                                onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                                icon={
+                                    editFormData.status === 'ACTIVE' ? ShieldCheck :
+                                        editFormData.status === 'SUSPENDED' ? UserX :
+                                            GraduationCap
+                                }
                             >
-                                <option value="ACTIVE">Active</option>
-                                <option value="SUSPENDED">Suspended</option>
-                                <option value="ALUMNI">Alumni</option>
-                            </select>
+                                <option value="ACTIVE" className="text-gray-900 font-bold">Active</option>
+                                <option value="SUSPENDED" className="text-gray-900 font-bold">Suspended</option>
+                                <option value="ALUMNI" className="text-gray-900 font-bold">Alumni</option>
+                            </Select>
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">Emergency Contact</label>

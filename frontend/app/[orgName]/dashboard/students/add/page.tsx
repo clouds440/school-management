@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { UserPlus, User, Mail, Lock, Phone, MapPin, Hash, BookOpen, GraduationCap, DollarSign, Plus } from 'lucide-react';
+import { UserPlus, User, Mail, Lock, Phone, MapPin, Hash, BookOpen, GraduationCap, DollarSign, Plus, Users, ShieldCheck, UserX } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { Section } from '@/types';
 
 export default function AddStudentPage() {
@@ -341,17 +342,17 @@ export default function AddStudentPage() {
 
                             <div>
                                 <Label>Gender</Label>
-                                <select
+                                <Select
                                     name="gender"
                                     value={formData.gender}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2 mt-1 rounded-sm border border-gray-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                    icon={Users}
                                 >
-                                    <option value="">Select Gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                </select>
+                                    <option value="" className="text-gray-900 font-bold">Select Gender</option>
+                                    <option value="Male" className="text-gray-900 font-bold">Male</option>
+                                    <option value="Female" className="text-gray-900 font-bold">Female</option>
+                                    <option value="Other" className="text-gray-900 font-bold">Other</option>
+                                </Select>
                             </div>
 
                             <div>
@@ -380,16 +381,20 @@ export default function AddStudentPage() {
 
                             <div>
                                 <Label>Status</Label>
-                                <select
+                                <Select
                                     name="status"
                                     value={formData.status}
                                     onChange={handleChange as any}
-                                    className="w-full px-4 py-2 mt-1 rounded-sm border border-gray-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                    icon={
+                                        formData.status === 'ACTIVE' ? ShieldCheck :
+                                            formData.status === 'SUSPENDED' ? UserX :
+                                                GraduationCap
+                                    }
                                 >
-                                    <option value="ACTIVE">Active</option>
-                                    <option value="SUSPENDED">Suspended</option>
-                                    <option value="ALUMNI">Alumni</option>
-                                </select>
+                                    <option value="ACTIVE" className="text-gray-900 font-bold">Active</option>
+                                    <option value="SUSPENDED" className="text-gray-900 font-bold">Suspended</option>
+                                    <option value="ALUMNI" className="text-gray-900 font-bold">Alumni</option>
+                                </Select>
                             </div>
 
                             <div className="col-span-1 md:col-span-3">

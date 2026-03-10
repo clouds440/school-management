@@ -46,13 +46,13 @@ export default function OrgDashboardLayout({ children }: { children: React.React
         orgLinks.push({ id: 'DASHBOARD', label: 'Overview', href: `/${orgSlug}/dashboard`, icon: LayoutDashboard });
 
         if (user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER') {
-            orgLinks.push({ id: 'TEACHERS', label: 'Teachers', href: `/${orgSlug}/dashboard/teachers`, icon: Users, badge: stats?.TEACHERS });
             orgLinks.push({ id: 'COURSES', label: 'Courses', href: `/${orgSlug}/dashboard/courses`, icon: LibraryBig, badge: stats?.COURSES });
             orgLinks.push({ id: 'SECTIONS', label: 'Sections', href: `/${orgSlug}/dashboard/sections`, icon: BookOpen, badge: stats?.SECTIONS });
+            orgLinks.push({ id: 'TEACHERS', label: 'Teachers', href: `/${orgSlug}/dashboard/teachers`, icon: Users, badge: stats?.TEACHERS });
             orgLinks.push({ id: 'STUDENTS', label: 'Students', href: `/${orgSlug}/dashboard/students`, icon: GraduationCap, badge: stats?.STUDENTS });
             orgLinks.push({ id: 'SETTINGS', label: 'Settings', href: `/${orgSlug}/settings`, icon: Settings });
         } else if (user?.role === 'TEACHER') {
-            orgLinks.push({ id: 'COURSES', label: 'My Courses', href: `/${orgSlug}/dashboard/courses`, icon: BookOpen, badge: stats?.COURSES });
+            orgLinks.push({ id: 'COURSES', label: 'My Courses', href: `/${orgSlug}/dashboard/courses`, icon: LibraryBig, badge: stats?.COURSES });
             orgLinks.push({ id: 'SECTIONS', label: 'My Sections', href: `/${orgSlug}/dashboard/sections`, icon: BookOpen, badge: stats?.SECTIONS });
             orgLinks.push({ id: 'STUDENTS', label: 'My Students', href: `/${orgSlug}/dashboard/students`, icon: GraduationCap, badge: stats?.STUDENTS });
         } else if (user?.role === 'STUDENT') {

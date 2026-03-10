@@ -12,6 +12,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 import { Teacher, Section } from '@/types';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
+import { ShieldCheck, UserX, CalendarClock } from 'lucide-react';
 
 export default function TeachersPage() {
     const { token, user } = useAuth();
@@ -394,15 +396,19 @@ export default function TeachersPage() {
                         </div>
                         <div className="space-y-2">
                             <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Status</label>
-                            <select
+                            <Select
                                 value={editFormData.status}
                                 onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold"
+                                icon={
+                                    editFormData.status === 'ACTIVE' ? ShieldCheck :
+                                        editFormData.status === 'SUSPENDED' ? UserX :
+                                            CalendarClock
+                                }
                             >
-                                <option value="ACTIVE">Active</option>
-                                <option value="SUSPENDED">Suspended</option>
-                                <option value="ON_LEAVE">On Leave</option>
-                            </select>
+                                <option value="ACTIVE" className="text-gray-900 font-bold">Active</option>
+                                <option value="SUSPENDED" className="text-gray-900 font-bold">Suspended</option>
+                                <option value="ON_LEAVE" className="text-gray-900 font-bold">On Leave</option>
+                            </Select>
                         </div>
 
                         <div className="md:col-span-2 space-y-2">
