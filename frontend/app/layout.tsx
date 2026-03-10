@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 import Navbar from "@/components/Navbar";
 import { ClientFooter } from "@/components/ClientFooter";
 import { Providers } from "@/components/Providers";
+import DashboardMainWrapper from "@/components/DashboardMainWrapper";
 
 export default function RootLayout({
   children,
@@ -39,12 +40,10 @@ export default function RootLayout({
           </div>
 
           <Navbar />
-          <main className="flex-grow overflow-y-auto relative z-10 w-full flex flex-col">
-            <div className="flex-grow flex flex-col">
-              {children}
-            </div>
-            <ClientFooter />
-          </main>
+          <DashboardMainWrapper>
+            {children}
+          </DashboardMainWrapper>
+          <ClientFooter />
         </Providers>
       </body>
     </html>

@@ -12,6 +12,7 @@ export interface JwtPayload {
     email: string;
     name?: string;
     orgSlug?: string;
+    orgName?: string;
     role?: 'SUPER_ADMIN' | 'PLATFORM_ADMIN' | 'ORG_ADMIN' | 'ORG_MANAGER' | 'TEACHER' | 'STUDENT';
     designation?: string;
     type?: string;

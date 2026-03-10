@@ -19,17 +19,28 @@ export interface Teacher {
     emergencyContact?: string;
     bloodGroup?: string;
     address?: string;
+    status?: 'ACTIVE' | 'SUSPENDED' | 'ON_LEAVE';
     user: User;
+    sections?: Section[];
 }
 
-export interface Class {
+export interface Course {
     id: string;
     name: string;
     description?: string;
-    grade?: string;
-    courses: string[];
-    teacherId?: string;
-    teacher?: Teacher;
+    updatedBy?: string;
+    updatedAt?: string;
+}
+
+export interface Section {
+    id: string;
+    name: string;
+    semester?: string;
+    year?: string;
+    room?: string;
+    courseId?: string;
+    course?: Course;
+    teachers?: Teacher[];
     updatedBy?: string;
     updatedAt?: string;
 }
@@ -50,9 +61,9 @@ export interface Student {
     bloodGroup?: string;
     gender?: string;
     feePlan?: string;
+    status?: 'ACTIVE' | 'SUSPENDED' | 'ALUMNI';
     user: User;
-    classId?: string;
-    class?: Class;
+    enrollments?: { section: Section }[];
     updatedBy?: string;
     updatedAt?: string;
 }

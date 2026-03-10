@@ -72,7 +72,8 @@ export interface AdminStats {
 
 export interface OrgStats {
     TEACHERS: number;
-    CLASSES: number;
+    COURSES: number;
+    SECTIONS: number;
     STUDENTS: number;
 }
 

@@ -51,7 +51,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex flex-1 items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-y-auto min-h-full">
       {/* Background decoration */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-4xl pointer-events-none">
         <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
@@ -59,12 +59,12 @@ export default function RegisterPage() {
         <div className="absolute -bottom-8 left-40 w-80 h-80 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
-      <div className="w-full max-w-lg space-y-8 bg-white/70 backdrop-blur-2xl p-10 sm:p-12 rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-white/50 relative z-10 mx-auto transition-all duration-500">
+      <div className="w-full max-w-lg space-y-8 bg-white/70 backdrop-blur-2xl p-10 sm:p-12 rounded-sm shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-white/50 relative z-10 mx-auto transition-all duration-500">
         <div className="text-center">
-          <div className="mx-auto bg-indigo-500/10 w-20 h-20 rounded-3xl flex items-center justify-center mb-8 shadow-inner border border-white/20">
+          <div className="mx-auto bg-indigo-500/10 w-20 h-20 rounded-sm flex items-center justify-center mb-8 shadow-inner border border-white/20">
             <UserPlus className="w-10 h-10 text-indigo-100 drop-shadow-sm" />
           </div>
-          <h2 className="mt-2 text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700 tracking-tight">
+          <h2 className="mt-2 text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-gray-900 to-gray-700 tracking-tight">
             Register Organization
           </h2>
           <p className="mt-3 text-sm text-gray-500">
@@ -151,7 +151,7 @@ export default function RegisterPage() {
                       onChange={(e) => setSameAsLoginEmail(e.target.checked)}
                       className="peer sr-only"
                     />
-                    <div className="w-5 h-5 bg-gray-100 border-2 border-gray-200 rounded-lg peer-checked:bg-indigo-600 peer-checked:border-indigo-600 transition-all duration-200 group-hover:border-indigo-300 shadow-sm flex items-center justify-center">
+                    <div className="w-5 h-5 bg-gray-100 border-2 border-gray-200 rounded-sm peer-checked:bg-indigo-600 peer-checked:border-indigo-600 transition-all duration-200 group-hover:border-indigo-300 shadow-sm flex items-center justify-center">
                       <svg
                         className={`w-3.5 h-3.5 text-white transition-opacity duration-200 ${sameAsLoginEmail ? 'opacity-100' : 'opacity-0'}`}
                         fill="none"

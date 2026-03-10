@@ -4,8 +4,10 @@ import { PrismaClient, Prisma, SupportTopic } from '@prisma/client';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
-import { CreateClassDto } from './dto/create-class.dto';
-import { UpdateClassDto } from './dto/update-class.dto';
+import { CreateCourseDto } from './dto/create-course.dto';
+import { UpdateCourseDto } from './dto/update-course.dto';
+import { CreateSectionDto } from './dto/create-section.dto';
+import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import * as bcrypt from 'bcrypt';
@@ -137,6 +139,8 @@ export class OrgService {
                         emergencyContact: data.emergencyContact,
                         bloodGroup: data.bloodGroup,
                         address: data.address,
+                        status: data.status,
+                        sections: data.sectionIds ? { connect: data.sectionIds.map(id => ({ id })) } : undefined,
                     },
                     include: {
                         user: {
@@ -195,6 +199,8 @@ export class OrgService {
                     emergencyContact: data.emergencyContact,
                     bloodGroup: data.bloodGroup,
                     address: data.address,
+                    status: data.status,
+                    sections: data.sectionIds ? { set: data.sectionIds.map(id => ({ id })) } : undefined,
                 },
                 include: {
                     user: {
@@ -228,80 +234,80 @@ export class OrgService {
         return { message: 'Teacher deleted successfully' };
     }
 
-    // --- Classes ---
-    async getClasses(orgId: string, user?: { id: string; role: string }) {
-        const whereClause: Prisma.ClassWhereInput = { organizationId: orgId };
-
-        return this.prisma.class.findMany({
-            where: whereClause,
-            include: {
-                teacher: {
-                    include: {
-                        user: { select: { email: true, name: true } }
-                    }
-                }
-            }
+    // --- Courses ---
+    async getCourses(orgId: string) {
+        return this.prisma.course.findMany({
+            where: { organizationId: orgId },
+            include: { sections: true }
         });
     }
 
-    async createClass(orgId: string, data: CreateClassDto, user: { name?: string | null; email: string }) {
-        return this.prisma.class.create({
+    async createCourse(orgId: string, data: CreateCourseDto) {
+        return this.prisma.course.create({
             data: {
                 name: data.name,
                 description: data.description,
-                grade: data.grade,
-                teacherId: data.teacherId,
-                courses: data.courses || [],
                 organizationId: orgId,
-                updatedBy: user.name || user.email,
             },
         });
     }
 
-    async updateClass(orgId: string, id: string, data: UpdateClassDto, user: { id: string; role: string; name?: string | null; email: string }) {
-        const cls = await this.prisma.class.findFirst({
+    async updateCourse(orgId: string, id: string, data: UpdateCourseDto) {
+        return this.prisma.course.update({
             where: { id, organizationId: orgId },
-            include: { teacher: true }
-        });
-
-        if (!cls) throw new NotFoundException('Class not found');
-
-        // Permission check for teachers
-        if (user.role === 'TEACHER') {
-            if (!cls.teacher || cls.teacher.userId !== user.id) {
-                throw new ForbiddenException('You are not assigned to this class');
-            }
-            // Teachers cannot change the assigned teacher
-            if (data.teacherId !== undefined && data.teacherId !== cls.teacherId) {
-                throw new ForbiddenException('Teachers cannot change the assigned teacher');
-            }
-        }
-
-        return this.prisma.class.update({
-            where: { id },
-            data: {
-                name: data.name,
-                description: data.description,
-                grade: data.grade,
-                teacherId: user.role === 'ORG_ADMIN' ? data.teacherId : undefined, // Only admin can update teacherId
-                courses: data.courses !== undefined ? data.courses : undefined,
-                updatedBy: user.name || user.email,
-            },
+            data,
         });
     }
 
-    async deleteClass(orgId: string, id: string) {
-        const cls = await this.prisma.class.findFirst({
+    async deleteCourse(orgId: string, id: string) {
+        const course = await this.prisma.course.findFirst({
             where: { id, organizationId: orgId }
         });
+        if (!course) throw new NotFoundException('Course not found');
 
-        if (!cls) throw new NotFoundException('Class not found');
+        await this.prisma.course.delete({ where: { id } });
+        return { message: 'Course deleted successfully' };
+    }
 
-        await this.prisma.class.delete({
-            where: { id },
+    // --- Sections ---
+    async getSections(orgId: string) {
+        return this.prisma.section.findMany({
+            where: { course: { organizationId: orgId } },
+            include: {
+                course: true,
+                teachers: { include: { user: { select: { email: true, name: true } } } },
+                enrollments: Object.keys(orgId).length > 0 ? undefined : undefined // To fetch enrolls if needed later
+            }
         });
+    }
 
-        return { message: 'Class deleted successfully' };
+    async createSection(orgId: string, data: CreateSectionDto) {
+        return this.prisma.section.create({
+            data: {
+                name: data.name,
+                semester: data.semester,
+                year: data.year,
+                room: data.room,
+                courseId: data.courseId,
+            },
+        });
+    }
+
+    async updateSection(orgId: string, id: string, data: UpdateSectionDto) {
+        return this.prisma.section.update({
+            where: { id, course: { organizationId: orgId } },
+            data,
+        });
+    }
+
+    async deleteSection(orgId: string, id: string) {
+        const section = await this.prisma.section.findFirst({
+            where: { id, course: { organizationId: orgId } },
+        });
+        if (!section) throw new NotFoundException('Section not found');
+
+        await this.prisma.section.delete({ where: { id } });
+        return { message: 'Section deleted successfully' };
     }
 
     // --- Students ---
@@ -317,13 +323,13 @@ export class OrgService {
                         phone: true,
                     },
                 },
-                class: {
+                enrollments: {
                     include: {
-                        teacher: {
-                            select: { id: true, userId: true }
-                        }
-                    }
-                }
+                        section: {
+                            include: { course: true },
+                        },
+                    },
+                },
             },
         });
     }
@@ -369,12 +375,13 @@ export class OrgService {
                         bloodGroup: data.bloodGroup,
                         gender: data.gender,
                         feePlan: data.feePlan,
-                        classId: data.classId || undefined,
+                        status: data.status,
+                        enrollments: data.sectionIds ? { create: data.sectionIds.map(sectionId => ({ sectionId })) } : undefined,
                         updatedBy: userContext.name || userContext.email
                     },
                     include: {
                         user: { select: { email: true, name: true, phone: true } },
-                        class: { select: { id: true, name: true, courses: true } }
+                        enrollments: { include: { section: true } }
                     },
                 });
 
@@ -404,7 +411,7 @@ export class OrgService {
                 });
             }
 
-            return tx.student.update({
+            await tx.student.update({
                 where: { id },
                 data: {
                     registrationNumber: data.registrationNumber,
@@ -420,12 +427,25 @@ export class OrgService {
                     bloodGroup: data.bloodGroup,
                     gender: data.gender,
                     feePlan: data.feePlan,
-                    classId: data.classId !== undefined ? (data.classId || null) : undefined,
+                    status: data.status,
                     updatedBy: user.name || user.email
                 },
+            });
+
+            const sectionIds = data.sectionIds || [];
+            if (sectionIds.length > 0) {
+                // To replace enrollments, first delete old, then create new
+                await tx.enrollment.deleteMany({ where: { studentId: id } });
+                await tx.enrollment.createMany({
+                    data: sectionIds.map(sectionId => ({ studentId: id, sectionId }))
+                });
+            }
+
+            return tx.student.findUnique({
+                where: { id },
                 include: {
                     user: { select: { email: true, name: true, phone: true } },
-                    class: { select: { id: true, name: true, courses: true } }
+                    enrollments: { include: { section: true } }
                 },
             });
         });
@@ -465,15 +485,17 @@ export class OrgService {
     }
 
     async getStats(orgId: string, user: { id: string; role: string }) {
-        const [teachers, classes, students] = await Promise.all([
+        const [teachers, courses, sections, students] = await Promise.all([
             this.prisma.teacher.count({ where: { organizationId: orgId } }),
-            this.prisma.class.count({ where: { organizationId: orgId } }),
+            this.prisma.course.count({ where: { organizationId: orgId } }),
+            this.prisma.section.count({ where: { course: { organizationId: orgId } } }),
             this.prisma.student.count({ where: { organizationId: orgId } }),
         ]);
 
         return {
             TEACHERS: teachers,
-            CLASSES: classes,
+            COURSES: courses,
+            SECTIONS: sections,
             STUDENTS: students,
         };
     }

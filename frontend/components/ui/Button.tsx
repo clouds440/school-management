@@ -23,7 +23,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <button
                 className={`
           group relative flex justify-center items-center space-x-3 
-          rounded-2xl border border-transparent py-3 px-6 text-base font-bold
+          rounded-sm border border-transparent py-3 px-6 text-base font-bold
           focus:outline-none focus:ring-4
           transition-all duration-300 shadow-lg
           ${variantClasses}
@@ -44,7 +44,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 ) : (
                     <>
                         {icon && (
-                            <div className="w-5 h-5 flex-shrink-0">
+                            <div className="w-5 h-5 shrink-0">
                                 {React.createElement(icon, { className: "w-full h-full" })}
                             </div>
                         )}

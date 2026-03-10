@@ -84,14 +84,14 @@ export function DataTable<T>({ data, columns, keyExtractor, isLoading }: DataTab
 
     if (data.length === 0) {
         return (
-            <div className="p-12 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+            <div className="p-12 text-center bg-gray-50/50 rounded-sm border border-dashed border-gray-200">
                 <p className="text-gray-500 font-bold">No data available</p>
             </div>
         );
     }
 
     return (
-        <div className="w-full overflow-hidden rounded-2xl border border-gray-200/60 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-gray-900/5">
+        <div className="w-full overflow-hidden rounded-sm border border-gray-200/60 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-gray-900/5">
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200">
                 <table className="w-full text-left text-sm text-gray-700 min-w-[600px]">
                     <thead className="bg-gray-50/80 text-[11px] uppercase tracking-wider font-black text-gray-500 border-b border-gray-200/60 select-none">

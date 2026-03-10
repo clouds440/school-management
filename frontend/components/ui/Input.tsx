@@ -17,7 +17,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 <input
                     type={type}
                     className={`
-            block w-full rounded-xl border border-gray-200 bg-gray-50/50 
+            block w-full rounded-sm border border-gray-200 bg-gray-50/50 
             ${Icon ? 'pl-11' : 'pl-4'} pr-4 py-3 
             text-gray-900 placeholder-gray-400 
             focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 

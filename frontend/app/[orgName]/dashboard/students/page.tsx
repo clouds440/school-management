@@ -4,13 +4,12 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { Plus, Users, Pencil, Trash2, BookOpen } from 'lucide-react';
-import { BackButton } from '@/components/ui/BackButton';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { Student, Class } from '@/types';
+import { Student, Section } from '@/types';
 
 export default function StudentsPage() {
     const { token, user } = useAuth();
@@ -20,7 +19,7 @@ export default function StudentsPage() {
     const { showToast } = useToast();
 
     const [students, setStudents] = useState<Student[]>([]);
-    const [classes, setClasses] = useState<Class[]>([]);
+    const [sections, setSections] = useState<Section[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showOnlyMyStudents, setShowOnlyMyStudents] = useState(false);
@@ -38,20 +37,21 @@ export default function StudentsPage() {
         age: '',
         address: '',
         major: '',
-        classId: '',
+        sectionIds: [] as string[],
         department: '',
         admissionDate: '',
         graduationDate: '',
         gender: '',
         bloodGroup: '',
         emergencyContact: '',
-        feePlan: ''
+        feePlan: '',
+        status: 'ACTIVE'
     });
 
     useEffect(() => {
         if (token) {
             fetchStudents();
-            fetchClasses();
+            fetchSections();
         }
     }, [token]);
 
@@ -72,21 +72,20 @@ export default function StudentsPage() {
         }
     };
 
-    const fetchClasses = async () => {
+    const fetchSections = async () => {
         try {
-            const response = await fetch('http://localhost:3000/org/classes', {
+            const response = await fetch('http://localhost:3000/org/sections', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (response.ok) {
                 const data = await response.json();
-                setClasses(data);
+                setSections(data);
             }
         } catch (error) {
-            console.error('Failed to load classes', error);
+            console.error('Failed to load sections', error);
         }
     };
 
-    // Filter students
     const filteredStudents = students.filter((student: Student) => {
         const search = searchTerm.toLowerCase();
         const matchesSearch =
@@ -95,10 +94,10 @@ export default function StudentsPage() {
             student.major?.toLowerCase().includes(search) ||
             student.department?.toLowerCase().includes(search);
 
-        // A student is "mine" if they belong to a class where I am the teacher
-        const teacherUserId = student.class?.teacher?.userId;
         const loggedInUserId = user?.sub || user?.id;
-        const isMyStudent = teacherUserId && loggedInUserId && teacherUserId === loggedInUserId;
+        const isMyStudent = student.enrollments?.some(e =>
+            e.section?.teachers?.some(t => t.userId === loggedInUserId)
+        );
         const matchesFilter = !showOnlyMyStudents || isMyStudent;
 
         return matchesSearch && matchesFilter;
@@ -140,14 +139,20 @@ export default function StudentsPage() {
             )
         },
         {
-            header: 'Enrolled Classes',
-            sortable: true,
-            sortAccessor: (row: Student) => row.class?.name || '',
-            accessor: (row: Student) => row.class ? (
-                <div className="max-w-[200px] truncate" title={`${row.class.name} ${row.class.courses && row.class.courses.length > 0 ? `(${row.class.courses.length} courses)` : ''}`}>
-                    {row.class.name} {row.class.courses && row.class.courses.length > 0 ? `(${row.class.courses.length} courses)` : ''}
-                </div>
-            ) : <span className="text-gray-400 italic">Unassigned</span>
+            header: 'Enrolled Sections',
+            sortable: false,
+            accessor: (row: Student) => {
+                const sectionsList = row.enrollments?.map(e => e.section) || [];
+                return sectionsList.length > 0 ? (
+                    <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {sectionsList.map(sec => (
+                            <span key={sec?.id || Math.random()} className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-sm text-xs font-medium border border-indigo-100 truncate max-w-[150px]" title={sec?.name}>
+                                {sec?.name || 'Unknown'}
+                            </span>
+                        ))}
+                    </div>
+                ) : <span className="text-gray-400 italic">Unassigned</span>;
+            }
         },
         {
             header: 'Fee / Age',
@@ -176,14 +181,14 @@ export default function StudentsPage() {
                 <div className="flex justify-end gap-2 shrink-0">
                     <button
                         onClick={() => handleEditClick(row.id)}
-                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
+                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-sm transition-colors border border-transparent hover:border-indigo-100"
                         title="Edit Student"
                     >
                         <Pencil className="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => handleDeleteClick(row.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-sm transition-colors border border-transparent hover:border-red-100"
                         title="Remove Student"
                     >
                         <Trash2 className="w-4 h-4" />
@@ -206,14 +211,15 @@ export default function StudentsPage() {
                 age: student.age?.toString() || '',
                 address: student.address || '',
                 major: student.major || '',
-                classId: student.class?.id || '',
+                sectionIds: student.enrollments?.map(e => e.section?.id) || [],
                 department: student.department || '',
                 admissionDate: student.admissionDate ? student.admissionDate.split('T')[0] : '',
                 graduationDate: student.graduationDate ? student.graduationDate.split('T')[0] : '',
                 gender: student.gender || '',
                 bloodGroup: student.bloodGroup || '',
                 emergencyContact: student.emergencyContact || '',
-                feePlan: student.feePlan || ''
+                feePlan: student.feePlan || '',
+                status: student.status || 'ACTIVE'
             });
             setIsEditModalOpen(true);
         }
@@ -245,14 +251,15 @@ export default function StudentsPage() {
                     age: editFormData.age ? Number(editFormData.age) : undefined,
                     address: editFormData.address || undefined,
                     major: editFormData.major || undefined,
-                    classId: editFormData.classId || undefined,
+                    sectionIds: editFormData.sectionIds,
                     department: editFormData.department || undefined,
                     admissionDate: editFormData.admissionDate || undefined,
                     graduationDate: editFormData.graduationDate || undefined,
                     gender: editFormData.gender || undefined,
                     bloodGroup: editFormData.bloodGroup || undefined,
                     emergencyContact: editFormData.emergencyContact || undefined,
-                    feePlan: editFormData.feePlan || undefined
+                    feePlan: editFormData.feePlan || undefined,
+                    status: editFormData.status
                 })
             });
 
@@ -298,17 +305,16 @@ export default function StudentsPage() {
     }
 
     return (
-        <div className="flex flex-1 flex-col p-6 sm:p-10 w-full animate-fade-in-up">
-            <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
+            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
                 <div>
-                    <BackButton />
-                    <div className="mt-8 flex items-center gap-5">
-                        <div className="p-4 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 shadow-xl">
-                            <Users className="w-10 h-10 text-white" />
+                    <div className="flex items-center gap-5">
+                        <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm md:rounded-sm border border-white/30 shadow-xl shrink-0">
+                            <Users className="w-8 h-8 md:w-10 md:h-10 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-4xl font-black text-white tracking-tight drop-shadow-lg">Students</h1>
-                            <p className="text-indigo-100 font-bold opacity-80 mt-1">MANAGE ENROLLED LEARNERS</p>
+                            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg text-left">Students</h1>
+                            <p className="text-indigo-100 font-bold opacity-80 mt-1 text-sm md:text-base text-left">MANAGE ENROLLED LEARNERS</p>
                         </div>
                     </div>
                 </div>
@@ -316,7 +322,7 @@ export default function StudentsPage() {
                 {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') && (
                     <button
                         onClick={() => router.push(`/${orgSlug}/dashboard/students/add`)}
-                        className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-6 py-3 rounded-xl font-bold transition-all border border-white/30 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                        className="flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-6 py-3 md:px-8 md:py-4 rounded-sm font-bold transition-all border border-white/30 shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full md:w-auto"
                     >
                         <Plus className="w-5 h-5" />
                         Add New Student
@@ -324,14 +330,14 @@ export default function StudentsPage() {
                 )}
             </div>
 
-            <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white/50 p-10 mb-10 overflow-hidden">
-                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="bg-white rounded-sm md:rounded-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-4 md:p-8 mb-10 overflow-hidden">
+                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, registration or major..." />
                     </div>
 
                     {user?.role === 'TEACHER' && (
-                        <div className="flex items-center gap-3 bg-indigo-50/50 p-2 pr-4 rounded-2xl border border-indigo-100">
+                        <div className="flex items-center gap-3 bg-indigo-50/50 p-2 pr-4 rounded-sm border border-indigo-100 self-start md:self-auto">
                             <button
                                 onClick={() => setShowOnlyMyStudents(!showOnlyMyStudents)}
                                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${showOnlyMyStudents ? 'bg-indigo-600' : 'bg-gray-200'
@@ -342,12 +348,12 @@ export default function StudentsPage() {
                                         }`}
                                 />
                             </button>
-                            <span className="text-sm font-bold text-indigo-900 uppercase tracking-wider">My Students</span>
+                            <span className="text-xs font-bold text-indigo-900 uppercase tracking-wider">My Students</span>
                         </div>
                     )}
                 </div>
 
-                <div className="relative">
+                <div className="relative overflow-x-hidden">
                     <DataTable
                         data={filteredStudents}
                         columns={columns}
@@ -372,7 +378,7 @@ export default function StudentsPage() {
                                 type="text"
                                 value={editFormData.name}
                                 onChange={e => setEditFormData({ ...editFormData, name: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                                 required
                             />
                         </div>
@@ -382,7 +388,7 @@ export default function StudentsPage() {
                                 type="text"
                                 value={editFormData.phone}
                                 onChange={e => setEditFormData({ ...editFormData, phone: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             />
                         </div>
                     </div>
@@ -394,7 +400,7 @@ export default function StudentsPage() {
                                 type="text"
                                 value={editFormData.registrationNumber}
                                 onChange={e => setEditFormData({ ...editFormData, registrationNumber: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             />
                         </div>
                         <div>
@@ -403,7 +409,7 @@ export default function StudentsPage() {
                                 type="text"
                                 value={editFormData.major}
                                 onChange={e => setEditFormData({ ...editFormData, major: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             />
                         </div>
                     </div>
@@ -415,7 +421,7 @@ export default function StudentsPage() {
                                 type="text"
                                 value={editFormData.fatherName}
                                 onChange={e => setEditFormData({ ...editFormData, fatherName: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             />
                         </div>
                         <div>
@@ -424,7 +430,7 @@ export default function StudentsPage() {
                                 type="number"
                                 value={editFormData.age}
                                 onChange={e => setEditFormData({ ...editFormData, age: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             />
                         </div>
                         <div>
@@ -433,7 +439,7 @@ export default function StudentsPage() {
                                 type="number"
                                 value={editFormData.fee}
                                 onChange={e => setEditFormData({ ...editFormData, fee: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             />
                         </div>
                     </div>
@@ -443,7 +449,7 @@ export default function StudentsPage() {
                         <textarea
                             value={editFormData.address}
                             onChange={e => setEditFormData({ ...editFormData, address: e.target.value })}
-                            className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                            className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             rows={2}
                         />
                     </div>
@@ -455,7 +461,7 @@ export default function StudentsPage() {
                                 type="text"
                                 value={editFormData.department}
                                 onChange={e => setEditFormData({ ...editFormData, department: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             />
                         </div>
                         <div>
@@ -464,7 +470,7 @@ export default function StudentsPage() {
                                 type="text"
                                 value={editFormData.feePlan}
                                 onChange={e => setEditFormData({ ...editFormData, feePlan: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             />
                         </div>
                     </div>
@@ -476,7 +482,7 @@ export default function StudentsPage() {
                                 type="date"
                                 value={editFormData.admissionDate}
                                 onChange={e => setEditFormData({ ...editFormData, admissionDate: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             />
                         </div>
                         <div>
@@ -485,7 +491,7 @@ export default function StudentsPage() {
                                 type="date"
                                 value={editFormData.graduationDate}
                                 onChange={e => setEditFormData({ ...editFormData, graduationDate: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             />
                         </div>
                     </div>
@@ -496,7 +502,7 @@ export default function StudentsPage() {
                             <select
                                 value={editFormData.gender}
                                 onChange={e => setEditFormData({ ...editFormData, gender: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
                             >
                                 <option value="">Select Gender</option>
                                 <option value="Male">Male</option>
@@ -510,35 +516,53 @@ export default function StudentsPage() {
                                 type="text"
                                 value={editFormData.bloodGroup}
                                 onChange={e => setEditFormData({ ...editFormData, bloodGroup: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Status</label>
+                            <select
+                                value={editFormData.status}
+                                onChange={e => setEditFormData({ ...editFormData, status: e.target.value })}
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                            >
+                                <option value="ACTIVE">Active</option>
+                                <option value="SUSPENDED">Suspended</option>
+                                <option value="ALUMNI">Alumni</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Emergency Contact</label>
+                            <input
+                                type="text"
+                                value={editFormData.emergencyContact}
+                                onChange={e => setEditFormData({ ...editFormData, emergencyContact: e.target.value })}
+                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                             />
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Emergency Contact</label>
-                        <input
-                            type="text"
-                            value={editFormData.emergencyContact}
-                            onChange={e => setEditFormData({ ...editFormData, emergencyContact: e.target.value })}
-                            className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Assigned Class/Grade</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Enrolled Sections</label>
                         <select
-                            value={editFormData.classId}
-                            onChange={e => setEditFormData({ ...editFormData, classId: e.target.value })}
-                            className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                            multiple
+                            value={editFormData.sectionIds}
+                            onChange={e => {
+                                const selected = Array.from(e.target.selectedOptions, option => option.value);
+                                setEditFormData({ ...editFormData, sectionIds: selected });
+                            }}
+                            className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white min-h-[100px]"
                         >
-                            <option value="">Unassigned</option>
-                            {classes.map(cls => (
-                                <option key={cls.id} value={cls.id}>
-                                    {cls.name} {cls.grade ? `(${cls.grade})` : ''} - {cls.courses?.length || 0} courses
+                            {sections.map(sec => (
+                                <option key={sec.id} value={sec.id}>
+                                    {sec.name} {sec.course?.name ? `(${sec.course.name})` : ''}
                                 </option>
                             ))}
                         </select>
+                        <p className="text-xs text-gray-500 mt-1">Hold Ctrl (Windows) or Cmd (Mac) to select multiple sections.</p>
                     </div>
                 </div>
             </ModalForm>
@@ -551,6 +575,7 @@ export default function StudentsPage() {
                 title={<>Remove Student <strong>{selectedStudent?.user?.name}</strong></>}
                 description={<>Are you sure you want to completely remove <strong>{selectedStudent?.user?.name || 'this student'}</strong>? This will also delete their login account.</>}
                 confirmText="Yes, Remove Student"
+                isDestructive={true}
             />
         </div>
     );

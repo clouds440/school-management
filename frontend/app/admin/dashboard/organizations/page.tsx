@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldAlert, ShieldCheck, ShieldOff, Search, Check, X, Building, MapPin, Mail, Calendar } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, ShieldOff, Search, Check, X, Building2, MapPin, Mail, Calendar, MessageSquare } from 'lucide-react';
 import { api, Organization, AdminStats, OrgStatus } from '@/src/lib/api';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -116,11 +116,11 @@ export default function OrganizationsPage() {
             sortAccessor: (row) => row.name,
             accessor: (row) => (
                 <div className="flex items-start gap-4 min-w-0">
-                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 shrink-0">
-                        <Building className="w-5 h-5" />
+                    <div className="w-10 h-10 bg-indigo-50 rounded-sm flex items-center justify-center text-indigo-600 shrink-0">
+                        <Building2 className="w-5 h-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-black text-gray-900 leading-tight break-words">{row.name}</h4>
+                        <h4 className="text-sm font-black text-gray-900 leading-tight wrap-break-word">{row.name}</h4>
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block truncate">{row.type.replace('_', ' ')}</span>
                     </div>
                 </div>
@@ -163,7 +163,7 @@ export default function OrganizationsPage() {
                             <button
                                 onClick={() => handleApprove(row.id, row.name)}
                                 disabled={actionLoading !== null}
-                                className="w-full px-3 py-2 bg-green-600 text-white rounded-lg font-bold text-xs shadow-md shadow-green-600/20 hover:bg-green-700 transition-all flex items-center justify-center gap-1.5"
+                                className="w-full px-3 py-2 bg-green-600 text-white rounded-sm font-bold text-xs shadow-md shadow-green-600/20 hover:bg-green-700 transition-all flex items-center justify-center gap-1.5"
                             >
                                 {actionLoading === `approve-${row.id}` ? (
                                     <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
@@ -173,7 +173,7 @@ export default function OrganizationsPage() {
                             <button
                                 onClick={() => handleOpenModal(row.id, row.name, 'REJECT')}
                                 disabled={actionLoading !== null}
-                                className="w-full px-3 py-2 bg-white text-red-600 border border-red-100 rounded-lg font-bold text-xs hover:bg-red-50 transition-all flex items-center justify-center gap-1.5"
+                                className="w-full px-3 py-2 bg-white text-red-600 border border-red-100 rounded-sm font-bold text-xs hover:bg-red-50 transition-all flex items-center justify-center gap-1.5"
                             >
                                 <X className="w-3 h-3" />
                                 Reject
@@ -181,14 +181,14 @@ export default function OrganizationsPage() {
                         </>
                     ) : activeStatusTab === 'APPROVED' ? (
                         <div className="flex flex-col gap-2 w-full">
-                            <div className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-bold text-[10px] flex justify-center items-center gap-1 border border-green-100">
+                            <div className="px-3 py-1.5 bg-green-50 text-green-700 rounded-sm font-bold text-[10px] flex justify-center items-center gap-1 border border-green-100">
                                 <ShieldCheck className="w-3 h-3" />
                                 ACTIVE
                             </div>
                             <button
                                 onClick={() => handleOpenModal(row.id, row.name, 'SUSPEND')}
                                 disabled={actionLoading !== null}
-                                className="w-full px-3 py-2 bg-white text-orange-600 border border-orange-100 rounded-lg font-bold text-xs hover:bg-orange-50 transition-all flex items-center justify-center gap-1.5"
+                                className="w-full px-3 py-2 bg-white text-orange-600 border border-orange-100 rounded-sm font-bold text-xs hover:bg-orange-50 transition-all flex items-center justify-center gap-1.5"
                             >
                                 <ShieldAlert className="w-3 h-3" />
                                 Suspend
@@ -199,7 +199,7 @@ export default function OrganizationsPage() {
                             <button
                                 onClick={() => handleApprove(row.id, row.name)}
                                 disabled={actionLoading !== null}
-                                className="w-full px-3 py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1.5"
+                                className="w-full px-3 py-2 bg-indigo-600 text-white rounded-sm font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1.5"
                             >
                                 {actionLoading === `approve-${row.id}` ? (
                                     <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
@@ -207,7 +207,7 @@ export default function OrganizationsPage() {
                                 Re-approve
                             </button>
                             {row.statusMessage && (
-                                <div className="text-[10px] text-red-500 italic mt-1 break-words w-full text-right">
+                                <div className="text-[10px] text-red-500 italic mt-1 wrap-break-word w-full text-right">
                                     "{row.statusMessage}"
                                 </div>
                             )}
@@ -216,7 +216,7 @@ export default function OrganizationsPage() {
                         <button
                             onClick={() => handleApprove(row.id, row.name)}
                             disabled={actionLoading !== null}
-                            className="w-full px-3 py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1.5"
+                            className="w-full px-3 py-2 bg-indigo-600 text-white rounded-sm font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1.5"
                         >
                             {actionLoading === `approve-${row.id}` ? (
                                 <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
@@ -238,17 +238,27 @@ export default function OrganizationsPage() {
     }
 
     return (
-        <div className="flex flex-1 flex-col p-6 sm:p-10 w-full animate-fade-in-up">
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-8">Organizations Management</h1>
+        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
+            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
+                <div className="flex items-center gap-5">
+                    <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl shrink-0">
+                        <Building2 className="w-8 h-8 md:w-10 md:h-10 text-indigo-600" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight text-left">Organizations</h1>
+                        <p className="text-gray-500 font-bold opacity-80 mt-1 text-sm md:text-base text-left uppercase tracking-wider">Management & Verification</p>
+                    </div>
+                </div>
+            </div>
 
-            <div className="bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-xl border border-white/50 overflow-hidden flex flex-col min-h-[600px] w-full">
-                <div className="px-8 pt-8 pb-6 border-b border-gray-100 flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-gray-50/50">
+            <div className="bg-white/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/50 flex flex-col w-full overflow-hidden">
+                <div className="px-6 md:px-8 pt-8 pb-6 border-b border-gray-100 flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-gray-50/50">
                     <div className="flex overflow-x-auto mb-4 xl:mb-0 pb-2 gap-3 scrollbar-none sm:flex-wrap">
                         {statusTabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveStatusTab(tab.id)}
-                                className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-sm border whitespace-nowrap ${activeStatusTab === tab.id
+                                className={`px-5 py-2.5 rounded-sm font-bold text-sm transition-all flex items-center gap-2 shadow-sm border whitespace-nowrap ${activeStatusTab === tab.id
                                     ? 'bg-white border-gray-200 text-gray-900 shadow-[0_4px_12px_rgba(0,0,0,0.05)]'
                                     : 'bg-gray-100/50 border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'
                                     }`}
@@ -265,11 +275,11 @@ export default function OrganizationsPage() {
                         ))}
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto px-2">
                         <select
                             value={orgTypeFilter}
                             onChange={(e) => setOrgTypeFilter(e.target.value)}
-                            className="px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer shadow-sm min-w-[160px]"
+                            className="w-full sm:w-auto px-4 py-2.5 rounded-sm bg-white border border-gray-200 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer shadow-sm min-w-[160px]"
                         >
                             <option value="ALL">All Org Types</option>
                             <option value="HIGH_SCHOOL">High School</option>
@@ -286,7 +296,7 @@ export default function OrganizationsPage() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 bg-gray-50/10">
+                <div className="p-4 md:p-6 bg-gray-50/10">
                     <DataTable
                         columns={columns}
                         data={filteredOrganizations}
@@ -317,7 +327,7 @@ export default function OrganizationsPage() {
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         placeholder="Type the reason here..."
-                        className="w-full h-32 px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-900 font-medium"
+                        className="w-full h-32 px-4 py-3 rounded-sm bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-900 font-medium"
                     />
                 </div>
             </ModalForm>

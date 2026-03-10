@@ -7,7 +7,6 @@ import { Clock, Users, GraduationCap, ShieldOff, RefreshCw, Mail, LayoutDashboar
 import Link from 'next/link';
 
 import { useAuth } from '@/context/AuthContext';
-import { BackButton } from '@/components/ui/BackButton';
 import { api, Organization } from '@/src/lib/api';
 
 
@@ -52,13 +51,12 @@ export default function DashboardPage() {
     if (!payload) return null;
 
     return (
-        <div className="flex flex-1 flex-col p-6 sm:p-10 w-full animate-fade-in-up">
-            <div className="mb-8">
-                <BackButton />
-                <div className="mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
+            <div className="mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <h1 className="text-5xl font-extrabold text-white tracking-tight drop-shadow-lg">Dashboard</h1>
                     <div className="flex flex-wrap items-center gap-3">
-                        <div className="text-sm font-medium px-5 py-2.5 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-sm shadow-inner flex items-center space-x-2 text-indigo-100">
+                        <div className="text-sm font-medium px-5 py-2.5 rounded-sm border border-white/20 bg-white/5 backdrop-blur-sm shadow-inner flex items-center space-x-2 text-indigo-100">
                             <span>Logged in as:</span>
                             <span className="text-white font-bold truncate max-w-[200px]">{payload.email}</span>
                         </div>
@@ -66,9 +64,9 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <div className="flex-1 space-y-8 animate-fade-in-up">
+            <div className="space-y-8">
                 {(orgData?.status || payload.status) === 'PENDING' && (
-                    <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-white/40 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
+                    <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-white/40 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                         <div className="p-6 bg-yellow-50 rounded-full mb-6 relative">
                             <Clock className="w-20 h-20 text-yellow-500 animate-pulse" />
                             <div className="absolute inset-0 bg-yellow-400 rounded-full animate-ping opacity-20"></div>
@@ -78,7 +76,7 @@ export default function DashboardPage() {
                             Your organization registration is currently being verified.
                             You'll have full dashboard access once EduManage confirms your details.
                         </p>
-                        <div className="animate-pulse-orange text-white px-10 py-5 rounded-3xl font-black text-xl border border-yellow-300 w-full shadow-2xl flex items-center justify-center gap-3">
+                        <div className="animate-pulse-orange text-white px-10 py-5 rounded-sm font-black text-xl border border-yellow-300 w-full shadow-2xl flex items-center justify-center gap-3">
                             <div className="w-3 h-3 bg-white rounded-full animate-ping"></div>
                             Status: Pending Verification
                         </div>
@@ -86,13 +84,13 @@ export default function DashboardPage() {
                 )}
 
                 {(orgData?.status || payload.status) === 'REJECTED' && (
-                    <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-white/40 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
+                    <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-white/40 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                         <div className="p-6 bg-yellow-50 rounded-full mb-6 relative">
                             <Clock className="w-20 h-20 text-yellow-500 animate-pulse" />
                             <div className="absolute inset-0 bg-yellow-400 rounded-full animate-ping opacity-20"></div>
                         </div>
                         <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Application Denied</h2>
-                        <div className="bg-red-50 border border-red-100 p-6 rounded-3xl mb-8 text-left">
+                        <div className="bg-red-50 border border-red-100 p-6 rounded-sm mb-8 text-left">
                             <p className="text-xs font-bold text-red-400 uppercase tracking-widest mb-2">Rejection Reason</p>
                             <p className="text-red-700 font-medium italic">"{orgData?.statusMessage || 'No specific reason provided.'}"</p>
                         </div>
@@ -101,7 +99,7 @@ export default function DashboardPage() {
                         </p>
                         <Link
                             href={`/${payload.orgSlug}/settings`}
-                            className="inline-flex items-center gap-3 bg-red-600 hover:bg-red-700 text-white px-10 py-5 rounded-3xl font-black text-xl shadow-2xl shadow-red-600/30 transition-all hover:-translate-y-1 active:scale-95"
+                            className="inline-flex items-center gap-3 bg-red-600 hover:bg-red-700 text-white px-10 py-5 rounded-sm font-black text-xl shadow-2xl shadow-red-600/30 transition-all hover:-translate-y-1 active:scale-95"
                         >
                             <RefreshCw className="w-6 h-6" />
                             EDIT & RE-APPLY
@@ -110,7 +108,7 @@ export default function DashboardPage() {
                 )}
 
                 {(orgData?.status || payload.status) === 'SUSPENDED' && (
-                    <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-orange-200 text-center max-w-2xmx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
+                    <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-orange-200 text-center max-w-2xmx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                         <div className="p-6 bg-orange-50 rounded-full mb-6 relative">
                             <ShieldOff className="w-20 h-20 text-orange-500" />
                         </div>
@@ -120,13 +118,13 @@ export default function DashboardPage() {
                                 ? "Service for your organization is temporarily paused. Your records and data are safe, but management actions are currently restricted."
                                 : "Your organization account has been temporarily suspended due to administrative reasons."}
                         </p>
-                        <div className="bg-orange-50 text-orange-800 p-6 rounded-3xl border border-orange-100 w-full mb-8 text-left shadow-inner">
+                        <div className="bg-orange-50 text-orange-800 p-6 rounded-sm border border-orange-100 w-full mb-8 text-left shadow-inner">
                             <h3 className="font-bold mb-2 flex items-center gap-2 text-sm uppercase tracking-wider text-orange-900/60 "><ShieldOff className="w-4 h-4" /> Administrative Notice</h3>
                             <p className="italic font-bold text-orange-900">{orgData?.statusMessage || 'Please contact your institution\'s administration or EduManage support for more details.'}</p>
                         </div>
                         <Link
                             href="/support"
-                            className="inline-flex items-center gap-3 bg-gray-900 hover:bg-black text-white px-10 py-5 rounded-3xl font-black text-xl shadow-2xl transition-all hover:-translate-y-1 active:scale-95"
+                            className="inline-flex items-center gap-3 bg-gray-900 hover:bg-black text-white px-10 py-5 rounded-sm font-black text-xl shadow-2xl transition-all hover:-translate-y-1 active:scale-95"
                         >
                             <Mail className="w-6 h-6" />
                             CONTACT SUPPORT
@@ -137,8 +135,8 @@ export default function DashboardPage() {
                 {(orgData?.status || payload.status) === 'APPROVED' && (
                     <div className="space-y-12">
                         {payload.role === 'STUDENT' ? (
-                            <div className="p-8 bg-white/50 backdrop-blur-xl rounded-[2rem] shadow-xl border border-white/40 border-l-8 border-l-emerald-500 flex items-center space-x-6">
-                                <div className="p-4 bg-emerald-50 rounded-2xl shadow-inner">
+                            <div className="p-8 bg-white/50 backdrop-blur-xl rounded-sm shadow-xl border border-white/40 border-l-8 border-l-emerald-500 flex items-center space-x-6">
+                                <div className="p-4 bg-emerald-50 rounded-sm shadow-inner">
                                     <GraduationCap className="w-10 h-10 text-emerald-600" />
                                 </div>
                                 <div>
@@ -148,8 +146,8 @@ export default function DashboardPage() {
                             </div>
                         ) : (
                             <>
-                                <div className="p-8 bg-white/50 backdrop-blur-xl rounded-[2rem] shadow-xl border border-white/40 border-l-8 border-l-indigo-500 flex items-center space-x-6">
-                                    <div className="p-4 bg-indigo-50 rounded-2xl shadow-inner">
+                                <div className="p-8 bg-white/50 backdrop-blur-xl rounded-sm shadow-xl border border-white/40 border-l-8 border-l-indigo-500 flex items-center space-x-6">
+                                    <div className="p-4 bg-indigo-50 rounded-sm shadow-inner">
                                         {payload.role === 'TEACHER' ? <Users className="w-10 h-10 text-indigo-600" /> : <Building className="w-10 h-10 text-indigo-600" />}
                                     </div>
                                     <div>
@@ -172,7 +170,7 @@ export default function DashboardPage() {
 
                                 {/* Stats Summary Section */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-3xl border border-white/30 shadow-sm flex flex-col gap-1">
+                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1">
                                         <span className="text-xs font-black text-gray-400 uppercase tracking-widest">System Status</span>
                                         <div className="flex items-center gap-2 text-emerald-600 font-bold">
                                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -180,17 +178,17 @@ export default function DashboardPage() {
                                         </div>
                                     </div>
 
-                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-3xl border border-white/30 shadow-sm flex flex-col gap-1">
+                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1">
                                         <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Active Role</span>
                                         <span className="text-indigo-600 font-bold">{payload?.role?.replace('_', ' ')}</span>
                                     </div>
 
-                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-3xl border border-white/30 shadow-sm flex flex-col gap-1">
+                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1">
                                         <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Institution</span>
                                         <span className="text-gray-900 font-bold truncate">{orgName}</span>
                                     </div>
 
-                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-3xl border border-white/30 shadow-sm flex flex-col gap-1 text-center justify-center">
+                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 text-center justify-center">
                                         <p className="text-[10px] text-gray-400 font-medium">Use symbols in the sidebar to navigate various sections.</p>
                                     </div>
                                 </div>

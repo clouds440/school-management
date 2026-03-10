@@ -17,8 +17,8 @@ export default function OrganizationChangePasswordPage() {
     };
 
     return (
-        <div className="flex flex-1 flex-col p-6 sm:p-10 max-w-7xl mx-auto w-full">
-            <div className="mb-12">
+        <div className="flex flex-1 flex-col p-4 md:p-8 max-w-7xl mx-auto w-full">
+            <div className="mb-6">
                 <BackButton />
             </div>
 

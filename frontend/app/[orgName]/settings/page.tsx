@@ -93,11 +93,11 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="flex flex-1 flex-col p-6 sm:p-10 max-w-7xl mx-auto w-full">
-            <div className="mb-8">
+        <div className="flex flex-1 flex-col p-4 md:p-8 max-w-7xl mx-auto w-full">
+            <div className="mb-6">
                 <BackButton />
-                <div className="mt-8 flex items-center gap-5">
-                    <div className="p-4 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 shadow-xl">
+                <div className="mt-6 flex items-center gap-5">
+                    <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
                         <Settings className="w-10 h-10 text-white" />
                     </div>
                     <div>
@@ -107,11 +107,11 @@ export default function SettingsPage() {
                 </div>
             </div>
 
-            <div className="bg-white/70 backdrop-blur-md rounded-[2.5rem] shadow-2xl border border-white/40 p-10 mb-10">
+            <div className="bg-white rounded-sm shadow-2xl border border-gray-100 p-6 md:p-10 mb-10">
                 {orgData?.status === 'REJECTED' && (
-                    <div className="mb-8 p-6 bg-red-50 border border-red-100 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="mb-8 p-6 bg-red-50 border border-red-100 rounded-sm flex flex-col md:flex-row items-center justify-between gap-6">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 bg-red-100 rounded-2xl text-red-600">
+                            <div className="p-3 bg-red-100 rounded-sm text-red-600">
                                 <ShieldOff className="w-6 h-6" />
                             </div>
                             <div>
@@ -124,7 +124,7 @@ export default function SettingsPage() {
                         <button
                             onClick={handleReapply}
                             disabled={reapplying}
-                            className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-red-600/20 active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                            className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-sm font-bold transition-all shadow-lg shadow-red-600/20 active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
                         >
                             {reapplying ? (
                                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>

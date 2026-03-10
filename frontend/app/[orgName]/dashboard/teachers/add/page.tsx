@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { UserPlus, User, Mail, Lock, BookOpen, DollarSign, Phone, Plus } from 'lucide-react';
-import { BackButton } from '@/components/ui/BackButton';
 import Link from 'next/link';
-
+import { Section } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -25,6 +24,7 @@ export default function AddTeacherPage() {
         }
     }, [user, router, orgSlug]);
 
+    const [sections, setSections] = useState<Section[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -41,8 +41,28 @@ export default function AddTeacherPage() {
         joiningDate: new Date().toISOString().split('T')[0],
         address: '',
         emergencyContact: '',
-        bloodGroup: ''
+        bloodGroup: '',
+        status: 'ACTIVE',
+        sectionIds: [] as string[]
     });
+
+    useEffect(() => {
+        if (token) fetchSections();
+    }, [token]);
+
+    const fetchSections = async () => {
+        try {
+            const response = await fetch('http://localhost:3000/org/sections', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setSections(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch sections', error);
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
@@ -50,6 +70,11 @@ export default function AddTeacherPage() {
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+    };
+
+    const handleSectionsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selected = Array.from(e.target.selectedOptions, option => option.value);
+        setFormData(prev => ({ ...prev, sectionIds: selected }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -77,7 +102,9 @@ export default function AddTeacherPage() {
                     joiningDate: formData.joiningDate || undefined,
                     address: formData.address || undefined,
                     emergencyContact: formData.emergencyContact || undefined,
-                    bloodGroup: formData.bloodGroup || undefined
+                    bloodGroup: formData.bloodGroup || undefined,
+                    status: formData.status,
+                    sectionIds: formData.sectionIds.length > 0 ? formData.sectionIds : undefined
                 })
             });
 
@@ -95,11 +122,10 @@ export default function AddTeacherPage() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6 w-full">
-            <div className="mb-8">
-                <BackButton />
-                <div className="mt-8 flex items-center gap-5">
-                    <div className="p-4 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 shadow-xl">
+        <>
+            <div className="mb-6">
+                <div className="flex items-center gap-5">
+                    <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
                         <UserPlus className="w-10 h-10 text-white" />
                     </div>
                     <div>
@@ -109,7 +135,7 @@ export default function AddTeacherPage() {
                 </div>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-xl rounded-[3rem] shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-white/50 p-12 animate-fade-in-up">
+            <div className="bg-white/80 backdrop-blur-xl rounded-sm shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-white/50 p-12">
 
                 <form onSubmit={handleSubmit} className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -149,7 +175,7 @@ export default function AddTeacherPage() {
                                 required
                                 minLength={8}
                                 icon={Lock}
-                                placeholder="Min 8 characters (1 upper, 1 lower, 1 number)"
+                                placeholder="Min 8 characters"
                             />
                         </div>
 
@@ -272,7 +298,42 @@ export default function AddTeacherPage() {
                             />
                         </div>
 
-                        <div className="md:col-span-2 mt-4 p-8 bg-indigo-50/50 border border-indigo-100/50 rounded-[2rem] flex items-start space-x-6">
+                        <div>
+                            <Label>Status</Label>
+                            <select
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange as any}
+                                className="w-full px-4 py-3 mt-1 rounded-sm border border-gray-200 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                            >
+                                <option value="ACTIVE">Active</option>
+                                <option value="SUSPENDED">Suspended</option>
+                                <option value="ON_LEAVE">On Leave</option>
+                            </select>
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <h3 className="text-lg font-bold text-gray-900 border-b border-gray-200 pb-2 mb-4 mt-4">Section Assignment</h3>
+                            <p className="text-sm text-gray-500 mb-4 pl-1">Select the sections this teacher is assigned to teach. Hold Ctrl (Windows) or Cmd (Mac) to select multiple.</p>
+
+                            <div className="max-w-xl">
+                                <select
+                                    multiple
+                                    name="sectionIds"
+                                    value={formData.sectionIds}
+                                    onChange={handleSectionsChange}
+                                    className="w-full px-4 py-3 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white min-h-[120px]"
+                                >
+                                    {sections.map(sec => (
+                                        <option key={sec.id} value={sec.id} className="text-gray-900 py-1">
+                                            {sec.name} {sec.course?.name ? `(${sec.course.name})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="md:col-span-2 mt-4 p-8 bg-indigo-50/50 border border-indigo-100/50 rounded-sm flex items-start space-x-6">
                             <div className="flex items-center h-8">
                                 <input
                                     id="isManager"
@@ -281,7 +342,7 @@ export default function AddTeacherPage() {
                                     checked={formData.isManager}
                                     onChange={handleChange}
                                     disabled={user?.role === 'ORG_MANAGER'}
-                                    className="w-6 h-6 text-indigo-600 border-gray-300 rounded-lg focus:ring-indigo-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-6 h-6 text-indigo-600 border-gray-300 rounded-sm focus:ring-indigo-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
                             <div className="flex flex-col">
@@ -298,7 +359,7 @@ export default function AddTeacherPage() {
                     <div className="pt-10 mt-10 border-t border-gray-100 flex justify-end gap-5">
                         <Link
                             href={`/${orgSlug}/dashboard/teachers`}
-                            className="px-8 py-3 text-base font-bold text-gray-600 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 flex items-center shadow-lg border border-transparent"
+                            className="px-8 py-3 text-base font-bold text-gray-600 bg-gray-100 rounded-sm hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 flex items-center shadow-lg border border-transparent"
                         >
                             Cancel
                         </Link>
@@ -312,7 +373,7 @@ export default function AddTeacherPage() {
                         </Button>
                     </div>
                 </form>
-            </div >
-        </div >
+            </div>
+        </>
     );
 }

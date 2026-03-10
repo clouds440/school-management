@@ -1,4 +1,5 @@
-import { IsString, IsEmail, IsNotEmpty, IsOptional, IsNumber, MinLength, IsBoolean, Matches, IsDateString } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, IsOptional, IsNumber, MinLength, IsBoolean, Matches, IsDateString, IsArray, IsEnum } from 'class-validator';
+import { TeacherStatus } from '@prisma/client';
 
 export class CreateTeacherDto {
     @IsEmail()
@@ -60,4 +61,13 @@ export class CreateTeacherDto {
     @IsString()
     @IsOptional()
     address?: string;
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    sectionIds?: string[];
+
+    @IsEnum(TeacherStatus)
+    @IsOptional()
+    status?: TeacherStatus;
 }

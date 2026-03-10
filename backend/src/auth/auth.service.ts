@@ -90,6 +90,7 @@ export class AuthService {
             role: user.role,
             designation: user.teacherProfile?.designation || null, // Added for teacher personalization
             orgSlug: slug,
+            orgName: user.organization?.name || null,
             orgId: user.organizationId,
             status: user.organization ? user.organization.status : 'APPROVED', // Keep SUPER_ADMIN as APPROVED
             isFirstLogin: user.isFirstLogin,

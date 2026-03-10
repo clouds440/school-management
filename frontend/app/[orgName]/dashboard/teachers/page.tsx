@@ -9,9 +9,8 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BackButton } from '@/components/ui/BackButton';
 import { useToast } from '@/context/ToastContext';
-import { Teacher } from '@/types';
+import { Teacher, Section } from '@/types';
 import { Button } from '@/components/ui/Button';
 
 export default function TeachersPage() {
@@ -20,6 +19,7 @@ export default function TeachersPage() {
     const router = useRouter(); // Import useRouter
     const { showToast } = useToast();
     const [teachers, setTeachers] = useState<Teacher[]>([]);
+    const [sections, setSections] = useState<Section[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -36,7 +36,9 @@ export default function TeachersPage() {
         joiningDate: '',
         address: '',
         emergencyContact: '',
-        bloodGroup: ''
+        bloodGroup: '',
+        status: 'ACTIVE',
+        sectionIds: [] as string[]
     });
     const [isSaving, setIsSaving] = useState(false);
 
@@ -49,24 +51,30 @@ export default function TeachersPage() {
         }
     }, [user, router, pathname]);
 
-    const fetchTeachers = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         if (!token || (user?.role !== 'ORG_ADMIN' && user?.role !== 'ORG_MANAGER')) return;
         try {
-            const res = await fetch('http://localhost:3000/org/teachers', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await res.json();
-            setTeachers(data);
+            const [teachersRes, sectionsRes] = await Promise.all([
+                fetch('http://localhost:3000/org/teachers', { headers: { Authorization: `Bearer ${token}` } }),
+                fetch('http://localhost:3000/org/sections', { headers: { Authorization: `Bearer ${token}` } })
+            ]);
+
+            if (teachersRes.ok) {
+                setTeachers(await teachersRes.json());
+            }
+            if (sectionsRes.ok) {
+                setSections(await sectionsRes.json());
+            }
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, [token, user]);
 
     useEffect(() => {
-        fetchTeachers();
-    }, [fetchTeachers]);
+        fetchData();
+    }, [fetchData]);
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -90,7 +98,9 @@ export default function TeachersPage() {
                     joiningDate: editFormData.joiningDate || null,
                     address: editFormData.address || null,
                     emergencyContact: editFormData.emergencyContact || null,
-                    bloodGroup: editFormData.bloodGroup || null
+                    bloodGroup: editFormData.bloodGroup || null,
+                    status: editFormData.status,
+                    sectionIds: editFormData.sectionIds
                 })
             });
             if (!response.ok) {
@@ -99,7 +109,7 @@ export default function TeachersPage() {
             }
             setEditModalOpen(false);
             showToast('Teacher profile updated successfully', 'success');
-            fetchTeachers();
+            fetchData();
         } catch (err: unknown) {
             showToast(err instanceof Error ? err.message : 'Error occurred while updating', 'error');
         } finally {
@@ -120,7 +130,7 @@ export default function TeachersPage() {
             }
             showToast('Teacher removed from organization', 'success');
             setDeleteDialogOpen(false);
-            fetchTeachers();
+            fetchData();
         } catch (err: unknown) {
             showToast(err instanceof Error ? err.message : 'Failed to delete teacher', 'error');
         }
@@ -158,21 +168,26 @@ export default function TeachersPage() {
             )
         },
         {
-            header: 'Education',
-            sortable: true,
-            accessor: (row: Teacher) => row.education || <span className="text-gray-400 italic">-</span>
+            header: 'Assigned Sections',
+            sortable: false,
+            accessor: (row: Teacher) => {
+                const sectionsList = row.sections || [];
+                return sectionsList.length > 0 ? (
+                    <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {sectionsList.map(sec => (
+                            <span key={sec?.id || Math.random()} className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-sm text-xs font-medium border border-indigo-100 truncate max-w-[150px]" title={sec?.name}>
+                                {sec?.name || 'Unknown'}
+                            </span>
+                        ))}
+                    </div>
+                ) : <span className="text-gray-400 italic">Unassigned</span>;
+            }
         },
         {
             header: 'Contact',
             sortable: true,
             sortAccessor: (row: Teacher) => row.user.phone || '',
             accessor: (row: Teacher) => row.user.phone || <span className="text-gray-400 italic">-</span>
-        },
-        {
-            header: 'Salary',
-            sortable: true,
-            sortAccessor: (row: Teacher) => row.salary || 0,
-            accessor: (row: Teacher) => row.salary ? `$${row.salary}` : <span className="text-gray-400 italic">Not set</span>
         },
         {
             header: 'Actions',
@@ -192,11 +207,13 @@ export default function TeachersPage() {
                                 joiningDate: row.joiningDate ? row.joiningDate.split('T')[0] : '',
                                 address: row.address || '',
                                 emergencyContact: row.emergencyContact || '',
-                                bloodGroup: row.bloodGroup || ''
+                                bloodGroup: row.bloodGroup || '',
+                                status: row.status || 'ACTIVE',
+                                sectionIds: row.sections?.map(s => s.id) || []
                             });
                             setEditModalOpen(true);
                         }}
-                        className="text-indigo-600 hover:text-white p-2.5 hover:bg-indigo-600 rounded-xl transition-all shadow-sm hover:shadow-indigo-200 active:scale-90"
+                        className="text-indigo-600 hover:text-white p-2.5 hover:bg-indigo-600 rounded-sm transition-all shadow-sm hover:shadow-indigo-200 active:scale-90"
                         title="Edit Teacher"
                     >
                         <Edit2 className="w-5 h-5" />
@@ -206,7 +223,7 @@ export default function TeachersPage() {
                             setDeletingTeacher(row);
                             setDeleteDialogOpen(true);
                         }}
-                        className="text-red-600 hover:text-white p-2.5 hover:bg-red-600 rounded-xl transition-all shadow-sm hover:shadow-red-200 active:scale-90"
+                        className="text-red-600 hover:text-white p-2.5 hover:bg-red-600 rounded-sm transition-all shadow-sm hover:shadow-red-200 active:scale-90"
                         title="Delete Teacher"
                     >
                         <Trash2 className="w-5 h-5" />
@@ -219,12 +236,11 @@ export default function TeachersPage() {
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
     return (
-        <div className="flex flex-1 flex-col p-6 sm:p-10 w-full animate-fade-in-up">
-            <div className="mb-8">
-                <BackButton />
-                <div className="mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
+            <div className="mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div className="flex items-center gap-5">
-                        <div className="p-4 bg-white/20 backdrop-blur-md rounded-3xl border border-white/30 shadow-xl">
+                        <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
                             <Users className="w-10 h-10 text-white" />
                         </div>
                         <div>
@@ -242,7 +258,7 @@ export default function TeachersPage() {
                 </div>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-xl rounded-[3rem] shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-white/50 p-12 mb-10 overflow-hidden animate-fade-in-up">
+            <div className="bg-white rounded-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-6 md:p-8 mb-10">
                 <div className="mb-10 flex">
                     <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, email or subject..." />
                 </div>
@@ -266,14 +282,14 @@ export default function TeachersPage() {
                 submitText="Save Changes"
             >
                 <div className="space-y-8 py-2">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Full Name</label>
                             <input
                                 type="text"
                                 value={editFormData.name}
                                 onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="John Doe"
                             />
                         </div>
@@ -283,7 +299,7 @@ export default function TeachersPage() {
                                 type="text"
                                 value={editFormData.phone}
                                 onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="+1 (555) 000-0000"
                             />
                         </div>
@@ -293,7 +309,7 @@ export default function TeachersPage() {
                                 type="text"
                                 value={editFormData.education}
                                 onChange={(e) => setEditFormData({ ...editFormData, education: e.target.value })}
-                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="M.S. Computer Science"
                             />
                         </div>
@@ -303,7 +319,7 @@ export default function TeachersPage() {
                                 type="text"
                                 value={editFormData.designation}
                                 onChange={(e) => setEditFormData({ ...editFormData, designation: e.target.value })}
-                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="Senior Teacher"
                             />
                         </div>
@@ -313,7 +329,7 @@ export default function TeachersPage() {
                                 type="text"
                                 value={editFormData.subject}
                                 onChange={(e) => setEditFormData({ ...editFormData, subject: e.target.value })}
-                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="e.g. Mathematics"
                             />
                         </div>
@@ -323,7 +339,7 @@ export default function TeachersPage() {
                                 type="number"
                                 value={editFormData.salary}
                                 onChange={(e) => setEditFormData({ ...editFormData, salary: e.target.value })}
-                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="0.00"
                             />
                         </div>
@@ -333,7 +349,7 @@ export default function TeachersPage() {
                                 type="text"
                                 value={editFormData.department}
                                 onChange={(e) => setEditFormData({ ...editFormData, department: e.target.value })}
-                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="e.g. Science"
                             />
                         </div>
@@ -343,7 +359,7 @@ export default function TeachersPage() {
                                 type="date"
                                 value={editFormData.joiningDate}
                                 onChange={(e) => setEditFormData({ ...editFormData, joiningDate: e.target.value })}
-                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                             />
                         </div>
                         <div className="md:col-span-2 space-y-2">
@@ -352,7 +368,7 @@ export default function TeachersPage() {
                                 type="text"
                                 value={editFormData.address}
                                 onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
-                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="123 Main St, City, Country"
                             />
                         </div>
@@ -362,7 +378,7 @@ export default function TeachersPage() {
                                 type="text"
                                 value={editFormData.emergencyContact}
                                 onChange={(e) => setEditFormData({ ...editFormData, emergencyContact: e.target.value })}
-                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="Name - Relationship - Phone"
                             />
                         </div>
@@ -372,9 +388,41 @@ export default function TeachersPage() {
                                 type="text"
                                 value={editFormData.bloodGroup}
                                 onChange={(e) => setEditFormData({ ...editFormData, bloodGroup: e.target.value })}
-                                className="w-full px-6 py-4 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-400"
                                 placeholder="O+, A-, etc."
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Status</label>
+                            <select
+                                value={editFormData.status}
+                                onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold"
+                            >
+                                <option value="ACTIVE">Active</option>
+                                <option value="SUSPENDED">Suspended</option>
+                                <option value="ON_LEAVE">On Leave</option>
+                            </select>
+                        </div>
+
+                        <div className="md:col-span-2 space-y-2">
+                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Assigned Sections</label>
+                            <select
+                                multiple
+                                value={editFormData.sectionIds}
+                                onChange={e => {
+                                    const selected = Array.from(e.target.selectedOptions, option => option.value);
+                                    setEditFormData({ ...editFormData, sectionIds: selected });
+                                }}
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold min-h-[120px]"
+                            >
+                                {sections.map(sec => (
+                                    <option key={sec.id} value={sec.id}>
+                                        {sec.name} {sec.course?.name ? `(${sec.course.name})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-gray-500 font-medium ml-1">Hold Ctrl (Windows) or Cmd (Mac) to select multiple sections.</p>
                         </div>
                     </div>
                 </div>

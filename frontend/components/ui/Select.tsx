@@ -16,7 +16,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                 )}
                 <select
                     className={`
-            block w-full rounded-xl border border-gray-200 bg-gray-50/50 
+            block w-full rounded-sm border border-gray-200 bg-gray-50/50 
             ${Icon ? 'pl-11' : 'pl-4'} pr-10 py-3 
             text-gray-900 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 
             sm:text-sm transition-all duration-200 shadow-sm appearance-none

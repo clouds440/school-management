@@ -9,8 +9,10 @@ import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-requ
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
-import { CreateClassDto } from './dto/create-class.dto';
-import { UpdateClassDto } from './dto/update-class.dto';
+import { CreateCourseDto } from './dto/create-course.dto';
+import { UpdateCourseDto } from './dto/update-course.dto';
+import { CreateSectionDto } from './dto/create-section.dto';
+import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 
@@ -85,33 +87,60 @@ export class OrgController {
         return this.orgService.deleteTeacher(req.user.organizationId, id, req.user);
     }
 
-    // --- Classes ---
-    @Get('classes')
-    getClasses(@Request() req: AuthenticatedRequest) {
+    // --- Courses ---
+    @Get('courses')
+    getCourses(@Request() req: AuthenticatedRequest) {
         if (!req.user.organizationId) throw new Error('No organization');
-        // We pass the full user object to service to determine filtering
-        return this.orgService.getClasses(req.user.organizationId, req.user);
+        return this.orgService.getCourses(req.user.organizationId);
     }
 
     @Roles('ORG_ADMIN', 'ORG_MANAGER')
-    @Post('classes')
-    createClass(@Request() req: AuthenticatedRequest, @Body() createClassDto: CreateClassDto) {
+    @Post('courses')
+    createCourse(@Request() req: AuthenticatedRequest, @Body() createCourseDto: CreateCourseDto) {
         if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.createClass(req.user.organizationId, createClassDto, req.user);
+        return this.orgService.createCourse(req.user.organizationId, createCourseDto);
     }
 
     @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
-    @Patch('classes/:id')
-    updateClass(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateClassDto: UpdateClassDto) {
+    @Patch('courses/:id')
+    updateCourse(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
         if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.updateClass(req.user.organizationId, id, updateClassDto, req.user);
+        return this.orgService.updateCourse(req.user.organizationId, id, updateCourseDto);
     }
 
     @Roles('ORG_ADMIN', 'ORG_MANAGER')
-    @Delete('classes/:id')
-    deleteClass(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+    @Delete('courses/:id')
+    deleteCourse(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.deleteClass(req.user.organizationId, id);
+        return this.orgService.deleteCourse(req.user.organizationId, id);
+    }
+
+    // --- Sections ---
+    @Get('sections')
+    getSections(@Request() req: AuthenticatedRequest) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.getSections(req.user.organizationId);
+    }
+
+    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Post('sections')
+    createSection(@Request() req: AuthenticatedRequest, @Body() createSectionDto: CreateSectionDto) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.createSection(req.user.organizationId, createSectionDto);
+    }
+
+    @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
+    @Patch('sections/:id')
+    updateSection(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateSectionDto: UpdateSectionDto) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.updateSection(req.user.organizationId, id, updateSectionDto);
+    }
+
+    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Delete('sections/:id')
+    deleteSection(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.deleteSection(req.user.organizationId, id);
     }
 
     // --- Students ---

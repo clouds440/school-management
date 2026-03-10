@@ -1,4 +1,7 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ConfirmDialogProps {
     isOpen: boolean;
@@ -19,18 +22,32 @@ export function ConfirmDialog({
     confirmText = 'Confirm',
     isDestructive = false,
 }: ConfirmDialogProps) {
-    if (!isOpen) return null;
+    const [mounted, setMounted] = useState(false);
 
-    return (
+    useEffect(() => {
+        setMounted(true);
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
+    if (!isOpen || !mounted) return null;
+
+    return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-opacity duration-300">
-            <div className="bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] p-10 w-full max-w-md mx-4 transform animate-scale-in border border-white">
+            <div className="bg-white/90 backdrop-blur-xl rounded-sm shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] p-10 w-full max-w-md mx-4 transform animate-scale-in border border-white">
                 <h3 className="text-2xl font-black text-gray-900 mb-4 leading-tight">{title}</h3>
                 <p className="text-gray-600 text-lg mb-10 leading-relaxed font-medium">{description}</p>
 
                 <div className="flex gap-4 justify-end">
                     <button
                         onClick={onClose}
-                        className="px-8 py-3.5 text-sm font-bold text-gray-700 bg-gray-100/80 hover:bg-gray-200 rounded-2xl transition-all hover:scale-105 active:scale-95"
+                        className="px-8 py-3.5 text-sm font-bold text-gray-700 bg-gray-100/80 hover:bg-gray-200 rounded-sm transition-all hover:scale-105 active:scale-95"
                     >
                         Cancel
                     </button>
@@ -39,7 +56,7 @@ export function ConfirmDialog({
                             onConfirm();
                             onClose();
                         }}
-                        className={`px-8 py-3.5 text-sm font-bold text-white rounded-2xl transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 ${isDestructive
+                        className={`px-8 py-3.5 text-sm font-bold text-white rounded-sm transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 ${isDestructive
                             ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30'
                             : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/30'
                             }`}
@@ -48,6 +65,7 @@ export function ConfirmDialog({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

@@ -36,7 +36,17 @@ enum SupportTopic {
   SUGGESTION
 }
 
+enum TeacherStatus {
+  ACTIVE
+  SUSPENDED
+  ON_LEAVE
+}
 
+enum StudentStatus {
+  ACTIVE
+  SUSPENDED
+  ALUMNI
+}
 
 model Organization {
   id           String    @id @default(uuid())
@@ -53,7 +63,7 @@ model Organization {
   users        User[]
   teachers     Teacher[]
   students     Student[]
-  classes      Class[]
+  courses      Course[]
   supportTickets SupportTicket[]
 }
 
@@ -101,25 +111,47 @@ model Teacher {
   emergencyContact String?    // Added: For safety
   bloodGroup     String?      // Added: For medical info
   address        String?      // Added: Personal address
-  classes        Class[]
+  sections       Section[]
+  status         TeacherStatus @default(ACTIVE)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
 
-model Class {
+model Course {
   id             String       @id @default(uuid())
   name           String
   description    String?
-  grade          String?      // Added: Optional grade/level
-  courses        String[]     @default([])
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  teacherId      String?
-  teacher        Teacher?     @relation(fields: [teacherId], references: [id], onDelete: SetNull)
-  students       Student[]    // One-to-Many relation with Student
-  updatedBy      String?      // Tracks name of user who last modified this record
+  sections       Section[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+}
+
+model Section {
+  id             String       @id @default(uuid())
+  name           String       // e.g., "Math - Grade 10" or "Section A"
+  semester       String?
+  year           String?
+  room           String?
+  courseId       String
+  course         Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teachers       Teacher[]    // Implicit M:N relationship
+  enrollments    Enrollment[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Enrollment {
+  id             String       @id @default(uuid())
+  studentId      String
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  sectionId      String
+  section        Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([studentId, sectionId])
 }
 
 model Student {
@@ -141,8 +173,8 @@ model Student {
   bloodGroup             String?      // Added: For medical info
   gender                 String?      // Added: For demographics
   feePlan                String?      // Added: To track fee structure
-  classId                String?
-  class                  Class?       @relation(fields: [classId], references: [id], onDelete: SetNull)
+  enrollments            Enrollment[]
+  status                 StudentStatus @default(ACTIVE)
   updatedBy              String?      // Tracks name of user who last modified this record
   createdAt              DateTime     @default(now())
   updatedAt          DateTime     @updatedAt

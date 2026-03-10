@@ -1,4 +1,5 @@
-import { IsString, IsEmail, IsNotEmpty, IsOptional, IsNumber, MinLength, Matches, IsDateString } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, IsOptional, IsNumber, MinLength, Matches, IsDateString, IsArray, IsEnum } from 'class-validator';
+import { StudentStatus } from '@prisma/client';
 
 export class CreateStudentDto {
     @IsEmail()
@@ -45,9 +46,10 @@ export class CreateStudentDto {
     @IsOptional()
     major?: string;
 
-    @IsString()
+    @IsArray()
+    @IsString({ each: true })
     @IsOptional()
-    classId?: string;
+    sectionIds?: string[];
 
     @IsString()
     @IsOptional()
@@ -76,4 +78,8 @@ export class CreateStudentDto {
     @IsString()
     @IsOptional()
     feePlan?: string;
+
+    @IsEnum(StudentStatus)
+    @IsOptional()
+    status?: StudentStatus;
 }

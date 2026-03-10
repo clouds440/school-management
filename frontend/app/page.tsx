@@ -20,8 +20,8 @@ export default function HomePage() {
       {/* Features grid */}
       <div id="features" className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Feature 1 */}
-        <div className="group backdrop-blur-md bg-white/30 border border-white/20 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-          <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+        <div className="group backdrop-blur-md bg-white/30 border border-white/20 rounded-sm p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+          <div className="w-14 h-14 bg-indigo-100 rounded-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
             <Users className="w-8 h-8 text-indigo-600" />
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-3">Student Management</h3>
@@ -31,8 +31,8 @@ export default function HomePage() {
         </div>
 
         {/* Feature 2 */}
-        <div className="group backdrop-blur-md bg-white/30 border border-white/20 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-          <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+        <div className="group backdrop-blur-md bg-white/30 border border-white/20 rounded-sm p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+          <div className="w-14 h-14 bg-purple-100 rounded-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
             <Calendar className="w-8 h-8 text-purple-600" />
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-3">Class Scheduling</h3>
@@ -42,8 +42,8 @@ export default function HomePage() {
         </div>
 
         {/* Feature 3 */}
-        <div className="group backdrop-blur-md bg-white/30 border border-white/20 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-          <div className="w-14 h-14 bg-pink-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+        <div className="group backdrop-blur-md bg-white/30 border border-white/20 rounded-sm p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+          <div className="w-14 h-14 bg-pink-100 rounded-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
             <BookOpen className="w-8 h-8 text-pink-600" />
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-3">Gradebooks & Reports</h3>

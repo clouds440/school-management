@@ -61,9 +61,9 @@ export default function ChangePasswordForm({
     };
 
     return (
-        <div className="w-full max-w-lg space-y-8 bg-white/70 backdrop-blur-2xl p-10 sm:p-12 rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-white/50 relative z-10 mx-auto transition-all duration-500">
+        <div className="w-full max-w-lg space-y-8 bg-white/70 backdrop-blur-2xl p-10 sm:p-12 rounded-sm shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-white/50 relative z-10 mx-auto transition-all duration-500">
             <div className="text-center">
-                <div className="mx-auto bg-indigo-500/10 w-20 h-20 rounded-3xl flex items-center justify-center mb-8 shadow-inner border border-white/20">
+                <div className="mx-auto bg-indigo-500/10 w-20 h-20 rounded-sm flex items-center justify-center mb-8 shadow-inner border border-white/20">
                     <ShieldCheck className="w-10 h-10 text-indigo-100 drop-shadow-sm" />
                 </div>
                 <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-4">

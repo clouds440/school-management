@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsNumber, IsArray, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsArray, IsDateString, IsEnum } from 'class-validator';
+import { StudentStatus } from '@prisma/client';
 
 export class UpdateStudentDto {
     @IsString()
@@ -33,9 +34,10 @@ export class UpdateStudentDto {
     @IsOptional()
     major?: string;
 
-    @IsString()
+    @IsArray()
+    @IsString({ each: true })
     @IsOptional()
-    classId?: string;
+    sectionIds?: string[];
 
     @IsString()
     @IsOptional()
@@ -64,4 +66,8 @@ export class UpdateStudentDto {
     @IsString()
     @IsOptional()
     feePlan?: string;
+
+    @IsEnum(StudentStatus)
+    @IsOptional()
+    status?: StudentStatus;
 }

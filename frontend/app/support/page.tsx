@@ -57,7 +57,7 @@ export default function SupportPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Contact Form */}
-                <div className="bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-[2.5rem] border border-white/60 shadow-2xl flex flex-col space-y-6 relative overflow-hidden">
+                <div className="bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-sm border border-white/60 shadow-2xl flex flex-col space-y-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
                     <div className="relative z-10">
                         <h2 className="text-2xl font-black text-gray-900 mb-2">Send us a Message</h2>
@@ -71,7 +71,7 @@ export default function SupportPage() {
                                 <select
                                     value={formData.topic}
                                     onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                                    className="w-full px-4 py-3.5 rounded-2xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-900 font-medium appearance-none"
+                                    className="w-full px-4 py-3.5 rounded-sm bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-900 font-medium appearance-none"
                                 >
                                     <option value="ACCOUNT_STATUS">Account Status Inquiry</option>
                                     <option value="GENERAL_SUPPORT">General Support</option>
@@ -86,7 +86,7 @@ export default function SupportPage() {
                                     required
                                     value={formData.message}
                                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                                    className="w-full h-40 px-4 py-4 rounded-2xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-900 font-medium resize-none"
+                                    className="w-full h-40 px-4 py-4 rounded-sm bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-900 font-medium resize-none"
                                     placeholder="Please describe your details here..."
                                 />
                             </div>
@@ -94,7 +94,7 @@ export default function SupportPage() {
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="w-full bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-lg shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                                className="w-full bg-indigo-600 text-white px-8 py-4 rounded-sm font-black text-lg shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
                             >
                                 {submitting ? (
                                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
@@ -111,8 +111,8 @@ export default function SupportPage() {
 
                 {/* Info Cards */}
                 <div className="grid grid-cols-1 gap-6">
-                    <div className="bg-white/80 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/50 shadow-xl flex items-center gap-6 hover:shadow-2xl transition-all group">
-                        <div className="w-16 h-16 shrink-0 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                    <div className="bg-white/80 backdrop-blur-xl p-8 rounded-sm border border-white/50 shadow-xl flex items-center gap-6 hover:shadow-2xl transition-all group">
+                        <div className="w-16 h-16 shrink-0 bg-indigo-50 rounded-sm flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
                             <Mail className="w-8 h-8" />
                         </div>
                         <div>
@@ -124,8 +124,8 @@ export default function SupportPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white/80 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/50 shadow-xl flex items-center gap-6 hover:shadow-2xl transition-all group">
-                        <div className="w-16 h-16 shrink-0 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition-all">
+                    <div className="bg-white/80 backdrop-blur-xl p-8 rounded-sm border border-white/50 shadow-xl flex items-center gap-6 hover:shadow-2xl transition-all group">
+                        <div className="w-16 h-16 shrink-0 bg-green-50 rounded-sm flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition-all">
                             <Phone className="w-8 h-8" />
                         </div>
                         <div>
@@ -135,8 +135,8 @@ export default function SupportPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white/80 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/50 shadow-xl flex items-center gap-6 hover:shadow-2xl transition-all group">
-                        <div className="w-16 h-16 shrink-0 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                    <div className="bg-white/80 backdrop-blur-xl p-8 rounded-sm border border-white/50 shadow-xl flex items-center gap-6 hover:shadow-2xl transition-all group">
+                        <div className="w-16 h-16 shrink-0 bg-blue-50 rounded-sm flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
                             <MapPin className="w-8 h-8" />
                         </div>
                         <div>
