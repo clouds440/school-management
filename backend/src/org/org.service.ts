@@ -463,5 +463,19 @@ export class OrgService {
             },
         });
     }
+
+    async getStats(orgId: string, user: { id: string; role: string }) {
+        const [teachers, classes, students] = await Promise.all([
+            this.prisma.teacher.count({ where: { organizationId: orgId } }),
+            this.prisma.class.count({ where: { organizationId: orgId } }),
+            this.prisma.student.count({ where: { organizationId: orgId } }),
+        ]);
+
+        return {
+            TEACHERS: teachers,
+            CLASSES: classes,
+            STUDENTS: students,
+        };
+    }
 }
 

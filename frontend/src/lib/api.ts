@@ -30,15 +30,26 @@ export interface AuthResponse {
     message?: string;
 }
 
+export type OrgStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
+
 export interface Organization {
     id: string;
     name: string;
     location: string;
-    type: string;
+    type: OrganizationType;
     email: string;
-    status: string;
+    contactEmail?: string;
+    phone?: string;
+    status: OrgStatus;
     statusMessage?: string;
     createdAt: string;
+}
+
+export interface UpdateOrgSettingsRequest {
+    name?: string;
+    location?: string;
+    contactEmail?: string;
+    phone?: string;
 }
 
 export interface PlatformAdmin {
@@ -57,6 +68,12 @@ export interface AdminStats {
     SUSPENDED: number;
     SUPPORT: number;
     PLATFORM_ADMINS: number;
+}
+
+export interface OrgStats {
+    TEACHERS: number;
+    CLASSES: number;
+    STUDENTS: number;
 }
 
 export interface SupportTicket {
@@ -82,7 +99,7 @@ if (!API_BASE_URL) {
 async function handleError(response: Response, defaultMessage: string): Promise<never> {
     let message = defaultMessage;
     try {
-        const data = await response.json();
+        const data: { message?: string | string[] } = await response.json();
         if (data.message) {
             // NestJS validation errors are often arrays
             message = Array.isArray(data.message) ? data.message[0] : data.message;
@@ -155,14 +172,14 @@ export const api = {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
+                const errorData: { message?: string } = await response.json();
                 throw new Error(errorData.message || 'Failed to change password');
             }
             return response.json();
         }
     },
     admin: {
-        async getOrganizations(token: string, status?: string): Promise<Organization[]> {
+        async getOrganizations(token: string, status?: OrgStatus): Promise<Organization[]> {
             const url = status
                 ? `${API_BASE_URL}/admin/organizations?status=${status}`
                 : `${API_BASE_URL}/admin/organizations`;
@@ -261,7 +278,7 @@ export const api = {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
+                const errorData: { message?: string } = await response.json();
                 throw new Error(errorData.message || 'Failed to change password');
             }
             return response.json();
@@ -311,6 +328,26 @@ export const api = {
     },
 
     org: {
+        async getSettings(token: string): Promise<Organization> {
+            const response = await fetch(`${API_BASE_URL}/org/settings`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!response.ok) await handleError(response, 'Failed to fetch settings');
+            return response.json();
+        },
+
+        async updateSettings(data: UpdateOrgSettingsRequest, token: string): Promise<void> {
+            const response = await fetch(`${API_BASE_URL}/org/settings`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+            if (!response.ok) await handleError(response, 'Failed to update settings');
+        },
+
         async reapply(token: string): Promise<void> {
             const response = await fetch(`${API_BASE_URL}/org/reapply`, {
                 method: 'PATCH',
@@ -333,6 +370,14 @@ export const api = {
             });
 
             if (!response.ok) await handleError(response, 'Failed to submit support ticket');
+        },
+
+        async getStats(token: string): Promise<OrgStats> {
+            const response = await fetch(`${API_BASE_URL}/org/stats`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!response.ok) await handleError(response, 'Failed to fetch organization stats');
+            return response.json();
         }
 
     }

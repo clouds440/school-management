@@ -137,6 +137,8 @@ export default function TeachersPage() {
     const columns = [
         {
             header: 'Teacher',
+            sortable: true,
+            sortAccessor: (row: Teacher) => row.user.name || row.user.email,
             accessor: (row: Teacher) => (
                 <div>
                     <div className="font-semibold text-gray-900">{row.user.name || 'No Name'}</div>
@@ -146,6 +148,8 @@ export default function TeachersPage() {
         },
         {
             header: 'Role & Subject',
+            sortable: true,
+            sortAccessor: (row: Teacher) => row.designation || '',
             accessor: (row: Teacher) => (
                 <div className="flex flex-col">
                     <span className="font-medium text-gray-800">{row.designation || <span className="text-gray-400 italic">No Designation</span>}</span>
@@ -153,9 +157,23 @@ export default function TeachersPage() {
                 </div>
             )
         },
-        { header: 'Education', accessor: (row: Teacher) => row.education || <span className="text-gray-400 italic">-</span> },
-        { header: 'Contact', accessor: (row: Teacher) => row.user.phone || <span className="text-gray-400 italic">-</span> },
-        { header: 'Salary', accessor: (row: Teacher) => row.salary ? `$${row.salary}` : <span className="text-gray-400 italic">Not set</span> },
+        {
+            header: 'Education',
+            sortable: true,
+            accessor: (row: Teacher) => row.education || <span className="text-gray-400 italic">-</span>
+        },
+        {
+            header: 'Contact',
+            sortable: true,
+            sortAccessor: (row: Teacher) => row.user.phone || '',
+            accessor: (row: Teacher) => row.user.phone || <span className="text-gray-400 italic">-</span>
+        },
+        {
+            header: 'Salary',
+            sortable: true,
+            sortAccessor: (row: Teacher) => row.salary || 0,
+            accessor: (row: Teacher) => row.salary ? `$${row.salary}` : <span className="text-gray-400 italic">Not set</span>
+        },
         {
             header: 'Actions',
             accessor: (row: Teacher) => (
@@ -201,7 +219,7 @@ export default function TeachersPage() {
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
     return (
-        <div className="flex flex-1 flex-col p-6 sm:p-10 max-w-7xl mx-auto w-full">
+        <div className="flex flex-1 flex-col p-6 sm:p-10 w-full animate-fade-in-up">
             <div className="mb-8">
                 <BackButton />
                 <div className="mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">

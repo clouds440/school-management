@@ -1,0 +1,310 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { Users, Search, Edit2, Trash2, Mail, MessageSquare, Calendar, UserPlus } from 'lucide-react';
+import { api, PlatformAdmin } from '@/src/lib/api';
+import { ModalForm } from '@/components/ui/ModalForm';
+import { SearchBar } from '@/components/ui/SearchBar';
+import { useToast } from '@/context/ToastContext';
+import { DataTable, Column } from '@/components/ui/DataTable';
+
+export default function PlatformAdminsPage() {
+    const { user, token, loading } = useAuth();
+    const { showToast } = useToast();
+
+    const [platformAdmins, setPlatformAdmins] = useState<PlatformAdmin[]>([]);
+    const [fetching, setFetching] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+    const [adminModalMode, setAdminModalMode] = useState<'CREATE' | 'EDIT'>('CREATE');
+    const [operatingAdmin, setOperatingAdmin] = useState<PlatformAdmin | null>(null);
+    const [adminFormData, setAdminFormData] = useState({ name: '', email: '', password: '', phone: '' });
+
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (!loading && user && user.role === 'SUPER_ADMIN' && token) {
+            fetchPlatformAdmins();
+        }
+    }, [loading, user, token]);
+
+    const fetchPlatformAdmins = async () => {
+        if (!token) return;
+        try {
+            setFetching(true);
+            const adminData = await api.admin.getPlatformAdmins(token);
+            setPlatformAdmins(adminData);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to fetch data';
+            showToast(message, 'error');
+        } finally {
+            setFetching(false);
+        }
+    };
+
+    const handleOpenAdminModal = (mode: 'CREATE' | 'EDIT', admin: PlatformAdmin | null = null) => {
+        setAdminModalMode(mode);
+        setOperatingAdmin(admin);
+        if (mode === 'EDIT' && admin) {
+            setAdminFormData({ name: admin.name, email: admin.email, password: '', phone: admin.phone || '' });
+        } else {
+            setAdminFormData({ name: '', email: '', password: '', phone: '' });
+        }
+        setIsAdminModalOpen(true);
+    };
+
+    const handleAdminSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!token) return;
+        try {
+            setActionLoading('admin-save');
+            if (adminModalMode === 'CREATE') {
+                const newAdmin = await api.admin.createPlatformAdmin(adminFormData, token);
+                setPlatformAdmins(prev => [...prev, newAdmin]);
+                showToast('Platform Admin created successfully', 'success');
+            } else if (operatingAdmin) {
+                const updatedAdmin = await api.admin.updatePlatformAdmin(operatingAdmin.id, {
+                    name: adminFormData.name,
+                    phone: adminFormData.phone,
+                    ...(adminFormData.password ? { password: adminFormData.password } : {})
+                }, token);
+                setPlatformAdmins(prev => prev.map(a => a.id === updatedAdmin.id ? updatedAdmin : a));
+                showToast('Platform Admin updated successfully', 'success');
+            }
+            setIsAdminModalOpen(false);
+        } catch (error) {
+            showToast(error instanceof Error ? error.message : 'Failed to save admin', 'error');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleDeleteAdmin = (admin: PlatformAdmin) => {
+        setOperatingAdmin(admin);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!operatingAdmin || !token) return;
+
+        try {
+            setActionLoading(`delete-${operatingAdmin.id}`);
+            await api.admin.deletePlatformAdmin(operatingAdmin.id, token);
+            setPlatformAdmins(prev => prev.filter(admin => admin.id !== operatingAdmin.id));
+            showToast(`${operatingAdmin.name} deleted successfully`, 'success');
+            setIsDeleteModalOpen(false);
+            setOperatingAdmin(null);
+        } catch (error) {
+            showToast(error instanceof Error ? error.message : 'Failed to delete admin', 'error');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const filteredAdmins = platformAdmins.filter(admin => {
+        return admin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            admin.email.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+
+    const columns: Column<PlatformAdmin>[] = [
+        {
+            header: 'Administrator',
+            sortable: true,
+            sortAccessor: (row) => row.name,
+            accessor: (row) => (
+                <div className="flex items-start gap-4 min-w-0">
+                    <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 shrink-0">
+                        <Users className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-black text-gray-900 leading-tight break-words">{row.name}</h4>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mt-0.5">{row.role.replace('_', ' ')}</span>
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'Contact Info',
+            sortable: true,
+            sortAccessor: (row) => row.email,
+            accessor: (row) => (
+                <div className="space-y-1">
+                    <div className="flex items-center text-xs font-medium text-gray-600 gap-1.5">
+                        <Mail className="w-3 h-3 text-purple-400" />
+                        {row.email}
+                    </div>
+                    {row.phone && (
+                        <div className="flex items-center text-xs font-medium text-gray-600 gap-1.5">
+                            <MessageSquare className="w-3 h-3 text-purple-400" />
+                            {row.phone}
+                        </div>
+                    )}
+                </div>
+            )
+        },
+        {
+            header: 'Added On',
+            sortable: true,
+            sortAccessor: (row) => new Date(row.createdAt).getTime(),
+            accessor: (row) => (
+                <div className="flex items-center text-xs font-medium text-gray-500 gap-1.5 opacity-80">
+                    <Calendar className="w-3 h-3" />
+                    {new Date(row.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
+            )
+        },
+        {
+            header: 'Actions',
+            accessor: (row) => {
+                if (row.id === user?.id) return <span className="text-xs text-gray-400 italic">Current User</span>;
+                return (
+                    <div className="flex gap-2 justify-end w-32">
+                        <button
+                            onClick={() => handleOpenAdminModal('EDIT', row)}
+                            className="bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                        >
+                            <Edit2 className="w-3 h-3" />
+                            Edit
+                        </button>
+                        <button
+                            onClick={() => handleDeleteAdmin(row)}
+                            disabled={actionLoading === `delete-${row.id}`}
+                            className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
+                        >
+                            {actionLoading === `delete-${row.id}` ? (
+                                <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent"></div>
+                            ) : <Trash2 className="w-3 h-3" />}
+                            Del
+                        </button>
+                    </div>
+                )
+            }
+        }
+    ];
+
+    if (loading || (!user && !loading)) {
+        return (
+            <div className="flex flex-1 items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+        );
+    }
+
+    if (user?.role !== 'SUPER_ADMIN') {
+        return <div className="p-8 text-center text-gray-500">Access Restricted</div>;
+    }
+
+    return (
+        <div className="flex flex-1 flex-col p-6 sm:p-10 w-full animate-fade-in-up">
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <h1 className="text-3xl font-black text-gray-900 tracking-tight">Platform Admins</h1>
+                <button
+                    onClick={() => handleOpenAdminModal('CREATE')}
+                    className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95"
+                >
+                    <UserPlus className="w-4 h-4" />
+                    Add Admin
+                </button>
+            </div>
+
+            <div className="bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-xl border border-white/50 overflow-hidden flex flex-col min-h-[600px] w-full">
+                <div className="px-8 pt-6 pb-6 border-b border-gray-100 flex flex-col gap-6 bg-gray-50/50">
+                    <SearchBar
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        placeholder="Search admins by name or email..."
+                    />
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 bg-gray-50/10">
+                    <DataTable
+                        columns={columns}
+                        data={filteredAdmins}
+                        keyExtractor={(row) => row.id}
+                        isLoading={fetching}
+                    />
+                </div>
+            </div>
+
+            <ModalForm
+                isOpen={isAdminModalOpen}
+                onClose={() => setIsAdminModalOpen(false)}
+                onSubmit={handleAdminSubmit}
+                title={adminModalMode === 'CREATE' ? 'Add New Platform Admin' : `Edit ${operatingAdmin?.name}`}
+                submitText={adminModalMode === 'CREATE' ? 'Create Admin' : 'Save Changes'}
+                isSubmitting={actionLoading === 'admin-save'}
+            >
+                <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block ml-1">Full Name</label>
+                        <input
+                            type="text"
+                            required
+                            value={adminFormData.name}
+                            onChange={e => setAdminFormData(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-4 py-3 rounded-xl bg-gray-50/50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-bold text-gray-900"
+                            placeholder="John Doe"
+                        />
+                    </div>
+                    {adminModalMode === 'CREATE' && (
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block ml-1">Email Address</label>
+                            <input
+                                type="email"
+                                required
+                                value={adminFormData.email}
+                                onChange={e => setAdminFormData(prev => ({ ...prev, email: e.target.value }))}
+                                className="w-full px-4 py-3 rounded-xl bg-gray-50/50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-bold text-gray-900"
+                                placeholder="john@example.com"
+                            />
+                        </div>
+                    )}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block ml-1">Phone (Optional)</label>
+                        <input
+                            type="tel"
+                            value={adminFormData.phone}
+                            onChange={e => setAdminFormData(prev => ({ ...prev, phone: e.target.value }))}
+                            className="w-full px-4 py-3 rounded-xl bg-gray-50/50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-bold text-gray-900"
+                            placeholder="+1 (555) 000-0000"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block ml-1">
+                            {adminModalMode === 'CREATE' ? 'Password' : 'New Password (Optional)'}
+                        </label>
+                        <input
+                            type="password"
+                            required={adminModalMode === 'CREATE'}
+                            value={adminFormData.password}
+                            onChange={e => setAdminFormData(prev => ({ ...prev, password: e.target.value }))}
+                            className="w-full px-4 py-3 rounded-xl bg-gray-50/50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-bold text-gray-900"
+                            placeholder="••••••••"
+                        />
+                    </div>
+                </div>
+            </ModalForm>
+
+            <ModalForm
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onSubmit={handleConfirmDelete}
+                title="Confirm Deletion"
+                submitText="Permanently Delete"
+                variant="danger"
+                isSubmitting={actionLoading === `delete-${operatingAdmin?.id}`}
+            >
+                <div>
+                    <p className="text-sm font-medium text-gray-700">
+                        Are you sure you want to remove <strong>{operatingAdmin?.name}</strong> from Platform Admins?
+                    </p>
+                    <p className="text-xs text-red-500 mt-2">This action cannot be undone.</p>
+                </div>
+            </ModalForm>
+        </div>
+    );
+}

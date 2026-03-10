@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, CheckCircle, LayoutTemplate, Users, BookOpen, Key, Settings, GraduationCap, AlertTriangle, XCircle, RefreshCw, Mail, LayoutDashboard, ShieldAlert, ShieldCheck, ShieldOff, Search, Filter, Check, X, Building, MapPin, Calendar } from 'lucide-react';
-
+import { Clock, Users, GraduationCap, ShieldOff, RefreshCw, Mail, LayoutDashboard, Building } from 'lucide-react';
 
 import Link from 'next/link';
 
@@ -24,16 +23,11 @@ export default function DashboardPage() {
         if (!payload || !token) return;
 
         // Try to fetch actual org name for better display format than slug
-        fetch('http://localhost:3000/org/settings', {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-            .then(res => res.json())
+        api.org.getSettings(token)
             .then(data => {
                 setOrgData(data);
                 if (data?.name) setOrgName(data.name);
                 else if (payload.orgSlug) {
-
-                    // Formatting fallback
                     const fallback = payload.orgSlug.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
                     setOrgName(fallback);
                 }
@@ -47,10 +41,6 @@ export default function DashboardPage() {
 
     }, [payload, token]);
 
-    useEffect(() => {
-        // Any organization-specific initialization can go here
-    }, []);
-
     if (loading) {
         return (
             <div className="flex flex-1 items-center justify-center py-12">
@@ -62,28 +52,12 @@ export default function DashboardPage() {
     if (!payload) return null;
 
     return (
-        <div className="flex flex-1 flex-col p-6 sm:p-10 max-w-7xl mx-auto w-full">
+        <div className="flex flex-1 flex-col p-6 sm:p-10 w-full animate-fade-in-up">
             <div className="mb-8">
                 <BackButton />
                 <div className="mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <h1 className="text-5xl font-extrabold text-white tracking-tight drop-shadow-lg">Dashboard</h1>
                     <div className="flex flex-wrap items-center gap-3">
-                        {payload.role !== 'TEACHER' && (
-                            <Link
-                                href={`/${payload.orgSlug}/settings`}
-                                className="text-sm font-semibold px-5 py-2.5 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md shadow-lg hover:bg-white/20 flex items-center space-x-2 transition-all text-white"
-                            >
-                                <Settings className="w-4 h-4" />
-                                <span className="hidden sm:inline">Settings</span>
-                            </Link>
-                        )}
-                        <Link
-                            href={`/${payload.orgSlug}/change-password`}
-                            className="text-sm font-semibold px-5 py-2.5 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md shadow-lg hover:bg-white/20 flex items-center space-x-2 transition-all text-white"
-                        >
-                            <Key className="w-4 h-4" />
-                            <span className="hidden sm:inline">Password</span>
-                        </Link>
                         <div className="text-sm font-medium px-5 py-2.5 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-sm shadow-inner flex items-center space-x-2 text-indigo-100">
                             <span>Logged in as:</span>
                             <span className="text-white font-bold truncate max-w-[200px]">{payload.email}</span>
@@ -94,7 +68,6 @@ export default function DashboardPage() {
 
             <div className="flex-1 space-y-8 animate-fade-in-up">
                 {(orgData?.status || payload.status) === 'PENDING' && (
-
                     <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-white/40 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                         <div className="p-6 bg-yellow-50 rounded-full mb-6 relative">
                             <Clock className="w-20 h-20 text-yellow-500 animate-pulse" />
@@ -113,7 +86,6 @@ export default function DashboardPage() {
                 )}
 
                 {(orgData?.status || payload.status) === 'REJECTED' && (
-
                     <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-white/40 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                         <div className="p-6 bg-yellow-50 rounded-full mb-6 relative">
                             <Clock className="w-20 h-20 text-yellow-500 animate-pulse" />
@@ -139,7 +111,7 @@ export default function DashboardPage() {
 
                 {(orgData?.status || payload.status) === 'SUSPENDED' && (
                     <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-orange-200 text-center max-w-2xmx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
-                        <div className="p-6 bg-orange-50 rounded-full mb-6">
+                        <div className="p-6 bg-orange-50 rounded-full mb-6 relative">
                             <ShieldOff className="w-20 h-20 text-orange-500" />
                         </div>
                         <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Access Restricted</h2>
@@ -149,7 +121,7 @@ export default function DashboardPage() {
                                 : "Your organization account has been temporarily suspended due to administrative reasons."}
                         </p>
                         <div className="bg-orange-50 text-orange-800 p-6 rounded-3xl border border-orange-100 w-full mb-8 text-left shadow-inner">
-                            <h3 className="font-bold mb-2 flex items-center gap-2 text-sm uppercase tracking-wider text-orange-900/60 font-black"><AlertTriangle className="w-4 h-4" /> Administrative Notice</h3>
+                            <h3 className="font-bold mb-2 flex items-center gap-2 text-sm uppercase tracking-wider text-orange-900/60 "><ShieldOff className="w-4 h-4" /> Administrative Notice</h3>
                             <p className="italic font-bold text-orange-900">{orgData?.statusMessage || 'Please contact your institution\'s administration or EduManage support for more details.'}</p>
                         </div>
                         <Link
@@ -162,95 +134,67 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-
                 {(orgData?.status || payload.status) === 'APPROVED' && (
-
-
                     <div className="space-y-12">
                         {payload.role === 'STUDENT' ? (
-                            <div className="p-10 bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/50 border-l-[16px] border-l-emerald-500 flex items-center space-x-8 hover:translate-x-2 transition-transform">
-                                <div className="p-6 bg-emerald-50 rounded-3xl shadow-inner">
-                                    <GraduationCap className="w-12 h-12 text-emerald-600" />
+                            <div className="p-8 bg-white/50 backdrop-blur-xl rounded-[2rem] shadow-xl border border-white/40 border-l-8 border-l-emerald-500 flex items-center space-x-6">
+                                <div className="p-4 bg-emerald-50 rounded-2xl shadow-inner">
+                                    <GraduationCap className="w-10 h-10 text-emerald-600" />
                                 </div>
                                 <div>
-                                    <h2 className="text-3xl font-black text-gray-900 leading-tight">Welcome, {payload.name || payload.email}</h2>
-                                    <p className="text-gray-600 text-lg font-bold opacity-80 mt-1">Your student portal is currently being prepared.</p>
+                                    <h2 className="text-2xl font-black text-gray-900 leading-tight">Welcome, {payload.name || payload.email}</h2>
+                                    <p className="text-gray-600 text-sm font-bold opacity-80 mt-0.5">Your student portal is currently being prepared.</p>
                                 </div>
                             </div>
                         ) : (
-                            <div className="p-10 bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/50 border-l-[16px] border-l-indigo-500 flex items-center space-x-8 hover:translate-x-2 transition-transform">
-                                <div className="p-6 bg-indigo-50 rounded-3xl shadow-inner">
-                                    <CheckCircle className="w-12 h-12 text-indigo-600" />
+                            <>
+                                <div className="p-8 bg-white/50 backdrop-blur-xl rounded-[2rem] shadow-xl border border-white/40 border-l-8 border-l-indigo-500 flex items-center space-x-6">
+                                    <div className="p-4 bg-indigo-50 rounded-2xl shadow-inner">
+                                        {payload.role === 'TEACHER' ? <Users className="w-10 h-10 text-indigo-600" /> : <Building className="w-10 h-10 text-indigo-600" />}
+                                    </div>
+                                    <div>
+                                        {payload.role === 'TEACHER' ? (
+                                            <>
+                                                <h2 className="text-2xl font-black text-gray-900 leading-tight">Welcome, {payload.name || payload.email}</h2>
+                                                <p className="text-gray-600 text-sm font-bold opacity-80 mt-0.5">{payload.designation || 'Teacher'} - {orgName}</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <h2 className="text-3xl font-black text-gray-900 leading-tight">{orgName}</h2>
+                                                <p className="text-gray-700 text-sm font-bold opacity-80 mt-0.5 uppercase tracking-widest flex items-center gap-2">
+                                                    <LayoutDashboard className="w-4 h-4" />
+                                                    Management Dashboard
+                                                </p>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                                <div>
-                                    {payload.role === 'TEACHER' ? (
-                                        <>
-                                            <h2 className="text-3xl font-black text-gray-900 leading-tight">Welcome, {payload.name || payload.email}</h2>
-                                            <p className="text-gray-600 text-lg font-bold opacity-80 mt-1">{payload.designation || 'Teacher'} - {orgName}</p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <h2 className="text-4xl font-black text-gray-900 leading-tight">{orgName}</h2>
-                                            <p className="text-gray-700 text-lg font-bold opacity-80 mt-1 uppercase tracking-widest flex items-center gap-2">
-                                                <LayoutTemplate className="w-5 h-5" />
-                                                Management Dashboard
-                                            </p>
-                                        </>
-                                    )}
+
+                                {/* Stats Summary Section */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-3xl border border-white/30 shadow-sm flex flex-col gap-1">
+                                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest">System Status</span>
+                                        <div className="flex items-center gap-2 text-emerald-600 font-bold">
+                                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                            <span>Fully Operational</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-3xl border border-white/30 shadow-sm flex flex-col gap-1">
+                                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Active Role</span>
+                                        <span className="text-indigo-600 font-bold">{payload?.role?.replace('_', ' ')}</span>
+                                    </div>
+
+                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-3xl border border-white/30 shadow-sm flex flex-col gap-1">
+                                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Institution</span>
+                                        <span className="text-gray-900 font-bold truncate">{orgName}</span>
+                                    </div>
+
+                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-3xl border border-white/30 shadow-sm flex flex-col gap-1 text-center justify-center">
+                                        <p className="text-[10px] text-gray-400 font-medium">Use symbols in the sidebar to navigate various sections.</p>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-
-                        {/* Dashboard Navigation Cards */}
-                        {payload.role !== 'STUDENT' && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                                {(payload.role === 'ORG_ADMIN' || payload.role === 'ORG_MANAGER') && (
-                                    <Link href={`/${payload.orgSlug}/dashboard/teachers`} className="p-10 bg-white/70 backdrop-blur-md rounded-[2.5rem] shadow-xl border border-white/40 hover:-translate-y-4 hover:shadow-[0_40px_80px_-20px_rgba(79,70,229,0.3)] transition-all duration-500 group block relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
-                                        <div className="flex items-center space-x-5 mb-8 relative z-10">
-                                            <div className="p-5 bg-indigo-100 text-indigo-600 rounded-3xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-lg group-hover:rotate-6">
-                                                <Users className="w-10 h-10" />
-                                            </div>
-                                            <h3 className="text-2xl font-black text-gray-900 group-hover:text-indigo-600 transition-colors">Teachers</h3>
-                                        </div>
-                                        <p className="text-gray-600 text-lg leading-relaxed font-bold opacity-80 relative z-10">Manage your faculty. Add, edit, or remove teaching staff with ease.</p>
-                                        <div className="mt-8 flex items-center text-indigo-600 font-bold gap-2 group-hover:gap-4 transition-all opacity-0 group-hover:opacity-100">
-                                            <span>Manage Faculty</span>
-                                            <CheckCircle className="w-5 h-5" />
-                                        </div>
-                                    </Link>
-                                )}
-
-                                <Link href={`/${payload.orgSlug}/dashboard/classes`} className="p-10 bg-white/70 backdrop-blur-md rounded-[2.5rem] shadow-xl border border-white/40 hover:-translate-y-4 hover:shadow-[0_40px_80px_-20px_rgba(168,85,247,0.3)] transition-all duration-500 group block relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
-                                    <div className="flex items-center space-x-5 mb-8 relative z-10">
-                                        <div className="p-5 bg-purple-100 text-purple-600 rounded-3xl group-hover:bg-purple-600 group-hover:text-white transition-all duration-500 shadow-lg group-hover:rotate-6">
-                                            <BookOpen className="w-10 h-10" />
-                                        </div>
-                                        <h3 className="text-2xl font-black text-gray-900 group-hover:text-purple-600 transition-colors">Classes</h3>
-                                    </div>
-                                    <p className="text-gray-600 text-lg leading-relaxed font-bold opacity-80 relative z-10">Organize your curriculum. Create and manage academic courses efficiently.</p>
-                                    <div className="mt-8 flex items-center text-purple-600 font-bold gap-2 group-hover:gap-4 transition-all opacity-0 group-hover:opacity-100">
-                                        <span>View Classes</span>
-                                        <CheckCircle className="w-5 h-5" />
-                                    </div>
-                                </Link>
-
-                                <Link href={`/${payload.orgSlug}/dashboard/students`} className="p-10 bg-white/70 backdrop-blur-md rounded-[2.5rem] shadow-xl border border-white/40 hover:-translate-y-4 hover:shadow-[0_40px_80px_-20px_rgba(16,185,129,0.3)] transition-all duration-500 group block relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
-                                    <div className="flex items-center space-x-5 mb-8 relative z-10">
-                                        <div className="p-5 bg-emerald-100 text-emerald-600 rounded-3xl group-hover:bg-emerald-600 group-hover:text-white transition-all duration-500 shadow-lg group-hover:rotate-6">
-                                            <GraduationCap className="w-10 h-10" />
-                                        </div>
-                                        <h3 className="text-2xl font-black text-gray-900 group-hover:text-emerald-600 transition-colors">Students</h3>
-                                    </div>
-                                    <p className="text-gray-600 text-lg leading-relaxed font-bold opacity-80 relative z-10">Track student progress. Manage profiles and academic associations seamlessly.</p>
-                                    <div className="mt-8 flex items-center text-emerald-600 font-bold gap-2 group-hover:gap-4 transition-all opacity-0 group-hover:opacity-100">
-                                        <span>Student Portal</span>
-                                        <CheckCircle className="w-5 h-5" />
-                                    </div>
-                                </Link>
-                            </div>
+                            </>
                         )}
                     </div>
                 )}

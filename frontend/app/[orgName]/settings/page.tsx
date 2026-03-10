@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School, RefreshCw, ShieldOff } from 'lucide-react';
 
 import { BackButton } from '@/components/ui/BackButton';
-import { api } from '@/src/lib/api';
+import { api, Organization } from '@/src/lib/api';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -18,7 +18,7 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [reapplying, setReapplying] = useState(false);
-    const [orgData, setOrgData] = useState<any>(null);
+    const [orgData, setOrgData] = useState<Organization | null>(null);
 
 
     const [formData, setFormData] = useState({
@@ -31,10 +31,7 @@ export default function SettingsPage() {
     useEffect(() => {
         if (!token) return;
 
-        fetch('http://localhost:3000/org/settings', {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-            .then(res => res.json())
+        api.org.getSettings(token)
             .then(data => {
                 setOrgData(data);
                 setFormData({
@@ -45,13 +42,11 @@ export default function SettingsPage() {
                 });
                 setLoading(false);
             })
-
             .catch(err => {
                 console.error('Failed to load settings', err);
                 showToast('Failed to load settings', 'error');
                 setLoading(false);
             });
-
     }, [token]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,20 +55,10 @@ export default function SettingsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!token) return;
         setSaving(true);
         try {
-
-            const response = await fetch('http://localhost:3000/org/settings', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (!response.ok) throw new Error('Failed to update settings');
-
+            await api.org.updateSettings(formData, token);
             showToast('Settings updated successfully!', 'success');
         } catch (error) {
             showToast('Failed to update settings. Please try again.', 'error');
@@ -89,10 +74,7 @@ export default function SettingsPage() {
             await api.org.reapply(token);
             showToast('Your re-application has been submitted!', 'success');
             // Refresh data
-            const res = await fetch('http://localhost:3000/org/settings', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await res.json();
+            const data = await api.org.getSettings(token);
             setOrgData(data);
         } catch (error) {
             showToast('Failed to re-apply', 'error');

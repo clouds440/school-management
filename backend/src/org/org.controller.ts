@@ -19,6 +19,12 @@ import { UpdateStudentDto } from './dto/update-student.dto';
 export class OrgController {
     constructor(private readonly orgService: OrgService) { }
 
+    @Get('stats')
+    getStats(@Request() req: AuthenticatedRequest) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.getStats(req.user.organizationId, req.user);
+    }
+
     // --- Settings ---
     @Get('settings')
     getSettings(@Request() req: AuthenticatedRequest) {

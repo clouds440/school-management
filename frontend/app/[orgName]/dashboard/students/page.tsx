@@ -9,6 +9,7 @@ import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
+import { DataTable, Column } from '@/components/ui/DataTable';
 import { Student, Class } from '@/types';
 
 export default function StudentsPage() {
@@ -103,26 +104,94 @@ export default function StudentsPage() {
         return matchesSearch && matchesFilter;
     });
 
-    // Formatting for Table
-    const formattedData = filteredStudents.map(student => ({
-        id: student.id,
-        name: student.user?.name || 'N/A',
-        regNum: student.registrationNumber || '-',
-        father: student.fatherName || '-',
-        contact: student.user?.phone || student.user?.email || 'N/A',
-        major: student.major || '-',
-        feeAge: `${student.fee ? '$' + student.fee : '-'} / ${student.age ? student.age + ' yrs' : '-'}`,
-        classInfo: student.class ? `${student.class.name} ${student.class.courses && student.class.courses.length > 0 ? `(${student.class.courses.length} courses)` : ''}` : 'Unassigned',
-        lastUpdated: student.updatedBy ? (
-            <div className="flex flex-col">
-                <span className="font-medium text-gray-800">{student.updatedBy}</span>
-                <span className="text-xs text-gray-500">{new Date(student.updatedAt || '').toLocaleDateString()}</span>
-            </div>
-        ) : <span className="text-gray-400 italic text-sm text-center">Never</span>,
-        originalData: student
-    }));
-
-
+    const columns: Column<Student>[] = [
+        {
+            header: 'Student Name',
+            sortable: true,
+            sortAccessor: (row: Student) => row.user.name || '',
+            accessor: (row: Student) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shrink-0">
+                        {(row.user.name || 'N').charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-semibold text-gray-900">{row.user.name || 'N/A'}</span>
+                </div>
+            )
+        },
+        {
+            header: 'Reg No.',
+            sortable: true,
+            accessor: (row: Student) => row.registrationNumber || '-'
+        },
+        {
+            header: 'Major / Course',
+            sortable: true,
+            accessor: (row: Student) => row.major || '-'
+        },
+        {
+            header: 'Contact',
+            sortable: true,
+            sortAccessor: (row: Student) => row.user.phone || row.user.email || '',
+            accessor: (row: Student) => (
+                <div className="flex flex-col">
+                    <span className="text-gray-700">{row.user.phone || 'No phone'}</span>
+                    <span className="text-xs text-gray-500">{row.user.email}</span>
+                </div>
+            )
+        },
+        {
+            header: 'Enrolled Classes',
+            sortable: true,
+            sortAccessor: (row: Student) => row.class?.name || '',
+            accessor: (row: Student) => row.class ? (
+                <div className="max-w-[200px] truncate" title={`${row.class.name} ${row.class.courses && row.class.courses.length > 0 ? `(${row.class.courses.length} courses)` : ''}`}>
+                    {row.class.name} {row.class.courses && row.class.courses.length > 0 ? `(${row.class.courses.length} courses)` : ''}
+                </div>
+            ) : <span className="text-gray-400 italic">Unassigned</span>
+        },
+        {
+            header: 'Fee / Age',
+            sortable: true,
+            sortAccessor: (row: Student) => row.fee || 0,
+            accessor: (row: Student) => (
+                <div className="whitespace-nowrap">
+                    {row.fee ? `$${row.fee}` : '-'} / {row.age ? `${row.age} yrs` : '-'}
+                </div>
+            )
+        },
+        {
+            header: 'Last Updated',
+            sortable: true,
+            sortAccessor: (row: Student) => new Date(row.updatedAt || '').getTime(),
+            accessor: (row: Student) => row.updatedBy ? (
+                <div className="flex flex-col whitespace-nowrap">
+                    <span className="font-medium text-gray-800">{row.updatedBy}</span>
+                    <span className="text-xs text-gray-500">{new Date(row.updatedAt || '').toLocaleDateString()}</span>
+                </div>
+            ) : <span className="text-gray-400 italic text-sm text-center">Never</span>
+        },
+        {
+            header: 'Actions',
+            accessor: (row: Student) => (user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') ? (
+                <div className="flex justify-end gap-2 shrink-0">
+                    <button
+                        onClick={() => handleEditClick(row.id)}
+                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
+                        title="Edit Student"
+                    >
+                        <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => handleDeleteClick(row.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                        title="Remove Student"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
+            ) : null
+        }
+    ];
 
     const handleEditClick = (studentId: string) => {
         const student = students.find(s => s.id === studentId);
@@ -229,7 +298,7 @@ export default function StudentsPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto p-6 w-full">
+        <div className="flex flex-1 flex-col p-6 sm:p-10 w-full animate-fade-in-up">
             <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <BackButton />
@@ -279,67 +348,12 @@ export default function StudentsPage() {
                 </div>
 
                 <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-indigo-50/50 to-purple-50/50 rounded-2xl -z-10"></div>
-                    <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm relative z-10 bg-white">
-                        <table className="w-full text-left text-sm text-gray-700">
-                            <thead className="bg-gray-50 text-xs uppercase font-medium text-gray-500 border-b border-gray-200">
-                                <tr>
-                                    <th className="px-6 py-4">Student Name</th>
-                                    <th className="px-6 py-4">Reg No.</th>
-                                    <th className="px-6 py-4">Major / Course</th>
-                                    <th className="px-6 py-4">Contact</th>
-                                    <th className="px-6 py-4">Enrolled Classes</th>
-                                    <th className="px-6 py-4">Fee / Age</th>
-                                    <th className="px-6 py-4">Last Updated</th>
-                                    {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') && <th className="px-6 py-4 text-right">Actions</th>}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {formattedData.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') ? 8 : 7} className="px-6 py-8 text-center text-gray-500">
-                                            No students found matching your search.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    formattedData.map((student) => (
-                                        <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 font-semibold text-gray-900 flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-                                                    {student.name.charAt(0).toUpperCase()}
-                                                </div>
-                                                {student.name}
-                                            </td>
-                                            <td className="px-6 py-4">{student.regNum}</td>
-                                            <td className="px-6 py-4">{student.major}</td>
-                                            <td className="px-6 py-4">{student.contact}</td>
-                                            <td className="px-6 py-4 max-w-[200px] truncate" title={student.classInfo}>{student.classInfo}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap">{student.feeAge}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap">{student.lastUpdated}</td>
-                                            {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') && (
-                                                <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
-                                                    <button
-                                                        onClick={() => handleEditClick(student.id)}
-                                                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
-                                                        title="Edit Student"
-                                                    >
-                                                        <Pencil className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteClick(student.id)}
-                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
-                                                        title="Remove Student"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </td>
-                                            )}
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                    <DataTable
+                        data={filteredStudents}
+                        columns={columns}
+                        keyExtractor={(row) => row.id}
+                        isLoading={isLoading}
+                    />
                 </div>
             </div>
 

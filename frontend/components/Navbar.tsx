@@ -26,7 +26,7 @@ export default function Navbar() {
             <div className="flex items-center space-x-3 md:space-x-4">
                 {token && user ? (
                     <div className="flex items-center space-x-2">
-                        {!pathname.endsWith('/dashboard') && (
+                        {!pathname.includes('/dashboard') && (
                             <Link
                                 href={
                                     user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN'
@@ -41,13 +41,6 @@ export default function Navbar() {
                                 <span className="hidden sm:inline">Dashboard</span>
                             </Link>
                         )}
-                        <button
-                            onClick={handleLogout}
-                            className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white border border-gray-100 text-red-600 hover:bg-red-50 hover:border-red-100 transition-all duration-300 font-medium shadow-sm cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                        >
-                            <LogOut className="w-4 h-4" />
-                            <span className="hidden sm:inline">Logout</span>
-                        </button>
                     </div>
                 ) : (
                     <div className="flex items-center p-1.5 rounded-2xl">

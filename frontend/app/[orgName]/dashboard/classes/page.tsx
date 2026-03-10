@@ -136,6 +136,8 @@ export default function ClassesPage() {
     const columns = [
         {
             header: 'Class & Grade',
+            sortable: true,
+            sortAccessor: (row: Class) => row.name,
             accessor: (row: Class) => (
                 <div className="flex flex-col">
                     <span className="font-semibold text-gray-900">{row.name}</span>
@@ -145,6 +147,8 @@ export default function ClassesPage() {
         },
         {
             header: 'Courses',
+            sortable: true,
+            sortAccessor: (row: Class) => row.courses?.length || 0,
             accessor: (row: Class) => (
                 <div className="flex flex-wrap gap-1">
                     {row.courses && row.courses.length > 0 ? (
@@ -159,9 +163,15 @@ export default function ClassesPage() {
                 </div>
             )
         },
-        { header: 'Description', accessor: (row: Class) => row.description || <span className="text-gray-400 italic">No description</span> },
+        {
+            header: 'Description',
+            sortable: true,
+            accessor: (row: Class) => row.description || <span className="text-gray-400 italic">No description</span>
+        },
         {
             header: 'Assigned Teacher',
+            sortable: true,
+            sortAccessor: (row: Class) => row.teacher?.user.name || row.teacher?.user.email || '',
             accessor: (row: Class) => row.teacher ? (
                 <div className="flex flex-col">
                     <span className="font-medium text-gray-800">{row.teacher.user.name || row.teacher.user.email}</span>
@@ -171,6 +181,8 @@ export default function ClassesPage() {
         },
         {
             header: 'Last Updated',
+            sortable: true,
+            sortAccessor: (row: Class) => new Date(row.updatedAt || '').getTime(),
             accessor: (row: Class) => row.updatedBy ? (
                 <div className="flex flex-col">
                     <span className="font-medium text-gray-800">{row.updatedBy}</span>
@@ -226,7 +238,7 @@ export default function ClassesPage() {
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
     return (
-        <div className="flex flex-1 flex-col p-6 sm:p-10 max-w-7xl mx-auto w-full">
+        <div className="flex flex-1 flex-col p-6 sm:p-10 w-full animate-fade-in-up">
             <div className="mb-8">
                 <BackButton />
                 <div className="mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
