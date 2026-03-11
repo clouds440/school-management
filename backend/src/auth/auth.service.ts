@@ -92,6 +92,7 @@ export class AuthService {
             orgSlug: slug,
             orgName: user.organization?.name || null,
             orgId: user.organizationId,
+            orgLogoUrl: user.organization?.logoUrl || null,
             status: user.organization ? user.organization.status : 'APPROVED', // Keep SUPER_ADMIN as APPROVED
             isFirstLogin: user.isFirstLogin,
             tokenVersion: user.tokenVersion

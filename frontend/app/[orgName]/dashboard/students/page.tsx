@@ -7,11 +7,9 @@ import { Plus, Users, Pencil, Trash2, BookOpen, ShieldCheck, GraduationCap, User
 import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
-import Link from 'next/link';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { Student, Section } from '@/types';
-import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 
 export default function StudentsPage() {

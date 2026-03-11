@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School, RefreshCw, ShieldOff } from 'lucide-react';
 
@@ -10,6 +10,7 @@ import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
+import { LogoUploadPicker } from '@/components/ui/LogoUploadPicker';
 
 
 export default function SettingsPage() {
@@ -19,7 +20,7 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false);
     const [reapplying, setReapplying] = useState(false);
     const [orgData, setOrgData] = useState<Organization | null>(null);
-
+    const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -53,12 +54,26 @@ export default function SettingsPage() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const handleLogoReady = useCallback((file: File) => {
+        setPendingLogoFile(file);
+    }, []);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!token) return;
         setSaving(true);
         try {
+            // 1. Save text settings
             await api.org.updateSettings(formData, token);
+
+            // 2. Upload logo if one was selected
+            if (pendingLogoFile) {
+                const logoRes = await api.org.uploadLogo(pendingLogoFile, token);
+                // Update local org data so the avatar reflects the new URL
+                setOrgData(prev => prev ? { ...prev, logoUrl: logoRes.logoUrl, avatarUpdatedAt: logoRes.avatarUpdatedAt } : prev);
+                setPendingLogoFile(null);
+            }
+
             showToast('Settings updated successfully!', 'success');
         } catch (error) {
             showToast('Failed to update settings. Please try again.', 'error');
@@ -73,7 +88,6 @@ export default function SettingsPage() {
         try {
             await api.org.reapply(token);
             showToast('Your re-application has been submitted!', 'success');
-            // Refresh data
             const data = await api.org.getSettings(token);
             setOrgData(data);
         } catch (error) {
@@ -102,7 +116,7 @@ export default function SettingsPage() {
                     </div>
                     <div>
                         <h1 className="text-5xl font-black text-white tracking-tight drop-shadow-lg">Settings</h1>
-                        <p className="text-indigo-100 font-bold opacity-80 mt-1">ORGANIZATION PROFILE & CONFIGURATION</p>
+                        <p className="text-indigo-100 font-bold opacity-80 mt-1">ORGANIZATION PROFILE &amp; CONFIGURATION</p>
                     </div>
                 </div>
             </div>
@@ -137,7 +151,23 @@ export default function SettingsPage() {
                 )}
 
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* Logo section */}
+                    <div className="flex flex-col items-center gap-2 pb-6 border-b border-gray-100">
+                        <Label className="mb-1">Organization Logo</Label>
+                        <LogoUploadPicker
+                            currentLogoUrl={orgData?.logoUrl}
+                            onFileReady={handleLogoReady}
+                            hint="Click to change logo — saved when you click Save Settings"
+                        />
+                        {pendingLogoFile && (
+                            <p className="text-xs text-indigo-600 font-medium flex items-center gap-1">
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                New logo ready — will upload on save
+                            </p>
+                        )}
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
                             <Label>Organization Name</Label>
@@ -190,7 +220,7 @@ export default function SettingsPage() {
                         </div>
                     </div>
 
-                    <div className="pt-8 border-t border-gray-100 flex justify-end">
+                    <div className="pt-4 border-t border-gray-100 flex justify-end">
                         <Button
                             type="submit"
                             isLoading={saving}

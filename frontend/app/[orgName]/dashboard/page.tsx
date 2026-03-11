@@ -15,12 +15,13 @@ export default function DashboardPage() {
     const router = useRouter();
     const [orgName, setOrgName] = useState('Organization');
     const [orgData, setOrgData] = useState<Organization | null>(null);
-
+    const [fetchingData, setFetchingData] = useState(true);
 
 
     useEffect(() => {
         if (!payload || !token) return;
 
+        setFetchingData(true);
         // Try to fetch actual org name for better display format than slug
         api.org.getSettings(token)
             .then(data => {
@@ -36,7 +37,8 @@ export default function DashboardPage() {
                     const fallback = payload.orgSlug.split('-').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
                     setOrgName(fallback);
                 }
-            });
+            })
+            .finally(() => setFetchingData(false));
 
     }, [payload, token]);
 
@@ -49,6 +51,20 @@ export default function DashboardPage() {
     }
 
     if (!payload) return null;
+
+    // Loading skeleton shown while org data is being fetched
+    // (prevents flash of JWT status before real status arrives)
+    if (fetchingData) {
+        return (
+            <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-pulse">
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="h-12 w-64 bg-white/30 rounded-sm" />
+                    <div className="h-10 w-56 bg-white/20 rounded-sm" />
+                </div>
+                <div className="h-52 bg-white/20 rounded-sm" />
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
@@ -65,7 +81,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-8">
-                {(orgData?.status || payload.status) === 'PENDING' && (
+                {orgData?.status === 'PENDING' && (
                     <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-white/40 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                         <div className="p-6 bg-yellow-50 rounded-full mb-6 relative">
                             <Clock className="w-20 h-20 text-yellow-500 animate-pulse" />
@@ -83,7 +99,7 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {(orgData?.status || payload.status) === 'REJECTED' && (
+                {orgData?.status === 'REJECTED' && (
                     <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-white/40 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                         <div className="p-6 bg-yellow-50 rounded-full mb-6 relative">
                             <Clock className="w-20 h-20 text-yellow-500 animate-pulse" />
@@ -107,7 +123,7 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {(orgData?.status || payload.status) === 'SUSPENDED' && (
+                {orgData?.status === 'SUSPENDED' && (
                     <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-orange-200 text-center max-w-2xmx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                         <div className="p-6 bg-orange-50 rounded-full mb-6 relative">
                             <ShieldOff className="w-20 h-20 text-orange-500" />
@@ -132,7 +148,7 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {(orgData?.status || payload.status) === 'APPROVED' && (
+                {orgData?.status === 'APPROVED' && (
                     <div className="space-y-12">
                         {payload.role === 'STUDENT' ? (
                             <div className="p-8 bg-white/50 backdrop-blur-xl rounded-sm shadow-xl border border-white/40 border-l-8 border-l-emerald-500 flex items-center space-x-6">

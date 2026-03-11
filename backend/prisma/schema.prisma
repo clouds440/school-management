@@ -49,21 +49,23 @@ enum StudentStatus {
 }
 
 model Organization {
-  id           String    @id @default(uuid())
-  name         String
-  location     String
-  type         String
-  contactEmail String?
-  phone        String?
-  status       OrgStatus @default(PENDING)
-  statusMessage String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id               String    @id @default(uuid())
+  name             String
+  location         String
+  type             String
+  contactEmail     String?
+  phone            String?
+  logoUrl          String?   // Public HTTP path to the org logo file
+  avatarUpdatedAt  DateTime? // Bumped on every logo change for browser cache-busting
+  status           OrgStatus @default(PENDING)
+  statusMessage    String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  users        User[]
-  teachers     Teacher[]
-  students     Student[]
-  courses      Course[]
+  users          User[]
+  teachers       Teacher[]
+  students       Student[]
+  courses        Course[]
   supportTickets SupportTicket[]
 }
 
@@ -178,4 +180,17 @@ model Student {
   updatedBy              String?      // Tracks name of user who last modified this record
   createdAt              DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
+}
+
+model File {
+  id          String   @id @default(uuid())
+  orgId       String
+  entityType  String
+  entityId    String
+  path        String
+  filename    String
+  mimeType    String
+  size        Int
+  uploadedBy  String
+  createdAt   DateTime @default(now())
 }

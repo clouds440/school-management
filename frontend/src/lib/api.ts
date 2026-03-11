@@ -40,6 +40,8 @@ export interface Organization {
     email: string;
     contactEmail?: string;
     phone?: string;
+    logoUrl?: string | null;
+    avatarUpdatedAt?: string | null;
     status: OrgStatus;
     statusMessage?: string;
     createdAt: string;
@@ -378,6 +380,18 @@ export const api = {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (!response.ok) await handleError(response, 'Failed to fetch organization stats');
+            return response.json();
+        },
+
+        async uploadLogo(file: File, token: string): Promise<{ logoUrl: string; avatarUpdatedAt: string }> {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await fetch(`${API_BASE_URL}/org/settings/logo`, {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
+            if (!response.ok) await handleError(response, 'Failed to upload logo');
             return response.json();
         }
 

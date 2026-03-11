@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
 import { SupportTopic } from '@prisma/client';
 
 import { OrgService } from './org.service';
@@ -15,6 +15,10 @@ import { CreateSectionDto } from './dto/create-section.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('org')
@@ -40,6 +44,51 @@ export class OrgController {
         if (!req.user.organizationId) throw new Error('No organization');
         return this.orgService.updateSettings(req.user.organizationId, updateSettingsDto);
     }
+
+    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Patch('settings/logo')
+    @UseInterceptors(FileInterceptor('file', {
+        // Explicitly use disk storage so file.path is populated.
+        // orgId is read from req.user because JwtAuthGuard runs before interceptors.
+        storage: diskStorage({
+            destination: (req: AuthenticatedRequest, _file, cb) => {
+                const orgId = req.user?.organizationId ?? 'unknown';
+                const uploadPath = path.join(
+                    process.cwd(), 'uploads', 'orgs', orgId, 'orgLogo', orgId,
+                );
+                fs.mkdirSync(uploadPath, { recursive: true });
+                cb(null, uploadPath);
+            },
+            filename: (_req, file: Express.Multer.File, cb) => {
+                const sanitized = file.originalname.replace(/\s+/g, '-');
+                cb(null, `${Date.now()}-${sanitized}`);
+            },
+        }),
+        limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB hard cap
+    }))
+    async updateLogo(
+        @UploadedFile() file: Express.Multer.File,
+        @Request() req: AuthenticatedRequest,
+    ) {
+        if (!req.user.organizationId) throw new Error('No organization');
+
+        if (!file) {
+            throw new BadRequestException('No file provided');
+        }
+
+        const ALLOWED_IMAGE_TYPES = new Set([
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+        ]);
+
+        if (!ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
+            throw new BadRequestException(
+                `File type "${file.mimetype}" is not allowed. Only images are accepted for logos.`,
+            );
+        }
+
+        return this.orgService.updateLogo(req.user.organizationId, file, req.user.id);
+    }
+
 
     @Post('support')
     submitSupportTicket(

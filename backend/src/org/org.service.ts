@@ -11,10 +11,15 @@ import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
+import { FilesService } from '../files/files.service';
 
 @Injectable()
 export class OrgService {
     private prisma = new PrismaClient();
+
+    constructor(private readonly filesService: FilesService) {}
 
     // --- Settings ---
     async getSettings(orgId: string) {
@@ -27,6 +32,8 @@ export class OrgService {
                 type: true,
                 contactEmail: true,
                 phone: true,
+                logoUrl: true,
+                avatarUpdatedAt: true,
                 status: true,
                 statusMessage: true,
             },
@@ -47,10 +54,63 @@ export class OrgService {
                 type: true,
                 contactEmail: true,
                 phone: true,
+                logoUrl: true,
+                avatarUpdatedAt: true,
                 status: true,
                 statusMessage: true,
             },
 
+        });
+    }
+
+    async updateLogo(
+        orgId: string,
+        file: Express.Multer.File,
+        uploadedBy: string,
+    ) {
+        const org = await this.prisma.organization.findUnique({
+            where: { id: orgId },
+            select: { id: true, logoUrl: true },
+        });
+        if (!org) throw new NotFoundException('Organization not found');
+
+        // Delete old logo from disk (best-effort)
+        if (org.logoUrl) {
+            const oldAbsolute = path.resolve(org.logoUrl.replace(/^\/uploads\//, 'uploads/'));
+            if (fs.existsSync(oldAbsolute)) {
+                fs.unlinkSync(oldAbsolute);
+            }
+        }
+
+        // Derive a portable relative path from file.path regardless of OS.
+        // On Windows multer returns an absolute path like C:\...\uploads\orgs\...
+        const forwardSlash = file.path.replace(/\\/g, '/');
+        const uploadsIndex = forwardSlash.indexOf('uploads/');
+        const relativePath = uploadsIndex >= 0
+            ? forwardSlash.slice(uploadsIndex)            // → uploads/orgs/...
+            : forwardSlash;
+        const publicUrl = `/${relativePath}`;             // → /uploads/orgs/...
+
+        // Save new file record via FilesService (for audit trail)
+        await this.filesService.saveFile(
+            { orgId, entityType: 'orgLogo', entityId: orgId },
+            file,
+            uploadedBy,
+        );
+
+        // Update org with new logo URL and bump cache-buster timestamp
+        return this.prisma.organization.update({
+            where: { id: orgId },
+            data: {
+                logoUrl: publicUrl,
+                avatarUpdatedAt: new Date(),
+            },
+            select: {
+                id: true,
+                name: true,
+                logoUrl: true,
+                avatarUpdatedAt: true,
+            },
         });
     }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, OrganizationType } from '@/src/lib/api';
 import { School, MapPin, Building, Mail, Lock, UserPlus, Phone } from 'lucide-react';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
+import { LogoUploadPicker } from '@/components/ui/LogoUploadPicker';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -25,6 +26,11 @@ export default function RegisterPage() {
   });
   const [sameAsLoginEmail, setSameAsLoginEmail] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+
+  const handleLogoReady = useCallback((file: File) => {
+    setPendingLogoFile(file);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,10 +39,28 @@ export default function RegisterPage() {
     try {
       const payload = {
         ...formData,
-        contactEmail: sameAsLoginEmail ? formData.email : formData.contactEmail
+        contactEmail: sameAsLoginEmail ? formData.email : formData.contactEmail,
       };
+
+      // 1. Register the org
       await api.auth.register(payload);
-      showToast('Registration successful! Please login.', 'success');
+
+      // 2. If a logo was selected, log in temporarily to get a token and upload it
+      if (pendingLogoFile) {
+        try {
+          const loginRes = await api.auth.login({ email: formData.email, password: formData.password });
+          if (loginRes.access_token) {
+            await api.org.uploadLogo(pendingLogoFile, loginRes.access_token);
+          }
+        } catch {
+          // Logo upload failure should not block registration
+          showToast('Account created! Logo upload failed — you can add it from Settings.', 'info');
+          router.push('/login');
+          return;
+        }
+      }
+
+      showToast('Registration successful! Please wait for approval.', 'success');
       router.push('/login');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Registration failed';
@@ -76,6 +100,17 @@ export default function RegisterPage() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* Logo picker */}
+          <div className="flex flex-col items-center pb-2">
+            <Label className="mb-3">
+              Organization Logo <span className="text-gray-400 font-normal">(optional)</span>
+            </Label>
+            <LogoUploadPicker
+              onFileReady={handleLogoReady}
+              hint="Square image, PNG or JPG, max 5 MB"
+            />
+          </div>
+
           <div className="space-y-5">
             <div>
               <Label htmlFor="name">Organization Name</Label>
@@ -140,9 +175,7 @@ export default function RegisterPage() {
 
             <div>
               <div className="flex items-center justify-between mb-2 pl-1 pr-1">
-                <Label className="mb-0">
-                  Organization Contact Email
-                </Label>
+                <Label className="mb-0">Organization Contact Email</Label>
                 <label className="flex items-center group cursor-pointer select-none">
                   <div className="relative">
                     <input
