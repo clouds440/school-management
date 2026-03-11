@@ -7,14 +7,16 @@ import { DataTable } from '@/components/ui/DataTable';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
+import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 import { Section, Course } from '@/types';
 
 export default function SectionsPage() {
     const { token, user } = useAuth();
     const pathname = usePathname();
+    const router = useRouter();
     const { showToast } = useToast();
     const [sections, setSections] = useState<Section[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
@@ -34,10 +36,10 @@ export default function SectionsPage() {
         if (!token) return;
         try {
             const fetchPromises: Promise<Response>[] = [
-                fetch('http://localhost:3000/org/sections', {
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/sections`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
-                fetch('http://localhost:3000/org/courses', {
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/courses`, {
                     headers: { Authorization: `Bearer ${token}` }
                 })
             ];
@@ -65,7 +67,7 @@ export default function SectionsPage() {
         try {
             const submitData = { ...editFormData };
 
-            const response = await fetch(`http://localhost:3000/org/sections/${editingSection?.id}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/sections/${editingSection?.id}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -90,7 +92,7 @@ export default function SectionsPage() {
     const handleDeleteConfirm = async () => {
         if (!deletingSection) return;
         try {
-            const response = await fetch(`http://localhost:3000/org/sections/${deletingSection.id}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/sections/${deletingSection.id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -125,8 +127,8 @@ export default function SectionsPage() {
             sortAccessor: (row: Section) => row.name,
             accessor: (row: Section) => (
                 <div className="flex flex-col">
-                    <span className="font-semibold text-gray-900">{row.name}</span>
-                    <span className="text-sm font-medium text-indigo-600">{row.course?.name || 'No Course'}</span>
+                    <span className="font-semibold text-card-text">{row.name}</span>
+                    <span className="text-sm font-medium text-primary">{row.course?.name || 'No Course'}</span>
                 </div>
             )
         },
@@ -138,7 +140,7 @@ export default function SectionsPage() {
                 <div className="flex flex-wrap gap-1">
                     {row.teachers && row.teachers.length > 0 ? (
                         row.teachers.map((teacher, idx) => (
-                            <span key={idx} className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-sm text-xs font-medium border border-indigo-100">
+                            <span key={idx} className="bg-primary/5 text-primary px-2 py-1 rounded-sm text-xs font-medium border border-primary/10">
                                 {teacher.user.name}
                             </span>
                         ))
@@ -180,7 +182,7 @@ export default function SectionsPage() {
                                     });
                                     setEditModalOpen(true);
                                 }}
-                                className="text-indigo-600 hover:text-indigo-900 p-1 hover:bg-indigo-50 rounded transition-colors"
+                                className="text-primary hover:text-primary-hover p-1 hover:bg-primary/10 rounded transition-colors"
                                 title="Edit Section"
                             >
                                 <Edit2 className="w-4 h-4" />
@@ -216,32 +218,32 @@ export default function SectionsPage() {
                         </div>
                         <div>
                             <h1 className="text-5xl font-black text-white tracking-tight drop-shadow-lg">Sections</h1>
-                            <p className="text-indigo-100 font-bold opacity-90 mt-1">ACTIVE COURSE OFFERINGS</p>
+                            <p className="text-white/80 font-bold opacity-90 mt-1 uppercase tracking-widest text-[10px]">ACTIVE COURSE OFFERINGS</p>
                         </div>
                     </div>
                     {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER') && (
-                        <Link
-                            href={`/${orgSlug}/dashboard/sections/create`}
-                            className="flex items-center gap-3 bg-white text-indigo-600 px-8 py-4 rounded-sm font-bold transition-all shadow-2xl hover:shadow-indigo-500/40 hover:-translate-y-1 active:scale-95"
+                        <Button
+                            onClick={() => router.push(`/${orgSlug}/dashboard/sections/create`)}
+                            icon={Plus}
+                            className="px-8 py-4"
                         >
-                            <Plus className="w-6 h-6" />
                             Create Section
-                        </Link>
+                        </Button>
                     )}
                 </div>
             </div>
 
-            <div className="bg-white rounded-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-6 md:p-8 mb-10">
+            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-6 md:p-8 mb-10">
                 <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, course, or room..." />
                     </div>
 
                     {user?.role === 'TEACHER' && (
-                        <div className="flex items-center gap-3 bg-indigo-50/50 p-2 pr-4 rounded-sm border border-indigo-100">
+                        <div className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10">
                             <button
                                 onClick={() => setShowOnlyMySections(!showOnlyMySections)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${showOnlyMySections ? 'bg-indigo-600' : 'bg-gray-200'
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMySections ? 'bg-primary' : 'bg-gray-200'
                                     }`}
                             >
                                 <span
@@ -249,7 +251,7 @@ export default function SectionsPage() {
                                         }`}
                                 />
                             </button>
-                            <span className="text-sm font-bold text-indigo-900 uppercase tracking-wider">My Sections</span>
+                            <span className="text-sm font-bold text-card-text uppercase tracking-wider">My Sections</span>
                         </div>
                     )}
                 </div>
@@ -280,7 +282,7 @@ export default function SectionsPage() {
                             required
                             value={editFormData.name}
                             onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                            className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold"
+                            className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-card-text font-bold"
                             placeholder="e.g. Section A"
                         />
                     </div>
@@ -292,7 +294,7 @@ export default function SectionsPage() {
                                     required
                                     value={editFormData.courseId}
                                     onChange={(e) => setEditFormData({ ...editFormData, courseId: e.target.value })}
-                                    className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold appearance-none"
+                                    className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-card-text font-bold appearance-none"
                                 >
                                     <option value="" disabled>Select Course</option>
                                     {courses.map((c) => (
@@ -316,7 +318,7 @@ export default function SectionsPage() {
                                 type="text"
                                 value={editFormData.semester}
                                 onChange={(e) => setEditFormData({ ...editFormData, semester: e.target.value })}
-                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-card-text font-bold"
                                 placeholder="E.g., Fall"
                             />
                         </div>
@@ -326,7 +328,7 @@ export default function SectionsPage() {
                                 type="text"
                                 value={editFormData.year}
                                 onChange={(e) => setEditFormData({ ...editFormData, year: e.target.value })}
-                                className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold"
+                                className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-card-text font-bold"
                                 placeholder="E.g., 2026"
                             />
                         </div>
@@ -337,7 +339,7 @@ export default function SectionsPage() {
                             type="text"
                             value={editFormData.room}
                             onChange={(e) => setEditFormData({ ...editFormData, room: e.target.value })}
-                            className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold"
+                            className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-card-text font-bold"
                             placeholder="E.g., 101-B"
                         />
                     </div>

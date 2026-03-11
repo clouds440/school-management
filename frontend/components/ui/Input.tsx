@@ -10,17 +10,17 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         return (
             <div className="relative group">
                 {Icon && (
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
                         <Icon className="h-5 w-5" />
                     </div>
                 )}
                 <input
                     type={type}
                     className={`
-            block w-full rounded-sm border border-gray-200 bg-gray-50/50 
+            block w-full rounded-sm border border-gray-200/20 bg-primary/5 
             ${Icon ? 'pl-11' : 'pl-4'} pr-4 py-3 
-            text-gray-900 placeholder-gray-400 
-            focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 
+            text-card-text placeholder-card-text/40 
+            focus:bg-card focus:border-primary focus:ring-2 focus:ring-(--primary)/20 
             sm:text-sm transition-all duration-200 shadow-sm
             ${className || ''}
           `}

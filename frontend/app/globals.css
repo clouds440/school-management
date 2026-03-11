@@ -9,13 +9,34 @@
   /* indigo-600 */
   --primary-hover: #4338ca;
   /* indigo-700 */
+  --primary-rgb: 79, 70, 229;
+  --secondary: #ffffff;
+  --secondary-hover: #f1f5f9;
+  --secondary-rgb: 255, 255, 255;
+  --card-bg: #ffffff;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --theme-bg: #f8fafc;
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-text: var(--primary-text);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-text: var(--secondary-text);
+  --color-item-hover: var(--item-hover);
+  --color-navbar: var(--navbar-bg);
+  --color-navbar-text: var(--navbar-text);
+  --color-card: var(--card-bg);
+  --color-card-text: var(--card-text);
+  --color-sidebar: var(--sidebar-bg);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-sidebar-active: var(--sidebar-active-bg);
+  --color-sidebar-active-text: var(--sidebar-active-text);
+  --color-theme-bg: var(--theme-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

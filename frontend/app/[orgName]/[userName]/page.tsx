@@ -17,7 +17,7 @@ export default function StudentPersonalizedDashboard() {
     useEffect(() => {
         if (!user || !token) return;
 
-        fetch('http://localhost:3000/org/settings', {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/settings`, {
             headers: { Authorization: `Bearer ${token}` }
         })
             .then(res => res.json())

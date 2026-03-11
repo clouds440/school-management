@@ -45,12 +45,12 @@ export function ModalForm({
 
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-md transition-all duration-300">
-            <div className="bg-white/90 backdrop-blur-2xl rounded-sm shadow-[0_30px_70px_rgba(0,0,0,0.2)] w-full max-w-lg mx-4 transform transition-all p-10 border border-white/50 animate-scale-in">
+            <div className="bg-card text-card-text backdrop-blur-2xl rounded-sm shadow-[0_30px_70px_rgba(0,0,0,0.2)] w-full max-w-lg mx-4 transform transition-all p-10 border border-white/50 animate-scale-in">
                 <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-3xl font-black text-gray-900 tracking-tight">{title}</h2>
+                    <h2 className="text-3xl font-black tracking-tight uppercase">{title}</h2>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-sm transition-all active:scale-95"
+                        className="text-card-text/40 hover:text-card-text p-2 hover:bg-primary/10 rounded-sm transition-all active:scale-95"
                     >
                         <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
@@ -68,7 +68,7 @@ export function ModalForm({
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-8 py-3.5 text-sm font-bold text-gray-600 bg-gray-100 rounded-sm hover:bg-gray-200 transition-all hover:scale-105 active:scale-95"
+                                className="px-8 py-3.5 text-sm font-bold text-secondary-text bg-secondary border border-gray-200/50 hover:bg-secondary-hover rounded-sm transition-all hover:scale-105 active:scale-95 shadow-sm"
                                 disabled={isSubmitting}
                             >
                                 Cancel
@@ -80,7 +80,7 @@ export function ModalForm({
                             className={`px-10 py-3.5 text-sm font-bold text-white rounded-sm transition-all shadow-lg hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center gap-3 ${variant === 'danger' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' :
                                 variant === 'warning' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/30' :
                                     variant === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/30' :
-                                        'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/30'
+                                        'bg-primary text-primary-text shadow-[0_8px_16px_var(--shadow-color)]'
                                 }`}
                         >
 

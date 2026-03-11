@@ -40,7 +40,7 @@ export default function CreateSectionPage() {
         }
 
         if (user.role === 'ORG_ADMIN' || user.role === 'ORG_MANAGER') {
-            fetch('http://localhost:3000/org/courses', {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/courses`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
                 .then(res => res.json())
@@ -60,7 +60,7 @@ export default function CreateSectionPage() {
         try {
             const submitData = { ...formData };
 
-            const response = await fetch('http://localhost:3000/org/sections', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/sections`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -91,12 +91,12 @@ export default function CreateSectionPage() {
                     </div>
                     <div>
                         <h1 className="text-4xl font-black text-white tracking-tight drop-shadow-lg">Create Section</h1>
-                        <p className="text-indigo-100 font-bold opacity-80 mt-1">ADD A NEW COURSE OFFERING</p>
+                        <p className="text-white/80 font-bold opacity-80 mt-1 uppercase tracking-widest text-[10px]">ADD A NEW COURSE OFFERING</p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-xl rounded-sm shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-white/50 p-12">
+            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-[0_30px_70px_var(--shadow-color)] border border-white/20 p-12 text-card-text">
                 <form onSubmit={handleSubmit} className="space-y-8">
                     <div className="space-y-8">
                         <div>
@@ -121,9 +121,9 @@ export default function CreateSectionPage() {
                                 icon={BookOpen}
                                 required
                             >
-                                <option value="" className="text-gray-500 font-medium" disabled>Select a course...</option>
+                                <option value="" className="text-card-text/40 font-medium" disabled>Select a course...</option>
                                 {courses.map(c => (
-                                    <option key={c.id} value={c.id} className="text-gray-900">
+                                    <option key={c.id} value={c.id} className="text-gray-900 font-bold">
                                         {c.name}
                                     </option>
                                 ))}
@@ -172,7 +172,7 @@ export default function CreateSectionPage() {
                     <div className="pt-10 mt-10 border-t border-gray-100 flex justify-end gap-5">
                         <Link
                             href={`/${orgSlug}/dashboard/sections`}
-                            className="px-8 py-3 text-base font-bold text-gray-600 bg-gray-100 rounded-sm hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 flex items-center shadow-lg border border-transparent"
+                            className="px-8 py-3 text-base font-bold text-secondary-text bg-secondary rounded-sm hover:brightness-110 transition-all hover:scale-105 active:scale-95 flex items-center shadow-lg border border-transparent"
                         >
                             Cancel
                         </Link>

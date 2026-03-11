@@ -7,14 +7,15 @@ import { DataTable } from '@/components/ui/DataTable';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/Button';
+import { usePathname, useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 import { Course } from '@/types';
 
 export default function CoursesPage() {
     const { token, user } = useAuth();
     const pathname = usePathname();
+    const router = useRouter();
     const { showToast } = useToast();
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
@@ -31,7 +32,7 @@ export default function CoursesPage() {
     const fetchCourses = useCallback(async () => {
         if (!token) return;
         try {
-            const response = await fetch('http://localhost:3000/org/courses', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/courses`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await response.json();
@@ -53,7 +54,7 @@ export default function CoursesPage() {
         try {
             const submitData = { ...editFormData };
 
-            const response = await fetch(`http://localhost:3000/org/courses/${editingCourse?.id}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/courses/${editingCourse?.id}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -78,7 +79,7 @@ export default function CoursesPage() {
     const handleDeleteConfirm = async () => {
         if (!deletingCourse) return;
         try {
-            const response = await fetch(`http://localhost:3000/org/courses/${deletingCourse.id}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/courses/${deletingCourse.id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -106,7 +107,7 @@ export default function CoursesPage() {
             sortAccessor: (row: Course) => row.name,
             accessor: (row: Course) => (
                 <div className="flex flex-col">
-                    <span className="font-semibold text-gray-900">{row.name}</span>
+                    <span className="font-semibold text-card-text">{row.name}</span>
                 </div>
             )
         },
@@ -121,10 +122,10 @@ export default function CoursesPage() {
             sortAccessor: (row: Course) => new Date(row.updatedAt || '').getTime(),
             accessor: (row: Course) => row.updatedBy ? (
                 <div className="flex flex-col">
-                    <span className="font-medium text-gray-800">{row.updatedBy}</span>
-                    <span className="text-xs text-gray-500">{new Date(row.updatedAt || '').toLocaleDateString()}</span>
+                    <span className="font-medium text-card-text/80">{row.updatedBy}</span>
+                    <span className="text-xs text-card-text/40">{new Date(row.updatedAt || '').toLocaleDateString()}</span>
                 </div>
-            ) : <span className="text-gray-400 italic text-sm text-center">Never</span>
+            ) : <span className="text-card-text/30 italic text-sm text-center">Never</span>
         },
         {
             header: 'Actions',
@@ -144,7 +145,7 @@ export default function CoursesPage() {
                                     });
                                     setEditModalOpen(true);
                                 }}
-                                className="text-indigo-600 hover:text-indigo-900 p-1 hover:bg-indigo-50 rounded transition-colors"
+                                className="text-primary hover:text-primary-hover p-1 hover:bg-primary/10 rounded transition-colors"
                                 title="Edit Course"
                             >
                                 <Edit2 className="w-4 h-4" />
@@ -180,22 +181,22 @@ export default function CoursesPage() {
                         </div>
                         <div>
                             <h1 className="text-5xl font-black text-white tracking-tight drop-shadow-lg">Courses</h1>
-                            <p className="text-indigo-100 font-bold opacity-90 mt-1">CATALOG & SUBJECT MANAGEMENT</p>
+                            <p className="text-white/80 font-bold opacity-90 mt-1 uppercase tracking-widest text-[10px]">CATALOG & SUBJECT MANAGEMENT</p>
                         </div>
                     </div>
                     {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER') && (
-                        <Link
-                            href={`/${orgSlug}/dashboard/courses/create`}
-                            className="flex items-center gap-3 bg-white text-indigo-600 px-8 py-4 rounded-sm font-bold transition-all shadow-2xl hover:shadow-indigo-500/40 hover:-translate-y-1 active:scale-95"
+                        <Button
+                            onClick={() => router.push(`/${orgSlug}/dashboard/courses/create`)}
+                            icon={Plus}
+                            className="px-8 py-4"
                         >
-                            <Plus className="w-6 h-6" />
                             Create Course
-                        </Link>
+                        </Button>
                     )}
                 </div>
             </div>
 
-            <div className="bg-white rounded-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-6 md:p-8 mb-10">
+            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-6 md:p-8 mb-10">
                 <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name or description..." />
@@ -228,7 +229,7 @@ export default function CoursesPage() {
                             required
                             value={editFormData.name}
                             onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                            className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold"
+                            className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-card-text font-bold"
                             placeholder="e.g. Mathematics"
                         />
                     </div>
@@ -237,7 +238,7 @@ export default function CoursesPage() {
                         <textarea
                             value={editFormData.description}
                             onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                            className="w-full px-6 py-4 rounded-sm border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all min-h-[120px] text-gray-900 font-bold resize-none"
+                            className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all min-h-[120px] text-card-text font-bold resize-none"
                             placeholder="Briefly describe this course..."
                         />
                     </div>

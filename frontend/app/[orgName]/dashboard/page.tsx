@@ -45,7 +45,7 @@ export default function DashboardPage() {
     if (loading) {
         return (
             <div className="flex flex-1 items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
         );
     }
@@ -68,15 +68,9 @@ export default function DashboardPage() {
 
     return (
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
-            <div className="mb-6">
+            <div className="mb-8">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                    <h1 className="text-5xl font-extrabold text-white tracking-tight drop-shadow-lg">Dashboard</h1>
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="text-sm font-medium px-5 py-2.5 rounded-sm border border-white/20 bg-white/5 backdrop-blur-sm shadow-inner flex items-center space-x-2 text-indigo-100">
-                            <span>Logged in as:</span>
-                            <span className="text-white font-bold truncate max-w-[200px]">{payload.email}</span>
-                        </div>
-                    </div>
+                    <h1 className="text-6xl font-black text-white tracking-tighter drop-shadow-2xl">Dashboard</h1>
                 </div>
             </div>
 
@@ -151,31 +145,31 @@ export default function DashboardPage() {
                 {orgData?.status === 'APPROVED' && (
                     <div className="space-y-12">
                         {payload.role === 'STUDENT' ? (
-                            <div className="p-8 bg-white/50 backdrop-blur-xl rounded-sm shadow-xl border border-white/40 border-l-8 border-l-emerald-500 flex items-center space-x-6">
-                                <div className="p-4 bg-emerald-50 rounded-sm shadow-inner">
-                                    <GraduationCap className="w-10 h-10 text-emerald-600" />
+                            <div className="p-8 bg-card text-card-text backdrop-blur-xl rounded-sm shadow-xl border border-white/40 border-l-8 border-l-secondary flex items-center space-x-6">
+                                <div className="p-4 bg-secondary/10 rounded-sm shadow-inner">
+                                    <GraduationCap className="w-10 h-10 text-secondary" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-black text-gray-900 leading-tight">Welcome, {payload.name || payload.email}</h2>
-                                    <p className="text-gray-600 text-sm font-bold opacity-80 mt-0.5">Your student portal is currently being prepared.</p>
+                                    <h2 className="text-2xl font-black leading-tight">Welcome, {payload.name || payload.email}</h2>
+                                    <p className="opacity-80 mt-0.5 text-sm font-bold">Your student portal is currently being prepared.</p>
                                 </div>
                             </div>
                         ) : (
                             <>
-                                <div className="p-8 bg-white/50 backdrop-blur-xl rounded-sm shadow-xl border border-white/40 border-l-8 border-l-indigo-500 flex items-center space-x-6">
-                                    <div className="p-4 bg-indigo-50 rounded-sm shadow-inner">
-                                        {payload.role === 'TEACHER' ? <Users className="w-10 h-10 text-indigo-600" /> : <Building className="w-10 h-10 text-indigo-600" />}
+                                <div className="p-8 bg-card text-card-text backdrop-blur-xl rounded-sm shadow-xl border border-white/40 border-l-8 border-l-primary flex items-center space-x-6">
+                                    <div className="p-4 bg-primary/10 rounded-sm shadow-inner">
+                                        {payload.role === 'TEACHER' ? <Users className="w-10 h-10 text-primary" /> : <Building className="w-10 h-10 text-primary" />}
                                     </div>
                                     <div>
                                         {payload.role === 'TEACHER' ? (
                                             <>
-                                                <h2 className="text-2xl font-black text-gray-900 leading-tight">Welcome, {payload.name || payload.email}</h2>
-                                                <p className="text-gray-600 text-sm font-bold opacity-80 mt-0.5">{payload.designation || 'Teacher'} - {orgName}</p>
+                                                <h2 className="text-2xl font-black leading-tight">Welcome, {payload.name || payload.email}</h2>
+                                                <p className="opacity-80 mt-0.5 text-sm font-bold">{payload.designation || 'Teacher'} - {orgName}</p>
                                             </>
                                         ) : (
                                             <>
-                                                <h2 className="text-3xl font-black text-gray-900 leading-tight">{orgName}</h2>
-                                                <p className="text-gray-700 text-sm font-bold opacity-80 mt-0.5 uppercase tracking-widest flex items-center gap-2">
+                                                <h2 className="text-3xl font-black leading-tight">{orgName}</h2>
+                                                <p className="opacity-80 mt-0.5 text-xs font-black uppercase tracking-widest flex items-center gap-2">
                                                     <LayoutDashboard className="w-4 h-4" />
                                                     Management Dashboard
                                                 </p>
@@ -184,28 +178,28 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
 
-                                {/* Stats Summary Section */}
+                                {/* Stats Summary Section - Branded Mix */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1">
-                                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest">System Status</span>
-                                        <div className="flex items-center gap-2 text-emerald-600 font-bold">
-                                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1">
+                                        <span className="text-xs font-black opacity-40 uppercase tracking-widest">System Status</span>
+                                        <div className="flex items-center gap-2 text-primary font-bold">
+                                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
                                             <span>Fully Operational</span>
                                         </div>
                                     </div>
 
-                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1">
-                                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Active Role</span>
-                                        <span className="text-indigo-600 font-bold">{payload?.role?.replace('_', ' ')}</span>
+                                    <div className="p-6 bg-secondary text-secondary-text rounded-sm shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1 flex flex-col gap-1">
+                                        <span className="text-xs font-black opacity-60 uppercase tracking-widest">Active Role</span>
+                                        <span className="text-xl font-black">{payload?.role?.replace('_', ' ')}</span>
                                     </div>
 
-                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1">
-                                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Institution</span>
-                                        <span className="text-gray-900 font-bold truncate">{orgName}</span>
+                                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1">
+                                        <span className="text-xs font-black opacity-40 uppercase tracking-widest">Institution</span>
+                                        <span className="font-bold truncate">{orgName}</span>
                                     </div>
 
-                                    <div className="p-6 bg-white/40 backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 text-center justify-center">
-                                        <p className="text-[10px] text-gray-400 font-medium">Use symbols in the sidebar to navigate various sections.</p>
+                                    <div className="p-6 bg-primary text-primary-text rounded-sm shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1 flex flex-col gap-1 text-center justify-center">
+                                        <p className="text-[10px] font-bold opacity-80">Use symbols in the sidebar to navigate various sections.</p>
                                     </div>
                                 </div>
                             </>

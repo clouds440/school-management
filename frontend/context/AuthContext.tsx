@@ -232,12 +232,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             {loading ? (
                 // Block all rendering until auth state is resolved — eliminates
                 // every flash-of-wrong-content, premature 404, and route flicker.
-                <div className="fixed inset-0 bg-linear-to-br from-indigo-50 via-white to-purple-50 flex flex-col items-center justify-center z-9999">
+                <div className="fixed inset-0 bg-linear-to-br from-primary/5 via-white to-primary/10 flex flex-col items-center justify-center z-9999">
                     <div className="flex flex-col items-center gap-6">
                         {/* Animated logo mark */}
                         <div className="relative w-16 h-16">
-                            <div className="absolute inset-0 rounded-2xl bg-indigo-600 animate-pulse opacity-20" />
-                            <div className="absolute inset-0 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-200">
+                            <div className="absolute inset-0 rounded-2xl bg-primary animate-pulse opacity-20" />
+                            <div className="absolute inset-0 rounded-2xl bg-primary flex items-center justify-center shadow-xl shadow-primary/20">
                                 <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
@@ -246,8 +246,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         </div>
                         {/* Spinner */}
                         <div className="relative">
-                            <div className="w-8 h-8 rounded-full border-[3px] border-indigo-100" />
-                            <div className="w-8 h-8 rounded-full border-[3px] border-transparent border-t-indigo-600 animate-spin absolute inset-0" />
+                            <div className="w-8 h-8 rounded-full border-[3px] border-primary/10" />
+                            <div className="w-8 h-8 rounded-full border-[3px] border-transparent border-t-primary animate-spin absolute inset-0" />
                         </div>
                         <p className="text-sm font-semibold text-gray-400 tracking-widest uppercase animate-pulse">Loading…</p>
                     </div>

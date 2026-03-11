@@ -57,6 +57,7 @@ model Organization {
   phone            String?
   logoUrl          String?   // Public HTTP path to the org logo file
   avatarUpdatedAt  DateTime? // Bumped on every logo change for browser cache-busting
+  accentColor      Json?     // Stores { primary: "#hex", secondary: "#hex" }
   status           OrgStatus @default(PENDING)
   statusMessage    String?
   createdAt        DateTime  @default(now())

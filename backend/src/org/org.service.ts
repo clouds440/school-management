@@ -34,6 +34,7 @@ export class OrgService {
                 phone: true,
                 logoUrl: true,
                 avatarUpdatedAt: true,
+                accentColor: true,
                 status: true,
                 statusMessage: true,
             },
@@ -56,6 +57,7 @@ export class OrgService {
                 phone: true,
                 logoUrl: true,
                 avatarUpdatedAt: true,
+                accentColor: true,
                 status: true,
                 statusMessage: true,
             },
@@ -148,10 +150,32 @@ export class OrgService {
                         email: true,
                         name: true,
                         phone: true,
+                        role: true,
                     },
                 },
+                sections: { select: { id: true, name: true } },
             },
         });
+    }
+
+    async getTeacher(orgId: string, id: string) {
+        const teacher = await this.prisma.teacher.findFirst({
+            where: { id, organizationId: orgId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        name: true,
+                        phone: true,
+                        role: true,
+                    },
+                },
+                sections: { select: { id: true, name: true } },
+            },
+        });
+        if (!teacher) throw new NotFoundException('Teacher not found');
+        return teacher;
     }
 
     async createTeacher(orgId: string, data: CreateTeacherDto, userContext: { id: string, role: string }) {
@@ -392,6 +416,31 @@ export class OrgService {
                 },
             },
         });
+    }
+
+    async getStudent(orgId: string, id: string) {
+        const student = await this.prisma.student.findFirst({
+            where: { id, organizationId: orgId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        name: true,
+                        phone: true,
+                    },
+                },
+                enrollments: {
+                    include: {
+                        section: {
+                            include: { course: true },
+                        },
+                    },
+                },
+            },
+        });
+        if (!student) throw new NotFoundException('Student not found');
+        return student;
     }
 
     async createStudent(orgId: string, data: CreateStudentDto, userContext: { name?: string | null; email: string }) {

@@ -42,6 +42,7 @@ export interface Organization {
     phone?: string;
     logoUrl?: string | null;
     avatarUpdatedAt?: string | null;
+    accentColor?: { primary?: string; secondary?: string } | null;
     status: OrgStatus;
     statusMessage?: string;
     createdAt: string;
@@ -52,6 +53,7 @@ export interface UpdateOrgSettingsRequest {
     location?: string;
     contactEmail?: string;
     phone?: string;
+    accentColor?: { primary?: string; secondary?: string };
 }
 
 export interface PlatformAdmin {
@@ -393,7 +395,22 @@ export const api = {
             });
             if (!response.ok) await handleError(response, 'Failed to upload logo');
             return response.json();
-        }
+        },
 
+        async getTeacher(id: string, token: string): Promise<any> {
+            const response = await fetch(`${API_BASE_URL}/org/teachers/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!response.ok) await handleError(response, 'Teacher not found or access denied');
+            return response.json();
+        },
+
+        async getStudent(id: string, token: string): Promise<any> {
+            const response = await fetch(`${API_BASE_URL}/org/students/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!response.ok) await handleError(response, 'Student not found or access denied');
+            return response.json();
+        }
     }
 };

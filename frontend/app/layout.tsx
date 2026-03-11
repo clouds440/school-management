@@ -29,13 +29,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col bg-linear-to-br from-indigo-50 via-white to-purple-50 overflow-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col bg-theme-bg transition-colors duration-500 overflow-hidden`}
       >
         <Providers>
-          <div className="fixed inset-0 z-[-1] pointer-events-none">
-            <div className="absolute top-0 left-0 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
-            <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
-            <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000" />
+          <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
+            {/* Branded Atmospheric Gradient */}
+            <div className="absolute inset-0 bg-theme-bg/50" />
+            <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-secondary/10" />
+            
+            {/* Animated Branded Blobs */}
+            <div className="absolute -top-12 -left-12 w-96 h-96 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
+            <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
+            <div className="absolute -bottom-12 left-1/2 w-96 h-96 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000" />
           </div>
 
           <Navbar />

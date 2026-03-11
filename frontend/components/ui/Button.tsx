@@ -12,9 +12,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
         let variantClasses = "";
         if (variant === 'primary') {
-            variantClasses = "bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-2xl hover:-translate-y-1 focus:ring-indigo-500/20 disabled:bg-indigo-300 disabled:hover:translate-y-0";
+            variantClasses = "bg-primary text-primary-text hover:bg-primary-hover hover:shadow-2xl hover:-translate-y-1 focus:ring-(--primary)/20 disabled:bg-primary/50 disabled:hover:translate-y-0";
         } else if (variant === 'secondary') {
-            variantClasses = "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:shadow-lg hover:-translate-y-1 focus:ring-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:hover:translate-y-0";
+            variantClasses = "bg-secondary text-secondary-text border-gray-200/50 hover:bg-secondary-hover hover:shadow-lg hover:-translate-y-1 focus:ring-(--secondary)/20 disabled:bg-secondary/50 disabled:text-gray-400 disabled:hover:translate-y-0";
         } else if (variant === 'danger') {
             variantClasses = "bg-red-600 text-white hover:bg-red-700 hover:shadow-2xl hover:-translate-y-1 focus:ring-red-500/20 disabled:bg-red-300 disabled:hover:translate-y-0";
         }

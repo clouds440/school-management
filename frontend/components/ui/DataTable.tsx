@@ -75,8 +75,8 @@ export function DataTable<T>({ data, columns, keyExtractor, isLoading }: DataTab
 
     if (isLoading) {
         return (
-            <div className="p-12 text-center text-indigo-400 font-bold flex flex-col items-center justify-center gap-4">
-                <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+            <div className="p-12 text-center text-(--primary)/60 font-bold flex flex-col items-center justify-center gap-4">
+                <div className="w-12 h-12 border-4 border-gray-100 border-t-primary rounded-full animate-spin"></div>
                 Loading data...
             </div>
         );
@@ -84,32 +84,32 @@ export function DataTable<T>({ data, columns, keyExtractor, isLoading }: DataTab
 
     if (data.length === 0) {
         return (
-            <div className="p-12 text-center bg-gray-50/50 rounded-sm border border-dashed border-gray-200">
-                <p className="text-gray-500 font-bold">No data available</p>
+            <div className="p-12 text-center bg-card/30 rounded-sm border border-dashed border-gray-200/50">
+                <p className="text-card-text/50 font-bold">No data available</p>
             </div>
         );
     }
 
     return (
-        <div className="w-full overflow-hidden rounded-sm border border-gray-200/60 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-gray-900/5">
+        <div className="w-full overflow-hidden rounded-sm border border-gray-200/20 bg-card shadow-[0_8px_30px_var(--shadow-color)] ring-1 ring-gray-900/5">
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200">
-                <table className="w-full text-left text-sm text-gray-700 min-w-[600px]">
-                    <thead className="bg-gray-50/80 text-[11px] uppercase tracking-wider font-black text-gray-500 border-b border-gray-200/60 select-none">
+                <table className="w-full text-left text-sm text-card-text min-w-[600px]">
+                    <thead className="bg-primary/5 text-[11px] uppercase tracking-wider font-black opacity-60 border-b border-gray-200/20 select-none">
                         <tr>
                             {columns.map((col, index) => {
                                 const isSorted = sortConfig?.key === index;
                                 return (
                                     <th
                                         key={index}
-                                        className={`px-6 py-5 whitespace-nowrap ${col.sortable ? 'cursor-pointer hover:bg-gray-100/80 transition-colors group' : ''}`}
+                                        className={`px-6 py-5 whitespace-nowrap ${col.sortable ? 'cursor-pointer hover:bg-primary/5 transition-colors group' : ''}`}
                                         onClick={() => handleSort(index)}
                                     >
                                         <div className="flex items-center gap-2">
                                             {col.header}
                                             {col.sortable && (
-                                                <span className="text-gray-400 group-hover:text-indigo-500 transition-colors shrink-0">
+                                                <span className="opacity-40 group-hover:text-primary group-hover:opacity-100 transition-colors shrink-0">
                                                     {isSorted ? (
-                                                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 text-indigo-600" /> : <ChevronDown className="w-4 h-4 text-indigo-600" />
+                                                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-primary" />
                                                     ) : (
                                                         <ChevronsUpDown className="w-4 h-4 opacity-0 group-hover:opacity-100" />
                                                     )}
@@ -121,14 +121,14 @@ export function DataTable<T>({ data, columns, keyExtractor, isLoading }: DataTab
                             })}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100/80 bg-white">
+                    <tbody className="divide-y divide-gray-100/10">
                         {sortedData.map((row, rowIndex) => (
                             <tr
                                 key={keyExtractor(row)}
-                                className="hover:bg-indigo-50/30 transition-colors duration-200 group relative"
+                                className="hover:bg-primary/5 transition-colors duration-200 group relative"
                             >
                                 {columns.map((col, index) => (
-                                    <td key={index} className="px-6 py-5 group-hover:bg-indigo-50/10 transition-all">
+                                    <td key={index} className="px-6 py-5 transition-all">
                                         {typeof col.accessor === 'function'
                                             ? col.accessor(row)
                                             : (row[col.accessor as keyof T] as React.ReactNode)}

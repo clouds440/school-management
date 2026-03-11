@@ -45,7 +45,7 @@ export default function CreateCoursePage() {
         try {
             const submitData = { ...formData };
 
-            const response = await fetch('http://localhost:3000/org/courses', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/courses`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -76,12 +76,12 @@ export default function CreateCoursePage() {
                     </div>
                     <div>
                         <h1 className="text-4xl font-black text-white tracking-tight drop-shadow-lg">Create Course</h1>
-                        <p className="text-indigo-100 font-bold opacity-80 mt-1">ADD A NEW SUBJECT TO CATALOG</p>
+                        <p className="text-white/80 font-bold opacity-80 mt-1 uppercase tracking-widest text-[10px]">ADD A NEW SUBJECT TO CATALOG</p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white/80 backdrop-blur-xl rounded-sm shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-white/50 p-12">
+            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-[0_30px_70px_var(--shadow-color)] border border-white/20 p-12 text-card-text">
                 <form onSubmit={handleSubmit} className="space-y-8">
                     <div className="space-y-8">
                         <div>
@@ -100,7 +100,7 @@ export default function CreateCoursePage() {
                         <div>
                             <Label>Description</Label>
                             <div className="relative group">
-                                <div className="absolute top-3.5 left-0 pl-3.5 flex items-start pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+                                <div className="absolute top-3.5 left-0 pl-3.5 flex items-start pointer-events-none text-card-text/40 group-focus-within:text-primary transition-colors">
                                     <FileText className="w-5 h-5" />
                                 </div>
                                 <textarea
@@ -108,7 +108,7 @@ export default function CreateCoursePage() {
                                     value={formData.description}
                                     onChange={handleChange}
                                     rows={4}
-                                    className="w-full pl-11 pr-4 py-3 rounded-sm border border-gray-200 bg-gray-50/50 text-gray-900 placeholder-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 sm:text-sm transition-all duration-200 shadow-sm resize-none"
+                                    className="w-full pl-11 pr-4 py-3 rounded-sm border border-white/10 bg-primary/5 text-card-text placeholder:text-card-text/40 focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 sm:text-sm transition-all duration-200 shadow-sm resize-none outline-none font-bold"
                                     placeholder="Brief description of the course content..."
                                 />
                             </div>
@@ -118,7 +118,7 @@ export default function CreateCoursePage() {
                     <div className="pt-10 mt-10 border-t border-gray-100 flex justify-end gap-5">
                         <Link
                             href={`/${orgSlug}/dashboard/courses`}
-                            className="px-8 py-3 text-base font-bold text-gray-600 bg-gray-100 rounded-sm hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 flex items-center shadow-lg border border-transparent"
+                            className="px-8 py-3 text-base font-bold text-secondary-text bg-secondary rounded-sm hover:brightness-110 transition-all hover:scale-105 active:scale-95 flex items-center shadow-lg border border-transparent"
                         >
                             Cancel
                         </Link>

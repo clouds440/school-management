@@ -4,13 +4,12 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { Plus, Users, Pencil, Trash2, BookOpen, ShieldCheck, GraduationCap, UserX } from 'lucide-react';
-import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { Student, Section } from '@/types';
-import { Select } from '@/components/ui/Select';
+import { Button } from '@/components/ui/Button';
 
 export default function StudentsPage() {
     const { token, user } = useAuth();
@@ -20,45 +19,22 @@ export default function StudentsPage() {
     const { showToast } = useToast();
 
     const [students, setStudents] = useState<Student[]>([]);
-    const [sections, setSections] = useState<Section[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showOnlyMyStudents, setShowOnlyMyStudents] = useState(false);
 
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-
-    const [editFormData, setEditFormData] = useState({
-        name: '',
-        phone: '',
-        registrationNumber: '',
-        fatherName: '',
-        fee: '',
-        age: '',
-        address: '',
-        major: '',
-        sectionIds: [] as string[],
-        department: '',
-        admissionDate: '',
-        graduationDate: '',
-        gender: '',
-        bloodGroup: '',
-        emergencyContact: '',
-        feePlan: '',
-        status: 'ACTIVE'
-    });
 
     useEffect(() => {
         if (token) {
             fetchStudents();
-            fetchSections();
         }
     }, [token]);
 
     const fetchStudents = async () => {
         try {
-            const response = await fetch('http://localhost:3000/org/students', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/students`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (response.ok) {
@@ -67,23 +43,8 @@ export default function StudentsPage() {
             }
         } catch (error) {
             console.error('Error fetching students:', error);
-            showToast('Failed to load students data', 'error');
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const fetchSections = async () => {
-        try {
-            const response = await fetch('http://localhost:3000/org/sections', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setSections(data);
-            }
-        } catch (error) {
-            console.error('Failed to load sections', error);
         }
     };
 
@@ -111,10 +72,10 @@ export default function StudentsPage() {
             sortAccessor: (row: Student) => row.user.name || '',
             accessor: (row: Student) => (
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
                         {(row.user.name || 'N').charAt(0).toUpperCase()}
                     </div>
-                    <span className="font-semibold text-gray-900">{row.user.name || 'N/A'}</span>
+                    <span className="font-semibold text-card-text">{row.user.name || 'N/A'}</span>
                 </div>
             )
         },
@@ -134,8 +95,8 @@ export default function StudentsPage() {
             sortAccessor: (row: Student) => row.user.phone || row.user.email || '',
             accessor: (row: Student) => (
                 <div className="flex flex-col">
-                    <span className="text-gray-700">{row.user.phone || 'No phone'}</span>
-                    <span className="text-xs text-gray-500">{row.user.email}</span>
+                    <span className="text-card-text/80">{row.user.phone || 'No phone'}</span>
+                    <span className="text-xs text-card-text/40">{row.user.email}</span>
                 </div>
             )
         },
@@ -147,12 +108,12 @@ export default function StudentsPage() {
                 return sectionsList.length > 0 ? (
                     <div className="flex flex-wrap gap-1 max-w-[200px]">
                         {sectionsList.map(sec => (
-                            <span key={sec?.id || Math.random()} className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-sm text-xs font-medium border border-indigo-100 truncate max-w-[150px]" title={sec?.name}>
+                            <span key={sec?.id || Math.random()} className="bg-primary/5 text-primary px-2 py-1 rounded-sm text-xs font-medium border border-primary/10 truncate max-w-[150px]" title={sec?.name}>
                                 {sec?.name || 'Unknown'}
                             </span>
                         ))}
                     </div>
-                ) : <span className="text-gray-400 italic">Unassigned</span>;
+                ) : <span className="text-card-text/30 italic">Unassigned</span>;
             }
         },
         {
@@ -174,15 +135,15 @@ export default function StudentsPage() {
                     <span className="font-medium text-gray-800">{row.updatedBy}</span>
                     <span className="text-xs text-gray-500">{new Date(row.updatedAt || '').toLocaleDateString()}</span>
                 </div>
-            ) : <span className="text-gray-400 italic text-sm text-center">Never</span>
+            ) : <span className="text-card-text/30 italic text-sm text-center">Never</span>
         },
         {
             header: 'Actions',
             accessor: (row: Student) => (user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') ? (
                 <div className="flex justify-end gap-2 shrink-0">
                     <button
-                        onClick={() => handleEditClick(row.id)}
-                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-sm transition-colors border border-transparent hover:border-indigo-100"
+                        onClick={() => router.push(`/${orgSlug}/dashboard/students/edit/${row.id}`)}
+                        className="p-2 text-primary hover:bg-primary/10 rounded-sm transition-colors border border-transparent hover:border-primary/10"
                         title="Edit Student"
                     >
                         <Pencil className="w-4 h-4" />
@@ -199,33 +160,6 @@ export default function StudentsPage() {
         }
     ];
 
-    const handleEditClick = (studentId: string) => {
-        const student = students.find(s => s.id === studentId);
-        if (student) {
-            setSelectedStudent(student);
-            setEditFormData({
-                name: student.user?.name || '',
-                phone: student.user?.phone || '',
-                registrationNumber: student.registrationNumber || '',
-                fatherName: student.fatherName || '',
-                fee: student.fee?.toString() || '',
-                age: student.age?.toString() || '',
-                address: student.address || '',
-                major: student.major || '',
-                sectionIds: student.enrollments?.map(e => e.section?.id) || [],
-                department: student.department || '',
-                admissionDate: student.admissionDate ? student.admissionDate.split('T')[0] : '',
-                graduationDate: student.graduationDate ? student.graduationDate.split('T')[0] : '',
-                gender: student.gender || '',
-                bloodGroup: student.bloodGroup || '',
-                emergencyContact: student.emergencyContact || '',
-                feePlan: student.feePlan || '',
-                status: student.status || 'ACTIVE'
-            });
-            setIsEditModalOpen(true);
-        }
-    };
-
     const handleDeleteClick = (studentId: string) => {
         const student = students.find(s => s.id === studentId);
         if (student) {
@@ -234,52 +168,9 @@ export default function StudentsPage() {
         }
     };
 
-    const handleEditSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const response = await fetch(`http://localhost:3000/org/students/${selectedStudent?.id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    name: editFormData.name || undefined,
-                    phone: editFormData.phone || undefined,
-                    registrationNumber: editFormData.registrationNumber || undefined,
-                    fatherName: editFormData.fatherName || undefined,
-                    fee: editFormData.fee ? Number(editFormData.fee) : undefined,
-                    age: editFormData.age ? Number(editFormData.age) : undefined,
-                    address: editFormData.address || undefined,
-                    major: editFormData.major || undefined,
-                    sectionIds: editFormData.sectionIds,
-                    department: editFormData.department || undefined,
-                    admissionDate: editFormData.admissionDate || undefined,
-                    graduationDate: editFormData.graduationDate || undefined,
-                    gender: editFormData.gender || undefined,
-                    bloodGroup: editFormData.bloodGroup || undefined,
-                    emergencyContact: editFormData.emergencyContact || undefined,
-                    feePlan: editFormData.feePlan || undefined,
-                    status: editFormData.status
-                })
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || 'Failed to update student');
-            }
-
-            showToast('Student record updated successfully', 'success');
-            setIsEditModalOpen(false);
-            fetchStudents();
-        } catch (error: unknown) {
-            showToast(error instanceof Error ? error.message : 'Failed to update student', 'error');
-        }
-    };
-
     const handleDeleteConfirm = async () => {
         try {
-            const response = await fetch(`http://localhost:3000/org/students/${selectedStudent?.id}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/students/${selectedStudent?.id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -300,7 +191,7 @@ export default function StudentsPage() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center p-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
         );
     }
@@ -315,33 +206,33 @@ export default function StudentsPage() {
                         </div>
                         <div>
                             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg text-left">Students</h1>
-                            <p className="text-indigo-100 font-bold opacity-80 mt-1 text-sm md:text-base text-left">MANAGE ENROLLED LEARNERS</p>
+                            <p className="text-white/80 font-bold opacity-80 mt-1 text-sm md:text-base text-left uppercase tracking-widest text-[10px]">MANAGE ENROLLED LEARNERS</p>
                         </div>
                     </div>
                 </div>
 
                 {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') && (
-                    <button
+                    <Button
                         onClick={() => router.push(`/${orgSlug}/dashboard/students/add`)}
-                        className="flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-6 py-3 md:px-8 md:py-4 rounded-sm font-bold transition-all border border-white/30 shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full md:w-auto"
+                        icon={Plus}
+                        className="px-8 py-4 w-full md:w-auto"
                     >
-                        <Plus className="w-5 h-5" />
                         Add New Student
-                    </button>
+                    </Button>
                 )}
             </div>
 
-            <div className="bg-white rounded-sm md:rounded-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-4 md:p-8 mb-10 overflow-hidden">
+            <div className="bg-card text-card-text rounded-sm md:rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-4 md:p-8 mb-10 overflow-hidden">
                 <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, registration or major..." />
                     </div>
 
                     {user?.role === 'TEACHER' && (
-                        <div className="flex items-center gap-3 bg-indigo-50/50 p-2 pr-4 rounded-sm border border-indigo-100 self-start md:self-auto">
+                        <div className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10 self-start md:self-auto">
                             <button
                                 onClick={() => setShowOnlyMyStudents(!showOnlyMyStudents)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${showOnlyMyStudents ? 'bg-indigo-600' : 'bg-gray-200'
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMyStudents ? 'bg-primary' : 'bg-gray-200'
                                     }`}
                             >
                                 <span
@@ -349,7 +240,7 @@ export default function StudentsPage() {
                                         }`}
                                 />
                             </button>
-                            <span className="text-xs font-bold text-indigo-900 uppercase tracking-wider">My Students</span>
+                            <span className="text-xs font-bold text-card-text uppercase tracking-wider">My Students</span>
                         </div>
                     )}
                 </div>
@@ -363,214 +254,6 @@ export default function StudentsPage() {
                     />
                 </div>
             </div>
-
-            {/* Edit Modal */}
-            <ModalForm
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
-                title="Edit Student Details"
-                onSubmit={handleEditSubmit}
-            >
-                <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
-                            <input
-                                type="text"
-                                value={editFormData.name}
-                                onChange={e => setEditFormData({ ...editFormData, name: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number</label>
-                            <input
-                                type="text"
-                                value={editFormData.phone}
-                                onChange={e => setEditFormData({ ...editFormData, phone: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Registration #</label>
-                            <input
-                                type="text"
-                                value={editFormData.registrationNumber}
-                                onChange={e => setEditFormData({ ...editFormData, registrationNumber: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Major / Course</label>
-                            <input
-                                type="text"
-                                value={editFormData.major}
-                                onChange={e => setEditFormData({ ...editFormData, major: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Father's Name</label>
-                            <input
-                                type="text"
-                                value={editFormData.fatherName}
-                                onChange={e => setEditFormData({ ...editFormData, fatherName: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Age</label>
-                            <input
-                                type="number"
-                                value={editFormData.age}
-                                onChange={e => setEditFormData({ ...editFormData, age: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Fee Amount</label>
-                            <input
-                                type="number"
-                                value={editFormData.fee}
-                                onChange={e => setEditFormData({ ...editFormData, fee: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Home Address</label>
-                        <textarea
-                            value={editFormData.address}
-                            onChange={e => setEditFormData({ ...editFormData, address: e.target.value })}
-                            className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            rows={2}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Department</label>
-                            <input
-                                type="text"
-                                value={editFormData.department}
-                                onChange={e => setEditFormData({ ...editFormData, department: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Fee Plan Type</label>
-                            <input
-                                type="text"
-                                value={editFormData.feePlan}
-                                onChange={e => setEditFormData({ ...editFormData, feePlan: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Admission Date</label>
-                            <input
-                                type="date"
-                                value={editFormData.admissionDate}
-                                onChange={e => setEditFormData({ ...editFormData, admissionDate: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Expected Graduation</label>
-                            <input
-                                type="date"
-                                value={editFormData.graduationDate}
-                                onChange={e => setEditFormData({ ...editFormData, graduationDate: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Gender</label>
-                            <select
-                                value={editFormData.gender}
-                                onChange={e => setEditFormData({ ...editFormData, gender: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
-                            >
-                                <option value="">Select Gender</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Blood Group</label>
-                            <input
-                                type="text"
-                                value={editFormData.bloodGroup}
-                                onChange={e => setEditFormData({ ...editFormData, bloodGroup: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Status</label>
-                            <Select
-                                value={editFormData.status}
-                                onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                                icon={
-                                    editFormData.status === 'ACTIVE' ? ShieldCheck :
-                                        editFormData.status === 'SUSPENDED' ? UserX :
-                                            GraduationCap
-                                }
-                            >
-                                <option value="ACTIVE" className="text-gray-900 font-bold">Active</option>
-                                <option value="SUSPENDED" className="text-gray-900 font-bold">Suspended</option>
-                                <option value="ALUMNI" className="text-gray-900 font-bold">Alumni</option>
-                            </Select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Emergency Contact</label>
-                            <input
-                                type="text"
-                                value={editFormData.emergencyContact}
-                                onChange={e => setEditFormData({ ...editFormData, emergencyContact: e.target.value })}
-                                className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Enrolled Sections</label>
-                        <select
-                            multiple
-                            value={editFormData.sectionIds}
-                            onChange={e => {
-                                const selected = Array.from(e.target.selectedOptions, option => option.value);
-                                setEditFormData({ ...editFormData, sectionIds: selected });
-                            }}
-                            className="w-full px-4 py-2 rounded-sm border border-gray-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white min-h-[100px]"
-                        >
-                            {sections.map(sec => (
-                                <option key={sec.id} value={sec.id}>
-                                    {sec.name} {sec.course?.name ? `(${sec.course.name})` : ''}
-                                </option>
-                            ))}
-                        </select>
-                        <p className="text-xs text-gray-500 mt-1">Hold Ctrl (Windows) or Cmd (Mac) to select multiple sections.</p>
-                    </div>
-                </div>
-            </ModalForm>
 
             {/* Delete Confirmation */}
             <ConfirmDialog

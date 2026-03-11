@@ -16,13 +16,13 @@ function OrgLogoOrIcon({ logoUrl, orgName }: { logoUrl?: string | null; orgName?
             <img
                 src={`${API_BASE}${logoUrl}`}
                 alt={orgName ?? 'Org logo'}
-                className="w-8 h-8 md:w-9 md:h-9 rounded-full object-cover ring-2 ring-indigo-200 shrink-0"
+                className="w-8 h-8 md:w-9 md:h-9 rounded-full object-cover ring-2 ring-primary/20 shrink-0"
             />
         );
     }
     return (
-        <div className="bg-indigo-50 p-2 md:p-2.5 rounded-sm group-hover:bg-indigo-100 group-hover:scale-105 group-focus-visible:ring-2 ring-indigo-500 transition-all duration-300 shrink-0">
-            <School className="w-6 h-6 md:w-7 md:h-7 text-indigo-600" />
+        <div className="bg-primary/10 p-2 md:p-2.5 rounded-sm group-hover:bg-primary/20 group-hover:scale-105 group-focus-visible:ring-2 ring-primary transition-all duration-300 shrink-0">
+            <School className="w-6 h-6 md:w-7 md:h-7 text-primary" />
         </div>
     );
 }
@@ -40,7 +40,7 @@ export default function Navbar() {
                 {isDashboard && (
                     <button
                         onClick={toggleMobileSidebar}
-                        className="lg:hidden p-2 hover:bg-gray-100 rounded-sm transition-colors text-gray-600 outline-none focus-visible:ring-2 ring-indigo-500"
+                        className="lg:hidden p-2 hover:bg-gray-100 rounded-sm transition-colors text-gray-600 outline-none focus-visible:ring-2 ring-primary"
                         title={isMobileOpen ? "Close Menu" : "Open Menu"}
                     >
                         {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -48,7 +48,7 @@ export default function Navbar() {
                 )}
                 <Link href={user?.orgName ? `/${user.orgSlug}/dashboard` : '/'} className="flex items-center space-x-3 group outline-none">
                     <OrgLogoOrIcon logoUrl={user?.orgLogoUrl} orgName={user?.orgName} />
-                    <span className="text-lg md:text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-gray-900 via-indigo-900 to-gray-800 tracking-tight truncate max-w-[120px] sm:max-w-none">
+                    <span className="text-lg md:text-2xl font-bold text-primary tracking-tight truncate max-w-[120px] sm:max-w-none">
                         {user?.orgName || 'EduManage'}
                     </span>
                 </Link>
@@ -66,7 +66,7 @@ export default function Navbar() {
                                             ? `/${user.orgSlug}/${user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`
                                             : `/${user.orgSlug}/dashboard`
                                 }
-                                className="flex items-center space-x-2 px-3 py-2 md:px-4 md:py-2.5 rounded-sm transition-all duration-300 font-medium shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-100"
+                                className="flex items-center space-x-2 px-3 py-2 md:px-4 md:py-2.5 rounded-sm transition-all duration-300 font-medium shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-primary bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-100"
                             >
                                 <LayoutDashboard className="w-4 h-4" />
                                 <span className="hidden sm:inline">Dashboard</span>
@@ -74,12 +74,12 @@ export default function Navbar() {
                         )}
                     </div>
                 ) : (
-                    <div className="flex items-center p-1 rounded-sm bg-gray-50/50">
+                    <div className="flex items-center p-1 rounded-sm bg-secondary/20 shadow-inner border border-secondary/10">
                         <Link
                             href="/login"
-                            className={`flex items-center mr-1 md:mr-2 space-x-2 px-3 py-2 md:px-5 md:py-2.5 rounded-sm transition-all duration-300 font-medium text-xs md:text-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${pathname === '/login'
-                                ? 'bg-white text-indigo-600 shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
-                                : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                            className={`flex items-center mr-1 md:mr-2 space-x-2 px-3 py-2 md:px-5 md:py-2.5 rounded-sm transition-all duration-300 font-medium text-xs md:text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary ${pathname === '/login'
+                                ? 'bg-primary text-primary-text shadow-lg'
+                                : 'text-gray-600 hover:text-primary hover:bg-white'
                                 }`}
                         >
                             <LogIn className="w-4 h-4" />
@@ -87,9 +87,9 @@ export default function Navbar() {
                         </Link>
                         <Link
                             href="/register"
-                            className={`flex items-center space-x-2 px-3 py-2 md:px-5 md:py-2.5 rounded-sm transition-all duration-300 font-medium text-xs md:text-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${pathname === '/register'
-                                ? 'bg-white text-indigo-600 shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
-                                : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                            className={`flex items-center space-x-2 px-3 py-2 md:px-5 md:py-2.5 rounded-sm transition-all duration-300 font-medium text-xs md:text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary ${pathname === '/register'
+                                ? 'bg-primary text-primary-text shadow-lg'
+                                : 'text-gray-600 hover:text-primary hover:bg-white'
                                 }`}
                         >
                             <UserPlus className="w-4 h-4" />

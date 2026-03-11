@@ -116,6 +116,13 @@ export class OrgController {
     }
 
     @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Get('teachers/:id')
+    getTeacher(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.getTeacher(req.user.organizationId, id);
+    }
+
+    @Roles('ORG_ADMIN', 'ORG_MANAGER')
     @Post('teachers')
     createTeacher(@Request() req: AuthenticatedRequest, @Body() createTeacherDto: CreateTeacherDto) {
         if (!req.user.organizationId) throw new Error('No organization');
@@ -197,6 +204,13 @@ export class OrgController {
     getStudents(@Request() req: AuthenticatedRequest) {
         if (!req.user.organizationId) throw new Error('No organization');
         return this.orgService.getStudents(req.user.organizationId);
+    }
+
+    @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
+    @Get('students/:id')
+    getStudent(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        if (!req.user.organizationId) throw new Error('No organization');
+        return this.orgService.getStudent(req.user.organizationId, id);
     }
 
     @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
