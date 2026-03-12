@@ -98,10 +98,12 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
         setIsSaving(true);
 
         try {
+            const { password, ...rest } = formData;
             const payload = {
-                ...formData,
+                ...rest,
                 salary: formData.salary ? Number(formData.salary) : null,
-                isManager: formData.isManager
+                isManager: formData.isManager,
+                ...(teacherId ? (password ? { password } : {}) : { password })
             };
 
             if (teacherId) {
@@ -175,7 +177,8 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                             required={!teacherId}
                             minLength={8}
                             icon={Lock}
-                            placeholder={teacherId ? "Leave blank to keep current" : "Min 8 characters"}
+                            autoComplete="new-password"
+                            placeholder={teacherId ? "Leave blank to keep current" : "Min 8 chars, 1 upper, 1 lower, 1 num"}
                         />
                     </div>
 

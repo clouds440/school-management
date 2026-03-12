@@ -11,6 +11,7 @@ import { DataTable, Column } from '@/components/ui/DataTable';
 import { Student } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
+import { TableActions } from '@/components/ui/TableActions';
 
 export default function StudentsPage() {
     const { token, user } = useAuth();
@@ -37,7 +38,7 @@ export default function StudentsPage() {
         if (!token) return;
         try {
             const data = await api.org.getStudents(token);
-            setStudents(data);
+            setStudents(data || []);
         } catch (error) {
             console.error('Error fetching students:', error);
         } finally {
@@ -137,22 +138,10 @@ export default function StudentsPage() {
         {
             header: 'Actions',
             accessor: (row: Student) => (user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') ? (
-                <div className="flex gap-4">
-                    <button
-                        onClick={() => router.push(`/${orgSlug}/dashboard/students/edit/${row.id}`)}
-                        className="text-primary hover:text-white p-2.5 hover:bg-primary rounded-sm transition-all shadow-sm hover:shadow-[0_8px_16px_var(--shadow-color)] active:scale-90"
-                        title="Edit Student"
-                    >
-                        <Pencil className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => handleDeleteClick(row.id)}
-                        className="text-red-600 hover:text-white p-2.5 hover:bg-red-600 rounded-sm transition-all shadow-sm hover:shadow-red-200 active:scale-90"
-                        title="Delete Student"
-                    >
-                        <Trash2 className="w-5 h-5" />
-                    </button>
-                </div>
+                <TableActions
+                    onEdit={() => router.push(`/${orgSlug}/dashboard/students/edit/${row.id}`)}
+                    onDelete={() => handleDeleteClick(row.id)}
+                />
             ) : null
         }
     ];

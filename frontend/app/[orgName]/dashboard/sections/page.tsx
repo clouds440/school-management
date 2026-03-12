@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 import { Section, Course } from '@/types';
+import { TableActions } from '@/components/ui/TableActions';
 
 export default function SectionsPage() {
     const { token, user } = useAuth();
@@ -143,39 +144,25 @@ export default function SectionsPage() {
                 const isAssignedTeacher = user?.role === 'TEACHER' && row.teachers?.some(t => t.userId === (user.sub || user.id));
 
                 return (
-                    <div className="flex gap-3">
-                        {(isAdmin || isAssignedTeacher) && (
-                            <button
-                                onClick={() => {
-                                    setEditingSection(row);
-                                    setEditFormData({
-                                        name: row.name,
-                                        semester: row.semester || '',
-                                        year: row.year || '',
-                                        room: row.room || '',
-                                        courseId: row.courseId || ''
-                                    });
-                                    setEditModalOpen(true);
-                                }}
-                                className="text-primary hover:text-primary-hover p-1 hover:bg-primary/10 rounded transition-colors"
-                                title="Edit Section"
-                            >
-                                <Edit2 className="w-4 h-4" />
-                            </button>
-                        )}
-                        {isAdmin && (
-                            <button
-                                onClick={() => {
-                                    setDeletingSection(row);
-                                    setDeleteDialogOpen(true);
-                                }}
-                                className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
-                                title="Delete Section"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        )}
-                    </div>
+                <TableActions
+                    onEdit={(isAdmin || isAssignedTeacher) ? () => {
+                        setEditingSection(row);
+                        setEditFormData({
+                            name: row.name,
+                            semester: row.semester || '',
+                            year: row.year || '',
+                            room: row.room || '',
+                            courseId: row.courseId || ''
+                        });
+                        setEditModalOpen(true);
+                    } : undefined}
+                    onDelete={isAdmin ? () => {
+                        setDeletingSection(row);
+                        setDeleteDialogOpen(true);
+                    } : undefined}
+                    editTitle="Edit Section"
+                    deleteTitle="Delete Section"
+                />
                 );
             }
         }

@@ -101,10 +101,12 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
         setIsSaving(true);
 
         try {
+            const { password, ...rest } = formData;
             const payload = {
-                ...formData,
+                ...rest,
                 fee: formData.fee ? Number(formData.fee) : null,
-                age: formData.age ? Number(formData.age) : null
+                age: formData.age ? Number(formData.age) : null,
+                ...(studentId ? (password ? { password } : {}) : { password })
             };
 
             if (studentId) {
@@ -178,6 +180,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                             required={!studentId}
                             minLength={8}
                             icon={Lock}
+                            autoComplete="new-password"
                             placeholder={studentId ? "Leave blank to keep current" : "Min 8 chars, 1 upper, 1 lower, 1 num"}
                         />
                     </div>

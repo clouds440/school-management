@@ -224,7 +224,7 @@ export class OrgService {
                         emergencyContact: data.emergencyContact,
                         bloodGroup: data.bloodGroup,
                         address: data.address,
-                        status: data.status as any,
+                        status: data.status,
                         sections: data.sectionIds ? { connect: data.sectionIds.map(id => ({ id })) } : undefined,
                     },
                     include: {
@@ -336,7 +336,7 @@ export class OrgService {
 
         await this.prisma.teacher.update({
             where: { id },
-            data: { status: TeacherStatus.DELETED as any }
+            data: { status: TeacherStatus.DELETED }
         });
 
 
@@ -509,7 +509,7 @@ export class OrgService {
                         bloodGroup: data.bloodGroup,
                         gender: data.gender,
                         feePlan: data.feePlan,
-                        status: data.status as any,
+                        status: data.status,
                         enrollments: data.sectionIds ? { create: data.sectionIds.map(sectionId => ({ sectionId })) } : undefined,
                         updatedBy: userContext.name || userContext.email
                     },

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { api } from '@/src/lib/api';
+import { api } from '@/lib/api';
 import ChangePasswordForm from '@/components/ChangePasswordForm';
 import { BackButton } from '@/components/ui/BackButton';
 
@@ -12,7 +12,7 @@ export default function AdminChangePasswordPage() {
 
     const handleSubmit = async (oldPassword: string, newPassword: string) => {
         if (!token) return;
-        const res = await api.admin.changePassword(oldPassword, newPassword, token);
+        const res = await api.auth.changePassword(oldPassword, newPassword, token);
         login(res.access_token);
     };
 

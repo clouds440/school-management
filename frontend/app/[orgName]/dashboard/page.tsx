@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Clock, Users, GraduationCap, ShieldOff, RefreshCw, Mail, LayoutDashboard, Building, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -11,7 +10,6 @@ import { Organization, OrgStats } from '@/types';
 
 export default function DashboardPage() {
     const { user: payload, loading, token } = useAuth();
-    const router = useRouter();
     const [orgName, setOrgName] = useState('Organization');
     const [orgData, setOrgData] = useState<Organization | null>(null);
     const [stats, setStats] = useState<OrgStats | null>(null);

@@ -23,7 +23,7 @@ interface RequestOptions extends RequestInit {
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const { token, ...rest } = options;
     const headers = {
-        'Content-Type': 'application/json',
+        ...(rest.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...rest.headers,
     };
@@ -36,7 +36,11 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
             const contentType = response.headers.get('content-type');
             if (contentType?.includes('application/json')) {
                 const data = await response.json();
-                message = Array.isArray(data.message) ? data.message[0] : data.message || message;
+                message =
+                    data?.message?.[0] ||
+                    data?.message ||
+                    data?.error ||
+                    message;
             } else {
                 const text = await response.text();
                 if (text && text.length < 200) message = text;

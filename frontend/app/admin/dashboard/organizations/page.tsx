@@ -161,24 +161,26 @@ export default function OrganizationsPage() {
                 <div className="flex flex-col gap-2 shrink-0 sm:items-end w-32">
                     {activeStatusTab === OrgStatus.PENDING ? (
                         <>
-                            <button
-                                onClick={() => handleApprove(row.id, row.name)}
-                                disabled={actionLoading !== null}
-                                className="w-full px-3 py-2 bg-green-600 text-white rounded-sm font-bold text-xs shadow-md shadow-green-600/20 hover:bg-green-700 transition-all flex items-center justify-center gap-1.5"
-                            >
-                                {actionLoading === `approve-${row.id}` ? (
-                                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
-                                ) : <Check className="w-3 h-3" />}
-                                Approve
-                            </button>
-                            <button
-                                onClick={() => handleOpenModal(row.id, row.name, 'REJECT')}
-                                disabled={actionLoading !== null}
-                                className="w-full px-3 py-2 bg-white text-red-600 border border-red-100 rounded-sm font-bold text-xs hover:bg-red-50 transition-all flex items-center justify-center gap-1.5"
-                            >
-                                <X className="w-3 h-3" />
-                                Reject
-                            </button>
+                            <>
+                                <button
+                                    onClick={() => handleApprove(row.id, row.name)}
+                                    disabled={actionLoading !== null}
+                                    className="w-full px-3 py-2 bg-green-600 text-white rounded-sm font-bold text-xs shadow-md shadow-green-600/20 hover:bg-green-700 transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                                >
+                                    {actionLoading === `approve-${row.id}` ? (
+                                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+                                    ) : <Check className="w-4 h-4" />}
+                                    Approve
+                                </button>
+                                <button
+                                    onClick={() => handleOpenModal(row.id, row.name, 'REJECT')}
+                                    disabled={actionLoading !== null}
+                                    className="w-full px-3 py-2 bg-white text-red-600 border border-red-100 rounded-sm font-bold text-xs hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                                >
+                                    <X className="w-4 h-4" />
+                                    Reject
+                                </button>
+                            </>
                         </>
                     ) : activeStatusTab === OrgStatus.APPROVED ? (
                         <div className="flex flex-col gap-2 w-full">
@@ -189,9 +191,9 @@ export default function OrganizationsPage() {
                             <button
                                 onClick={() => handleOpenModal(row.id, row.name, 'SUSPEND')}
                                 disabled={actionLoading !== null}
-                                className="w-full px-3 py-2 bg-white text-orange-600 border border-orange-100 rounded-sm font-bold text-xs hover:bg-orange-50 transition-all flex items-center justify-center gap-1.5"
+                                className="w-full px-3 py-2 bg-white text-orange-600 border border-orange-100 rounded-sm font-bold text-xs hover:bg-orange-600 hover:text-white transition-all flex items-center justify-center gap-1.5 active:scale-95"
                             >
-                                <ShieldAlert className="w-3 h-3" />
+                                <ShieldAlert className="w-4 h-4" />
                                 Suspend
                             </button>
                         </div>
@@ -200,11 +202,11 @@ export default function OrganizationsPage() {
                             <button
                                 onClick={() => handleApprove(row.id, row.name)}
                                 disabled={actionLoading !== null}
-                                className="w-full px-3 py-2 bg-indigo-600 text-white rounded-sm font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1.5"
+                                className="w-full px-3 py-2 bg-indigo-600 text-white rounded-sm font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1.5 active:scale-95"
                             >
                                 {actionLoading === `approve-${row.id}` ? (
                                     <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
-                                ) : <Check className="w-3 h-3" />}
+                                ) : <Check className="w-4 h-4" />}
                                 Re-approve
                             </button>
                             {row.statusMessage && (
@@ -217,11 +219,11 @@ export default function OrganizationsPage() {
                         <button
                             onClick={() => handleApprove(row.id, row.name)}
                             disabled={actionLoading !== null}
-                            className="w-full px-3 py-2 bg-indigo-600 text-white rounded-sm font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1.5"
+                            className="w-full px-3 py-2 bg-indigo-600 text-white rounded-sm font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1.5 active:scale-95"
                         >
                             {actionLoading === `approve-${row.id}` ? (
                                 <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
-                            ) : <Check className="w-3 h-3" />}
+                            ) : <Check className="w-4 h-4" />}
                             Unsuspend
                         </button>
                     )}

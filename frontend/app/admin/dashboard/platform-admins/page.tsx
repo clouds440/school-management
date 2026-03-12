@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Users, Search, Edit2, Trash2, Mail, MessageSquare, Calendar, UserPlus, ShieldCheck } from 'lucide-react';
-import { api, PlatformAdmin } from '@/src/lib/api';
+import { api } from '@/lib/api';
+import { PlatformAdmin, Role } from '@/types';
+import { TableActions } from '@/components/ui/TableActions';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
@@ -26,7 +28,7 @@ export default function PlatformAdminsPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     useEffect(() => {
-        if (!loading && user && user.role === 'SUPER_ADMIN' && token) {
+        if (!loading && user && user.role === Role.SUPER_ADMIN && token) {
             fetchPlatformAdmins();
         }
     }, [loading, user, token]);
@@ -162,25 +164,12 @@ export default function PlatformAdminsPage() {
             accessor: (row) => {
                 if (row.id === user?.id) return <span className="text-xs text-gray-400 italic">Current User</span>;
                 return (
-                    <div className="flex gap-2 justify-end w-32">
-                        <button
-                            onClick={() => handleOpenAdminModal('EDIT', row)}
-                            className="bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded-sm font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
-                        >
-                            <Edit2 className="w-3 h-3" />
-                            Edit
-                        </button>
-                        <button
-                            onClick={() => handleDeleteAdmin(row)}
-                            disabled={actionLoading === `delete-${row.id}`}
-                            className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-3 py-1.5 rounded-sm font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
-                        >
-                            {actionLoading === `delete-${row.id}` ? (
-                                <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent"></div>
-                            ) : <Trash2 className="w-3 h-3" />}
-                            Del
-                        </button>
-                    </div>
+                <TableActions
+                    onEdit={() => handleOpenAdminModal('EDIT', row)}
+                    onDelete={() => handleDeleteAdmin(row)}
+                    isDeleting={actionLoading === `delete-${row.id}`}
+                    showViewIcon={false}
+                />
                 )
             }
         }

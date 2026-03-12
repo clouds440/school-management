@@ -11,6 +11,7 @@ import { useToast } from '@/context/ToastContext';
 import { Teacher, Role } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
+import { TableActions } from '@/components/ui/TableActions';
 
 export default function TeachersPage() {
     const { token, user } = useAuth();
@@ -34,7 +35,7 @@ export default function TeachersPage() {
         if (!token || (user?.role !== Role.ORG_ADMIN && user?.role !== Role.ORG_MANAGER)) return;
         try {
             const data = await api.org.getTeachers(token);
-            setTeachers(data);
+            setTeachers(data || []);
         } catch (err) {
             console.error(err);
         } finally {
@@ -114,25 +115,13 @@ export default function TeachersPage() {
         {
             header: 'Actions',
             accessor: (row: Teacher) => (
-                <div className="flex gap-4">
-                    <button
-                        onClick={() => router.push(`/${orgSlug}/dashboard/teachers/edit/${row.id}`)}
-                        className="text-primary hover:text-white p-2.5 hover:bg-primary rounded-sm transition-all shadow-sm hover:shadow-[0_8px_16px_var(--shadow-color)] active:scale-90"
-                        title="Edit Teacher"
-                    >
-                        <Pencil className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => {
-                            setDeletingTeacher(row);
-                            setDeleteDialogOpen(true);
-                        }}
-                        className="text-red-600 hover:text-white p-2.5 hover:bg-red-600 rounded-sm transition-all shadow-sm hover:shadow-red-200 active:scale-90"
-                        title="Delete Teacher"
-                    >
-                        <Trash2 className="w-5 h-5" />
-                    </button>
-                </div>
+                <TableActions
+                    onEdit={() => router.push(`/${orgSlug}/dashboard/teachers/edit/${row.id}`)}
+                    onDelete={() => {
+                        setDeletingTeacher(row);
+                        setDeleteDialogOpen(true);
+                    }}
+                />
             )
         }
     ];

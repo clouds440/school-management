@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { usePathname, useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 import { Course, Role } from '@/types';
+import { TableActions } from '@/components/ui/TableActions';
 
 export default function CoursesPage() {
     const { token, user } = useAuth();
@@ -114,36 +115,22 @@ export default function CoursesPage() {
                 const isTeacher = user?.role === Role.TEACHER;
 
                 return (
-                    <div className="flex gap-3">
-                        {(isAdmin || isTeacher) && (
-                            <button
-                                onClick={() => {
-                                    setEditingCourse(row);
-                                    setEditFormData({
-                                        name: row.name,
-                                        description: row.description || ''
-                                    });
-                                    setEditModalOpen(true);
-                                }}
-                                className="text-primary hover:text-primary-hover p-1 hover:bg-primary/10 rounded transition-colors"
-                                title="Edit Course"
-                            >
-                                <Edit2 className="w-4 h-4" />
-                            </button>
-                        )}
-                        {isAdmin && (
-                            <button
-                                onClick={() => {
-                                    setDeletingCourse(row);
-                                    setDeleteDialogOpen(true);
-                                }}
-                                className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
-                                title="Delete Course"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        )}
-                    </div>
+                <TableActions
+                    onEdit={(isAdmin || isTeacher) ? () => {
+                        setEditingCourse(row);
+                        setEditFormData({
+                            name: row.name,
+                            description: row.description || ''
+                        });
+                        setEditModalOpen(true);
+                    } : undefined}
+                    onDelete={isAdmin ? () => {
+                        setDeletingCourse(row);
+                        setDeleteDialogOpen(true);
+                    } : undefined}
+                    editTitle="Edit Course"
+                    deleteTitle="Delete Course"
+                />
                 );
             }
         }
