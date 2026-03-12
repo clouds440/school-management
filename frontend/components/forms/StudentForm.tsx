@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
-import { Section, Student } from '@/types';
+import { api } from '@/lib/api';
+import { Section, Student, StudentStatus } from '@/types';
 
 interface StudentFormProps {
     studentId?: string;
@@ -48,7 +49,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                 bloodGroup: initialData.bloodGroup || '',
                 emergencyContact: initialData.emergencyContact || '',
                 feePlan: initialData.feePlan || '',
-                status: initialData.status || 'ACTIVE'
+                status: initialData.status || StudentStatus.ACTIVE
             };
         }
         return {
@@ -70,7 +71,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
             bloodGroup: '',
             emergencyContact: '',
             feePlan: '',
-            status: 'ACTIVE'
+            status: StudentStatus.ACTIVE
         };
     });
 
@@ -83,13 +84,8 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
 
     const fetchSections = async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/sections`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setSections(data);
-            }
+            const data = await api.org.getSections(token!);
+            setSections(data);
         } catch (error) {
             console.error('Failed to fetch sections', error);
         }
@@ -105,50 +101,16 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
         setIsSaving(true);
 
         try {
-            const url = studentId 
-                ? `${process.env.NEXT_PUBLIC_API_URL}/org/students/${studentId}` 
-                : `${process.env.NEXT_PUBLIC_API_URL}/org/students`;
-            
-            const method = studentId ? 'PATCH' : 'POST';
-
-            const payload: any = {
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone || undefined,
-                registrationNumber: formData.registrationNumber || undefined,
-                fatherName: formData.fatherName || undefined,
-                fee: formData.fee ? Number(formData.fee) : undefined,
-                age: formData.age ? Number(formData.age) : undefined,
-                address: formData.address || undefined,
-                major: formData.major || undefined,
-                sectionIds: formData.sectionIds.length > 0 ? formData.sectionIds : undefined,
-                department: formData.department || undefined,
-                admissionDate: formData.admissionDate || undefined,
-                graduationDate: formData.graduationDate || undefined,
-                gender: formData.gender || undefined,
-                bloodGroup: formData.bloodGroup || undefined,
-                emergencyContact: formData.emergencyContact || undefined,
-                feePlan: formData.feePlan || undefined,
-                status: formData.status
+            const payload = {
+                ...formData,
+                fee: formData.fee ? Number(formData.fee) : null,
+                age: formData.age ? Number(formData.age) : null
             };
 
-            // Only send password on creation or if explicitly filled on edit
-            if (!studentId || formData.password) {
-                payload.password = formData.password;
-            }
-
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || `Failed to ${studentId ? 'update' : 'register'} student`);
+            if (studentId) {
+                await api.org.updateStudent(studentId, payload, token!);
+            } else {
+                await api.org.createStudent(payload, token!);
             }
 
             showToast(`Student ${studentId ? 'updated' : 'registered'} successfully.`, 'success');
@@ -165,10 +127,17 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
     }));
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Account Info Section */}
-            <div>
-                <h3 className="text-lg font-bold text-card-text border-b border-white/10 pb-2 mb-4">Account Information</h3>
+        <form onSubmit={handleSubmit} className="space-y-12">
+            {/* Mandatory Information */}
+            <div className="bg-primary/5 p-6 rounded-sm border border-white/10">
+                <div className="mb-6">
+                    <h3 className="text-xl font-bold text-card-text flex items-center gap-2">
+                        <ShieldCheck className="w-6 h-6 text-primary" />
+                        Mandatory Information
+                    </h3>
+                    <p className="text-card-text/60 text-sm mt-1">These fields are required for administrative setup and account creation.</p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="col-span-1 md:col-span-3">
                         <Label>Full Name *</Label>
@@ -177,7 +146,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            required
+                            required={!studentId}
                             icon={User}
                             placeholder="Alex Johnson"
                         />
@@ -190,10 +159,13 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
-                            required
+                            required={!studentId}
+                            disabled={!!studentId}
                             icon={Mail}
                             placeholder="student@example.com"
+                            className={studentId ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
+                        {studentId && <p className="text-[10px] text-primary/60 mt-1 font-bold italic uppercase">Email cannot be changed after registration</p>}
                     </div>
 
                     <div>
@@ -211,61 +183,23 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                     </div>
 
                     <div>
-                        <Label>Contact Number</Label>
-                        <Input
-                            type="text"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            icon={Phone}
-                            placeholder="+1 555-0123"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Academic Profile Section */}
-            <div>
-                <h3 className="text-lg font-bold text-card-text border-b border-white/10 pb-2 mb-4 mt-8">Academic Profile</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="col-span-2">
-                        <Label>Major / Course of Study</Label>
-                        <Input
-                            type="text"
-                            name="major"
-                            value={formData.major}
-                            onChange={handleChange}
-                            icon={GraduationCap}
-                            placeholder="Intermediate Computer Science"
-                        />
-                    </div>
-
-                    <div className="col-span-2">
-                        <Label>Registration #</Label>
+                        <Label>Registration # *</Label>
                         <Input
                             type="text"
                             name="registrationNumber"
                             value={formData.registrationNumber}
                             onChange={handleChange}
+                            required
+                            disabled={!!studentId}
                             icon={Hash}
                             placeholder="CS-2026-001"
+                            className={studentId ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
-                    </div>
-
-                    <div className="col-span-2">
-                        <Label>Department</Label>
-                        <Input
-                            type="text"
-                            name="department"
-                            value={formData.department}
-                            onChange={handleChange}
-                            icon={BookOpen}
-                            placeholder="Science / Humanities / Arts"
-                        />
+                        {studentId && <p className="text-[10px] text-primary/60 mt-1 font-bold italic uppercase">Registration # is fixed</p>}
                     </div>
 
                     <div>
-                        <Label>Admission Date</Label>
+                        <Label>Admission Date *</Label>
                         <Input
                             type="date"
                             name="admissionDate"
@@ -276,160 +210,204 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                     </div>
 
                     <div>
-                        <Label>Expected Graduation</Label>
-                        <Input
-                            type="date"
-                            name="graduationDate"
-                            value={formData.graduationDate}
-                            onChange={handleChange}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Section Assignment */}
-            <div>
-                <h3 className="text-lg font-bold text-card-text border-b border-white/10 pb-2 mb-4 mt-8">Section Assignment</h3>
-                <p className="text-sm text-card-text/60 mb-4 pl-1 text-[11px] uppercase tracking-widest font-bold">Select the sections this student is enrolling in</p>
-
-                <div className="max-w-xl">
-                    <CustomMultiSelect
-                        options={sectionOptions}
-                        values={formData.sectionIds}
-                        onChange={(vals) => setFormData(prev => ({ ...prev, sectionIds: vals }))}
-                        icon={Users}
-                        placeholder="Select Sections"
-                    />
-                </div>
-            </div>
-
-            {/* Personal & Billing Section */}
-            <div>
-                <h3 className="text-lg font-bold text-card-text border-b border-white/10 pb-2 mb-4 mt-8">Personal & Billing Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-                    <div>
-                        <Label>Father's Name</Label>
-                        <Input
-                            type="text"
-                            name="fatherName"
-                            value={formData.fatherName}
-                            onChange={handleChange}
-                            icon={User}
-                            placeholder="Thomas Johnson"
-                        />
-                    </div>
-
-                    <div>
-                        <Label>Age</Label>
-                        <Input
-                            type="number"
-                            name="age"
-                            value={formData.age}
-                            onChange={handleChange}
-                            icon={User}
-                            placeholder="16"
-                        />
-                    </div>
-
-                    <div>
-                        <Label>Monthly Fee</Label>
-                        <Input
-                            type="number"
-                            name="fee"
-                            value={formData.fee}
-                            onChange={handleChange}
-                            icon={DollarSign}
-                            placeholder="200"
-                        />
-                    </div>
-
-                    <div>
-                        <Label>Fee Plan Type</Label>
-                        <Input
-                            type="text"
-                            name="feePlan"
-                            value={formData.feePlan}
-                            onChange={handleChange}
-                            icon={BookOpen}
-                            placeholder="Standard / Scholarship / etc."
-                        />
-                    </div>
-
-                    <div>
-                        <Label>Gender</Label>
+                        <Label>Status *</Label>
                         <CustomSelect
                             options={[
-                                { value: 'Male', label: 'Male' },
-                                { value: 'Female', label: 'Female' },
-                                { value: 'Other', label: 'Other' }
-                            ]}
-                            value={formData.gender}
-                            onChange={(val) => setFormData(prev => ({ ...prev, gender: val }))}
-                            icon={Users}
-                            placeholder="Select Gender"
-                        />
-                    </div>
-
-                    <div>
-                        <Label>Blood Group</Label>
-                        <Input
-                            type="text"
-                            name="bloodGroup"
-                            value={formData.bloodGroup}
-                            onChange={handleChange}
-                            icon={Plus}
-                            placeholder="O+, A-, etc."
-                        />
-                    </div>
-
-                    <div>
-                        <Label>Emergency Contact</Label>
-                        <Input
-                            type="text"
-                            name="emergencyContact"
-                            value={formData.emergencyContact}
-                            onChange={handleChange}
-                            icon={Phone}
-                            placeholder="Name - Relation - Phone"
-                        />
-                    </div>
-
-                    <div>
-                        <Label>Status</Label>
-                        <CustomSelect
-                            options={[
-                                { value: 'ACTIVE', label: 'Active', icon: ShieldCheck },
-                                { value: 'SUSPENDED', label: 'Suspended', icon: UserX },
-                                { value: 'ALUMNI', label: 'Alumni', icon: GraduationCap }
+                                { value: StudentStatus.ACTIVE, label: 'Active', icon: ShieldCheck },
+                                { value: StudentStatus.SUSPENDED, label: 'Suspended', icon: UserX },
+                                { value: StudentStatus.ALUMNI, label: 'Alumni', icon: GraduationCap }
                             ]}
                             value={formData.status}
                             onChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
                             placeholder="Select Status"
                             icon={
-                                formData.status === 'ACTIVE' ? ShieldCheck :
-                                    formData.status === 'SUSPENDED' ? UserX :
+                                formData.status === StudentStatus.ACTIVE ? ShieldCheck :
+                                    formData.status === StudentStatus.SUSPENDED ? UserX :
                                         GraduationCap
                             }
                         />
                     </div>
+                </div>
+            </div>
 
-                    <div className="col-span-1 md:col-span-3">
-                        <Label>Home Address</Label>
-                        <div className="relative group">
-                            <div className="absolute top-3.5 left-0 pl-3.5 flex items-start pointer-events-none text-card-text/40 group-focus-within:text-primary transition-colors">
-                                <MapPin className="w-5 h-5" />
+            {/* Optional / Profile Details */}
+            <div className="p-6 rounded-sm border border-white/5 bg-white/2">
+                <div className="mb-6">
+                    <h3 className="text-xl font-bold text-card-text flex items-center gap-2">
+                        <User className="w-6 h-6 text-card-text/60" />
+                        Optional Profile Details
+                    </h3>
+                    <p className="text-card-text/60 text-sm mt-1">These fields can be filled now or updated by the student later from their profile.</p>
+                </div>
+
+                <div className="space-y-8">
+                    {/* Academic Details */}
+                    <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary/60 mb-4 border-b border-white/5 pb-1">Academic & Department</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <Label>Major / Course of Study</Label>
+                                <Input
+                                    type="text"
+                                    name="major"
+                                    value={formData.major}
+                                    onChange={handleChange}
+                                    icon={GraduationCap}
+                                    placeholder="Intermediate Computer Science"
+                                />
                             </div>
-                            <textarea
-                                name="address"
-                                value={formData.address}
-                                onChange={handleChange}
-                                className="w-full pl-11 pr-4 py-3 rounded-sm border border-white/10 bg-primary/5 text-card-text placeholder:text-card-text/40 focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 sm:text-sm transition-all duration-200 shadow-sm min-h-[100px] outline-none font-bold"
-                                placeholder="123 Education Lane, Learning City"
-                            />
+                            <div>
+                                <Label>Department</Label>
+                                <Input
+                                    type="text"
+                                    name="department"
+                                    value={formData.department}
+                                    onChange={handleChange}
+                                    icon={BookOpen}
+                                    placeholder="Science / Humanities / Arts"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <Label>Section Assignment</Label>
+                                <CustomMultiSelect
+                                    options={sectionOptions}
+                                    values={formData.sectionIds}
+                                    onChange={(vals) => setFormData(prev => ({ ...prev, sectionIds: vals }))}
+                                    icon={Users}
+                                    placeholder="Select Sections"
+                                />
+                            </div>
                         </div>
                     </div>
 
+                    {/* Personal & Billing */}
+                    <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary/60 mb-4 border-b border-white/5 pb-1">Personal & Billing</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <Label>Father's Name</Label>
+                                <Input
+                                    type="text"
+                                    name="fatherName"
+                                    value={formData.fatherName}
+                                    onChange={handleChange}
+                                    icon={User}
+                                    placeholder="Thomas Johnson"
+                                />
+                            </div>
+                            <div>
+                                <Label>Age</Label>
+                                <Input
+                                    type="number"
+                                    name="age"
+                                    value={formData.age}
+                                    onChange={handleChange}
+                                    icon={User}
+                                    placeholder="16"
+                                />
+                            </div>
+                            <div>
+                                <Label>Gender</Label>
+                                <CustomSelect
+                                    options={[
+                                        { value: 'Male', label: 'Male' },
+                                        { value: 'Female', label: 'Female' },
+                                        { value: 'Other', label: 'Other' }
+                                    ]}
+                                    value={formData.gender}
+                                    onChange={(val) => setFormData(prev => ({ ...prev, gender: val }))}
+                                    icon={Users}
+                                    placeholder="Select Gender"
+                                />
+                            </div>
+                            <div>
+                                <Label>Monthly Fee</Label>
+                                <Input
+                                    type="number"
+                                    name="fee"
+                                    value={formData.fee}
+                                    onChange={handleChange}
+                                    icon={DollarSign}
+                                    placeholder="200"
+                                />
+                            </div>
+                            <div>
+                                <Label>Fee Plan Type</Label>
+                                <Input
+                                    type="text"
+                                    name="feePlan"
+                                    value={formData.feePlan}
+                                    onChange={handleChange}
+                                    icon={BookOpen}
+                                    placeholder="Standard / Scholarship / etc."
+                                />
+                            </div>
+                            <div>
+                                <Label>Expected Graduation</Label>
+                                <Input
+                                    type="date"
+                                    name="graduationDate"
+                                    value={formData.graduationDate}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Contact & Medical */}
+                    <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary/60 mb-4 border-b border-white/5 pb-1">Contact & Medical</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <Label>Contact Number</Label>
+                                <Input
+                                    type="text"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    icon={Phone}
+                                    placeholder="+1 555-0123"
+                                />
+                            </div>
+                            <div>
+                                <Label>Emergency Contact</Label>
+                                <Input
+                                    type="text"
+                                    name="emergencyContact"
+                                    value={formData.emergencyContact}
+                                    onChange={handleChange}
+                                    icon={Phone}
+                                    placeholder="Name - Relation - Phone"
+                                />
+                            </div>
+                            <div>
+                                <Label>Blood Group</Label>
+                                <Input
+                                    type="text"
+                                    name="bloodGroup"
+                                    value={formData.bloodGroup}
+                                    onChange={handleChange}
+                                    icon={Plus}
+                                    placeholder="O+, A-, etc."
+                                />
+                            </div>
+                            <div className="md:col-span-3">
+                                <Label>Home Address</Label>
+                                <div className="relative group">
+                                    <div className="absolute top-3.5 left-0 pl-3.5 flex items-start pointer-events-none text-card-text/40 group-focus-within:text-primary transition-colors">
+                                        <MapPin className="w-5 h-5" />
+                                    </div>
+                                    <textarea
+                                        name="address"
+                                        value={formData.address}
+                                        onChange={handleChange}
+                                        className="w-full pl-11 pr-4 py-3 rounded-sm border border-white/10 bg-primary/5 text-card-text placeholder:text-card-text/40 focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 sm:text-sm transition-all duration-200 shadow-sm min-h-[100px] outline-none font-bold"
+                                        placeholder="123 Education Lane, Learning City"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

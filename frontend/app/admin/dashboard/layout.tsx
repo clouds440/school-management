@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { DashboardLayout, SidebarLink } from '@/components/ui/DashboardLayout';
 import { Building, MessageSquare, Users } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { api, AdminStats } from '@/src/lib/api';
+import { api } from '@/lib/api';
+import { AdminStats, Role } from '@/types';
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
     const { user, token } = useAuth();
@@ -31,7 +32,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         ];
 
         // Add platform admins link if user is a SUPER_ADMIN
-        if (user?.role === 'SUPER_ADMIN') {
+        if (user?.role === Role.SUPER_ADMIN) {
             adminLinks.push({
                 id: 'PLATFORM_ADMINS',
                 label: 'Platform Admins',

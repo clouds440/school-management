@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { BookOpen, Plus, Edit2, Trash2 } from 'lucide-react';
 import { DataTable } from '@/components/ui/DataTable';
+import { api } from '@/lib/api';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -35,27 +36,20 @@ export default function SectionsPage() {
     const fetchSectionsAndCourses = useCallback(async () => {
         if (!token) return;
         try {
-            const fetchPromises: Promise<Response>[] = [
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/sections`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/courses`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                })
-            ];
-
-            const results = await Promise.all(fetchPromises);
-            const sectionsData = await results[0].json();
-            const coursesData = await results[1].json();
+            const [sectionsData, coursesData] = await Promise.all([
+                api.org.getSections(token),
+                api.org.getCourses(token)
+            ]);
 
             setSections(Array.isArray(sectionsData) ? sectionsData : []);
             setCourses(Array.isArray(coursesData) ? coursesData : []);
         } catch (err) {
             console.error(err);
+            showToast('Failed to load sections or courses', 'error');
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, [token, showToast]);
 
     useEffect(() => {
         fetchSectionsAndCourses();
@@ -63,22 +57,10 @@ export default function SectionsPage() {
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!editingSection || !token) return;
         setIsSaving(true);
         try {
-            const submitData = { ...editFormData };
-
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/sections/${editingSection?.id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(submitData)
-            });
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || 'Failed to update section details');
-            }
+            await api.org.updateSection(editingSection.id, editFormData, token);
             setEditModalOpen(false);
             showToast('Section updated successfully', 'success');
             fetchSectionsAndCourses();
@@ -90,17 +72,10 @@ export default function SectionsPage() {
     };
 
     const handleDeleteConfirm = async () => {
-        if (!deletingSection) return;
+        if (!deletingSection || !token) return;
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/sections/${deletingSection.id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || 'Failed to delete section');
-            }
-            showToast('Section deleted permanently', 'success');
+            await api.org.deleteSection(deletingSection.id, token);
+            showToast('Section deleted successfully', 'success');
             setDeleteDialogOpen(false);
             fetchSectionsAndCourses();
         } catch (err: unknown) {

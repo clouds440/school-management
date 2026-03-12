@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException, ForbiddenException, ConflictException } from '@nestjs/common';
-import { PrismaClient, Prisma, SupportTopic } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { Role, OrgStatus, SupportTopic, TeacherStatus, StudentStatus } from '../common/enums';
 
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
@@ -19,7 +20,7 @@ import { FilesService } from '../files/files.service';
 export class OrgService {
     private prisma = new PrismaClient();
 
-    constructor(private readonly filesService: FilesService) {}
+    constructor(private readonly filesService: FilesService) { }
 
     // --- Settings ---
     async getSettings(orgId: string) {
@@ -142,7 +143,7 @@ export class OrgService {
     // --- Teachers ---
     async getTeachers(orgId: string) {
         return this.prisma.teacher.findMany({
-            where: { organizationId: orgId },
+            where: { organizationId: orgId, status: { not: TeacherStatus.DELETED } },
             include: {
                 user: {
                     select: {
@@ -160,7 +161,7 @@ export class OrgService {
 
     async getTeacher(orgId: string, id: string) {
         const teacher = await this.prisma.teacher.findFirst({
-            where: { id, organizationId: orgId },
+            where: { id, organizationId: orgId, status: { not: TeacherStatus.DELETED } },
             include: {
                 user: {
                     select: {
@@ -188,7 +189,7 @@ export class OrgService {
             throw new BadRequestException('User with this email already exists');
         }
 
-        if (data.isManager && userContext.role === 'ORG_MANAGER') {
+        if (data.isManager && userContext.role === Role.ORG_MANAGER) {
             throw new ForbiddenException('Only Organization Admins can create Managers');
         }
 
@@ -202,7 +203,7 @@ export class OrgService {
                     data: {
                         email: data.email,
                         password: hashedPassword,
-                        role: data.isManager ? 'ORG_MANAGER' : 'TEACHER',
+                        role: data.isManager ? Role.ORG_MANAGER : Role.TEACHER,
                         organizationId: orgId,
                         name: data.name,
                         phone: data.phone,
@@ -223,7 +224,7 @@ export class OrgService {
                         emergencyContact: data.emergencyContact,
                         bloodGroup: data.bloodGroup,
                         address: data.address,
-                        status: data.status,
+                        status: data.status as any,
                         sections: data.sectionIds ? { connect: data.sectionIds.map(id => ({ id })) } : undefined,
                     },
                     include: {
@@ -251,46 +252,70 @@ export class OrgService {
 
         if (!teacher) throw new NotFoundException('Teacher not found');
 
-        if (userContext.role === 'ORG_MANAGER') {
-            if (teacher.user.role === 'ORG_ADMIN' || teacher.user.role === 'ORG_MANAGER') {
+        if (userContext.role === Role.ORG_MANAGER) {
+            if (teacher.user.role === Role.ORG_ADMIN || teacher.user.role === Role.ORG_MANAGER) {
                 throw new ForbiddenException('Managers cannot modify Admin or Manager profiles');
             }
         }
 
-
         return this.prisma.$transaction(async (tx) => {
-            // 1. Update User if name/phone provided
-            if (data.name !== undefined || data.phone !== undefined) {
+            const userFields = ['name', 'email', 'phone', 'password'];
+            const teacherFields = ['salary', 'subject', 'education', 'designation', 'department', 'emergencyContact', 'bloodGroup', 'address', 'status'];
+            const userData: Prisma.UserUpdateInput = {};
+            const teacherData: Prisma.TeacherUpdateInput = {};
+
+            for (const [key, value] of Object.entries(data)) {
+                if (value === undefined) continue;
+
+                if (userFields.includes(key)) {
+                    if (key === 'email' && value !== teacher.user.email) {
+                        const existing = await tx.user.findUnique({ where: { email: value as string } });
+                        if (existing) throw new BadRequestException('Email already in use');
+                        userData.email = value;
+                    } else if (key === 'password') {
+                        if (typeof value === 'string' && value.trim() !== '') {
+                            userData.password = await bcrypt.hash(value, 10);
+                        }
+                    } else if (key !== 'email') {
+                        (userData as any)[key] = value;
+                    }
+                } else if (key === 'isManager') {
+                    userData.role = value ? Role.ORG_MANAGER : Role.TEACHER;
+                } else if (key === 'sectionIds') {
+                    teacherData.sections = { set: (value as string[]).map(id => ({ id })) };
+                } else if (key === 'joiningDate') {
+                    if (value) {
+                        const date = new Date(value as string);
+                        if (!isNaN(date.getTime())) {
+                            teacherData.joiningDate = date;
+                        }
+                    }
+                } else if (teacherFields.includes(key)) {
+                    (teacherData as any)[key] = value;
+                }
+            }
+
+            if (Object.keys(userData).length > 0) {
                 await tx.user.update({
                     where: { id: teacher.userId },
-                    data: {
-                        name: data.name,
-                        phone: data.phone,
-                    }
+                    data: userData
                 });
             }
 
             // 2. Update Teacher
-            return tx.teacher.update({
+            if (Object.keys(teacherData).length > 0) {
+                await tx.teacher.update({
+                    where: { id },
+                    data: teacherData
+                });
+            }
+
+            return tx.teacher.findUnique({
                 where: { id },
-                data: {
-                    salary: data.salary,
-                    subject: data.subject,
-                    education: data.education,
-                    designation: data.designation,
-                    department: data.department,
-                    joiningDate: data.joiningDate ? new Date(data.joiningDate) : undefined,
-                    emergencyContact: data.emergencyContact,
-                    bloodGroup: data.bloodGroup,
-                    address: data.address,
-                    status: data.status,
-                    sections: data.sectionIds ? { set: data.sectionIds.map(id => ({ id })) } : undefined,
-                },
                 include: {
-                    user: {
-                        select: { email: true, name: true, phone: true },
-                    },
-                },
+                    user: { select: { email: true, name: true, phone: true, role: true } },
+                    sections: { include: { course: true } }
+                }
             });
         });
     }
@@ -303,15 +328,15 @@ export class OrgService {
 
         if (!teacher) throw new NotFoundException('Teacher not found');
 
-        if (userContext.role === 'ORG_MANAGER') {
-            if (teacher.user.role === 'ORG_ADMIN' || teacher.user.role === 'ORG_MANAGER') {
+        if (userContext.role === Role.ORG_MANAGER) {
+            if (teacher.user.role === Role.ORG_ADMIN || teacher.user.role === Role.ORG_MANAGER) {
                 throw new ForbiddenException('Managers cannot delete Admin or Manager profiles');
             }
         }
 
-        // Deleting the user will cascade and delete the teacher record because of onDelete: Cascade
-        await this.prisma.user.delete({
-            where: { id: teacher.userId },
+        await this.prisma.teacher.update({
+            where: { id },
+            data: { status: TeacherStatus.DELETED as any }
         });
 
 
@@ -360,7 +385,7 @@ export class OrgService {
             include: {
                 course: true,
                 teachers: { include: { user: { select: { email: true, name: true } } } },
-                enrollments: Object.keys(orgId).length > 0 ? undefined : undefined // To fetch enrolls if needed later
+                enrollments: !!orgId ? undefined : undefined // To fetch enrolls if needed later
             }
         });
     }
@@ -397,7 +422,7 @@ export class OrgService {
     // --- Students ---
     async getStudents(orgId: string) {
         return this.prisma.student.findMany({
-            where: { organizationId: orgId },
+            where: { organizationId: orgId, status: { not: StudentStatus.DELETED } },
             include: {
                 user: {
                     select: {
@@ -420,7 +445,7 @@ export class OrgService {
 
     async getStudent(orgId: string, id: string) {
         const student = await this.prisma.student.findFirst({
-            where: { id, organizationId: orgId },
+            where: { id, organizationId: orgId, status: { not: StudentStatus.DELETED } },
             include: {
                 user: {
                     select: {
@@ -460,7 +485,7 @@ export class OrgService {
                     data: {
                         email: data.email,
                         password: hashedPassword,
-                        role: 'STUDENT',
+                        role: Role.STUDENT,
                         organizationId: orgId,
                         name: data.name,
                         phone: data.phone,
@@ -484,7 +509,7 @@ export class OrgService {
                         bloodGroup: data.bloodGroup,
                         gender: data.gender,
                         feePlan: data.feePlan,
-                        status: data.status,
+                        status: data.status as any,
                         enrollments: data.sectionIds ? { create: data.sectionIds.map(sectionId => ({ sectionId })) } : undefined,
                         updatedBy: userContext.name || userContext.email
                     },
@@ -504,50 +529,82 @@ export class OrgService {
 
     async updateStudent(orgId: string, id: string, data: UpdateStudentDto, user: { name?: string | null; email: string }) {
         const student = await this.prisma.student.findFirst({
-            where: { id, organizationId: orgId }
+            where: { id, organizationId: orgId },
+            include: { user: true }
         });
 
         if (!student) throw new NotFoundException('Student not found');
 
         return this.prisma.$transaction(async (tx) => {
-            if (data.name !== undefined || data.phone !== undefined) {
+            const userFields = ['name', 'email', 'phone', 'password'];
+            const userData: Prisma.UserUpdateInput = {};
+            const studentData: Prisma.StudentUpdateInput = {};
+
+            const studentFields = [
+                'registrationNumber', 'fatherName', 'fee', 'age', 'address', 'major',
+                'department', 'admissionDate', 'graduationDate', 'emergencyContact',
+                'bloodGroup', 'gender', 'feePlan', 'status'
+            ];
+
+            for (const [key, value] of Object.entries(data)) {
+                if (value === undefined) continue;
+
+                if (userFields.includes(key)) {
+                    if (key === 'email' && value !== student.user.email) {
+                        const existing = await tx.user.findUnique({ where: { email: value as string } });
+                        if (existing) throw new BadRequestException('Email already in use');
+                        userData.email = value;
+                    } else if (key === 'password') {
+                        if (typeof value === 'string' && value.trim() !== '') {
+                            userData.password = await bcrypt.hash(value, 10);
+                        }
+                    } else if (key !== 'email') {
+                        (userData as any)[key] = value;
+                    }
+                } else if (key === 'registrationNumber' && value !== student.registrationNumber) {
+                    const existing = await tx.student.findFirst({
+                        where: { organizationId: orgId, registrationNumber: value as string, id: { not: id } }
+                    });
+                    if (existing) throw new BadRequestException('Registration number already in use');
+                    studentData.registrationNumber = value;
+                } else if (key === 'sectionIds') {
+                    // Handled separately
+                } else if (key === 'admissionDate' || key === 'graduationDate') {
+                    if (value) {
+                        const date = new Date(value as string);
+                        if (!isNaN(date.getTime())) {
+                            (studentData as any)[key] = date;
+                        }
+                    } else if (key === 'graduationDate') {
+                        (studentData as any)[key] = null; // Graduation date can be cleared
+                    }
+                } else if (studentFields.includes(key)) {
+                    (studentData as any)[key] = value;
+                }
+            }
+
+            if (Object.keys(userData).length > 0) {
                 await tx.user.update({
                     where: { id: student.userId },
-                    data: {
-                        name: data.name,
-                        phone: data.phone,
-                    }
+                    data: userData
                 });
             }
 
-            await tx.student.update({
-                where: { id },
-                data: {
-                    registrationNumber: data.registrationNumber,
-                    fatherName: data.fatherName,
-                    fee: data.fee,
-                    age: data.age,
-                    address: data.address,
-                    major: data.major,
-                    department: data.department,
-                    admissionDate: data.admissionDate ? new Date(data.admissionDate) : undefined,
-                    graduationDate: data.graduationDate ? new Date(data.graduationDate) : undefined,
-                    emergencyContact: data.emergencyContact,
-                    bloodGroup: data.bloodGroup,
-                    gender: data.gender,
-                    feePlan: data.feePlan,
-                    status: data.status,
-                    updatedBy: user.name || user.email
-                },
-            });
-
-            const sectionIds = data.sectionIds || [];
-            if (sectionIds.length > 0) {
-                // To replace enrollments, first delete old, then create new
-                await tx.enrollment.deleteMany({ where: { studentId: id } });
-                await tx.enrollment.createMany({
-                    data: sectionIds.map(sectionId => ({ studentId: id, sectionId }))
+            if (Object.keys(studentData).length > 0) {
+                studentData.updatedBy = user.name || user.email;
+                await tx.student.update({
+                    where: { id },
+                    data: studentData
                 });
+            }
+
+            if (data.sectionIds !== undefined) {
+                await tx.enrollment.deleteMany({ where: { studentId: id } });
+                if (data.sectionIds.length > 0) {
+                    await tx.enrollment.createMany({
+                        data: data.sectionIds.map(sectionId => ({ studentId: id, sectionId }))
+                    });
+                }
             }
 
             return tx.student.findUnique({
@@ -567,8 +624,9 @@ export class OrgService {
 
         if (!student) throw new NotFoundException('Student not found');
 
-        await this.prisma.user.delete({
-            where: { id: student.userId },
+        await this.prisma.student.update({
+            where: { id },
+            data: { status: StudentStatus.DELETED }
         });
 
         return { message: 'Student deleted successfully' };
@@ -580,14 +638,14 @@ export class OrgService {
         });
 
         if (!org) throw new NotFoundException('Organization not found');
-        if (org.status !== 'REJECTED') {
+        if (org.status !== OrgStatus.REJECTED) {
             throw new BadRequestException('Only rejected organizations can re-apply');
         }
 
         return this.prisma.organization.update({
             where: { id: orgId },
             data: {
-                status: 'PENDING',
+                status: OrgStatus.PENDING,
                 statusMessage: null,
             },
         });
@@ -595,10 +653,10 @@ export class OrgService {
 
     async getStats(orgId: string, user: { id: string; role: string }) {
         const [teachers, courses, sections, students] = await Promise.all([
-            this.prisma.teacher.count({ where: { organizationId: orgId } }),
+            this.prisma.teacher.count({ where: { organizationId: orgId, status: { not: TeacherStatus.DELETED } } }),
             this.prisma.course.count({ where: { organizationId: orgId } }),
             this.prisma.section.count({ where: { course: { organizationId: orgId } } }),
-            this.prisma.student.count({ where: { organizationId: orgId } }),
+            this.prisma.student.count({ where: { organizationId: orgId, status: { not: StudentStatus.DELETED } } }),
         ]);
 
         return {

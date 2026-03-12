@@ -2,12 +2,13 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, OrganizationType } from '@/src/lib/api';
+import { api } from '@/lib/api';
 import { School, MapPin, Building, Mail, Lock, UserPlus, Phone } from 'lucide-react';
 import Link from 'next/link';
+import { OrganizationType } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { LogoUploadPicker } from '@/components/ui/LogoUploadPicker';
@@ -129,19 +130,19 @@ export default function RegisterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <Label htmlFor="type">Organization Type</Label>
-                <Select
-                  id="type"
-                  name="type"
-                  required
-                  icon={Building}
+                <CustomSelect
                   value={formData.type}
-                  onChange={handleChange}
-                >
-                  <option value={OrganizationType.HIGH_SCHOOL}>High School</option>
-                  <option value={OrganizationType.UNIVERSITY}>University</option>
-                  <option value={OrganizationType.PRIMARY_SCHOOL}>Primary School</option>
-                  <option value={OrganizationType.OTHER}>Other</option>
-                </Select>
+                  onChange={(value) => setFormData({ ...formData, type: value as OrganizationType })}
+                  icon={Building}
+                  options={[
+                    { value: OrganizationType.HIGH_SCHOOL, label: 'High School' },
+                    { value: OrganizationType.UNIVERSITY, label: 'University' },
+                    { value: OrganizationType.PRIMARY_SCHOOL, label: 'Primary School' },
+                    { value: OrganizationType.OTHER, label: 'Other' },
+                  ]}
+                  placeholder="Select Organization Type"
+                  required
+                />
               </div>
 
               <div>

@@ -101,7 +101,7 @@ export function LogoUploadPicker({
                 unoptimized
               />
             ) : (
-              // Server-stored URL (http://localhost:3000/uploads/...)
+              // Server-stored URL (e.g. ${process.env.NEXT_PUBLIC_API_URL}/uploads/...)
               // Use a plain <img> so it goes directly to the backend,
               // bypassing Next.js's image optimizer which blocks loopback IPs.
               // eslint-disable-next-line @next/next/no-img-element

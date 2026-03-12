@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Mail, MessageSquare, Phone, MapPin, ExternalLink, Send } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { api } from '@/src/lib/api';
+import { api } from '@/lib/api';
 import Link from 'next/link';
 
 export default function SupportPage() {

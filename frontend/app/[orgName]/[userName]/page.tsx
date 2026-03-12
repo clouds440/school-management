@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { GraduationCap, BookOpen, Clock, Calendar, Bell, Trophy, User, AlertTriangle, ShieldOff, Mail, RefreshCw, XCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 import { BackButton } from '@/components/ui/BackButton';
-import Link from 'next/link';
+import { OrgStats, OrgStatus } from '@/types';
 
 export default function StudentPersonalizedDashboard() {
     const { user, token, loading } = useAuth();
@@ -17,10 +18,7 @@ export default function StudentPersonalizedDashboard() {
     useEffect(() => {
         if (!user || !token) return;
 
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/settings`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-            .then(res => res.json())
+        api.org.getSettings(token)
             .then(data => {
                 if (data?.name) setOrgName(data.name);
                 if (data?.status) setOrgStatus(data.status);
@@ -89,7 +87,7 @@ export default function StudentPersonalizedDashboard() {
                     </div>
                 )}
 
-                {(orgStatus || user.status) === 'SUSPENDED' && (
+                {(orgStatus || user.status) === OrgStatus.PENDING && (
                     <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-orange-200 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                         <div className="p-6 bg-orange-50 rounded-full mb-6">
                             <ShieldOff className="w-20 h-20 text-orange-500" />
@@ -105,7 +103,7 @@ export default function StudentPersonalizedDashboard() {
                     </div>
                 )}
 
-                {(orgStatus || user.status) === 'APPROVED' && (
+                {(orgStatus || user.status) === OrgStatus.APPROVED && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Main Stats/Info */}
                         <div className="lg:col-span-2 space-y-8">

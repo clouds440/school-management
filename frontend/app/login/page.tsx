@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { api } from '@/src/lib/api';
+import { api } from '@/lib/api';
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/context/ToastContext';

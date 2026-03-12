@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Role } from '../common/enums';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { FilesService } from './files.service';
 import { FileUploadDto } from './files.dto';
@@ -80,7 +81,7 @@ export class FilesController {
 
     // Org-ownership enforcement: skip for global admins
     const isGlobalAdmin =
-      req.user.role === 'SUPER_ADMIN' || req.user.role === 'PLATFORM_ADMIN';
+      req.user.role === Role.SUPER_ADMIN || req.user.role === Role.PLATFORM_ADMIN;
 
     if (!isGlobalAdmin && req.user.organizationId !== dto.orgId) {
       throw new ForbiddenException(

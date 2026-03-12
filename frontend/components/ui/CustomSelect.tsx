@@ -1,19 +1,18 @@
 'use client';
 
-import * as React from "react";
 import { useState, useRef, useEffect } from "react";
 import { LucideIcon, ChevronDown } from "lucide-react";
 
-export interface DropdownOption {
-    value: string;
+export interface DropdownOption<T extends string = string> {
+    value: T;
     label: string;
     icon?: LucideIcon;
 }
 
-export interface CustomSelectProps {
-    options: DropdownOption[];
-    value: string;
-    onChange: (value: string) => void;
+export interface CustomSelectProps<T extends string = string> {
+    options: DropdownOption<T>[];
+    value: T;
+    onChange: (value: T) => void;
     placeholder?: string;
     icon?: LucideIcon;
     className?: string;
@@ -21,7 +20,7 @@ export interface CustomSelectProps {
     required?: boolean;
 }
 
-export function CustomSelect({
+export function CustomSelect<T extends string = string>({
     options,
     value,
     onChange,
@@ -30,10 +29,10 @@ export function CustomSelect({
     className = "",
     disabled = false,
     required = false
-}: CustomSelectProps) {
+}: CustomSelectProps<T>) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-    
+
     const selectedOption = options.find(opt => opt.value === value);
 
     useEffect(() => {
@@ -46,7 +45,7 @@ export function CustomSelect({
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const handleSelect = (val: string) => {
+    const handleSelect = (val: T) => {
         onChange(val);
         setIsOpen(false);
     };
@@ -57,7 +56,7 @@ export function CustomSelect({
             <select
                 required={required}
                 value={value}
-                onChange={(e) => onChange(e.target.value)}
+                onChange={(e) => onChange(e.target.value as T)}
                 className="sr-only"
                 aria-hidden="true"
                 tabIndex={-1}
@@ -74,8 +73,8 @@ export function CustomSelect({
                 disabled={disabled}
                 className={`
                     flex items-center w-full px-4 py-3 rounded-sm border transition-all duration-200 outline-none
-                    ${isOpen 
-                        ? 'border-primary ring-4 ring-primary/10 bg-card' 
+                    ${isOpen
+                        ? 'border-primary ring-4 ring-primary/10 bg-card'
                         : 'border-white/10 bg-primary/5 hover:border-white/20'
                     }
                     ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
@@ -85,7 +84,7 @@ export function CustomSelect({
                 {Icon && (
                     <Icon className={`h-5 w-5 mr-3 transition-colors ${isOpen ? 'text-primary' : 'text-card-text/40 group-focus-within:text-primary'}`} />
                 )}
-                
+
                 <span className={`flex-1 truncate ${!selectedOption ? 'text-card-text/40' : ''}`}>
                     {selectedOption ? selectedOption.label : placeholder}
                 </span>
@@ -105,8 +104,8 @@ export function CustomSelect({
                                 onClick={() => handleSelect(option.value)}
                                 className={`
                                     flex items-center w-full px-4 py-3 text-sm font-bold transition-all
-                                    ${option.value === value 
-                                        ? 'bg-primary text-white' 
+                                    ${option.value === value
+                                        ? 'bg-primary text-white'
                                         : 'text-card-text hover:bg-primary/10'
                                     }
                                     text-left

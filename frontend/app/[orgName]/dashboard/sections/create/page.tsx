@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { BookOpen, Calendar, MapPin, Hash } from 'lucide-react';
+import { api } from '@/lib/api';
 import Link from 'next/link';
-import { Course } from '@/types';
+import { Course, Role } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function CreateSectionPage() {
     const { token, user } = useAuth();
@@ -34,16 +35,13 @@ export default function CreateSectionPage() {
         if (!token || !user) return;
 
         // Teachers should not be able to create sections
-        if (user.role === 'TEACHER') {
+        if (user.role === Role.TEACHER) {
             router.replace(`/${orgSlug}/dashboard/sections`);
             return;
         }
 
-        if (user.role === 'ORG_ADMIN' || user.role === 'ORG_MANAGER') {
-            fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/courses`, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-                .then(res => res.json())
+        if (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER) {
+            api.org.getCourses(token)
                 .then(data => setCourses(Array.isArray(data) ? data : []))
                 .catch(err => console.error('Failed to load courses', err));
         }
@@ -58,21 +56,8 @@ export default function CreateSectionPage() {
         setIsSaving(true);
 
         try {
-            const submitData = { ...formData };
-
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/sections`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(submitData)
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || 'Failed to create section');
-            }
+            if (!token) return;
+            await api.org.createSection(formData, token);
 
             showToast('Section created successfully', 'success');
             router.push(`/${orgSlug}/dashboard/sections`);
@@ -114,20 +99,14 @@ export default function CreateSectionPage() {
 
                         <div>
                             <Label>Course *</Label>
-                            <Select
-                                name="courseId"
+                            <CustomSelect
                                 value={formData.courseId}
-                                onChange={handleChange as unknown as React.ChangeEventHandler<HTMLSelectElement>}
+                                onChange={(value) => setFormData({ ...formData, courseId: value })}
                                 icon={BookOpen}
+                                options={courses.map(c => ({ value: c.id, label: c.name }))}
+                                placeholder="Select a course..."
                                 required
-                            >
-                                <option value="" className="text-card-text/40 font-medium" disabled>Select a course...</option>
-                                {courses.map(c => (
-                                    <option key={c.id} value={c.id} className="text-gray-900 font-bold">
-                                        {c.name}
-                                    </option>
-                                ))}
-                            </Select>
+                            />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

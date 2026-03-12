@@ -1,11 +1,5 @@
 import { IsEmail, IsEnum, IsNotEmpty, IsString, MinLength, Matches } from 'class-validator';
-
-export enum OrganizationType {
-    HIGH_SCHOOL = 'HIGH_SCHOOL',
-    UNIVERSITY = 'UNIVERSITY',
-    PRIMARY_SCHOOL = 'PRIMARY_SCHOOL',
-    OTHER = 'OTHER',
-}
+import { OrganizationType } from '../../common/enums';
 
 export class RegisterDto {
     @IsString()

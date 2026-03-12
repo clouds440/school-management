@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { PrismaClient } from '@prisma/client';
+import { Role } from './common/enums';
 import * as bcrypt from 'bcrypt';
 import { join } from 'path';
 
@@ -24,7 +25,7 @@ async function bootstrap() {
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     const existingAdmin = await prisma.user.findFirst({
-      where: { role: 'SUPER_ADMIN' }
+      where: { role: Role.SUPER_ADMIN }
     });
 
     if (!existingAdmin) {
@@ -32,7 +33,7 @@ async function bootstrap() {
         data: {
           email: adminEmail,
           password: hashedPassword,
-          role: 'SUPER_ADMIN',
+          role: Role.SUPER_ADMIN,
           isFirstLogin: true,
         }
       });

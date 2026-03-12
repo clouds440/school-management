@@ -8,8 +8,9 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { Student, Section } from '@/types';
+import { Student } from '@/types';
 import { Button } from '@/components/ui/Button';
+import { api } from '@/lib/api';
 
 export default function StudentsPage() {
     const { token, user } = useAuth();
@@ -33,14 +34,10 @@ export default function StudentsPage() {
     }, [token]);
 
     const fetchStudents = async () => {
+        if (!token) return;
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/students`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setStudents(data);
-            }
+            const data = await api.org.getStudents(token);
+            setStudents(data);
         } catch (error) {
             console.error('Error fetching students:', error);
         } finally {
@@ -140,20 +137,20 @@ export default function StudentsPage() {
         {
             header: 'Actions',
             accessor: (row: Student) => (user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') ? (
-                <div className="flex justify-end gap-2 shrink-0">
+                <div className="flex gap-4">
                     <button
                         onClick={() => router.push(`/${orgSlug}/dashboard/students/edit/${row.id}`)}
-                        className="p-2 text-primary hover:bg-primary/10 rounded-sm transition-colors border border-transparent hover:border-primary/10"
+                        className="text-primary hover:text-white p-2.5 hover:bg-primary rounded-sm transition-all shadow-sm hover:shadow-[0_8px_16px_var(--shadow-color)] active:scale-90"
                         title="Edit Student"
                     >
-                        <Pencil className="w-4 h-4" />
+                        <Pencil className="w-5 h-5" />
                     </button>
                     <button
                         onClick={() => handleDeleteClick(row.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-sm transition-colors border border-transparent hover:border-red-100"
-                        title="Remove Student"
+                        className="text-red-600 hover:text-white p-2.5 hover:bg-red-600 rounded-sm transition-all shadow-sm hover:shadow-red-200 active:scale-90"
+                        title="Delete Student"
                     >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-5 h-5" />
                     </button>
                 </div>
             ) : null
@@ -169,17 +166,9 @@ export default function StudentsPage() {
     };
 
     const handleDeleteConfirm = async () => {
+        if (!selectedStudent || !token) return;
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/students/${selectedStudent?.id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || 'Failed to delete student');
-            }
-
+            await api.org.deleteStudent(selectedStudent.id, token);
             showToast('Student removed successfully', 'success');
             setIsDeleteDialogOpen(false);
             fetchStudents();

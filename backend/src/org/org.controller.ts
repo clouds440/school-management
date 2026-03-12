@@ -1,5 +1,5 @@
 import { Controller, Get, Patch, Post, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
-import { SupportTopic } from '@prisma/client';
+import { Role, SupportTopic } from '../common/enums';
 
 import { OrgService } from './org.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -19,6 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
 import * as path from 'path';
+import { OrgId } from '../common/decorators/org-id.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('org')
@@ -26,26 +27,23 @@ export class OrgController {
     constructor(private readonly orgService: OrgService) { }
 
     @Get('stats')
-    getStats(@Request() req: AuthenticatedRequest) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.getStats(req.user.organizationId, req.user);
+    getStats(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
+        return this.orgService.getStats(orgId, req.user);
     }
 
     // --- Settings ---
     @Get('settings')
-    getSettings(@Request() req: AuthenticatedRequest) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.getSettings(req.user.organizationId);
+    getSettings(@OrgId() orgId: string) {
+        return this.orgService.getSettings(orgId);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Patch('settings')
-    updateSettings(@Request() req: AuthenticatedRequest, @Body() updateSettingsDto: UpdateSettingsDto) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.updateSettings(req.user.organizationId, updateSettingsDto);
+    updateSettings(@OrgId() orgId: string, @Body() updateSettingsDto: UpdateSettingsDto) {
+        return this.orgService.updateSettings(orgId, updateSettingsDto);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Patch('settings/logo')
     @UseInterceptors(FileInterceptor('file', {
         // Explicitly use disk storage so file.path is populated.
@@ -68,9 +66,9 @@ export class OrgController {
     }))
     async updateLogo(
         @UploadedFile() file: Express.Multer.File,
+        @OrgId() orgId: string,
         @Request() req: AuthenticatedRequest,
     ) {
-        if (!req.user.organizationId) throw new Error('No organization');
 
         if (!file) {
             throw new BadRequestException('No file provided');
@@ -86,151 +84,131 @@ export class OrgController {
             );
         }
 
-        return this.orgService.updateLogo(req.user.organizationId, file, req.user.id);
+        return this.orgService.updateLogo(orgId, file, req.user.id);
     }
 
 
     @Post('support')
     submitSupportTicket(
-        @Request() req: AuthenticatedRequest,
+        @OrgId() orgId: string,
         @Body() body: { topic: SupportTopic, message: string }
     ) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.submitSupportTicket(req.user.organizationId, body.topic, body.message);
+        return this.orgService.submitSupportTicket(orgId, body.topic as SupportTopic, body.message);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Patch('reapply')
-    reapply(@Request() req: AuthenticatedRequest) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.reapply(req.user.organizationId);
+    reapply(@OrgId() orgId: string) {
+        return this.orgService.reapply(orgId);
     }
 
 
     // --- Teachers ---
-    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Get('teachers')
-    getTeachers(@Request() req: AuthenticatedRequest) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.getTeachers(req.user.organizationId);
+    getTeachers(@OrgId() orgId: string) {
+        return this.orgService.getTeachers(orgId);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Get('teachers/:id')
-    getTeacher(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.getTeacher(req.user.organizationId, id);
+    getTeacher(@OrgId() orgId: string, @Param('id') id: string) {
+        return this.orgService.getTeacher(orgId, id);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Post('teachers')
-    createTeacher(@Request() req: AuthenticatedRequest, @Body() createTeacherDto: CreateTeacherDto) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.createTeacher(req.user.organizationId, createTeacherDto, req.user);
+    createTeacher(@OrgId() orgId: string, @Body() createTeacherDto: CreateTeacherDto, @Request() req: AuthenticatedRequest) {
+        return this.orgService.createTeacher(orgId, createTeacherDto, req.user);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Patch('teachers/:id')
-    updateTeacher(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateTeacherDto: UpdateTeacherDto) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.updateTeacher(req.user.organizationId, id, updateTeacherDto, req.user);
+    updateTeacher(@OrgId() orgId: string, @Param('id') id: string, @Body() updateTeacherDto: UpdateTeacherDto, @Request() req: AuthenticatedRequest) {
+        return this.orgService.updateTeacher(orgId, id, updateTeacherDto, req.user);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Delete('teachers/:id')
-    deleteTeacher(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.deleteTeacher(req.user.organizationId, id, req.user);
+    deleteTeacher(@OrgId() orgId: string, @Param('id') id: string, @Request() req: AuthenticatedRequest) {
+        return this.orgService.deleteTeacher(orgId, id, req.user);
     }
 
     // --- Courses ---
     @Get('courses')
-    getCourses(@Request() req: AuthenticatedRequest) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.getCourses(req.user.organizationId);
+    getCourses(@OrgId() orgId: string) {
+        return this.orgService.getCourses(orgId);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Post('courses')
-    createCourse(@Request() req: AuthenticatedRequest, @Body() createCourseDto: CreateCourseDto) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.createCourse(req.user.organizationId, createCourseDto);
+    createCourse(@OrgId() orgId: string, @Body() createCourseDto: CreateCourseDto) {
+        return this.orgService.createCourse(orgId, createCourseDto);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
     @Patch('courses/:id')
-    updateCourse(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.updateCourse(req.user.organizationId, id, updateCourseDto);
+    updateCourse(@OrgId() orgId: string, @Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
+        return this.orgService.updateCourse(orgId, id, updateCourseDto);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Delete('courses/:id')
-    deleteCourse(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.deleteCourse(req.user.organizationId, id);
+    deleteCourse(@OrgId() orgId: string, @Param('id') id: string) {
+        return this.orgService.deleteCourse(orgId, id);
     }
 
     // --- Sections ---
     @Get('sections')
-    getSections(@Request() req: AuthenticatedRequest) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.getSections(req.user.organizationId);
+    getSections(@OrgId() orgId: string) {
+        return this.orgService.getSections(orgId);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Post('sections')
-    createSection(@Request() req: AuthenticatedRequest, @Body() createSectionDto: CreateSectionDto) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.createSection(req.user.organizationId, createSectionDto);
+    createSection(@OrgId() orgId: string, @Body() createSectionDto: CreateSectionDto) {
+        return this.orgService.createSection(orgId, createSectionDto);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
     @Patch('sections/:id')
-    updateSection(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateSectionDto: UpdateSectionDto) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.updateSection(req.user.organizationId, id, updateSectionDto);
+    updateSection(@OrgId() orgId: string, @Param('id') id: string, @Body() updateSectionDto: UpdateSectionDto) {
+        return this.orgService.updateSection(orgId, id, updateSectionDto);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Delete('sections/:id')
-    deleteSection(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.deleteSection(req.user.organizationId, id);
+    deleteSection(@OrgId() orgId: string, @Param('id') id: string) {
+        return this.orgService.deleteSection(orgId, id);
     }
 
     // --- Students ---
     @Get('students')
-    getStudents(@Request() req: AuthenticatedRequest) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.getStudents(req.user.organizationId);
+    getStudents(@OrgId() orgId: string) {
+        return this.orgService.getStudents(orgId);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
     @Get('students/:id')
-    getStudent(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.getStudent(req.user.organizationId, id);
+    getStudent(@OrgId() orgId: string, @Param('id') id: string) {
+        return this.orgService.getStudent(orgId, id);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
     @Post('students')
-    createStudent(@Request() req: AuthenticatedRequest, @Body() createStudentDto: CreateStudentDto) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.createStudent(req.user.organizationId, createStudentDto, req.user);
+    createStudent(@OrgId() orgId: string, @Body() createStudentDto: CreateStudentDto, @Request() req: AuthenticatedRequest) {
+        return this.orgService.createStudent(orgId, createStudentDto, req.user);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
     @Patch('students/:id')
-    updateStudent(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.updateStudent(req.user.organizationId, id, updateStudentDto, req.user);
+    updateStudent(@OrgId() orgId: string, @Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto, @Request() req: AuthenticatedRequest) {
+        return this.orgService.updateStudent(orgId, id, updateStudentDto, req.user);
     }
 
-    @Roles('ORG_ADMIN', 'ORG_MANAGER', 'TEACHER')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
     @Delete('students/:id')
-    deleteStudent(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
-        if (!req.user.organizationId) throw new Error('No organization');
-        return this.orgService.deleteStudent(req.user.organizationId, id);
+    deleteStudent(@OrgId() orgId: string, @Param('id') id: string) {
+        return this.orgService.deleteStudent(orgId, id);
     }
 }

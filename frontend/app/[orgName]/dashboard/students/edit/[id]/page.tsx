@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { Loader2, UserPlus } from 'lucide-react';
-import { api } from '@/src/lib/api';
+import { api } from '@/lib/api';
 import StudentForm from '@/components/forms/StudentForm';
 import { useToast } from '@/context/ToastContext';
-import { Student } from '@/types';
+import { Student, Role } from '@/types';
 
 export default function EditStudentPage() {
     const { user, token, loading: authLoading } = useAuth();
@@ -29,7 +29,7 @@ export default function EditStudentPage() {
 
         const fetchStudent = async () => {
             // Role guard
-            if (!user || (user.role !== 'ORG_ADMIN' && user.role !== 'ORG_MANAGER' && user.role !== 'TEACHER')) {
+            if (!user || (user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER && user.role !== Role.TEACHER)) {
                 if (isMounted) router.replace(`/${orgSlug}/dashboard`);
                 return;
             }
@@ -39,10 +39,10 @@ export default function EditStudentPage() {
                 if (isMounted) {
                     setStudentData(data);
                 }
-            } catch (err: any) {
+            } catch (error: unknown) {
                 if (!isMounted) return;
 
-                showToast(err.message || 'Failed to load student.', 'error');
+                showToast(error instanceof Error ? error.message : 'Failed to load student.', 'error');
                 router.replace(`/${orgSlug}/dashboard/students`);
             } finally {
                 if (isMounted) setDataLoading(false);

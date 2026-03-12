@@ -1,5 +1,6 @@
 import { UnauthorizedException, NotFoundException, Injectable } from '@nestjs/common';
-import { PrismaClient, Organization, OrgStatus, Role } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { OrgStatus, Role, SupportTopic } from '../common/enums';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth/auth.service';
 
@@ -20,7 +21,7 @@ export class AdminService {
             include: {
 
                 users: {
-                    where: { role: 'ORG_ADMIN' },
+                    where: { role: Role.ORG_ADMIN },
                     select: { email: true },
                     take: 1
                 }
@@ -43,12 +44,12 @@ export class AdminService {
         }
         await prisma.organization.update({
             where: { id },
-            data: { status: 'APPROVED' }
+            data: { status: OrgStatus.APPROVED }
         });
 
         // Resolve pending "Account status" tickets for this organization
         return prisma.supportTicket.updateMany({
-            where: { organizationId: id, isResolved: false, topic: 'ACCOUNT_STATUS' },
+            where: { organizationId: id, isResolved: false, topic: SupportTopic.ACCOUNT_STATUS },
             data: { isResolved: true }
         });
     }
@@ -64,14 +65,14 @@ export class AdminService {
         await prisma.organization.update({
             where: { id },
             data: {
-                status: 'REJECTED',
+                status: OrgStatus.REJECTED,
                 statusMessage: reason
             }
         });
 
         // Resolve pending "Account status" tickets for this organization
         return prisma.supportTicket.updateMany({
-            where: { organizationId: id, isResolved: false, topic: 'ACCOUNT_STATUS' },
+            where: { organizationId: id, isResolved: false, topic: SupportTopic.ACCOUNT_STATUS },
             data: { isResolved: true }
         });
     }
@@ -86,14 +87,14 @@ export class AdminService {
         await prisma.organization.update({
             where: { id },
             data: {
-                status: 'SUSPENDED',
+                status: OrgStatus.SUSPENDED,
                 statusMessage: reason,
             },
         });
 
         // Resolve pending "Account status" tickets for this organization
         return prisma.supportTicket.updateMany({
-            where: { organizationId: id, isResolved: false, topic: 'ACCOUNT_STATUS' },
+            where: { organizationId: id, isResolved: false, topic: SupportTopic.ACCOUNT_STATUS },
             data: { isResolved: true }
         });
     }
@@ -113,12 +114,12 @@ export class AdminService {
 
     async getAdminStats() {
         const [pending, approved, rejected, suspended, tickets, platformAdmins] = await Promise.all([
-            prisma.organization.count({ where: { status: 'PENDING' } }),
-            prisma.organization.count({ where: { status: 'APPROVED' } }),
-            prisma.organization.count({ where: { status: 'REJECTED' } }),
-            prisma.organization.count({ where: { status: 'SUSPENDED' } }),
+            prisma.organization.count({ where: { status: OrgStatus.PENDING } }),
+            prisma.organization.count({ where: { status: OrgStatus.APPROVED } }),
+            prisma.organization.count({ where: { status: OrgStatus.REJECTED } }),
+            prisma.organization.count({ where: { status: OrgStatus.SUSPENDED } }),
             prisma.supportTicket.count({ where: { isResolved: false } }),
-            prisma.user.count({ where: { role: 'PLATFORM_ADMIN' } }),
+            prisma.user.count({ where: { role: Role.PLATFORM_ADMIN } }),
         ]);
 
         return {
@@ -142,7 +143,7 @@ export class AdminService {
     // --- Platform Admins ---
     async getPlatformAdmins() {
         return prisma.user.findMany({
-            where: { role: 'PLATFORM_ADMIN' },
+            where: { role: Role.PLATFORM_ADMIN },
             select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true }
         });
     }
@@ -158,17 +159,17 @@ export class AdminService {
                 password: hashedPassword,
                 name: data.name,
                 phone: data.phone,
-                role: 'PLATFORM_ADMIN',
+                role: Role.PLATFORM_ADMIN,
             },
             select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true }
         });
     }
 
     async updatePlatformAdmin(id: string, data: UpdatePlatformAdminDto) {
-        const admin = await prisma.user.findUnique({ where: { id, role: 'PLATFORM_ADMIN' } });
+        const admin = await prisma.user.findUnique({ where: { id, role: Role.PLATFORM_ADMIN } });
         if (!admin) throw new NotFoundException('Platform admin not found');
 
-        const updateData: any = {};
+        const updateData: Prisma.UserUpdateInput = {};
         if (data.name) updateData.name = data.name;
         if (data.email) updateData.email = data.email;
         if (data.phone) updateData.phone = data.phone;
@@ -184,7 +185,7 @@ export class AdminService {
     }
 
     async deletePlatformAdmin(id: string) {
-        const admin = await prisma.user.findUnique({ where: { id, role: 'PLATFORM_ADMIN' } });
+        const admin = await prisma.user.findUnique({ where: { id, role: Role.PLATFORM_ADMIN } });
         if (!admin) throw new NotFoundException('Platform admin not found');
 
         await prisma.user.delete({ where: { id } });
@@ -196,7 +197,7 @@ export class AdminService {
     async changeAdminPassword(userId: string, oldPass: string, newPass: string) {
 
         const user = await prisma.user.findUnique({ where: { id: userId } });
-        if (!user || (user.role !== 'SUPER_ADMIN' && user.role !== 'PLATFORM_ADMIN')) {
+        if (!user || (user.role !== Role.SUPER_ADMIN && user.role !== Role.PLATFORM_ADMIN)) {
             throw new UnauthorizedException('Admin not found');
         }
 

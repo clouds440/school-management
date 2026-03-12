@@ -4,6 +4,7 @@ import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClient, User, Organization, Teacher } from '@prisma/client';
+import { Role, OrgStatus } from '../common/enums';
 
 export type TokenUser = User & {
     organization?: Organization | null;
@@ -43,7 +44,7 @@ export class AuthService {
                 data: {
                     email: registerDto.email,
                     password: hashedPassword,
-                    role: 'ORG_ADMIN',
+                    role: Role.ORG_ADMIN,
                     organizationId: org.id,
                     name: registerDto.name, // Set name to Org name for ORG_ADMIN
                 },
@@ -93,7 +94,7 @@ export class AuthService {
             orgName: user.organization?.name || null,
             orgId: user.organizationId,
             orgLogoUrl: user.organization?.logoUrl || null,
-            status: user.organization ? user.organization.status : 'APPROVED', // Keep SUPER_ADMIN as APPROVED
+            status: user.organization ? user.organization.status : OrgStatus.APPROVED, // Keep SUPER_ADMIN as APPROVED
             isFirstLogin: user.isFirstLogin,
             tokenVersion: user.tokenVersion
         };

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldAlert, ShieldCheck, ShieldOff, Search, Check, X, Building2, MapPin, Mail, Calendar, MessageSquare } from 'lucide-react';
-import { api, Organization, AdminStats, OrgStatus } from '@/src/lib/api';
+import { ShieldAlert, ShieldCheck, ShieldOff, Check, X, Building2, MapPin, Mail, Calendar, LucideIcon } from 'lucide-react';
+import { api } from '@/lib/api';
+import { Organization, AdminStats, OrgStatus, Role } from '@/types';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
@@ -16,7 +17,7 @@ export default function OrganizationsPage() {
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [fetching, setFetching] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [activeStatusTab, setActiveStatusTab] = useState<OrgStatus>('PENDING');
+    const [activeStatusTab, setActiveStatusTab] = useState<OrgStatus>(OrgStatus.PENDING);
     const [searchQuery, setSearchQuery] = useState('');
     const [orgTypeFilter, setOrgTypeFilter] = useState<string>('ALL');
     const [stats, setStats] = useState<AdminStats | null>(null);
@@ -27,7 +28,7 @@ export default function OrganizationsPage() {
     const [reason, setReason] = useState('');
 
     useEffect(() => {
-        if (!loading && user && (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN') && token) {
+        if (!loading && user && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && token) {
             fetchOrganizations();
             api.admin.getAdminStats(token).then(setStats).catch(console.error);
         }
@@ -102,11 +103,11 @@ export default function OrganizationsPage() {
         return matchesSearch && matchesType;
     });
 
-    const statusTabs: { id: OrgStatus, label: string, icon: any, color: string, bg: string, count?: number }[] = [
-        { id: 'PENDING', label: 'Pending', icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-600/10', count: stats?.PENDING },
-        { id: 'APPROVED', label: 'Approved', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-600/10', count: stats?.APPROVED },
-        { id: 'REJECTED', label: 'Rejected', icon: ShieldOff, color: 'text-red-600', bg: 'bg-red-600/10', count: stats?.REJECTED },
-        { id: 'SUSPENDED', label: 'Suspended', icon: ShieldAlert, color: 'text-gray-600', bg: 'bg-gray-600/10', count: stats?.SUSPENDED },
+    const statusTabs: { id: OrgStatus, label: string, icon: LucideIcon, color: string, bg: string, count?: number }[] = [
+        { id: OrgStatus.PENDING, label: 'Pending', icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-600/10', count: stats?.PENDING },
+        { id: OrgStatus.APPROVED, label: 'Approved', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-600/10', count: stats?.APPROVED },
+        { id: OrgStatus.REJECTED, label: 'Rejected', icon: ShieldOff, color: 'text-red-600', bg: 'bg-red-600/10', count: stats?.REJECTED },
+        { id: OrgStatus.SUSPENDED, label: 'Suspended', icon: ShieldAlert, color: 'text-gray-600', bg: 'bg-gray-600/10', count: stats?.SUSPENDED },
     ];
 
     const columns: Column<Organization>[] = [
@@ -158,7 +159,7 @@ export default function OrganizationsPage() {
             header: 'Actions',
             accessor: (row) => (
                 <div className="flex flex-col gap-2 shrink-0 sm:items-end w-32">
-                    {activeStatusTab === 'PENDING' ? (
+                    {activeStatusTab === OrgStatus.PENDING ? (
                         <>
                             <button
                                 onClick={() => handleApprove(row.id, row.name)}
@@ -179,7 +180,7 @@ export default function OrganizationsPage() {
                                 Reject
                             </button>
                         </>
-                    ) : activeStatusTab === 'APPROVED' ? (
+                    ) : activeStatusTab === OrgStatus.APPROVED ? (
                         <div className="flex flex-col gap-2 w-full">
                             <div className="px-3 py-1.5 bg-green-50 text-green-700 rounded-sm font-bold text-[10px] flex justify-center items-center gap-1 border border-green-100">
                                 <ShieldCheck className="w-3 h-3" />
@@ -194,7 +195,7 @@ export default function OrganizationsPage() {
                                 Suspend
                             </button>
                         </div>
-                    ) : activeStatusTab === 'REJECTED' ? (
+                    ) : activeStatusTab === OrgStatus.REJECTED ? (
                         <>
                             <button
                                 onClick={() => handleApprove(row.id, row.name)}

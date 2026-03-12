@@ -40,12 +40,14 @@ enum TeacherStatus {
   ACTIVE
   SUSPENDED
   ON_LEAVE
+  DELETED
 }
 
 enum StudentStatus {
   ACTIVE
   SUSPENDED
   ALUMNI
+  DELETED
 }
 
 model Organization {

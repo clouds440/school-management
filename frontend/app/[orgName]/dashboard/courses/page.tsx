@@ -2,15 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { BookOpen, Plus, Edit2, Trash2, LibraryBig } from 'lucide-react';
+import { Plus, Edit2, Trash2, LibraryBig } from 'lucide-react';
 import { DataTable } from '@/components/ui/DataTable';
+import { api } from '@/lib/api';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Button } from '@/components/ui/Button';
 import { usePathname, useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
-import { Course } from '@/types';
+import { Course, Role } from '@/types';
 
 export default function CoursesPage() {
     const { token, user } = useAuth();
@@ -32,17 +33,15 @@ export default function CoursesPage() {
     const fetchCourses = useCallback(async () => {
         if (!token) return;
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/courses`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await response.json();
+            const data = await api.org.getCourses(token);
             setCourses(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error(err);
+            showToast('Failed to load courses', 'error');
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, [token, showToast]);
 
     useEffect(() => {
         fetchCourses();
@@ -50,22 +49,10 @@ export default function CoursesPage() {
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!editingCourse || !token) return;
         setIsSaving(true);
         try {
-            const submitData = { ...editFormData };
-
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/courses/${editingCourse?.id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(submitData)
-            });
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || 'Failed to update course details');
-            }
+            await api.org.updateCourse(editingCourse.id, editFormData, token);
             setEditModalOpen(false);
             showToast('Course updated successfully', 'success');
             fetchCourses();
@@ -77,17 +64,10 @@ export default function CoursesPage() {
     };
 
     const handleDeleteConfirm = async () => {
-        if (!deletingCourse) return;
+        if (!deletingCourse || !token) return;
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/courses/${deletingCourse.id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || 'Failed to delete course');
-            }
-            showToast('Course deleted permanently', 'success');
+            await api.org.deleteCourse(deletingCourse.id, token);
+            showToast('Course deleted successfully', 'success');
             setDeleteDialogOpen(false);
             fetchCourses();
         } catch (err: unknown) {
@@ -130,8 +110,8 @@ export default function CoursesPage() {
         {
             header: 'Actions',
             accessor: (row: Course) => {
-                const isAdmin = user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER';
-                const isTeacher = user?.role === 'TEACHER';
+                const isAdmin = user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER;
+                const isTeacher = user?.role === Role.TEACHER;
 
                 return (
                     <div className="flex gap-3">

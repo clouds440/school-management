@@ -3,7 +3,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
-import { api } from '@/src/lib/api';
+import { api } from '@/lib/api';
+import { Role } from '@/types';
 
 
 export interface JwtPayload {
@@ -14,7 +15,7 @@ export interface JwtPayload {
     orgSlug?: string;
     orgName?: string;
     orgLogoUrl?: string | null;
-    role?: 'SUPER_ADMIN' | 'PLATFORM_ADMIN' | 'ORG_ADMIN' | 'ORG_MANAGER' | 'TEACHER' | 'STUDENT';
+    role?: Role;
     designation?: string;
     type?: string;
     status?: string;
@@ -67,17 +68,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (user) {
                 // If it's first login and admin, always force change password
-                if ((user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN') && user.isFirstLogin && pathname !== '/admin/change-password') {
+                if ((user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && user.isFirstLogin && pathname !== '/admin/change-password') {
                     router.replace('/admin/change-password');
                     return;
                 }
 
                 // Redirect away from guest paths (login/register/home)
                 if (isGuestPath) {
-                    if (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN') {
+                    if (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) {
                         router.replace('/admin/dashboard');
                     } else if (user.orgSlug) {
-                        if (user.role === 'STUDENT' && user.name) {
+                        if (user.role === Role.STUDENT && user.name) {
                             const nameSlug = user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
                             router.replace(`/${user.orgSlug}/${nameSlug}`);
                         } else {
@@ -88,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 // Cross-role protection
-                if (isAdminPath && user.role !== 'SUPER_ADMIN' && user.role !== 'PLATFORM_ADMIN') {
+                if (isAdminPath && user.role !== Role.SUPER_ADMIN && user.role !== Role.PLATFORM_ADMIN) {
                     if (user.orgSlug) {
                         router.replace(`/${user.orgSlug}/dashboard`);
                     } else {
@@ -97,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     return;
                 }
 
-                if (isUserPath && (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN')) {
+                if (isUserPath && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN)) {
                     router.replace('/admin/dashboard');
                     return;
                 }
@@ -107,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     const firstSegment = pathname.split('/')[1];
 
                     // Check if student is on their personalized page or dashboard (redirect to personalized if on dashboard)
-                    if (user.role === 'STUDENT') {
+                    if (user.role === Role.STUDENT) {
                         const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : '';
 
                         if (firstSegment !== user.orgSlug) {
@@ -122,14 +123,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 return;
                             }
                         }
-                    } else if (user.role === 'ORG_ADMIN' || user.role === 'ORG_MANAGER' || user.role === 'TEACHER') {
+                    } else if (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER || user.role === Role.TEACHER) {
                         if (firstSegment !== user.orgSlug) {
                             router.replace(`/${user.orgSlug}/dashboard`);
                             return;
                         }
 
                         // Restrict TEACHER from accessing settings and teachers management pages
-                        if (user.role === 'TEACHER') {
+                        if (user.role === Role.TEACHER) {
                             const pathSegments = pathname.split('/');
                             if (pathSegments.includes('settings') || pathSegments.includes('teachers')) {
                                 router.replace(`/${user.orgSlug}/dashboard`);
@@ -155,20 +156,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const orgSuffix = user.orgName || 'EduManage';
 
         switch (user.role) {
-            case 'SUPER_ADMIN':
-            case 'PLATFORM_ADMIN':
+            case Role.SUPER_ADMIN:
+            case Role.PLATFORM_ADMIN:
                 document.title = `Admin – EduManage`;
                 break;
-            case 'ORG_ADMIN':
+            case Role.ORG_ADMIN:
                 document.title = `Admin – ${orgSuffix}`;
                 break;
-            case 'ORG_MANAGER':
+            case Role.ORG_MANAGER:
                 document.title = `${user.name || 'Manager'} – ${orgSuffix}`;
                 break;
-            case 'TEACHER':
+            case Role.TEACHER:
                 document.title = `${user.name || 'Teacher'} – ${orgSuffix}`;
                 break;
-            case 'STUDENT':
+            case Role.STUDENT:
                 document.title = `${user.name || 'Student'} – ${orgSuffix}`;
                 break;
             default:

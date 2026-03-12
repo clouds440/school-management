@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldAlert, ShieldCheck, ShieldOff, Search, Check, X, MessageSquare, Calendar, CheckCircle2 } from 'lucide-react';
-import { api, SupportTicket } from '@/src/lib/api';
+import { Check, MessageSquare, Calendar, CheckCircle2 } from 'lucide-react';
+import { api } from '@/lib/api';
+import { SupportTicket } from '@/types';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';

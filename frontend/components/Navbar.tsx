@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { School, LogIn, UserPlus, Menu, X, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
+import { Role } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? '';
 
@@ -60,9 +61,9 @@ export default function Navbar() {
                         {!pathname.includes('/dashboard') && (
                             <Link
                                 href={
-                                    user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN'
+                                    user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN
                                         ? '/admin/dashboard'
-                                        : user.role === 'STUDENT' && user.name
+                                        : user.role === Role.STUDENT && user.name
                                             ? `/${user.orgSlug}/${user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`
                                             : `/${user.orgSlug}/dashboard`
                                 }

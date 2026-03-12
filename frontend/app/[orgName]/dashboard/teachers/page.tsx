@@ -8,8 +8,9 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { usePathname, useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
-import { Teacher } from '@/types';
+import { Teacher, Role } from '@/types';
 import { Button } from '@/components/ui/Button';
+import { api } from '@/lib/api';
 
 export default function TeachersPage() {
     const { token, user } = useAuth();
@@ -24,21 +25,16 @@ export default function TeachersPage() {
     const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
 
     useEffect(() => {
-        if (user && user.role !== 'ORG_ADMIN' && user.role !== 'ORG_MANAGER') {
+        if (user && user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER) {
             router.replace(`/${user.orgSlug || pathname.split('/')[1]}/dashboard`);
         }
     }, [user, router, pathname]);
 
     const fetchData = useCallback(async () => {
-        if (!token || (user?.role !== 'ORG_ADMIN' && user?.role !== 'ORG_MANAGER')) return;
+        if (!token || (user?.role !== Role.ORG_ADMIN && user?.role !== Role.ORG_MANAGER)) return;
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/teachers`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                setTeachers(await response.json());
-            }
+            const data = await api.org.getTeachers(token);
+            setTeachers(data);
         } catch (err) {
             console.error(err);
         } finally {
@@ -51,16 +47,9 @@ export default function TeachersPage() {
     }, [fetchData]);
 
     const handleDeleteConfirm = async () => {
-        if (!deletingTeacher) return;
+        if (!deletingTeacher || !token) return;
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/teachers/${deletingTeacher.id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || 'Failed to delete teacher');
-            }
+            await api.org.deleteTeacher(deletingTeacher.id, token);
             showToast('Teacher removed from organization', 'success');
             setDeleteDialogOpen(false);
             fetchData();

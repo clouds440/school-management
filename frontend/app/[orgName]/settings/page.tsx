@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School, RefreshCw, ShieldOff, Palette } from 'lucide-react';
-
 import { BackButton } from '@/components/ui/BackButton';
-import { api, Organization } from '@/src/lib/api';
+import { api } from '@/lib/api';
+import { Organization } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -90,7 +90,7 @@ export default function SettingsPage() {
             if (pendingLogoFile) {
                 const logoRes = await api.org.uploadLogo(pendingLogoFile, token);
                 // Update local org data so the avatar reflects the new URL
-                setOrgData(prev => prev ? { ...prev, logoUrl: logoRes.logoUrl, avatarUpdatedAt: logoRes.avatarUpdatedAt } : prev);
+                setOrgData((prev: Organization | null) => prev ? { ...prev, logoUrl: logoRes.logoUrl, avatarUpdatedAt: logoRes.avatarUpdatedAt } : prev);
                 setPendingLogoFile(null);
             }
 
@@ -187,9 +187,9 @@ export default function SettingsPage() {
                             </p>
                         )}
                     </div>
- 
-                    {/* Branding Section */}
-                    <div className="py-6 border-b border-white/10">
+
+                    {/* Branding Section (Disabled for now due to UI issues) */}
+                    {/* <div className="py-6 border-b border-white/10">
                         <div className="flex items-center gap-2 mb-6">
                             <Palette className="w-5 h-5 text-primary" />
                             <h3 className="text-lg font-black text-card-text uppercase tracking-tight">Organization Branding</h3>
@@ -244,7 +244,7 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
                         <div>

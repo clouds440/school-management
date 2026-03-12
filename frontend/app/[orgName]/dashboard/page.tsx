@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, Users, GraduationCap, ShieldOff, RefreshCw, Mail, LayoutDashboard, Building } from 'lucide-react';
-
+import { Clock, Users, GraduationCap, ShieldOff, RefreshCw, Mail, LayoutDashboard, Building, BookOpen } from 'lucide-react';
 import Link from 'next/link';
-
 import { useAuth } from '@/context/AuthContext';
-import { api, Organization } from '@/src/lib/api';
+import { api } from '@/lib/api';
+import { Organization, OrgStats } from '@/types';
 
 
 export default function DashboardPage() {
@@ -15,6 +14,7 @@ export default function DashboardPage() {
     const router = useRouter();
     const [orgName, setOrgName] = useState('Organization');
     const [orgData, setOrgData] = useState<Organization | null>(null);
+    const [stats, setStats] = useState<OrgStats | null>(null);
     const [fetchingData, setFetchingData] = useState(true);
 
 
@@ -22,17 +22,22 @@ export default function DashboardPage() {
         if (!payload || !token) return;
 
         setFetchingData(true);
-        // Try to fetch actual org name for better display format than slug
-        api.org.getSettings(token)
-            .then(data => {
-                setOrgData(data);
-                if (data?.name) setOrgName(data.name);
+        // Fetch organization settings and stats in parallel
+        Promise.all([
+            api.org.getSettings(token),
+            api.org.getStats(token)
+        ])
+            .then(([settings, statsData]) => {
+                setOrgData(settings);
+                setStats(statsData);
+                if (settings?.name) setOrgName(settings.name);
                 else if (payload.orgSlug) {
                     const fallback = payload.orgSlug.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
                     setOrgName(fallback);
                 }
             })
-            .catch(() => {
+            .catch((err) => {
+                console.error("Failed to fetch dashboard data", err);
                 if (payload.orgSlug) {
                     const fallback = payload.orgSlug.split('-').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
                     setOrgName(fallback);
@@ -180,7 +185,41 @@ export default function DashboardPage() {
 
                                 {/* Stats Summary Section - Branded Mix */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1">
+                                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-xs font-black opacity-40 uppercase tracking-widest">Teachers</span>
+                                            <Users className="w-4 h-4 text-primary opacity-20" />
+                                        </div>
+                                        <span className="text-3xl font-black">{stats?.TEACHERS ?? 0}</span>
+                                    </div>
+
+                                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-xs font-black opacity-40 uppercase tracking-widest">Courses</span>
+                                            <BookOpen className="w-4 h-4 text-primary opacity-20" />
+                                        </div>
+                                        <span className="text-3xl font-black">{stats?.COURSES ?? 0}</span>
+                                    </div>
+
+                                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-xs font-black opacity-40 uppercase tracking-widest">Sections</span>
+                                            <LayoutDashboard className="w-4 h-4 text-primary opacity-20" />
+                                        </div>
+                                        <span className="text-3xl font-black">{stats?.SECTIONS ?? 0}</span>
+                                    </div>
+
+                                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-xs font-black opacity-40 uppercase tracking-widest">Students</span>
+                                            <GraduationCap className="w-4 h-4 text-primary opacity-20" />
+                                        </div>
+                                        <span className="text-3xl font-black">{stats?.STUDENTS ?? 0}</span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 col-span-1">
                                         <span className="text-xs font-black opacity-40 uppercase tracking-widest">System Status</span>
                                         <div className="flex items-center gap-2 text-primary font-bold">
                                             <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
@@ -188,17 +227,12 @@ export default function DashboardPage() {
                                         </div>
                                     </div>
 
-                                    <div className="p-6 bg-secondary text-secondary-text rounded-sm shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1 flex flex-col gap-1">
+                                    <div className="p-6 bg-secondary text-secondary-text rounded-sm shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1 flex flex-col gap-1 col-span-1">
                                         <span className="text-xs font-black opacity-60 uppercase tracking-widest">Active Role</span>
                                         <span className="text-xl font-black">{payload?.role?.replace('_', ' ')}</span>
                                     </div>
 
-                                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1">
-                                        <span className="text-xs font-black opacity-40 uppercase tracking-widest">Institution</span>
-                                        <span className="font-bold truncate">{orgName}</span>
-                                    </div>
-
-                                    <div className="p-6 bg-primary text-primary-text rounded-sm shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1 flex flex-col gap-1 text-center justify-center">
+                                    <div className="p-6 bg-primary text-primary-text rounded-sm shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1 flex flex-col gap-1 text-center justify-center col-span-1">
                                         <p className="text-[10px] font-bold opacity-80">Use symbols in the sidebar to navigate various sections.</p>
                                     </div>
                                 </div>

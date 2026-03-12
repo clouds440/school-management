@@ -1,5 +1,5 @@
 import { IsString, IsEmail, IsNotEmpty, IsOptional, IsNumber, MinLength, IsBoolean, Matches, IsDateString, IsArray, IsEnum } from 'class-validator';
-import { TeacherStatus } from '@prisma/client';
+import { TeacherStatus } from '../../common/enums';
 
 export class CreateTeacherDto {
     @IsEmail()

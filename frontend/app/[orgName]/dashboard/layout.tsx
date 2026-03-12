@@ -5,25 +5,26 @@ import { DashboardLayout, SidebarLink } from '@/components/ui/DashboardLayout';
 import { LayoutDashboard, Users, BookOpen, GraduationCap, MessageSquare, Settings, LibraryBig } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { usePathname, useRouter } from 'next/navigation';
-import { api, OrgStats } from '@/src/lib/api';
+import { api } from '@/lib/api';
+import { OrgStats, Role, OrgStatus } from '@/types';
 
 export default function OrgDashboardLayout({ children }: { children: React.ReactNode }) {
     const { user, token } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
     const [stats, setStats] = useState<OrgStats | null>(null);
-    const [isApproved, setIsApproved] = useState(user?.status === 'APPROVED' || user?.status === undefined);
+    const [isApproved, setIsApproved] = useState(user?.status === OrgStatus.APPROVED || user?.status === undefined);
     const orgSlug = pathname.split('/')[1] || user?.orgSlug || 'organization';
 
     useEffect(() => {
-        if (token && (user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER' || user?.role === 'STUDENT')) {
+        if (token && (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER || user?.role === Role.TEACHER || user?.role === Role.STUDENT)) {
             api.org.getStats(token)
                 .then(setStats)
                 .catch(err => console.error('Failed to fetch org stats:', err));
 
             api.org.getSettings(token)
                 .then((data) => {
-                    const approved = data.status === 'APPROVED';
+                    const approved = data.status === OrgStatus.APPROVED;
                     setIsApproved(approved);
 
                     if (!approved && pathname !== `/${orgSlug}/dashboard`) {

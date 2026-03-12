@@ -5,7 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { User, Mail, Lock, BookOpen, DollarSign, Phone, Plus, ShieldCheck, UserX, CalendarClock } from 'lucide-react';
 import Link from 'next/link';
-import { Section, Teacher } from '@/types';
+import { api } from '@/lib/api';
+import { Section, Teacher, TeacherStatus, Role } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -38,13 +39,13 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                 designation: initialData.designation || '',
                 subject: initialData.subject || '',
                 salary: initialData.salary?.toString() || '',
-                isManager: initialData.user?.role === 'ORG_MANAGER',
+                isManager: initialData.user?.role === Role.ORG_MANAGER,
                 department: initialData.department || '',
                 joiningDate: initialData.joiningDate ? new Date(initialData.joiningDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
                 address: initialData.address || '',
                 emergencyContact: initialData.emergencyContact || '',
                 bloodGroup: initialData.bloodGroup || '',
-                status: initialData.status || 'ACTIVE',
+                status: initialData.status || TeacherStatus.ACTIVE,
                 sectionIds: initialData.sections?.map(s => s.id) || []
             };
         }
@@ -63,7 +64,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
             address: '',
             emergencyContact: '',
             bloodGroup: '',
-            status: 'ACTIVE',
+            status: TeacherStatus.ACTIVE,
             sectionIds: [] as string[]
         };
     });
@@ -77,13 +78,8 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
 
     const fetchSections = async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/sections`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setSections(data);
-            }
+            const data = await api.org.getSections(token!);
+            setSections(data);
         } catch (error) {
             console.error('Failed to fetch sections', error);
         }
@@ -102,46 +98,16 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
         setIsSaving(true);
 
         try {
-            const url = teacherId 
-                ? `${process.env.NEXT_PUBLIC_API_URL}/org/teachers/${teacherId}` 
-                : `${process.env.NEXT_PUBLIC_API_URL}/org/teachers`;
-            
-            const method = teacherId ? 'PATCH' : 'POST';
-
-            const payload: any = {
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone || undefined,
-                education: formData.education || undefined,
-                designation: formData.designation || undefined,
-                subject: formData.subject || undefined,
-                salary: formData.salary ? Number(formData.salary) : undefined,
-                isManager: formData.isManager,
-                department: formData.department || undefined,
-                joiningDate: formData.joiningDate || undefined,
-                address: formData.address || undefined,
-                emergencyContact: formData.emergencyContact || undefined,
-                bloodGroup: formData.bloodGroup || undefined,
-                status: formData.status,
-                sectionIds: formData.sectionIds.length > 0 ? formData.sectionIds : undefined
+            const payload = {
+                ...formData,
+                salary: formData.salary ? Number(formData.salary) : null,
+                isManager: formData.isManager
             };
 
-            if (!teacherId || formData.password) {
-                payload.password = formData.password;
-            }
-
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || `Failed to ${teacherId ? 'update' : 'create'} teacher`);
+            if (teacherId) {
+                await api.org.updateTeacher(teacherId, payload, token!);
+            } else {
+                await api.org.createTeacher(payload, token!);
             }
 
             showToast(`Teacher account ${teacherId ? 'updated' : 'created'} successfully`, 'success');
@@ -158,220 +124,254 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
     }));
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div>
-                    <Label>Full Name</Label>
-                    <Input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        required
-                        icon={User}
-                        placeholder="John Doe"
-                    />
+        <form onSubmit={handleSubmit} className="space-y-12">
+            {/* Mandatory Information */}
+            <div className="bg-primary/5 p-6 rounded-sm border border-white/10">
+                <div className="mb-6">
+                    <h3 className="text-xl font-bold text-card-text flex items-center gap-2">
+                        <ShieldCheck className="w-6 h-6 text-primary" />
+                        Mandatory Information
+                    </h3>
+                    <p className="text-card-text/60 text-sm mt-1">These fields are required for administrative setup and account creation.</p>
                 </div>
 
-                <div>
-                    <Label>Email Address</Label>
-                    <Input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        icon={Mail}
-                        placeholder="john.doe@example.com"
-                    />
-                </div>
-
-                <div>
-                    <Label>{teacherId ? 'Update Password (Optional)' : 'Initial Password'}</Label>
-                    <Input
-                        type="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required={!teacherId}
-                        minLength={8}
-                        icon={Lock}
-                        placeholder={teacherId ? "Leave blank to keep current" : "Min 8 characters"}
-                    />
-                </div>
-
-                <div>
-                    <Label>Department</Label>
-                    <Input
-                        type="text"
-                        name="department"
-                        value={formData.department}
-                        onChange={handleChange}
-                        icon={BookOpen}
-                        placeholder="Science / Arts / Engineering"
-                    />
-                </div>
-
-                <div>
-                    <Label>Joining Date</Label>
-                    <Input
-                        type="date"
-                        name="joiningDate"
-                        value={formData.joiningDate}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
-
-                <div>
-                    <Label>Phone Number</Label>
-                    <Input
-                        type="text"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        icon={Phone}
-                        placeholder="+1 (555) 000-0000"
-                    />
-                </div>
-
-                <div>
-                    <Label>Education</Label>
-                    <Input
-                        type="text"
-                        name="education"
-                        value={formData.education}
-                        onChange={handleChange}
-                        icon={BookOpen}
-                        placeholder="M.S. Computer Science"
-                    />
-                </div>
-
-                <div>
-                    <Label>Designation</Label>
-                    <Input
-                        type="text"
-                        name="designation"
-                        value={formData.designation}
-                        onChange={handleChange}
-                        icon={User}
-                        placeholder="Senior Teacher"
-                    />
-                </div>
-
-                <div>
-                    <Label>Subject Specialization</Label>
-                    <Input
-                        type="text"
-                        name="subject"
-                        value={formData.subject}
-                        onChange={handleChange}
-                        icon={BookOpen}
-                        placeholder="E.g., Mathematics"
-                    />
-                </div>
-
-                <div>
-                    <Label>Base Salary</Label>
-                    <Input
-                        type="number"
-                        name="salary"
-                        value={formData.salary}
-                        onChange={handleChange}
-                        icon={DollarSign}
-                        placeholder="50000"
-                    />
-                </div>
-
-                <div className="md:col-span-2">
-                    <Label>Residential Address</Label>
-                    <Input
-                        type="text"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        icon={User}
-                        placeholder="123 Main St, City, Country"
-                    />
-                </div>
-
-                <div>
-                    <Label>Emergency Contact</Label>
-                    <Input
-                        type="text"
-                        name="emergencyContact"
-                        value={formData.emergencyContact}
-                        onChange={handleChange}
-                        icon={Phone}
-                        placeholder="Name - Relationship - Phone"
-                    />
-                </div>
-
-                <div>
-                    <Label>Blood Group</Label>
-                    <Input
-                        type="text"
-                        name="bloodGroup"
-                        value={formData.bloodGroup}
-                        onChange={handleChange}
-                        icon={Plus}
-                        placeholder="O+, A-, etc."
-                    />
-                </div>
-
-                <div>
-                    <Label>Status</Label>
-                    <CustomSelect
-                        options={[
-                            { value: 'ACTIVE', label: 'Active', icon: ShieldCheck },
-                            { value: 'SUSPENDED', label: 'Suspended', icon: UserX },
-                            { value: 'ON_LEAVE', label: 'On Leave', icon: CalendarClock }
-                        ]}
-                        value={formData.status}
-                        onChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
-                        placeholder="Select Status"
-                        icon={
-                            formData.status === 'ACTIVE' ? ShieldCheck :
-                                formData.status === 'SUSPENDED' ? UserX :
-                                    CalendarClock
-                        }
-                    />
-                </div>
-
-                <div className="md:col-span-2 space-y-4">
-                    <h3 className="text-lg font-bold text-card-text border-b border-white/10 pb-2 mb-2 mt-4">Section Assignment</h3>
-                    <p className="text-sm text-card-text/60 mb-2 pl-1 text-[11px] uppercase tracking-widest font-bold">Select the sections this teacher is assigned to teach</p>
-
-                    <div className="max-w-xl">
-                        <CustomMultiSelect
-                            options={sectionOptions}
-                            values={formData.sectionIds}
-                            onChange={(vals) => setFormData(prev => ({ ...prev, sectionIds: vals }))}
-                            icon={BookOpen}
-                            placeholder="Select Sections"
-                        />
-                    </div>
-                </div>
-
-                <div className="md:col-span-2 mt-4 p-8 bg-primary/5 border border-white/10 rounded-sm flex items-start space-x-6">
-                    <div className="flex items-center h-8">
-                        <input
-                            id="isManager"
-                            name="isManager"
-                            type="checkbox"
-                            checked={formData.isManager}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2">
+                        <Label>Full Name *</Label>
+                        <Input
+                            type="text"
+                            name="name"
+                            value={formData.name}
                             onChange={handleChange}
-                            disabled={user?.role === 'ORG_MANAGER'}
-                            className="w-6 h-6 text-primary border-white/20 rounded-sm focus:ring-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-primary/5"
+                            required={!teacherId}
+                            icon={User}
+                            placeholder="John Doe"
                         />
                     </div>
-                    <div className="flex flex-col">
-                        <label htmlFor="isManager" className={`text-lg font-bold text-card-text ${user?.role === 'ORG_MANAGER' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-                            Make Org-Manager
-                        </label>
-                        <p className={`text-card-text/60 font-medium mt-1 ${user?.role === 'ORG_MANAGER' ? 'opacity-50' : ''}`}>
-                            Org-Managers have full access to organization settings and can manage other teachers.
-                        </p>
+
+                    <div>
+                        <Label>Email Address *</Label>
+                        <Input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required={!teacherId}
+                            disabled={!!teacherId}
+                            icon={Mail}
+                            placeholder="john.doe@example.com"
+                            className={teacherId ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                        />
+                        {teacherId && <p className="text-[10px] text-primary/60 mt-1 font-bold italic uppercase">Email cannot be changed after creation</p>}
+                    </div>
+
+                    <div>
+                        <Label>{teacherId ? 'Update Password (Optional)' : 'Initial Password *'}</Label>
+                        <Input
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            required={!teacherId}
+                            minLength={8}
+                            icon={Lock}
+                            placeholder={teacherId ? "Leave blank to keep current" : "Min 8 characters"}
+                        />
+                    </div>
+
+                    <div>
+                        <Label>Joining Date *</Label>
+                        <Input
+                            type="date"
+                            name="joiningDate"
+                            value={formData.joiningDate}
+                            onChange={handleChange}
+                            required={!teacherId}
+                        />
+                    </div>
+
+                    <div>
+                        <Label>Status *</Label>
+                        <CustomSelect
+                            options={[
+                                { value: TeacherStatus.ACTIVE, label: 'Active', icon: ShieldCheck },
+                                { value: TeacherStatus.SUSPENDED, label: 'Suspended', icon: UserX },
+                                { value: TeacherStatus.ON_LEAVE, label: 'On Leave', icon: CalendarClock }
+                            ]}
+                            value={formData.status}
+                            onChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
+                            placeholder="Select Status"
+                            icon={
+                                formData.status === TeacherStatus.ACTIVE ? ShieldCheck :
+                                    formData.status === TeacherStatus.SUSPENDED ? UserX :
+                                        CalendarClock
+                            }
+                        />
+                    </div>
+
+                    <div className="md:col-span-2 mt-4 p-6 bg-primary/5 border border-white/10 rounded-sm flex items-start space-x-6">
+                        <div className="flex items-center h-8">
+                            <input
+                                id="isManager"
+                                name="isManager"
+                                type="checkbox"
+                                checked={formData.isManager}
+                                onChange={handleChange}
+                                disabled={user?.role === Role.ORG_MANAGER}
+                                className="w-6 h-6 text-primary border-white/20 rounded-sm focus:ring-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-primary/5"
+                            />
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="isManager" className={`text-lg font-bold text-card-text ${user?.role === Role.ORG_MANAGER ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                                Make Org-Manager
+                            </label>
+                            <p className="text-card-text/60 font-medium text-sm mt-1">
+                                Org-Managers have full access to organization settings and can manage other teachers.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Optional / Profile Details */}
+            <div className="p-6 rounded-sm border border-white/5 bg-white/2">
+                <div className="mb-6">
+                    <h3 className="text-xl font-bold text-card-text flex items-center gap-2">
+                        <User className="w-6 h-6 text-card-text/60" />
+                        Optional Profile Details
+                    </h3>
+                    <p className="text-card-text/60 text-sm mt-1">These fields can be filled now or updated by the teacher later from their profile.</p>
+                </div>
+
+                <div className="space-y-8">
+                    {/* Academic Details */}
+                    <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary/60 mb-4 border-b border-white/5 pb-1">Specialization & Department</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <Label>Department</Label>
+                                <Input
+                                    type="text"
+                                    name="department"
+                                    value={formData.department}
+                                    onChange={handleChange}
+                                    icon={BookOpen}
+                                    placeholder="Science / Arts / Engineering"
+                                />
+                            </div>
+                            <div>
+                                <Label>Subject Specialization</Label>
+                                <Input
+                                    type="text"
+                                    name="subject"
+                                    value={formData.subject}
+                                    onChange={handleChange}
+                                    icon={BookOpen}
+                                    placeholder="E.g., Mathematics"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <Label>Section Assignment</Label>
+                                <CustomMultiSelect
+                                    options={sectionOptions}
+                                    values={formData.sectionIds}
+                                    onChange={(vals) => setFormData(prev => ({ ...prev, sectionIds: vals }))}
+                                    icon={BookOpen}
+                                    placeholder="Select Sections"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Professional Details */}
+                    <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary/60 mb-4 border-b border-white/5 pb-1">Professional Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <Label>Education</Label>
+                                <Input
+                                    type="text"
+                                    name="education"
+                                    value={formData.education}
+                                    onChange={handleChange}
+                                    icon={BookOpen}
+                                    placeholder="M.S. Computer Science"
+                                />
+                            </div>
+                            <div>
+                                <Label>Designation</Label>
+                                <Input
+                                    type="text"
+                                    name="designation"
+                                    value={formData.designation}
+                                    onChange={handleChange}
+                                    icon={User}
+                                    placeholder="Senior Teacher"
+                                />
+                            </div>
+                            <div>
+                                <Label>Base Salary</Label>
+                                <Input
+                                    type="number"
+                                    name="salary"
+                                    value={formData.salary}
+                                    onChange={handleChange}
+                                    icon={DollarSign}
+                                    placeholder="50000"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Contact & Personal */}
+                    <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary/60 mb-4 border-b border-white/5 pb-1">Contact & Personal</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <Label>Phone Number</Label>
+                                <Input
+                                    type="text"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    icon={Phone}
+                                    placeholder="+1 (555) 000-0000"
+                                />
+                            </div>
+                            <div>
+                                <Label>Emergency Contact</Label>
+                                <Input
+                                    type="text"
+                                    name="emergencyContact"
+                                    value={formData.emergencyContact}
+                                    onChange={handleChange}
+                                    icon={Phone}
+                                    placeholder="Name - Relationship - Phone"
+                                />
+                            </div>
+                            <div>
+                                <Label>Blood Group</Label>
+                                <Input
+                                    type="text"
+                                    name="bloodGroup"
+                                    value={formData.bloodGroup}
+                                    onChange={handleChange}
+                                    icon={Plus}
+                                    placeholder="O+, A-, etc."
+                                />
+                            </div>
+                            <div className="md:col-span-3">
+                                <Label>Residential Address</Label>
+                                <Input
+                                    type="text"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                    icon={User}
+                                    placeholder="123 Main St, City, Country"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

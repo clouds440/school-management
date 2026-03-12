@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { UserPlus, Loader2 } from 'lucide-react';
-import { api } from '@/src/lib/api';
+import { api } from '@/lib/api';
 import TeacherForm from '@/components/forms/TeacherForm';
 import { useToast } from '@/context/ToastContext';
-import { Teacher } from '@/types';
+import { Teacher, Role } from '@/types';
 
 export default function EditTeacherPage() {
     const { user, token, loading: authLoading } = useAuth();
@@ -23,14 +23,14 @@ export default function EditTeacherPage() {
 
     useEffect(() => {
         let isMounted = true;
-        
+
         // Wait for auth to finish loading before doing anything
         if (authLoading) return;
 
         // Fetch the teacher data now that we have a valid token
         const fetchTeacher = async () => {
             // Role guard: only ORG_ADMIN and ORG_MANAGER can edit teachers
-            if (!user || (user.role !== 'ORG_ADMIN' && user.role !== 'ORG_MANAGER')) {
+            if (!user || (user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER)) {
                 if (isMounted) router.replace(`/${orgSlug}/dashboard`);
                 return;
             }
@@ -40,11 +40,11 @@ export default function EditTeacherPage() {
                 if (isMounted) {
                     setTeacherData(data);
                 }
-            } catch (err: any) {
+            } catch (error: unknown) {
                 // Ignore errors if component unmounted (e.g. strict mode remount)
                 if (!isMounted) return;
-                
-                showToast(err.message || 'Failed to load teacher.', 'error');
+
+                showToast(error instanceof Error ? error.message : 'Failed to load teacher.', 'error');
                 router.replace(`/${orgSlug}/dashboard/teachers`);
             } finally {
                 if (isMounted) setDataLoading(false);

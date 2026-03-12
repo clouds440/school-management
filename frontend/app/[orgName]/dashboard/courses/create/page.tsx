@@ -9,6 +9,7 @@ import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
+import { Role } from '@/types';
 
 export default function CreateCoursePage() {
     const { token, user } = useAuth();
@@ -28,7 +29,7 @@ export default function CreateCoursePage() {
         if (!token || !user) return;
 
         // Teachers should not be able to create courses
-        if (user.role === 'TEACHER') {
+        if (user.role === Role.TEACHER) {
             router.replace(`/${orgSlug}/dashboard/courses`);
             return;
         }

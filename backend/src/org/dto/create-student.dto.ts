@@ -1,5 +1,5 @@
-import { IsString, IsEmail, IsNotEmpty, IsOptional, IsNumber, MinLength, Matches, IsDateString, IsArray, IsEnum } from 'class-validator';
-import { StudentStatus } from '@prisma/client';
+import { IsString, IsEmail, IsNotEmpty, IsOptional, IsNumber, MinLength, Matches, IsDateString, IsArray, IsEnum, ValidateIf } from 'class-validator';
+import { StudentStatus } from '../../common/enums';
 
 export class CreateStudentDto {
     @IsEmail()
@@ -61,6 +61,7 @@ export class CreateStudentDto {
 
     @IsDateString()
     @IsOptional()
+    @ValidateIf((o) => o.graduationDate !== '' && o.graduationDate !== null)
     graduationDate?: string;
 
     @IsString()

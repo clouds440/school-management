@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { api } from '@/src/lib/api';
+import { api } from '@/lib/api';
+import { Role } from '@/types';
 
 interface ThemeContextType {
     primaryColor: string;
@@ -23,7 +24,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const applyTheme = useCallback((primary: string, secondary: string) => {
         const root = document.documentElement;
-        
+
         // Base Colors
         root.style.setProperty('--primary', primary);
         root.style.setProperty('--secondary', secondary);
@@ -45,7 +46,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const isSecondaryNeutral = isNeutral(secondary);
         const sidebarBg = isSecondaryNeutral ? adjustBrightness(primary, 95) : secondary;
         const sidebarText = getContrastColor(sidebarBg);
-        
+
         root.style.setProperty('--sidebar-bg', sidebarBg);
         root.style.setProperty('--sidebar-text', sidebarText);
         root.style.setProperty('--sidebar-active-bg', primary);
@@ -63,10 +64,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const bgBrightnessValue = getBrightness(bgBase);
         const primaryHover = adjustBrightness(primary, bgBrightnessValue > 128 ? -15 : 15);
         const secondaryHover = adjustBrightness(secondary, -10);
-        
+
         root.style.setProperty('--primary-hover', primaryHover);
         root.style.setProperty('--secondary-hover', secondaryHover);
-        
+
         // Interaction Hover (Used for cards, buttons that aren't specifically primary/secondary)
         root.style.setProperty('--item-hover', isSecondaryNeutral ? 'rgba(var(--primary-rgb), 0.05)' : adjustBrightness(secondary, -5));
 
@@ -74,10 +75,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // Navbar should be a unique variant of primary, fallback to secondary if primary is too dark/clashing
         const navbarBg = adjustBrightness(primary, bgBrightnessValue > 128 ? -10 : 10);
         const navbarText = getContrastColor(navbarBg);
-        
+
         root.style.setProperty('--navbar-bg', navbarBg);
         root.style.setProperty('--navbar-text', navbarText);
-        
+
         // Card Background
         const cardBg = isSecondaryNeutral ? '#ffffff' : adjustBrightness(secondary, 5);
         root.style.setProperty('--card-bg', cardBg);
@@ -94,7 +95,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }, [applyTheme]);
 
     const refreshTheme = useCallback(async () => {
-        if (!token || !user?.orgSlug || user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN') {
+        if (!token || !user?.orgSlug || user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) {
             setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
             return;
         }
@@ -159,16 +160,16 @@ function isNeutral(hex: string) {
     const rgb = hexToRgb(hex);
     if (!rgb) return true;
     const threshold = 15;
-    return Math.abs(rgb.r - rgb.g) < threshold && 
-           Math.abs(rgb.g - rgb.b) < threshold && 
-           Math.abs(rgb.r - rgb.b) < threshold &&
-           (rgb.r > 200 || rgb.r < 50); // very light or very dark grays
+    return Math.abs(rgb.r - rgb.g) < threshold &&
+        Math.abs(rgb.g - rgb.b) < threshold &&
+        Math.abs(rgb.r - rgb.b) < threshold &&
+        (rgb.r > 200 || rgb.r < 50); // very light or very dark grays
 }
 
 // Utility to darken/lighten hex colors
 function adjustBrightness(hex: string, percent: number) {
     if (!hex || hex[0] !== '#') return hex;
-    
+
     // Normalize 3-digit hex to 6-digit
     let processedHex = hex.slice(1);
     if (processedHex.length === 3) {

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { UserPlus } from 'lucide-react';
+import { Role } from '@/types';
 import TeacherForm from '@/components/forms/TeacherForm';
 
 export default function AddTeacherPage() {
@@ -14,7 +15,7 @@ export default function AddTeacherPage() {
 
     // Redirect if not authorized
     useEffect(() => {
-        if (user && user.role !== 'ORG_ADMIN' && user.role !== 'ORG_MANAGER') {
+        if (user && user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER) {
             router.push(`/${orgSlug}/dashboard`);
         }
     }, [user, orgSlug, router]);

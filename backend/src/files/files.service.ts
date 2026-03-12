@@ -7,6 +7,7 @@ import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import { FileUploadDto } from './files.dto';
+import { Role } from '../common/enums';
 import { UploadedFileInfo, DeleteFileResult } from './interfaces/files.interfaces';
 
 const prisma = new PrismaClient();
@@ -74,8 +75,8 @@ export class FilesService {
 
     // Org-ownership check: skip for global admins
     const isGlobalAdmin =
-      requestingUser.role === 'SUPER_ADMIN' ||
-      requestingUser.role === 'PLATFORM_ADMIN';
+      requestingUser.role === Role.SUPER_ADMIN ||
+      requestingUser.role === Role.PLATFORM_ADMIN;
 
     if (!isGlobalAdmin && requestingUser.organizationId !== record.orgId) {
       throw new ForbiddenException(
