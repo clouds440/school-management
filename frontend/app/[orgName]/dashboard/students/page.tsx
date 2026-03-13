@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { Plus, Users, Pencil, Trash2, BookOpen, ShieldCheck, GraduationCap, UserX } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { Student } from '@/types';
+import { Role, Student } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { TableActions } from '@/components/ui/TableActions';
@@ -115,12 +115,12 @@ export default function StudentsPage() {
             }
         },
         {
-            header: 'Fee / Age',
+            header: 'Fee',
             sortable: true,
             sortAccessor: (row: Student) => row.fee || 0,
             accessor: (row: Student) => (
                 <div className="whitespace-nowrap">
-                    {row.fee ? `$${row.fee}` : '-'} / {row.age ? `${row.age} yrs` : '-'}
+                    {row.fee ? `$${row.fee}` : '-'}
                 </div>
             )
         },
@@ -137,10 +137,12 @@ export default function StudentsPage() {
         },
         {
             header: 'Actions',
-            accessor: (row: Student) => (user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') ? (
+            accessor: (row: Student) => (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER || user?.role === Role.TEACHER) ? (
                 <TableActions
                     onEdit={() => router.push(`/${orgSlug}/dashboard/students/edit/${row.id}`)}
                     onDelete={() => handleDeleteClick(row.id)}
+                    variant="user"
+                    isViewAndEdit={true}
                 />
             ) : null
         }
@@ -177,19 +179,7 @@ export default function StudentsPage() {
     return (
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
             <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
-                <div>
-                    <div className="flex items-center gap-5">
-                        <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm md:rounded-sm border border-white/30 shadow-xl shrink-0">
-                            <Users className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg text-left">Students</h1>
-                            <p className="text-white/80 font-bold opacity-80 mt-1 text-sm md:text-base text-left uppercase tracking-widest text-[10px]">MANAGE ENROLLED LEARNERS</p>
-                        </div>
-                    </div>
-                </div>
-
-                {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER' || user?.role === 'TEACHER') && (
+                {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER || user?.role === Role.TEACHER) && (
                     <Button
                         onClick={() => router.push(`/${orgSlug}/dashboard/students/add`)}
                         icon={Plus}
@@ -229,6 +219,11 @@ export default function StudentsPage() {
                         columns={columns}
                         keyExtractor={(row) => row.id}
                         isLoading={isLoading}
+                        onRowClick={(row) => {
+                            if (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) {
+                                router.push(`/${orgSlug}/dashboard/students/edit/${row.id}`);
+                            }
+                        }}
                     />
                 </div>
             </div>

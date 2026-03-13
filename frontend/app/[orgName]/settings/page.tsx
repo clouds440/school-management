@@ -38,8 +38,8 @@ export default function SettingsPage() {
     useEffect(() => {
         if (!token) return;
 
-        api.org.getSettings(token)
-            .then(data => {
+        api.org.getOrgData(token)
+            .then((data: Organization) => {
                 setOrgData(data);
                 setFormData({
                     name: data.name || '',
@@ -53,12 +53,12 @@ export default function SettingsPage() {
                 });
                 setLoading(false);
             })
-            .catch(err => {
+            .catch((err: any) => {
                 console.error('Failed to load settings', err);
                 showToast('Failed to load settings', 'error');
                 setLoading(false);
             });
-    }, [token]);
+    }, [token, showToast]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -108,7 +108,7 @@ export default function SettingsPage() {
         try {
             await api.org.reapply(token);
             showToast('Your re-application has been submitted!', 'success');
-            const data = await api.org.getSettings(token);
+            const data = await api.org.getOrgData(token);
             setOrgData(data);
         } catch (error) {
             showToast('Failed to re-apply', 'error');

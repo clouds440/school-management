@@ -2,19 +2,22 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldAlert, ShieldCheck, ShieldOff, Check, X, Building2, MapPin, Mail, Calendar, LucideIcon } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, ShieldOff, Check, X, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Organization, AdminStats, OrgStatus, Role } from '@/types';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
+import { DataField, useUI } from '@/context/UIContext';
+import { Hash, Info } from 'lucide-react';
 
 export default function OrganizationsPage() {
     const { user, token, loading } = useAuth();
     const { showToast } = useToast();
 
     const [organizations, setOrganizations] = useState<Organization[]>([]);
+    const { openViewModal } = useUI();
     const [fetching, setFetching] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [activeStatusTab, setActiveStatusTab] = useState<OrgStatus>(OrgStatus.PENDING);
@@ -121,8 +124,8 @@ export default function OrganizationsPage() {
                         <Building2 className="w-5 h-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-black text-gray-900 leading-tight wrap-break-word">{row.name}</h4>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block truncate">{row.type.replace('_', ' ')}</span>
+                        <h4 className="text-sm font-black text-gray-900 leading-tight">{row.name}</h4>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{row.type.replace('_', ' ')}</span>
                     </div>
                 </div>
             )
@@ -191,7 +194,7 @@ export default function OrganizationsPage() {
                             <button
                                 onClick={() => handleOpenModal(row.id, row.name, 'SUSPEND')}
                                 disabled={actionLoading !== null}
-                                className="w-full px-3 py-2 bg-white text-orange-600 border border-orange-100 rounded-sm font-bold text-xs hover:bg-orange-600 hover:text-white transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                                className="w-full px-3 py-2 bg-white text-orange-600 border border-orange-100 rounded-sm font-bold text-xs hover:bg-orange-600 hover:text-white cursor-pointer transition-all flex items-center justify-center gap-1.5 active:scale-95"
                             >
                                 <ShieldAlert className="w-4 h-4" />
                                 Suspend
@@ -202,7 +205,7 @@ export default function OrganizationsPage() {
                             <button
                                 onClick={() => handleApprove(row.id, row.name)}
                                 disabled={actionLoading !== null}
-                                className="w-full px-3 py-2 bg-indigo-600 text-white rounded-sm font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                                className="w-full px-3 py-2 bg-indigo-600 text-white rounded-sm font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 cursor-pointer transition-all flex items-center justify-center gap-1.5 active:scale-95"
                             >
                                 {actionLoading === `approve-${row.id}` ? (
                                     <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
@@ -219,10 +222,10 @@ export default function OrganizationsPage() {
                         <button
                             onClick={() => handleApprove(row.id, row.name)}
                             disabled={actionLoading !== null}
-                            className="w-full px-3 py-2 bg-indigo-600 text-white rounded-sm font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                            className="w-full px-3 py-2 bg-indigo-600 text-white rounded-sm font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 cursor-pointer transition-all flex items-center justify-center gap-1.5 active:scale-95"
                         >
                             {actionLoading === `approve-${row.id}` ? (
-                                <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+                                <div className="animate-spin rounded-full h-3 w-3 border-2 border-white cursor-pointer border-t-transparent"></div>
                             ) : <Check className="w-4 h-4" />}
                             Unsuspend
                         </button>
@@ -239,6 +242,25 @@ export default function OrganizationsPage() {
             </div>
         );
     }
+
+    const handleViewOrg = (org: Organization) => {
+        const viewFields: DataField[] = [
+            { label: 'Organization ID', value: org.id, icon: Hash, fullWidth: true },
+            { label: 'Organization Name', value: org.name, icon: Building2 },
+            { label: 'Location', value: org.location, icon: MapPin },
+            { label: 'Type', value: org.type, icon: Tag },
+            { label: 'Contact Email', value: org.email, icon: Mail },
+            { label: 'Phone Number', value: org.phone || 'N/A', icon: Phone },
+            { label: 'Created At', value: new Date(org.createdAt).toLocaleString(), icon: Calendar },
+            { label: 'Status Message', value: org.statusMessage, icon: Info, fullWidth: true },
+        ];
+
+        openViewModal({
+            title: "Organization Details",
+            subtitle: org.name || 'Entity Information',
+            fields: viewFields
+        });
+    };
 
     return (
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
@@ -261,7 +283,7 @@ export default function OrganizationsPage() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveStatusTab(tab.id)}
-                                className={`px-5 py-2.5 rounded-sm font-bold text-sm transition-all flex items-center gap-2 shadow-sm border whitespace-nowrap ${activeStatusTab === tab.id
+                                className={`px-5 py-2.5 rounded-sm font-bold text-sm cursor-pointer transition-all flex items-center gap-2 shadow-sm border whitespace-nowrap ${activeStatusTab === tab.id
                                     ? 'bg-white border-gray-200 text-gray-900 shadow-[0_4px_12px_rgba(0,0,0,0.05)]'
                                     : 'bg-gray-100/50 border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'
                                     }`}
@@ -305,9 +327,11 @@ export default function OrganizationsPage() {
                         data={filteredOrganizations}
                         keyExtractor={(row) => row.id}
                         isLoading={fetching}
+                        onRowClick={handleViewOrg}
                     />
                 </div>
             </div>
+
 
             <ModalForm
                 isOpen={isModalOpen}

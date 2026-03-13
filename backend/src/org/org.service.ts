@@ -38,6 +38,7 @@ export class OrgService {
                 accentColor: true,
                 status: true,
                 statusMessage: true,
+                createdAt: true,
             },
 
         });
@@ -61,6 +62,7 @@ export class OrgService {
                 accentColor: true,
                 status: true,
                 statusMessage: true,
+                createdAt: true,
             },
 
         });

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { BookOpen, Plus, Edit2, Trash2 } from 'lucide-react';
+import { BookOpen, Plus, Trash2 } from 'lucide-react';
 import { DataTable } from '@/components/ui/DataTable';
 import { api } from '@/lib/api';
 import { ModalForm } from '@/components/ui/ModalForm';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
-import { Section, Course } from '@/types';
+import { Section, Course, Role } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
 
 export default function SectionsPage() {
@@ -90,7 +90,7 @@ export default function SectionsPage() {
             section.course?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             section.room?.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const isMySection = user?.role === 'TEACHER' && section.teachers?.some(t => t.userId === (user.sub || user.id));
+        const isMySection = user?.role === Role.TEACHER && section.teachers?.some(t => t.userId === (user.sub || user.id));
         const matchesFilter = !showOnlyMySections || isMySection;
 
         return matchesSearch && matchesFilter;
@@ -140,29 +140,30 @@ export default function SectionsPage() {
         {
             header: 'Actions',
             accessor: (row: Section) => {
-                const isAdmin = user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER';
-                const isAssignedTeacher = user?.role === 'TEACHER' && row.teachers?.some(t => t.userId === (user.sub || user.id));
+                const isAdmin = user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER;
+                const isAssignedTeacher = user?.role === Role.TEACHER && row.teachers?.some(t => t.userId === (user.sub || user.id));
 
                 return (
-                <TableActions
-                    onEdit={(isAdmin || isAssignedTeacher) ? () => {
-                        setEditingSection(row);
-                        setEditFormData({
-                            name: row.name,
-                            semester: row.semester || '',
-                            year: row.year || '',
-                            room: row.room || '',
-                            courseId: row.courseId || ''
-                        });
-                        setEditModalOpen(true);
-                    } : undefined}
-                    onDelete={isAdmin ? () => {
-                        setDeletingSection(row);
-                        setDeleteDialogOpen(true);
-                    } : undefined}
-                    editTitle="Edit Section"
-                    deleteTitle="Delete Section"
-                />
+                    <TableActions
+                        onEdit={(isAdmin || isAssignedTeacher) ? () => {
+                            setEditingSection(row);
+                            setEditFormData({
+                                name: row.name,
+                                semester: row.semester || '',
+                                year: row.year || '',
+                                room: row.room || '',
+                                courseId: row.courseId || ''
+                            });
+                            setEditModalOpen(true);
+                        } : undefined}
+                        onDelete={isAdmin ? () => {
+                            setDeletingSection(row);
+                            setDeleteDialogOpen(true);
+                        } : undefined}
+                        editTitle="Edit Section"
+                        deleteTitle="Delete Section"
+                        variant="default"
+                    />
                 );
             }
         }
@@ -174,16 +175,7 @@ export default function SectionsPage() {
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
             <div className="mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                    <div className="flex items-center gap-5">
-                        <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
-                            <BookOpen className="w-10 h-10 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-5xl font-black text-white tracking-tight drop-shadow-lg">Sections</h1>
-                            <p className="text-white/80 font-bold opacity-90 mt-1 uppercase tracking-widest text-[10px]">ACTIVE COURSE OFFERINGS</p>
-                        </div>
-                    </div>
-                    {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER') && (
+                    {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                         <Button
                             onClick={() => router.push(`/${orgSlug}/dashboard/sections/create`)}
                             icon={Plus}
@@ -201,7 +193,7 @@ export default function SectionsPage() {
                         <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, course, or room..." />
                     </div>
 
-                    {user?.role === 'TEACHER' && (
+                    {user?.role === Role.TEACHER && (
                         <div className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10">
                             <button
                                 onClick={() => setShowOnlyMySections(!showOnlyMySections)}
@@ -224,6 +216,21 @@ export default function SectionsPage() {
                         columns={columns}
                         keyExtractor={(row) => row.id}
                         isLoading={loading}
+                        onRowClick={(row) => {
+                            const isAdmin = user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER;
+                            const isAssignedTeacher = user?.role === Role.TEACHER && row.teachers?.some(t => t.userId === (user.sub || user.id));
+                            if (isAdmin || isAssignedTeacher) {
+                                setEditingSection(row);
+                                setEditFormData({
+                                    name: row.name,
+                                    semester: row.semester || '',
+                                    year: row.year || '',
+                                    room: row.room || '',
+                                    courseId: row.courseId || ''
+                                });
+                                setEditModalOpen(true);
+                            }
+                        }}
                     />
                 </div>
             </div>

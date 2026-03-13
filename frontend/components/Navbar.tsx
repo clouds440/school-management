@@ -6,27 +6,8 @@ import { School, LogIn, UserPlus, Menu, X, LayoutDashboard } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { Role } from '@/types';
+import { OrgLogoOrIcon } from '@/lib/utils';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? '';
-
-function OrgLogoOrIcon({ logoUrl, orgName }: { logoUrl?: string | null; orgName?: string | null }) {
-    const isValidUrl = logoUrl && logoUrl.startsWith('/uploads/');
-    if (isValidUrl) {
-        return (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-                src={`${API_BASE}${logoUrl}`}
-                alt={orgName ?? 'Org logo'}
-                className="w-8 h-8 md:w-9 md:h-9 rounded-full object-cover ring-2 ring-primary/20 shrink-0"
-            />
-        );
-    }
-    return (
-        <div className="bg-primary/10 p-2 md:p-2.5 rounded-sm group-hover:bg-primary/20 group-hover:scale-105 group-focus-visible:ring-2 ring-primary transition-all duration-300 shrink-0">
-            <School className="w-6 h-6 md:w-7 md:h-7 text-primary" />
-        </div>
-    );
-}
 
 export default function Navbar() {
     const { token, user } = useAuth();

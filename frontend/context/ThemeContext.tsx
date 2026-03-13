@@ -101,7 +101,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-            const settings = await api.org.getSettings(token);
+            const settings = await api.org.getOrgData(token);
             if (settings.accentColor) {
                 const primary = settings.accentColor.primary || DEFAULT_PRIMARY;
                 const secondary = settings.accentColor.secondary || DEFAULT_SECONDARY;

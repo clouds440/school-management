@@ -6,7 +6,7 @@ import { GraduationCap, BookOpen, Clock, Calendar, Bell, Trophy, User, AlertTria
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { BackButton } from '@/components/ui/BackButton';
-import { OrgStats, OrgStatus } from '@/types';
+import { OrgStats, OrgStatus, Organization } from '@/types';
 
 export default function StudentPersonalizedDashboard() {
     const { user, token, loading } = useAuth();
@@ -18,8 +18,8 @@ export default function StudentPersonalizedDashboard() {
     useEffect(() => {
         if (!user || !token) return;
 
-        api.org.getSettings(token)
-            .then(data => {
+        api.org.getOrgData(token)
+            .then((data: Organization) => {
                 if (data?.name) setOrgName(data.name);
                 if (data?.status) setOrgStatus(data.status);
                 if (data?.statusMessage) setStatusMessage(data.statusMessage);

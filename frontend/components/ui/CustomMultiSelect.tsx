@@ -30,10 +30,22 @@ export function CustomMultiSelect({
     disabled = false
 }: CustomMultiSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
     const containerRef = useRef<HTMLDivElement>(null);
     
     // Derived state for selected options
     const selectedOptions = options.filter(opt => values.includes(opt.value));
+
+    // Filtered options based on search term
+    const filteredOptions = React.useMemo(() => {
+        return options.filter(opt => 
+            opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [options, searchTerm]);
+
+    useEffect(() => {
+        if (!isOpen) setSearchTerm("");
+    }, [isOpen]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -113,35 +125,56 @@ export function CustomMultiSelect({
             </div>
 
             {isOpen && (
-                <div className="absolute z-50 w-full mt-2 py-2 bg-card border border-white/10 rounded-sm shadow-2xl max-h-64 overflow-y-auto animate-in fade-in zoom-in duration-100">
-                    {options.length === 0 ? (
-                        <div className="px-4 py-3 text-sm text-card-text/40 italic text-center">No options available</div>
-                    ) : (
-                        options.map((option) => {
-                            const isSelected = values.includes(option.value);
-                            return (
-                                <button
-                                    key={option.value}
-                                    type="button"
-                                    onClick={() => toggleOption(option.value)}
-                                    className={`
-                                        flex items-center justify-between w-full px-4 py-3 text-sm font-bold transition-all
-                                        ${isSelected 
-                                            ? 'bg-primary/5 text-primary' 
-                                            : 'text-card-text hover:bg-primary/5'
-                                        }
-                                        text-left
-                                    `}
-                                >
-                                    <div className="flex items-center truncate">
-                                        {option.icon && <option.icon className="h-4 w-4 mr-2" />}
-                                        {option.label}
-                                    </div>
-                                    {isSelected && <Check className="h-4 w-4 text-primary shrink-0 ml-2" />}
-                                </button>
-                            );
-                        })
-                    )}
+                <div className="absolute z-50 w-full mt-2 py-2 bg-card border border-white/10 rounded-sm shadow-2xl max-h-80 flex flex-col animate-in fade-in zoom-in duration-100">
+                    <div className="px-3 pb-2 border-b border-white/5">
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg className="h-4 w-4 text-card-text/40" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <input
+                                type="text"
+                                className="block w-full pl-9 pr-3 py-2 border border-white/10 rounded-sm text-xs bg-primary/5 text-card-text placeholder-card-text/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                placeholder="Search..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="overflow-y-auto flex-1">
+                        {filteredOptions.length === 0 ? (
+                            <div className="px-4 py-3 text-sm text-card-text/40 italic text-center">No options found</div>
+                        ) : (
+                            filteredOptions.map((option) => {
+                                const isSelected = values.includes(option.value);
+                                return (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        onClick={() => toggleOption(option.value)}
+                                        className={`
+                                            flex items-center justify-between w-full px-4 py-3 text-sm font-bold transition-all
+                                            ${isSelected 
+                                                ? 'bg-primary/5 text-primary' 
+                                                : 'text-card-text hover:bg-primary/5'
+                                            }
+                                            text-left
+                                        `}
+                                    >
+                                        <div className="flex items-center truncate">
+                                            {option.icon && <option.icon className="h-4 w-4 mr-2" />}
+                                            {option.label}
+                                        </div>
+                                        {isSelected && <Check className="h-4 w-4 text-primary shrink-0 ml-2" />}
+                                    </button>
+                                );
+                            })
+                        )}
+                    </div>
                 </div>
             )}
         </div>

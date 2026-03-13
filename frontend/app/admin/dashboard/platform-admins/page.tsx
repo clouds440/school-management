@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Users, Search, Edit2, Trash2, Mail, MessageSquare, Calendar, UserPlus, ShieldCheck } from 'lucide-react';
+import { Users, Mail, MessageSquare, Calendar, UserPlus, ShieldCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PlatformAdmin, Role } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
@@ -164,12 +164,13 @@ export default function PlatformAdminsPage() {
             accessor: (row) => {
                 if (row.id === user?.id) return <span className="text-xs text-gray-400 italic">Current User</span>;
                 return (
-                <TableActions
-                    onEdit={() => handleOpenAdminModal('EDIT', row)}
-                    onDelete={() => handleDeleteAdmin(row)}
-                    isDeleting={actionLoading === `delete-${row.id}`}
-                    showViewIcon={false}
-                />
+                    <TableActions
+                        onEdit={() => handleOpenAdminModal('EDIT', row)}
+                        onDelete={() => handleDeleteAdmin(row)}
+                        isDeleting={actionLoading === `delete-${row.id}`}
+                        showViewIcon={false}
+                        variant="user"
+                    />
                 )
             }
         }

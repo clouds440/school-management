@@ -1,5 +1,5 @@
-import { Role, TeacherStatus, StudentStatus, OrganizationType, OrgStatus } from './enums';
-export { Role, TeacherStatus, StudentStatus, OrganizationType, OrgStatus } from './enums';
+import { Role, TeacherStatus, StudentStatus, SupportTopic, OrganizationType, OrgStatus } from './enums';
+export { Role, TeacherStatus, StudentStatus, SupportTopic, OrganizationType, OrgStatus } from './enums';
 
 export interface User {
     id: string;
@@ -148,7 +148,7 @@ export interface SupportTicket {
     id: string;
     organizationId: string;
     organization?: Organization;
-    topic: string;
+    topic: SupportTopic;
     message: string;
     isResolved: boolean;
     createdAt: string;
@@ -174,7 +174,7 @@ export interface CreateTeacherRequest {
     sectionIds?: string[];
 }
 
-export interface UpdateTeacherRequest extends Partial<CreateTeacherRequest> {}
+export interface UpdateTeacherRequest extends Partial<CreateTeacherRequest> { }
 
 export interface CreateStudentRequest {
     name: string;
@@ -198,7 +198,7 @@ export interface CreateStudentRequest {
     sectionIds?: string[];
 }
 
-export interface UpdateStudentRequest extends Partial<CreateStudentRequest> {}
+export interface UpdateStudentRequest extends Partial<CreateStudentRequest> { }
 
 export interface CreateSectionRequest {
     name: string;
@@ -208,11 +208,11 @@ export interface CreateSectionRequest {
     courseId: string;
 }
 
-export interface UpdateSectionRequest extends Partial<CreateSectionRequest> {}
+export interface UpdateSectionRequest extends Partial<CreateSectionRequest> { }
 
 export interface CreateCourseRequest {
     name: string;
     description?: string;
 }
 
-export interface UpdateCourseRequest extends Partial<CreateCourseRequest> {}
+export interface UpdateCourseRequest extends Partial<CreateCourseRequest> { }

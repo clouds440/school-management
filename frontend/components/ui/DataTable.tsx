@@ -1,22 +1,32 @@
-import React, { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, GripVertical } from 'lucide-react';
 
 export interface Column<T> {
     header: string;
     accessor: keyof T | ((row: T) => React.ReactNode);
     sortable?: boolean;
     sortAccessor?: (row: T) => string | number;
+    width?: number;
 }
 
 interface DataTableProps<T> {
     data: T[];
     columns: Column<T>[];
     keyExtractor: (row: T) => string;
+    onRowClick?: (row: T) => void;
     isLoading?: boolean;
 }
 
-export function DataTable<T>({ data, columns, keyExtractor, isLoading }: DataTableProps<T>) {
+export function DataTable<T>({ data, columns, keyExtractor, onRowClick, isLoading }: DataTableProps<T>) {
     const [sortConfig, setSortConfig] = useState<{ key: number; direction: 'asc' | 'desc' } | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [columnWidths, setColumnWidths] = useState<number[]>(columns.map(c => c.width || 200));
+    const [resizingIndex, setResizingIndex] = useState<number | null>(null);
+
+    const resizingRef = useRef<{ index: number; startX: number; startWidth: number } | null>(null);
+    const tableRef = useRef<HTMLTableElement>(null);
+
+    const pageSize = 10;
 
     const sortedData = useMemo(() => {
         if (!sortConfig) return data;
@@ -52,12 +62,18 @@ export function DataTable<T>({ data, columns, keyExtractor, isLoading }: DataTab
                 return direction === 'asc' ? aValue - bValue : bValue - aValue;
             }
 
-            // Fallback for other types (e.g., booleans or dates)
             if (String(aValue) < String(bValue)) return direction === 'asc' ? -1 : 1;
             if (String(aValue) > String(bValue)) return direction === 'asc' ? 1 : -1;
             return 0;
         });
     }, [data, columns, sortConfig]);
+
+    const paginatedData = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return sortedData.slice(start, start + pageSize);
+    }, [sortedData, currentPage]);
+
+    const totalPages = Math.ceil(sortedData.length / pageSize);
 
     const handleSort = (index: number) => {
         const column = columns[index];
@@ -72,6 +88,48 @@ export function DataTable<T>({ data, columns, keyExtractor, isLoading }: DataTab
         }
         setSortConfig({ key: index, direction });
     };
+
+    const handleMouseDown = (e: React.MouseEvent, index: number) => {
+        e.preventDefault();
+        e.stopPropagation();
+        resizingRef.current = {
+            index,
+            startX: e.clientX,
+            startWidth: columnWidths[index]
+        };
+        setResizingIndex(index);
+        document.body.style.cursor = 'col-resize';
+    };
+
+    useEffect(() => {
+        if (resizingIndex === null) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (resizingRef.current !== null) {
+                const { index, startX, startWidth } = resizingRef.current;
+                const diff = e.clientX - startX;
+                setColumnWidths(prev => {
+                    const next = [...prev];
+                    next[index] = Math.max(80, startWidth + diff);
+                    return next;
+                });
+            }
+        };
+
+        const handleMouseUp = () => {
+            setResizingIndex(null);
+            resizingRef.current = null;
+            document.body.style.cursor = 'default';
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [resizingIndex]);
 
     if (isLoading) {
         return (
@@ -93,7 +151,11 @@ export function DataTable<T>({ data, columns, keyExtractor, isLoading }: DataTab
     return (
         <div className="w-full overflow-hidden rounded-sm border border-gray-200/20 bg-card shadow-[0_8px_30px_var(--shadow-color)] ring-1 ring-gray-900/5">
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200">
-                <table className="w-full text-left text-sm text-card-text min-w-[600px]">
+                <table
+                    ref={tableRef}
+                    className="w-full text-left text-sm text-card-text table-fixed"
+                    style={{ minWidth: '100%', width: columnWidths.reduce((a, b) => a + b, 0) }}
+                >
                     <thead className="bg-primary/5 text-[11px] uppercase tracking-wider font-black opacity-60 border-b border-gray-200/20 select-none">
                         <tr>
                             {columns.map((col, index) => {
@@ -101,20 +163,29 @@ export function DataTable<T>({ data, columns, keyExtractor, isLoading }: DataTab
                                 return (
                                     <th
                                         key={index}
-                                        className={`px-6 py-5 whitespace-nowrap ${col.sortable ? 'cursor-pointer hover:bg-primary/5 transition-colors group' : ''}`}
+                                        style={{ width: columnWidths[index] }}
+                                        className={`px-6 py-5 whitespace-nowrap relative group/th ${col.sortable ? 'cursor-pointer hover:bg-primary/5' : ''}`}
                                         onClick={() => handleSort(index)}
                                     >
-                                        <div className="flex items-center gap-2">
-                                            {col.header}
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            <span className="truncate">{col.header}</span>
                                             {col.sortable && (
-                                                <span className="opacity-40 group-hover:text-primary group-hover:opacity-100 transition-colors shrink-0">
+                                                <span className="opacity-40 group-hover/th:text-primary group-hover/th:opacity-100 transition-colors shrink-0">
                                                     {isSorted ? (
                                                         sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-primary" />
                                                     ) : (
-                                                        <ChevronsUpDown className="w-4 h-4 opacity-0 group-hover:opacity-100" />
+                                                        <ChevronsUpDown className="w-4 h-4 opacity-0 group-hover/th:opacity-100" />
                                                     )}
                                                 </span>
                                             )}
+                                        </div>
+                                        {/* Resize Handle */}
+                                        <div
+                                            onMouseDown={(e) => handleMouseDown(e, index)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="absolute right-0 top-0 h-full w-1 cursor-col-resize group-hover/th:bg-primary/20 transition-colors z-10"
+                                        >
+                                            <div className="absolute right-0 top-1/4 h-1/2 w-[2px] bg-gray-300 group-hover/th:bg-primary/40 transition-colors" />
                                         </div>
                                     </th>
                                 );
@@ -122,23 +193,79 @@ export function DataTable<T>({ data, columns, keyExtractor, isLoading }: DataTab
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100/10">
-                        {sortedData.map((row, rowIndex) => (
+                        {paginatedData.map((row, rowIndex) => (
                             <tr
                                 key={keyExtractor(row)}
-                                className="hover:bg-primary/5 transition-colors duration-200 group relative"
+                                onClick={() => onRowClick && onRowClick(row)}
+                                className={`
+                                    transition-colors duration-200 group relative h-20
+                                    ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-200/50'}
+                                    ${onRowClick ? 'cursor-pointer hover:bg-primary/5' : ''}
+                                `}
                             >
-                                {columns.map((col, index) => (
-                                    <td key={index} className="px-6 py-5 transition-all">
-                                        {typeof col.accessor === 'function'
-                                            ? col.accessor(row)
-                                            : (row[col.accessor as keyof T] as React.ReactNode)}
-                                    </td>
-                                ))}
+                                {columns.map((col, index) => {
+                                    const content = typeof col.accessor === 'function'
+                                        ? col.accessor(row)
+                                        : (row[col.accessor as keyof T] as React.ReactNode);
+
+                                    return (
+                                        <td key={index} className="px-6 py-2 align-middle overflow-hidden">
+                                            <div className="max-h-16 overflow-hidden line-clamp-2 wrap-break-word text-sm font-medium text-gray-700">
+                                                {content}
+                                            </div>
+                                        </td>
+                                    );
+                                })}
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="px-6 py-4 flex items-center justify-between border-t border-gray-100/10 bg-primary/5">
+                    <div className="text-xs font-bold text-card-text/40">
+                        Showing <span className="text-primary">{(currentPage - 1) * pageSize + 1}</span> to <span className="text-primary">{Math.min(currentPage * pageSize, sortedData.length)}</span> of <span className="text-primary">{sortedData.length}</span> results
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="p-2 rounded-sm hover:bg-primary/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                            {[...Array(totalPages)].map((_, i) => {
+                                const page = i + 1;
+                                if (totalPages > 7 && Math.abs(page - currentPage) > 2 && page !== 1 && page !== totalPages) {
+                                    if (Math.abs(page - currentPage) === 3) return <span key={page} className="px-2 text-card-text/40">...</span>;
+                                    return null;
+                                }
+                                return (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`w-8 h-8 flex items-center justify-center rounded-sm text-xs font-black transition-all ${currentPage === page ? 'bg-primary text-primary-text shadow-lg transform scale-110' : 'hover:bg-primary/10 text-card-text/60'}`}
+                                    >
+                                        {page}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="p-2 rounded-sm hover:bg-primary/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

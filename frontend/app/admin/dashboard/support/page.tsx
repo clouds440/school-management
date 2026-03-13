@@ -2,25 +2,27 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Check, MessageSquare, Calendar, CheckCircle2 } from 'lucide-react';
+import { Check, MessageSquare, Calendar, CheckCircle2, Hash, Building2, Tag, Info } from 'lucide-react';
 import { api } from '@/lib/api';
-import { SupportTicket } from '@/types';
+import { SupportTicket, SupportTopic, OrgStatus, Role } from '@/types';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
+import { DataField, useUI } from '@/context/UIContext';
 
 export default function SupportPage() {
     const { user, token, loading } = useAuth();
     const { showToast } = useToast();
 
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
+    const { openViewModal } = useUI();
     const [fetching, setFetching] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [topicFilter, setTopicFilter] = useState<string>('ALL');
+    const [topicFilter, setTopicFilter] = useState<SupportTopic | 'ALL'>('ALL');
 
     useEffect(() => {
-        if (!loading && user && (user.role === 'SUPER_ADMIN' || user.role === 'PLATFORM_ADMIN') && token) {
+        if (!loading && user && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && token) {
             fetchTickets();
         }
     }, [loading, user, token]);
@@ -62,7 +64,7 @@ export default function SupportPage() {
             setActionLoading(`approve-${id}`);
             await api.admin.approveOrganization(id, token);
             showToast(`${name} approved successfully`, 'success');
-            setTickets(prev => prev.filter(ticket => ticket.organizationId !== id || ticket.topic !== 'ACCOUNT_STATUS'));
+            setTickets(prev => prev.filter(ticket => ticket.organizationId !== id || ticket.topic !== SupportTopic.ACCOUNT_STATUS));
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to approve organization';
             showToast(message, 'error');
@@ -91,10 +93,10 @@ export default function SupportPage() {
                         <MessageSquare className="w-5 h-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-black text-gray-900 leading-tight wrap-break-word flex items-center gap-2">
+                        <h4 className="text-sm font-black text-gray-900 leading-tight flex items-center gap-2">
                             {row.organization?.name}
-                            <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-sm shrink-0 ${row.organization?.status === 'REJECTED' ? 'bg-red-100 text-red-600' :
-                                row.organization?.status === 'SUSPENDED' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'
+                            <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-sm shrink-0 ${row.organization?.status === OrgStatus.REJECTED ? 'bg-red-100 text-red-600' :
+                                row.organization?.status === OrgStatus.SUSPENDED ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'
                                 }`}>
                                 {row.organization?.status}
                             </span>
@@ -107,7 +109,7 @@ export default function SupportPage() {
         {
             header: 'Message',
             accessor: (row) => (
-                <div className="text-xs text-gray-700 bg-gray-50/50 p-3 rounded-sm border border-gray-100 italic wrap-break-word max-w-sm">
+                <div className="text-xs text-gray-700 italic">
                     "{row.message}"
                 </div>
             )
@@ -127,7 +129,7 @@ export default function SupportPage() {
             header: 'Actions',
             accessor: (row) => (
                 <div className="flex flex-col gap-2 shrink-0 sm:items-end w-40">
-                    {row.topic === 'ACCOUNT_STATUS' && (row.organization?.status === 'REJECTED' || row.organization?.status === 'SUSPENDED') && (
+                    {row.topic === 'ACCOUNT_STATUS' && (row.organization?.status === OrgStatus.REJECTED || row.organization?.status === OrgStatus.SUSPENDED) && (
                         <button
                             onClick={() => handleApprove(row.organizationId, row.organization?.name || 'Organization')}
                             disabled={actionLoading === `approve-${row.organizationId}`}
@@ -170,6 +172,30 @@ export default function SupportPage() {
         );
     }
 
+    const handleViewTicket = (ticket: SupportTicket) => {
+        const viewFields: DataField[] = [
+            { label: 'Ticket ID', value: ticket.id, icon: Hash, fullWidth: true },
+            { label: 'Organization', value: ticket.organization?.name, icon: Building2 },
+            { label: 'Topic', value: ticket.topic.replace('_', ' '), icon: Tag },
+            { label: 'Message', value: ticket.message, icon: Info, fullWidth: true },
+            {
+                label: 'Status', value: (
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-black tracking-widest ${ticket.isResolved ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                        }`}>
+                        {ticket.isResolved ? 'Resolved' : 'Open'}
+                    </span>
+                )
+            },
+            { label: 'Created At', value: new Date(ticket.createdAt).toLocaleString(), icon: Calendar },
+        ];
+
+        openViewModal({
+            title: "Support Ticket Details",
+            subtitle: ticket.organization?.name || 'Inquiry Details',
+            fields: viewFields
+        });
+    };
+
     return (
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
             <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
@@ -190,14 +216,14 @@ export default function SupportPage() {
                         <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
                             <select
                                 value={topicFilter}
-                                onChange={(e) => setTopicFilter(e.target.value)}
+                                onChange={(e) => setTopicFilter(e.target.value as SupportTopic | 'ALL')}
                                 className="px-4 py-2.5 rounded-sm bg-white border border-gray-200 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer shadow-sm min-w-[160px]"
                             >
                                 <option value="ALL">All Topics</option>
-                                <option value="ACCOUNT_STATUS">Account Status</option>
-                                <option value="GENERAL_SUPPORT">General Support</option>
-                                <option value="BUG_ISSUE">Bug/Issue</option>
-                                <option value="SUGGESTION">Suggestion</option>
+                                <option value={SupportTopic.ACCOUNT_STATUS}>Account Status</option>
+                                <option value={SupportTopic.GENERAL_SUPPORT}>General Support</option>
+                                <option value={SupportTopic.BUG_ISSUE}>Bug/Issue</option>
+                                <option value={SupportTopic.SUGGESTION}>Suggestion</option>
                             </select>
 
                             <SearchBar
@@ -215,9 +241,11 @@ export default function SupportPage() {
                         data={filteredTickets}
                         keyExtractor={(row) => row.id}
                         isLoading={fetching}
+                        onRowClick={handleViewTicket}
                     />
                 </div>
             </div>
+
         </div>
     );
 }

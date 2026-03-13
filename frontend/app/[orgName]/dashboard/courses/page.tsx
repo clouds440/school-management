@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Plus, Edit2, Trash2, LibraryBig } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { DataTable } from '@/components/ui/DataTable';
 import { api } from '@/lib/api';
 import { ModalForm } from '@/components/ui/ModalForm';
@@ -115,22 +115,23 @@ export default function CoursesPage() {
                 const isTeacher = user?.role === Role.TEACHER;
 
                 return (
-                <TableActions
-                    onEdit={(isAdmin || isTeacher) ? () => {
-                        setEditingCourse(row);
-                        setEditFormData({
-                            name: row.name,
-                            description: row.description || ''
-                        });
-                        setEditModalOpen(true);
-                    } : undefined}
-                    onDelete={isAdmin ? () => {
-                        setDeletingCourse(row);
-                        setDeleteDialogOpen(true);
-                    } : undefined}
-                    editTitle="Edit Course"
-                    deleteTitle="Delete Course"
-                />
+                    <TableActions
+                        onEdit={(isAdmin || isTeacher) ? () => {
+                            setEditingCourse(row);
+                            setEditFormData({
+                                name: row.name,
+                                description: row.description || ''
+                            });
+                            setEditModalOpen(true);
+                        } : undefined}
+                        onDelete={isAdmin ? () => {
+                            setDeletingCourse(row);
+                            setDeleteDialogOpen(true);
+                        } : undefined}
+                        editTitle="Edit Course"
+                        deleteTitle="Delete Course"
+                        variant="default"
+                    />
                 );
             }
         }
@@ -142,16 +143,7 @@ export default function CoursesPage() {
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
             <div className="mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                    <div className="flex items-center gap-5">
-                        <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
-                            <LibraryBig className="w-10 h-10 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-5xl font-black text-white tracking-tight drop-shadow-lg">Courses</h1>
-                            <p className="text-white/80 font-bold opacity-90 mt-1 uppercase tracking-widest text-[10px]">CATALOG & SUBJECT MANAGEMENT</p>
-                        </div>
-                    </div>
-                    {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER') && (
+                    {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                         <Button
                             onClick={() => router.push(`/${orgSlug}/dashboard/courses/create`)}
                             icon={Plus}
@@ -176,6 +168,18 @@ export default function CoursesPage() {
                         columns={columns}
                         keyExtractor={(row) => row.id}
                         isLoading={loading}
+                        onRowClick={(row) => {
+                            const isAdmin = user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER;
+                            const isTeacher = user?.role === Role.TEACHER;
+                            if (isAdmin || isTeacher) {
+                                setEditingCourse(row);
+                                setEditFormData({
+                                    name: row.name,
+                                    description: row.description || ''
+                                });
+                                setEditModalOpen(true);
+                            }
+                        }}
                     />
                 </div>
             </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Users, Pencil, Trash2, UserPlus } from 'lucide-react';
+import { Users, Trash2, UserPlus } from 'lucide-react';
 import { DataTable } from '@/components/ui/DataTable';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -121,6 +121,8 @@ export default function TeachersPage() {
                         setDeletingTeacher(row);
                         setDeleteDialogOpen(true);
                     }}
+                    variant="user"
+                    isViewAndEdit={true}
                 />
             )
         }
@@ -132,15 +134,6 @@ export default function TeachersPage() {
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
             <div className="mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                    <div className="flex items-center gap-5">
-                        <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
-                            <Users className="w-10 h-10 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-5xl font-black text-white tracking-tight drop-shadow-lg text-left">Teachers</h1>
-                            <p className="text-white/80 font-bold opacity-90 mt-1 uppercase tracking-widest text-[10px] text-left">ORGANIZATION FACULTY MANAGEMENT</p>
-                        </div>
-                    </div>
                     <Button
                         onClick={() => router.push(`/${orgSlug}/dashboard/teachers/add`)}
                         icon={UserPlus}
@@ -162,6 +155,11 @@ export default function TeachersPage() {
                         columns={columns}
                         keyExtractor={(row) => row.id}
                         isLoading={loading}
+                        onRowClick={(row) => {
+                            if (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) {
+                                router.push(`/${orgSlug}/dashboard/teachers/edit/${row.id}`);
+                            }
+                        }}
                     />
                 </div>
             </div>

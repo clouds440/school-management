@@ -6,7 +6,7 @@ import { LayoutDashboard, Users, BookOpen, GraduationCap, MessageSquare, Setting
 import { useAuth } from '@/context/AuthContext';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { OrgStats, Role, OrgStatus } from '@/types';
+import { Organization, OrgStats, Role, OrgStatus } from '@/types';
 
 export default function OrgDashboardLayout({ children }: { children: React.ReactNode }) {
     const { user, token } = useAuth();
@@ -22,8 +22,8 @@ export default function OrgDashboardLayout({ children }: { children: React.React
                 .then(setStats)
                 .catch(err => console.error('Failed to fetch org stats:', err));
 
-            api.org.getSettings(token)
-                .then((data) => {
+            api.org.getOrgData(token)
+                .then((data: Organization) => {
                     const approved = data.status === OrgStatus.APPROVED;
                     setIsApproved(approved);
 
@@ -31,7 +31,7 @@ export default function OrgDashboardLayout({ children }: { children: React.React
                         router.replace(`/${orgSlug}/dashboard`);
                     }
                 })
-                .catch(err => console.error('Failed to fetch org settings:', err));
+                .catch((err: any) => console.error('Failed to fetch org data:', err));
         }
     }, [token, user?.role, pathname, orgSlug, router]);
 
@@ -46,7 +46,7 @@ export default function OrgDashboardLayout({ children }: { children: React.React
 
         orgLinks.push({ id: 'DASHBOARD', label: 'Overview', href: `/${orgSlug}/dashboard`, icon: LayoutDashboard });
 
-        if (user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER') {
+        if (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) {
             orgLinks.push({ id: 'COURSES', label: 'Courses', href: `/${orgSlug}/dashboard/courses`, icon: LibraryBig, badge: stats?.COURSES });
             orgLinks.push({ id: 'SECTIONS', label: 'Sections', href: `/${orgSlug}/dashboard/sections`, icon: BookOpen, badge: stats?.SECTIONS });
             orgLinks.push({ id: 'TEACHERS', label: 'Teachers', href: `/${orgSlug}/dashboard/teachers`, icon: Users, badge: stats?.TEACHERS });

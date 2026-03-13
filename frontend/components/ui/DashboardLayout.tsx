@@ -6,6 +6,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, LogOut, X, Key, LifeBuoy } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
+import { Role } from '@/types';
+import { BackButton } from './BackButton';
+import { DataViewModal } from './DataViewModal';
 
 export interface SidebarLink {
     id: string;
@@ -24,9 +27,20 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, links, bottomLinks = [], title = 'Dashboard' }: DashboardLayoutProps) {
     const { logout, user } = useAuth();
-    const { isExpanded, isMobileOpen, toggleSidebar, setIsMobileOpen } = useUI();
+    const { isExpanded, isMobileOpen, toggleSidebar, setIsMobileOpen, modalConfig, closeViewModal } = useUI();
     const pathname = usePathname();
     const router = useRouter();
+    const [currentTitle, setCurrentTitle] = React.useState<SidebarLink | null>(links[0]);
+
+    React.useEffect(() => {
+        const found = [...links, ...bottomLinks].find(l => {
+            const isDashboardLink = l.href.endsWith('/dashboard');
+            return pathname === l.href || (!isDashboardLink && pathname.startsWith(`${l.href}/`));
+        });
+        if (found) {
+            setCurrentTitle(found);
+        }
+    }, [pathname, links, bottomLinks]);
 
     const handleLogout = () => {
         logout();
@@ -35,6 +49,16 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
 
     return (
         <div className="flex w-full bg-theme-bg h-full overflow-hidden relative">
+            {/* Global View Modal */}
+            <DataViewModal 
+                isOpen={modalConfig.isOpen}
+                onClose={closeViewModal}
+                title={modalConfig.title}
+                subtitle={modalConfig.subtitle}
+                fields={modalConfig.fields}
+                actions={modalConfig.actions}
+            />
+
             {/* Mobile Overlay */}
             {isMobileOpen && (
                 <div
@@ -89,7 +113,9 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                             <Link
                                 key={link.id}
                                 href={link.href}
-                                onClick={() => setIsMobileOpen(false)}
+                                onClick={() => {
+                                    setIsMobileOpen(false);
+                                }}
                                 className={`
                                     flex items-center rounded-sm transition-all group relative
                                     ${isActive
@@ -119,7 +145,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                     {user && (
                         <div className={`flex items-center ${!isExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
                             <div className="w-9 h-9 rounded-sm bg-sidebar-active-text/20 flex items-center justify-center text-sidebar-active-text font-bold shrink-0 shadow-inner">
-                                {user.email?.charAt(0).toUpperCase()}
+                                {user.name?.charAt(0).toUpperCase()} {/* Here we need to display the logo of the organization or the profile picture of the user. We don't have the profile picture for users in the schema yet*/}
                             </div>
                             <div className={`overflow-hidden transition-all ${!isExpanded ? 'lg:hidden lg:w-0' : 'w-auto'}`}>
                                 <div className="text-xs font-black text-sidebar-text truncate max-w-[120px]">{user.name || user.email}</div>
@@ -140,7 +166,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                             </Link>
                         )}
                         <Link
-                            href={user?.role === 'SUPER_ADMIN' || user?.role === 'PLATFORM_ADMIN' ? '/admin/change-password' : `/${user?.orgSlug}/change-password`}
+                            href={user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : `/${user?.orgSlug}/change-password`}
                             className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 hover:bg-sidebar-text/10 transition-all py-2 border border-transparent shadow-sm`}
                             title="Security"
                         >
@@ -171,9 +197,22 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                         >
                             <ChevronRight className="w-6 h-6 rotate-180" />
                         </button>
-                        <h2 className="text-xl font-black tracking-tight uppercase truncate max-w-[200px] md:max-w-none">
-                            {title}
-                        </h2>
+
+                        <div className="flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-300">
+                            {pathname !== '/admin/dashboard' && !pathname.endsWith('/dashboard') && (
+                                <BackButton />
+                            )}
+                            <div className="flex items-center gap-3">
+                                {currentTitle && currentTitle.icon && (
+                                    <div className="p-2 bg-primary/10 rounded-sm text-white">
+                                        <currentTitle.icon className="w-5 h-5" />
+                                    </div>
+                                )}
+                                <h2 className="text-xl font-black tracking-tight uppercase truncate max-w-[200px] md:max-w-none">
+                                    {currentTitle?.label}
+                                </h2>
+                            </div>
+                        </div>
                     </div>
                 </header>
 
