@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldAlert, ShieldCheck, ShieldOff, Check, X, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone } from 'lucide-react';
+import { ShieldOff, ShieldAlert, ShieldCheck, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone, Info, Hash } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Organization, AdminStats, OrgStatus, Role } from '@/types';
+import { TableActions, AdminAction } from '@/components/ui/TableActions';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { DataField, useUI } from '@/context/UIContext';
-import { Hash, Info } from 'lucide-react';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
 
 export default function OrganizationsPage() {
     const { user, token, loading } = useAuth();
@@ -26,8 +28,8 @@ export default function OrganizationsPage() {
     const [stats, setStats] = useState<AdminStats | null>(null);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [operatingOrg, setOperatingOrg] = useState<{ id: string, name: string } | null>(null);
-    const [modalMode, setModalMode] = useState<'REJECT' | 'SUSPEND'>('REJECT');
+    const [operatingOrg, setOperatingOrg] = useState<{ id: string, name: string, email: string, statusMessage?: string } | null>(null);
+    const [modalMode, setModalMode] = useState<'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE'>('REJECT');
     const [reason, setReason] = useState('');
 
     useEffect(() => {
@@ -66,9 +68,10 @@ export default function OrganizationsPage() {
         }
     };
 
-    const handleOpenModal = (id: string, name: string, mode: 'REJECT' | 'SUSPEND') => {
-        setOperatingOrg({ id, name });
+    const handleOpenModal = (id: string, name: string, email: string, mode: 'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE', currentMessage?: string) => {
+        setOperatingOrg({ id, name, email, statusMessage: currentMessage });
         setModalMode(mode);
+        setReason(currentMessage || '');
         setIsModalOpen(true);
     };
 
@@ -81,12 +84,20 @@ export default function OrganizationsPage() {
             if (modalMode === 'REJECT') {
                 await api.admin.rejectOrganization(operatingOrg.id, reason, token);
                 showToast(`${operatingOrg.name} rejected`, 'info');
-            } else {
+                setOrganizations(prev => prev.filter(org => org.id !== operatingOrg.id));
+            } else if (modalMode === 'SUSPEND') {
                 await api.admin.suspendOrganization(operatingOrg.id, reason, token);
                 showToast(`${operatingOrg.name} suspended`, 'info');
+                setOrganizations(prev => prev.filter(org => org.id !== operatingOrg.id));
+            } else {
+                if (activeStatusTab === OrgStatus.REJECTED) {
+                    await api.admin.rejectOrganization(operatingOrg.id, reason, token);
+                } else {
+                    await api.admin.suspendOrganization(operatingOrg.id, reason, token);
+                }
+                showToast(`Status message updated for ${operatingOrg.name}`, 'success');
+                setOrganizations(prev => prev.map(org => org.id === operatingOrg.id ? { ...org, statusMessage: reason } : org));
             }
-
-            setOrganizations(prev => prev.filter(org => org.id !== operatingOrg.id));
             setIsModalOpen(false);
             setOperatingOrg(null);
             setReason('');
@@ -160,78 +171,65 @@ export default function OrganizationsPage() {
         },
         {
             header: 'Actions',
-            accessor: (row) => (
-                <div className="flex flex-col gap-2 shrink-0 sm:items-end w-32">
-                    {activeStatusTab === OrgStatus.PENDING ? (
-                        <>
-                            <>
-                                <button
-                                    onClick={() => handleApprove(row.id, row.name)}
-                                    disabled={actionLoading !== null}
-                                    className="w-full px-3 py-2 bg-green-600 text-white rounded-sm font-bold text-xs shadow-md shadow-green-600/20 hover:bg-green-700 transition-all flex items-center justify-center gap-1.5 active:scale-95"
-                                >
-                                    {actionLoading === `approve-${row.id}` ? (
-                                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
-                                    ) : <Check className="w-4 h-4" />}
-                                    Approve
-                                </button>
-                                <button
-                                    onClick={() => handleOpenModal(row.id, row.name, 'REJECT')}
-                                    disabled={actionLoading !== null}
-                                    className="w-full px-3 py-2 bg-white text-red-600 border border-red-100 rounded-sm font-bold text-xs hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-1.5 active:scale-95"
-                                >
-                                    <X className="w-4 h-4" />
-                                    Reject
-                                </button>
-                            </>
-                        </>
-                    ) : activeStatusTab === OrgStatus.APPROVED ? (
-                        <div className="flex flex-col gap-2 w-full">
-                            <div className="px-3 py-1.5 bg-green-50 text-green-700 rounded-sm font-bold text-[10px] flex justify-center items-center gap-1 border border-green-100">
-                                <ShieldCheck className="w-3 h-3" />
-                                ACTIVE
+            accessor: (row: Organization) => {
+                const getActions = (): AdminAction[] => {
+                    const actions: AdminAction[] = [];
+
+                    if (activeStatusTab === OrgStatus.PENDING) {
+                        actions.push({
+                            variant: 'approve',
+                            onClick: () => handleApprove(row.id, row.name),
+                            loading: actionLoading === `approve-${row.id}`
+                        });
+                        actions.push({
+                            variant: 'reject',
+                            onClick: () => handleOpenModal(row.id, row.name, row.email, 'REJECT'),
+                            loading: actionLoading === `reject-${row.id}`
+                        });
+                    } else if (activeStatusTab === OrgStatus.APPROVED) {
+                        actions.push({
+                            variant: 'suspend',
+                            onClick: () => handleOpenModal(row.id, row.name, row.email, 'SUSPEND'),
+                            loading: actionLoading === `suspend-${row.id}`
+                        });
+                    } else if (activeStatusTab === OrgStatus.REJECTED) {
+                        actions.push({
+                            variant: 'reapprove',
+                            onClick: () => handleApprove(row.id, row.name),
+                            loading: actionLoading === `approve-${row.id}`,
+                            title: 'Re-approve'
+                        });
+                    } else if (activeStatusTab === OrgStatus.SUSPENDED) {
+                        actions.push({
+                            variant: 'unsuspend',
+                            onClick: () => handleApprove(row.id, row.name),
+                            loading: actionLoading === `approve-${row.id}`,
+                            title: 'Unsuspend'
+                        });
+                    }
+
+                    if (row.status === OrgStatus.REJECTED || row.status === OrgStatus.SUSPENDED) {
+                        actions.push({
+                            variant: 'editMessage',
+                            onClick: () => handleOpenModal(row.id, row.name, row.email, 'EDIT_MESSAGE', row.statusMessage),
+                            title: 'Edit Status Message'
+                        });
+                    }
+
+                    return actions;
+                };
+
+                return (
+                    <div className="flex flex-col gap-1 shrink-0 items-end">
+                        <TableActions extraActions={getActions()} />
+                        {activeStatusTab === OrgStatus.APPROVED && (
+                            <div className="px-2 py-0.5 bg-green-50 text-green-700 rounded-sm font-bold text-[9px] border border-green-100 uppercase">
+                                Active
                             </div>
-                            <button
-                                onClick={() => handleOpenModal(row.id, row.name, 'SUSPEND')}
-                                disabled={actionLoading !== null}
-                                className="w-full px-3 py-2 bg-white text-orange-600 border border-orange-100 rounded-sm font-bold text-xs hover:bg-orange-600 hover:text-white cursor-pointer transition-all flex items-center justify-center gap-1.5 active:scale-95"
-                            >
-                                <ShieldAlert className="w-4 h-4" />
-                                Suspend
-                            </button>
-                        </div>
-                    ) : activeStatusTab === OrgStatus.REJECTED ? (
-                        <>
-                            <button
-                                onClick={() => handleApprove(row.id, row.name)}
-                                disabled={actionLoading !== null}
-                                className="w-full px-3 py-2 bg-indigo-600 text-white rounded-sm font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 cursor-pointer transition-all flex items-center justify-center gap-1.5 active:scale-95"
-                            >
-                                {actionLoading === `approve-${row.id}` ? (
-                                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
-                                ) : <Check className="w-4 h-4" />}
-                                Re-approve
-                            </button>
-                            {row.statusMessage && (
-                                <div className="text-[10px] text-red-500 italic mt-1 wrap-break-word w-full text-right">
-                                    "{row.statusMessage}"
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <button
-                            onClick={() => handleApprove(row.id, row.name)}
-                            disabled={actionLoading !== null}
-                            className="w-full px-3 py-2 bg-indigo-600 text-white rounded-sm font-bold text-xs shadow-md shadow-indigo-600/20 hover:bg-indigo-700 cursor-pointer transition-all flex items-center justify-center gap-1.5 active:scale-95"
-                        >
-                            {actionLoading === `approve-${row.id}` ? (
-                                <div className="animate-spin rounded-full h-3 w-3 border-2 border-white cursor-pointer border-t-transparent"></div>
-                            ) : <Check className="w-4 h-4" />}
-                            Unsuspend
-                        </button>
-                    )}
-                </div>
-            )
+                        )}
+                    </div>
+                );
+            }
         }
     ];
 
@@ -252,7 +250,12 @@ export default function OrganizationsPage() {
             { label: 'Contact Email', value: org.email, icon: Mail },
             { label: 'Phone Number', value: org.phone || 'N/A', icon: Phone },
             { label: 'Created At', value: new Date(org.createdAt).toLocaleString(), icon: Calendar },
-            { label: 'Status Message', value: org.statusMessage, icon: Info, fullWidth: true },
+            {
+                label: 'Status Message',
+                value: org.statusMessage ? <MarkdownRenderer content={org.statusMessage} className="text-sm bg-gray-50 p-4 rounded-sm border border-gray-100 min-h-[100px]" /> : 'N/A',
+                icon: Info,
+                fullWidth: true
+            },
         ];
 
         openViewModal({
@@ -332,29 +335,67 @@ export default function OrganizationsPage() {
                 </div>
             </div>
 
-
             <ModalForm
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setOperatingOrg(null);
+                    setReason('');
+                }}
                 onSubmit={handleModalSubmit}
-                title={modalMode === 'REJECT' ? `Reject ${operatingOrg?.name}` : `Suspend ${operatingOrg?.name}`}
-                submitText={modalMode === 'REJECT' ? 'Confirm Rejection' : 'Confirm Suspension'}
-                variant={modalMode === 'REJECT' ? 'danger' : 'warning'}
+                title={modalMode === 'REJECT' ? `Reject ${operatingOrg?.name}` : modalMode === 'SUSPEND' ? `Suspend ${operatingOrg?.name}` : 'Edit Status Message'}
+                submitText={modalMode === 'REJECT' ? 'Confirm Rejection' : modalMode === 'SUSPEND' ? 'Confirm Suspension' : 'Update Message'}
+                variant={modalMode === 'REJECT' ? 'danger' : modalMode === 'SUSPEND' ? 'warning' : 'info'}
                 isSubmitting={actionLoading !== null}
+                maxWidth="max-w-3xl"
             >
-                <div className="space-y-4">
+                <div className="space-y-4 pt-2">
                     <p className="text-sm text-gray-500 font-medium">
-                        {modalMode === 'REJECT'
-                            ? "Please provide a reason for rejecting this organization. They will see this message."
-                            : "Please provide a reason for suspending this organization. They will see this message and their access will be restricted."
+                        {modalMode === 'EDIT_MESSAGE'
+                            ? 'Update the administrative notice for this organization. They will see this message on their dashboard.'
+                            : `Please provide a detailed reason for ${modalMode === 'REJECT' ? 'rejecting' : 'suspending'} this organization. This will be shown to the organization administrators.`
                         }
                     </p>
-                    <textarea
-                        required
+                    <MarkdownEditor
                         value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        placeholder="Type the reason here..."
-                        className="w-full h-32 px-4 py-3 rounded-sm bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-900 font-medium"
+                        onChange={setReason}
+                        placeholder={`Enter ${modalMode === 'EDIT_MESSAGE' ? 'new status message' : 'reason for ' + modalMode?.toLowerCase()}...`}
+                        rows={10}
+                        orgData={{
+                            name: operatingOrg?.name || '',
+                            id: operatingOrg?.id || '',
+                            email: operatingOrg?.email || '',
+                            admin: user?.name || 'Platform Administrator',
+                            role: user?.role || 'Administrator',
+                            date: new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
+                            signature: 'EduManage @ Support Team'
+                        }}
+                        templates={[
+                            {
+                                label: 'Violation of Terms',
+                                content: '# Access Suspended\n\nDear Admin of **{{name}}**,\n\nWe are writing to inform you that your organization\'s access has been suspended due to a **violation of our Terms of Service**.\n\nSpecifically: [Enter violation details here]\n\n**Organization ID:** {{id}}'
+                            },
+                            {
+                                label: 'Missing Required Info',
+                                content: '# Information Required\n\nYour application for **{{name}}** is currently on hold as some **critical information is missing**.\n\nPlease provide: \n1. [Item 1]\n2. [Item 2]\n\nSubmit the missing documents via your settings page to proceed.'
+                            },
+                            {
+                                label: 'Identity Verification',
+                                content: '# Verification Required\n\nTo ensure the security of our platform, we require **further identity verification** for **{{name}}**.\n\nPlease upload a valid institutional certificate or government-issued document showing your organization\'s status.'
+                            },
+                            {
+                                label: 'Suspect Unusual Activity',
+                                content: '# Security Notice\n\nDear **{{name}}**,\n\nOur system has detected **suspicious activity** originating from your account. As a security precaution, we have temporarily restricted access.\n\nDetails: [Enter details here]\n\n**ID Reference:** {{id}}'
+                            },
+                            {
+                                label: 'Unauthorized Access Detected',
+                                content: '# Unauthorized Access Warning\n\nDear **{{name}}**,\n\nWe have detected **unauthorized access attempts** to your organization dashboard. To protect your data, we have suspended the account.\n\nPlease contact support to verify your identity.'
+                            },
+                            {
+                                label: 'Policy Compliance Check',
+                                content: '# Compliance Notice\n\nYour organization **{{name}}** is currently under a **routine policy compliance check**.\n\nThis is a standard procedure and usually takes 2-3 business days. No further action is required from your side at this moment.'
+                            }
+                        ]}
                     />
                 </div>
             </ModalForm>

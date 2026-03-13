@@ -164,7 +164,7 @@ export function DataTable<T>({ data, columns, keyExtractor, onRowClick, isLoadin
                                     <th
                                         key={index}
                                         style={{ width: columnWidths[index] }}
-                                        className={`px-6 py-5 whitespace-nowrap relative group/th ${col.sortable ? 'cursor-pointer hover:bg-primary/5' : ''}`}
+                                        className={`px-6 py-5 border-b border-b-gray-300 whitespace-nowrap relative group/th ${col.sortable ? 'cursor-pointer hover:bg-primary/10' : ''}`}
                                         onClick={() => handleSort(index)}
                                     >
                                         <div className="flex items-center gap-2 overflow-hidden">
@@ -198,8 +198,8 @@ export function DataTable<T>({ data, columns, keyExtractor, onRowClick, isLoadin
                                 key={keyExtractor(row)}
                                 onClick={() => onRowClick && onRowClick(row)}
                                 className={`
-                                    transition-colors duration-200 group relative h-20
-                                    ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-200/50'}
+                                    transition-colors duration-200 group relative h-20 border-b border-b-gray-300
+                                    ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-200/80'}
                                     ${onRowClick ? 'cursor-pointer hover:bg-primary/5' : ''}
                                 `}
                             >

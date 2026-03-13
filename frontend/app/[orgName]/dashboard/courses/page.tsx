@@ -131,6 +131,7 @@ export default function CoursesPage() {
                         editTitle="Edit Course"
                         deleteTitle="Delete Course"
                         variant="default"
+                        isViewAndEdit={true}
                     />
                 );
             }

@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react';
 import {
     Clock, Users, GraduationCap, ShieldOff, RefreshCw, Mail, Settings,
-    Building, BookOpen, MapPin, Phone, Calendar, CheckCircle, FileText, PlusCircle, UserPlus
+    Building, BookOpen, MapPin, Phone, Calendar, CheckCircle, FileText, PlusCircle, UserPlus,
+    Info, ChevronRight, LayoutDashboard, Layers, LogOut, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { Organization, OrgStats, Role, OrgStatus } from '@/types';
 import { OrgLogoOrIcon } from '@/lib/utils';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 export default function DashboardPage() {
     const { user: payload, loading, token } = useAuth();
@@ -69,13 +71,37 @@ export default function DashboardPage() {
 
     return (
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
-            <div className="mb-8">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                    <h1 className="text-6xl font-black text-gray-800 tracking-tighter drop-shadow-2xl">{orgName}</h1>
-                </div>
-            </div>
-
             <div className="space-y-8">
+
+                {/* Organization Profile Card – shown for all approved & non‑pending statuses */}
+                {orgData && orgData.status !== OrgStatus.PENDING && (
+                    <div className="p-6 bg-card text-card-text backdrop-blur-xl rounded-sm shadow-xl border border-white/40 flex flex-col md:flex-row gap-6 items-start">
+                        <OrgLogoOrIcon
+                            logoUrl={orgData.logoUrl}
+                            orgName={orgData.name}
+                            className="w-24 h-24 relative rounded-full overflow-hidden border-2 border-white/50 shadow-lg"
+                        />
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h3 className="text-xs font-black opacity-40 uppercase tracking-widest mb-1">Organization</h3>
+                                <p className="text-xl font-black">{orgData.name}</p>
+                                <p className="text-sm opacity-70 flex items-center gap-1"><MapPin className="w-3 h-3" /> {orgData.location}</p>
+                                <p className="text-sm opacity-70 flex items-center gap-1"><Building className="w-3 h-3" /> {orgData.type}</p>
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-black opacity-40 uppercase tracking-widest mb-1">Contact</h3>
+                                {orgData.contactEmail && (
+                                    <p className="text-sm flex items-center gap-1"><Mail className="w-3 h-3" /> {orgData.contactEmail}</p>
+                                )}
+                                {orgData.phone && (
+                                    <p className="text-sm flex items-center gap-1"><Phone className="w-3 h-3" /> {orgData.phone}</p>
+                                )}
+                                <p className="text-xs opacity-50 mt-2">Member since {new Date(orgData.createdAt).toDateString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Status‑specific messages (unchanged) */}
                 {orgData?.status === OrgStatus.PENDING && (
                     <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-white/40 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
@@ -102,9 +128,12 @@ export default function DashboardPage() {
                             <div className="absolute inset-0 bg-yellow-400 rounded-full animate-ping opacity-20"></div>
                         </div>
                         <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Application Denied</h2>
-                        <div className="bg-red-50 border border-red-100 p-6 rounded-sm mb-8 text-left">
+                        <div className="bg-red-50 border border-red-100 p-6 rounded-sm mb-8 text-left w-full">
                             <p className="text-xs font-bold text-red-400 uppercase tracking-widest mb-2">Rejection Reason</p>
-                            <p className="text-red-700 font-medium italic">"{orgData?.statusMessage || 'No specific reason provided.'}"</p>
+                            <MarkdownRenderer
+                                content={orgData.statusMessage || 'No reason provided.'}
+                                className="text-red-700 text-lg font-medium"
+                            />
                         </div>
                         <p className="text-gray-600 text-lg mb-8 font-medium">
                             Please update your organization details and submit your application again for verification.
@@ -131,8 +160,11 @@ export default function DashboardPage() {
                                 : "Your organization account has been temporarily suspended due to administrative reasons."}
                         </p>
                         <div className="bg-orange-50 text-orange-800 p-6 rounded-sm border border-orange-100 w-full mb-8 text-left shadow-inner">
-                            <h3 className="font-bold mb-2 flex items-center gap-2 text-sm uppercase tracking-wider text-orange-900/60"><ShieldOff className="w-4 h-4" /> Administrative Notice</h3>
-                            <p className="italic font-bold text-orange-900">{orgData?.statusMessage || 'Please contact your institution\'s administration or EduManage support for more details.'}</p>
+                            <h3 className="font-bold mb-2 flex items-center gap-2 text-sm uppercase tracking-wider text-orange-900/60"><ShieldOff className="w-4 h-4" /> Suspension Reason</h3>
+                            <MarkdownRenderer 
+                                content={orgData?.statusMessage || 'Please contact your institution\'s administration or EduManage support for more details.'} 
+                                className="italic font-bold text-orange-900" 
+                            />
                         </div>
                         <Link
                             href="/support"
@@ -141,35 +173,6 @@ export default function DashboardPage() {
                             <Mail className="w-6 h-6" />
                             CONTACT SUPPORT
                         </Link>
-                    </div>
-                )}
-
-                {/* Organization Profile Card – shown for all approved & non‑pending statuses */}
-                {orgData && orgData.status !== OrgStatus.PENDING && (
-                    <div className="p-6 bg-card text-card-text backdrop-blur-xl rounded-sm shadow-xl border border-white/40 flex flex-col md:flex-row gap-6 items-start">
-                        <OrgLogoOrIcon
-                            logoUrl={orgData.logoUrl}
-                            orgName={orgData.name}
-                            className="w-24 h-24 relative rounded-full overflow-hidden border-2 border-white/50 shadow-lg"
-                        />
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <h3 className="text-xs font-black opacity-40 uppercase tracking-widest mb-1">Organization</h3>
-                                <p className="text-xl font-black">{orgData.name}</p>
-                                <p className="text-sm opacity-70 flex items-center gap-1 mt-1"><MapPin className="w-3 h-3" /> {orgData.location}</p>
-                                <p className="text-sm opacity-70 flex items-center gap-1"><Building className="w-3 h-3" /> {orgData.type}</p>
-                            </div>
-                            <div>
-                                <h3 className="text-xs font-black opacity-40 uppercase tracking-widest mb-1">Contact</h3>
-                                {orgData.contactEmail && (
-                                    <p className="text-sm flex items-center gap-1"><Mail className="w-3 h-3" /> {orgData.contactEmail}</p>
-                                )}
-                                {orgData.phone && (
-                                    <p className="text-sm flex items-center gap-1"><Phone className="w-3 h-3" /> {orgData.phone}</p>
-                                )}
-                                <p className="text-xs opacity-50 mt-2">Member since {new Date(orgData.createdAt).toDateString()}</p>
-                            </div>
-                        </div>
                     </div>
                 )}
 

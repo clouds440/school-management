@@ -13,6 +13,7 @@ interface ModalFormProps {
     isSubmitting?: boolean;
     variant?: 'info' | 'danger' | 'warning' | 'success';
     showCancel?: boolean;
+    maxWidth?: string;
 }
 
 
@@ -26,6 +27,7 @@ export function ModalForm({
     isSubmitting = false,
     variant = 'info',
     showCancel = true,
+    maxWidth = 'max-w-lg'
 }: ModalFormProps) {
     const [mounted, setMounted] = useState(false);
 
@@ -45,7 +47,7 @@ export function ModalForm({
 
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-md transition-all duration-300">
-            <div className="bg-card text-card-text backdrop-blur-2xl rounded-sm shadow-[0_30px_70px_rgba(0,0,0,0.2)] w-full max-w-lg mx-4 transform transition-all p-10 border border-white/50 animate-scale-in">
+            <div className={`bg-card text-card-text backdrop-blur-2xl rounded-sm shadow-[0_30px_70px_rgba(0,0,0,0.2)] w-full ${maxWidth} mx-4 transform transition-all p-10 border border-white/50 animate-scale-in`}>
                 <div className="flex justify-between items-center mb-8">
                     <h2 className="text-3xl font-black tracking-tight uppercase">{title}</h2>
                     <button

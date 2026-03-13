@@ -163,6 +163,7 @@ export default function SectionsPage() {
                         editTitle="Edit Section"
                         deleteTitle="Delete Section"
                         variant="default"
+                        isViewAndEdit={true}
                     />
                 );
             }

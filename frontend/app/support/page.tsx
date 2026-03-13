@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { api } from '@/lib/api';
 import Link from 'next/link';
+import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
 
 export default function SupportPage() {
     const { token, user } = useAuth();
@@ -82,18 +83,17 @@ export default function SupportPage() {
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Message</label>
-                                <textarea
-                                    required
+                                <MarkdownEditor
                                     value={formData.message}
-                                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                                    className="w-full h-40 px-4 py-4 rounded-sm bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-gray-900 font-medium resize-none"
+                                    onChange={(val) => setFormData({ ...formData, message: val })}
                                     placeholder="Please describe your details here..."
+                                    rows={8}
                                 />
                             </div>
 
                             <button
                                 type="submit"
-                                disabled={submitting}
+                                disabled={submitting || !formData.message.trim()}
                                 className="w-full bg-indigo-600 text-white px-8 py-4 rounded-sm font-black text-lg shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
                             >
                                 {submitting ? (

@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Check, MessageSquare, Calendar, CheckCircle2, Hash, Building2, Tag, Info } from 'lucide-react';
+import { MessageSquare, Calendar, Hash, Building2, Tag, Info } from 'lucide-react';
 import { api } from '@/lib/api';
 import { SupportTicket, SupportTopic, OrgStatus, Role } from '@/types';
+import { TableActions, AdminAction } from '@/components/ui/TableActions';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { DataField, useUI } from '@/context/UIContext';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 export default function SupportPage() {
     const { user, token, loading } = useAuth();
@@ -109,8 +111,11 @@ export default function SupportPage() {
         {
             header: 'Message',
             accessor: (row) => (
-                <div className="text-xs text-gray-700 italic">
-                    "{row.message}"
+                <div className="max-w-[400px]">
+                    <MarkdownRenderer 
+                        content={row.message} 
+                        className="text-xs text-gray-700 italic line-clamp-2" 
+                    />
                 </div>
             )
         },
@@ -127,40 +132,34 @@ export default function SupportPage() {
         },
         {
             header: 'Actions',
-            accessor: (row) => (
-                <div className="flex flex-col gap-2 shrink-0 sm:items-end w-40">
-                    {row.topic === 'ACCOUNT_STATUS' && (row.organization?.status === OrgStatus.REJECTED || row.organization?.status === OrgStatus.SUSPENDED) && (
-                        <button
-                            onClick={() => handleApprove(row.organizationId, row.organization?.name || 'Organization')}
-                            disabled={actionLoading === `approve-${row.organizationId}`}
-                            className="w-full bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white px-3 py-2 rounded-sm font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-emerald-100"
-                        >
-                            {actionLoading === `approve-${row.organizationId}` ? (
-                                <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent" />
-                            ) : (
-                                <>
-                                    <Check className="w-3 h-3" />
-                                    Approve Org
-                                </>
-                            )}
-                        </button>
-                    )}
-                    <button
-                        onClick={() => handleResolveTicket(row.id)}
-                        disabled={actionLoading === `resolve-${row.id}`}
-                        className="w-full mt-auto bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white px-3 py-2 rounded-sm font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-indigo-100"
-                    >
-                        {actionLoading === `resolve-${row.id}` ? (
-                            <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent" />
-                        ) : (
-                            <>
-                                <CheckCircle2 className="w-3 h-3" />
-                                Resolve
-                            </>
-                        )}
-                    </button>
-                </div>
-            )
+            accessor: (row: SupportTicket) => {
+                const getActions = (): AdminAction[] => {
+                    const actions: AdminAction[] = [];
+                    
+                    if (row.topic === 'ACCOUNT_STATUS' && (row.organization?.status === OrgStatus.REJECTED || row.organization?.status === OrgStatus.SUSPENDED)) {
+                        actions.push({
+                            variant: 'approve',
+                            onClick: () => handleApprove(row.organizationId, row.organization?.name || 'Organization'),
+                            loading: actionLoading === `approve-${row.organizationId}`,
+                            title: 'Approve Organization'
+                        });
+                    }
+                    
+                    actions.push({
+                        variant: 'resolve',
+                        onClick: () => handleResolveTicket(row.id),
+                        loading: actionLoading === `resolve-${row.id}`
+                    });
+                    
+                    return actions;
+                };
+
+                return (
+                    <div className="flex justify-end pr-2">
+                        <TableActions extraActions={getActions()} />
+                    </div>
+                );
+            }
         }
     ];
 
@@ -177,7 +176,12 @@ export default function SupportPage() {
             { label: 'Ticket ID', value: ticket.id, icon: Hash, fullWidth: true },
             { label: 'Organization', value: ticket.organization?.name, icon: Building2 },
             { label: 'Topic', value: ticket.topic.replace('_', ' '), icon: Tag },
-            { label: 'Message', value: ticket.message, icon: Info, fullWidth: true },
+            { 
+                label: 'Message', 
+                value: <MarkdownRenderer content={ticket.message} className="text-sm bg-gray-50 p-4 rounded-sm border border-gray-100 min-h-[100px]" />, 
+                icon: Info, 
+                fullWidth: true 
+            },
             {
                 label: 'Status', value: (
                     <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-black tracking-widest ${ticket.isResolved ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'

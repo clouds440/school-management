@@ -32,6 +32,8 @@ export class AdminService {
             name: org.name,
             location: org.location,
             type: org.type,
+            status: org.status,
+            statusMessage: org.statusMessage,
             createdAt: org.createdAt,
             email: org.users[0]?.email || 'No email'
         }));

@@ -168,7 +168,7 @@ export default function PlatformAdminsPage() {
                         onEdit={() => handleOpenAdminModal('EDIT', row)}
                         onDelete={() => handleDeleteAdmin(row)}
                         isDeleting={actionLoading === `delete-${row.id}`}
-                        showViewIcon={false}
+                        isViewAndEdit={true}
                         variant="user"
                     />
                 )
