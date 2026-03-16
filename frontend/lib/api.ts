@@ -148,5 +148,16 @@ export const api = {
         updateCourse: (id: string, data: UpdateCourseRequest, token: string) =>
             request<Course>(`/org/courses/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
         deleteCourse: (id: string, token: string) => request<void>(`/org/courses/${id}`, { method: 'DELETE', token }),
+        uploadAvatar: async (userId: string, file: File, token: string): Promise<{ avatarUrl: string; avatarUpdatedAt: string }> => {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await fetch(`${API_BASE_URL}/org/users/${userId}/avatar`, {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
+            if (!response.ok) throw new Error('Failed to upload avatar');
+            return response.json();
+        },
     }
 };

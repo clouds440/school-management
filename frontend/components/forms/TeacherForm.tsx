@@ -13,6 +13,8 @@ import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
+import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
+import { getPublicUrl } from '@/lib/utils';
 
 interface TeacherFormProps {
     teacherId?: string;
@@ -26,6 +28,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
     const { showToast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
     const [sections, setSections] = useState<Section[]>([]);
+    const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
 
     // Initialize form state from initialData if provided (edit mode)
     const [formData, setFormData] = useState(() => {
@@ -34,6 +37,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                 name: initialData.user?.name || '',
                 phone: initialData.user?.phone || '',
                 email: initialData.user?.email || '',
+                avatarUrl: initialData.user?.avatarUrl || null,
                 password: '',
                 education: initialData.education || '',
                 designation: initialData.designation || '',
@@ -53,6 +57,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
             name: '',
             phone: '',
             email: '',
+            avatarUrl: null as string | null,
             password: '',
             education: '',
             designation: '',
@@ -98,7 +103,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
         setIsSaving(true);
 
         try {
-            const { password, ...rest } = formData;
+            const { password, avatarUrl, ...rest } = formData;
             const payload = {
                 ...rest,
                 salary: formData.salary ? Number(formData.salary) : null,
@@ -106,10 +111,21 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                 ...(teacherId ? (password ? { password } : {}) : { password })
             };
 
+            let savedTeacher: Teacher;
             if (teacherId) {
-                await api.org.updateTeacher(teacherId, payload, token!);
+                savedTeacher = await api.org.updateTeacher(teacherId, payload, token!);
             } else {
-                await api.org.createTeacher(payload, token!);
+                savedTeacher = await api.org.createTeacher(payload, token!);
+            }
+
+            // Handle Photo Upload if pending
+            if (pendingPhoto && savedTeacher.userId) {
+                try {
+                    await api.org.uploadAvatar(savedTeacher.userId, pendingPhoto, token!);
+                } catch (uploadError) {
+                    console.error('Avatar upload failed', uploadError);
+                    showToast('Teacher created, but photo upload failed', 'info');
+                }
             }
 
             showToast(`Teacher account ${teacherId ? 'updated' : 'created'} successfully`, 'success');
@@ -129,27 +145,39 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
         <form onSubmit={handleSubmit} className="space-y-12">
             {/* Mandatory Information */}
             <div className="bg-primary/5 p-6 rounded-sm border border-white/10">
-                <div className="mb-6">
-                    <h3 className="text-xl font-bold text-card-text flex items-center gap-2">
-                        <ShieldCheck className="w-6 h-6 text-primary" />
-                        Mandatory Information
-                    </h3>
-                    <p className="text-card-text/60 text-sm mt-1">These fields are required for administrative setup and account creation.</p>
+                <div className="flex flex-col md:flex-row gap-8 items-start mb-10">
+                    <PhotoUploadPicker
+                        currentImageUrl={getPublicUrl(formData.avatarUrl)}
+                        onFileReady={(file) => setPendingPhoto(file)}
+                        hint="Teacher Profile Picture"
+                    />
+                    <div className="flex-1">
+                        <div className="mb-6">
+                            <h3 className="text-xl font-bold text-card-text flex items-center gap-2">
+                                <ShieldCheck className="w-6 h-6 text-primary" />
+                                Mandatory Information
+                            </h3>
+                            <p className="text-card-text/60 text-sm mt-1">These fields are required for administrative setup and account creation.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="md:col-span-2">
+                                <Label>Full Name *</Label>
+                                <Input
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    required={!teacherId}
+                                    icon={User}
+                                    placeholder="John Doe"
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
-                        <Label>Full Name *</Label>
-                        <Input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            required={!teacherId}
-                            icon={User}
-                            placeholder="John Doe"
-                        />
-                    </div>
 
                     <div>
                         <Label>Email Address *</Label>

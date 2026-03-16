@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, BadRequestException, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, BadRequestException, Query, ForbiddenException } from '@nestjs/common';
 import { Role, SupportTopic } from '../common/enums';
 
 import { OrgService } from './org.service';
@@ -244,5 +244,51 @@ export class OrgController {
     @Delete('students/:id')
     deleteStudent(@OrgId() orgId: string, @Param('id') id: string) {
         return this.orgService.deleteStudent(orgId, id);
+    }
+
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+    @Patch('users/:id/avatar')
+    @UseInterceptors(FileInterceptor('file', {
+        storage: diskStorage({
+            destination: (req, file, cb) => {
+                const userId = req.params.id as string;
+                const uploadPath = path.join(
+                    process.cwd(), 'uploads', 'users', userId, 'avatar',
+                );
+                fs.mkdirSync(uploadPath, { recursive: true });
+                cb(null, uploadPath);
+            },
+            filename: (_req, file, cb) => {
+                const sanitized = file.originalname.replace(/\s+/g, '-');
+                cb(null, `${Date.now()}-${sanitized}`);
+            },
+        }),
+        limits: { fileSize: 5 * 1024 * 1024 },
+    }))
+    async updateUserAvatar(
+        @UploadedFile() file: Express.Multer.File,
+        @Param('id') id: string,
+        @Request() req: AuthenticatedRequest,
+    ) {
+        if (!file) {
+            throw new BadRequestException('No file provided');
+        }
+
+        const ALLOWED_IMAGE_TYPES = new Set([
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+        ]);
+
+        if (!ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
+            throw new BadRequestException(
+                `File type "${file.mimetype}" is not allowed.`,
+            );
+        }
+
+        // Authorization check: User can update their own avatar, or ORG_ADMIN/MANAGER can update any
+        if (req.user.role !== Role.ORG_ADMIN && req.user.role !== Role.ORG_MANAGER && req.user.id !== id) {
+            throw new ForbiddenException('You can only update your own avatar');
+        }
+
+        return this.orgService.updateUserAvatar(id, file, req.user.id);
     }
 }

@@ -6,7 +6,7 @@ import { School, LogIn, UserPlus, Menu, X, LayoutDashboard } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { Role } from '@/types';
-import { OrgLogoOrIcon } from '@/lib/utils';
+import { OrgLogoOrIcon } from './ui/OrgLogoOrIcon';
 
 
 export default function Navbar() {

@@ -2,32 +2,38 @@
 
 import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { Camera, Building2 } from 'lucide-react';
+import { Camera, User, Building2 } from 'lucide-react';
 import { ImageCropperModal } from './ImageCropperModal';
+import { getPublicUrl } from '@/lib/utils';
 
-interface LogoUploadPickerProps {
-  /** Currently saved logo URL from the server (null if none) */
-  currentLogoUrl?: string | null;
+interface PhotoUploadPickerProps {
+  /** Currently saved image URL from the server (null if none) */
+  currentImageUrl?: string | null;
   /** Called whenever the user finishes cropping — parent stores the File for submission */
   onFileReady: (file: File) => void;
   /** Small text to show below the picker */
   hint?: string;
+  /** The icon to show as a placeholder ('user' or 'org') */
+  type?: 'user' | 'org';
+  /** Sizes for the container (default is w-24 h-24) */
+  sizeClassName?: string;
 }
 
 /**
- * Clickable logo avatar.
- * - Shows live preview immediately after crop
- * - Does NOT upload — parent uploads on form submit
+ * Clickable photo avatar. 
+ * Generalization of LogoUploadPicker for users and organizations.
  */
-export function LogoUploadPicker({
-  currentLogoUrl,
+export function PhotoUploadPicker({
+  currentImageUrl,
   onFileReady,
   hint = 'Recommended: square image, at least 256×256px',
-}: LogoUploadPickerProps) {
+  type = 'user',
+  sizeClassName = 'w-24 h-24',
+}: PhotoUploadPickerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rawDataUrl, setRawDataUrl] = useState<string | null>(null);   // for cropper
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);   // real-time preview
-  const [pendingFilename, setPendingFilename] = useState('logo.jpg');
+  const [pendingFilename, setPendingFilename] = useState('photo.jpg');
   const [showCropper, setShowCropper] = useState(false);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,21 +69,11 @@ export function LogoUploadPicker({
   }, []);
 
   // Determine what to show in the avatar
-  const displaySrc = previewUrl ?? currentLogoUrl ?? null;
-  const backendBase = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? '';
+  const displaySrc = previewUrl ?? currentImageUrl ?? null;
 
-  // Guard: if the stored URL is an absolute OS path (legacy bad record),
-  // skip it to avoid Next.js Image rejecting a malformed URL.
-  const isValidLogoUrl = displaySrc &&
-    (displaySrc.startsWith('blob:') ||
-     displaySrc.startsWith('data:') ||
-     displaySrc.startsWith('/uploads/'));
-
-  const resolvedSrc = isValidLogoUrl
-    ? (displaySrc!.startsWith('blob:') || displaySrc!.startsWith('data:')
-        ? displaySrc!
-        : `${backendBase}${displaySrc}`)
-    : null;
+  const resolvedSrc = (displaySrc?.startsWith('blob:') || displaySrc?.startsWith('data:'))
+    ? displaySrc
+    : getPublicUrl(displaySrc);
 
   return (
     <>
@@ -86,33 +82,33 @@ export function LogoUploadPicker({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="group relative w-24 h-24 rounded-full border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/60 hover:bg-indigo-50 transition-all duration-200 flex items-center justify-center overflow-hidden shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          aria-label="Upload organisation logo"
+          className={`group relative ${sizeClassName} rounded-full border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/60 hover:bg-indigo-50 transition-all duration-200 flex items-center justify-center overflow-hidden shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+          aria-label={`Upload ${type === 'user' ? 'profile picture' : 'organisation logo'}`}
         >
           {resolvedSrc ? (
             resolvedSrc.startsWith('blob:') || resolvedSrc.startsWith('data:') ? (
-              // Blob/data URLs: use next/image (local, no optimizer proxy needed)
               <Image
                 src={resolvedSrc}
-                alt="Organisation logo"
+                alt="Preview"
                 fill
                 className="object-cover"
                 sizes="96px"
                 unoptimized
               />
             ) : (
-              // Server-stored URL (e.g. ${process.env.NEXT_PUBLIC_API_URL}/uploads/...)
-              // Use a plain <img> so it goes directly to the backend,
-              // bypassing Next.js's image optimizer which blocks loopback IPs.
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={resolvedSrc}
-                alt="Organisation logo"
+                alt="Saved photo"
                 className="w-full h-full object-cover"
               />
             )
           ) : (
-            <Building2 className="w-10 h-10 text-indigo-300" />
+            type === 'user' ? (
+              <User className="w-1/2 h-1/2 text-indigo-300" />
+            ) : (
+              <Building2 className="w-1/2 h-1/2 text-indigo-300" />
+            )
           )}
 
           {/* Hover overlay */}
@@ -121,7 +117,7 @@ export function LogoUploadPicker({
           </div>
         </button>
 
-        <p className="text-xs text-gray-400 text-center max-w-[180px]">{hint}</p>
+        {hint && <p className="text-[10px] text-gray-400 text-center max-w-[180px] leading-tight">{hint}</p>}
 
         <input
           ref={fileInputRef}

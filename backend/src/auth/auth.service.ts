@@ -3,23 +3,27 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaClient, User, Organization, Teacher } from '@prisma/client';
+import { User, Organization, Teacher } from '@prisma/client';
 import { Role, OrgStatus } from '../common/enums';
+import { PrismaService } from '../prisma/prisma.service';
 
 export type TokenUser = User & {
     organization?: Organization | null;
     teacherProfile?: Teacher | null;
+    avatarUrl?: string | null;
+    avatarUpdatedAt?: Date | null;
     tokenVersion?: number;
 };
 
-const prisma = new PrismaClient();
-
 @Injectable()
 export class AuthService {
-    constructor(private jwtService: JwtService) { }
+    constructor(
+        private jwtService: JwtService,
+        private prisma: PrismaService
+    ) { }
 
     async register(registerDto: RegisterDto) {
-        const existing = await prisma.user.findUnique({
+        const existing = await this.prisma.user.findUnique({
             where: { email: registerDto.email },
         });
         if (existing) {
@@ -29,7 +33,7 @@ export class AuthService {
         const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
         // Transaction to ensure both Org and User are created
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await this.prisma.$transaction(async (tx) => {
             const org = await tx.organization.create({
                 data: {
                     name: registerDto.name,
@@ -61,7 +65,7 @@ export class AuthService {
     }
 
     async login(loginDto: LoginDto) {
-        const user = await prisma.user.findUnique({
+        const user = await this.prisma.user.findUnique({
             where: { email: loginDto.email },
             include: { organization: true, teacherProfile: true }
         });
@@ -79,9 +83,6 @@ export class AuthService {
         return this.generateToken(user, rememberMe);
     }
 
-
-
-
     async generateToken(user: TokenUser, rememberMe: boolean = false) {
         const slug = user.organization?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || null;
         const payload = {
@@ -94,6 +95,8 @@ export class AuthService {
             orgName: user.organization?.name || null,
             orgId: user.organizationId,
             orgLogoUrl: user.organization?.logoUrl || null,
+            avatarUrl: user.avatarUrl || null,
+            avatarUpdatedAt: user.avatarUpdatedAt || null,
             status: user.organization ? user.organization.status : OrgStatus.APPROVED, // Keep SUPER_ADMIN as APPROVED
             isFirstLogin: user.isFirstLogin,
             tokenVersion: user.tokenVersion
@@ -110,7 +113,7 @@ export class AuthService {
 
 
     async changePassword(userId: string, oldPass: string, newPass: string) {
-        const user = await prisma.user.findUnique({ where: { id: userId }, include: { organization: true } });
+        const user = await this.prisma.user.findUnique({ where: { id: userId }, include: { organization: true } });
         if (!user) {
             throw new UnauthorizedException('User not found');
         }
@@ -121,7 +124,7 @@ export class AuthService {
         }
 
         const hashedNew = await bcrypt.hash(newPass, 10);
-        const updatedUser = await prisma.user.update({
+        const updatedUser = await this.prisma.user.update({
             where: { id: userId },
             data: {
                 password: hashedNew,
@@ -135,7 +138,7 @@ export class AuthService {
     }
 
     async logout(userId: string) {
-        await prisma.user.update({
+        await this.prisma.user.update({
             where: { id: userId },
             data: {
                 tokenVersion: { increment: 1 }

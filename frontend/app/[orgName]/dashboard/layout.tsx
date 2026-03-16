@@ -31,7 +31,7 @@ export default function OrgDashboardLayout({ children }: { children: React.React
                         router.replace(`/${orgSlug}/dashboard`);
                     }
                 })
-                .catch((err: any) => console.error('Failed to fetch org data:', err));
+                .catch((err) => console.error('Failed to fetch org data:', err));
         }
     }, [token, user?.role, pathname, orgSlug, router]);
 

@@ -9,6 +9,7 @@ import { useUI } from '@/context/UIContext';
 import { Role } from '@/types';
 import { BackButton } from './BackButton';
 import { DataViewModal } from './DataViewModal';
+import { getPublicUrl } from '@/lib/utils';
 
 export interface SidebarLink {
     id: string;
@@ -113,8 +114,10 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                             <Link
                                 key={link.id}
                                 href={link.href}
-                                onClick={() => {
+                                onClick={(e) => {
+                                    e.preventDefault();
                                     setIsMobileOpen(false);
+                                    router.push(link.href);
                                 }}
                                 className={`
                                     flex items-center rounded-sm transition-all group relative
@@ -144,8 +147,17 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                 <div className="p-4 border-t border-sidebar-text/10 bg-sidebar-text/5 shrink-0">
                     {user && (
                         <div className={`flex items-center ${!isExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
-                            <div className="w-9 h-9 rounded-sm bg-sidebar-active-text/20 flex items-center justify-center text-sidebar-active-text font-bold shrink-0 shadow-inner">
-                                {user.name?.charAt(0).toUpperCase()} {/* Here we need to display the logo of the organization or the profile picture of the user. We don't have the profile picture for users in the schema yet*/}
+                            <div className="w-9 h-9 rounded-sm bg-transparent flex items-center justify-center text-sidebar-active-text font-bold shrink-0 shadow-inner overflow-hidden relative">
+                                {user.avatarUrl || user.orgLogoUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                        src={getPublicUrl(user.avatarUrl || user.orgLogoUrl, user.avatarUpdatedAt)}
+                                        alt="Avatar"
+                                        className="w-full h-full object-cover rounded-full"
+                                    />
+                                ) : (
+                                    user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()
+                                )}
                             </div>
                             <div className={`overflow-hidden transition-all ${!isExpanded ? 'lg:hidden lg:w-0' : 'w-auto'}`}>
                                 <div className="text-xs font-black text-sidebar-text truncate max-w-[120px]">{user.name || user.email}</div>
@@ -156,17 +168,25 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
 
                     <div className="space-y-2">
                         {user?.orgSlug && (
-                            <Link
-                                href="/support"
-                                className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 hover:bg-sidebar-text/10 transition-all py-2 border border-transparent shadow-sm`}
-                                title="Help & Support"
-                            >
-                                <LifeBuoy className="w-4 h-4 shrink-0" />
-                                {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Support</span>}
-                            </Link>
+                                <Link
+                                    href="/support"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        router.push('/support');
+                                    }}
+                                    className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 hover:bg-sidebar-text/10 transition-all py-2 border border-transparent shadow-sm`}
+                                    title="Help & Support"
+                                >
+                                    <LifeBuoy className="w-4 h-4 shrink-0" />
+                                    {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Support</span>}
+                                </Link>
                         )}
                         <Link
                             href={user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : `/${user?.orgSlug}/change-password`}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : `/${user?.orgSlug}/change-password`);
+                            }}
                             className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 hover:bg-sidebar-text/10 transition-all py-2 border border-transparent shadow-sm`}
                             title="Security"
                         >

@@ -1,7 +1,5 @@
 import { School } from 'lucide-react';
-import { API_BASE_URL } from './api';
-
-export const API_BASE = API_BASE_URL?.replace('/api', '') ?? '';
+import { getPublicUrl } from '@/lib/utils';
 
 interface OrgLogoOrIconProps {
     logoUrl?: string | null;
@@ -9,14 +7,18 @@ interface OrgLogoOrIconProps {
     className?: string;
 }
 
+/**
+ * Renders an organization logo if available, otherwise a fallback icon.
+ * Standardized to use getPublicUrl for consistent image serving.
+ */
 export function OrgLogoOrIcon({ logoUrl, orgName, className }: OrgLogoOrIconProps) {
-    const isValidUrl = logoUrl && logoUrl.startsWith('/uploads/');
+    const resolvedUrl = getPublicUrl(logoUrl);
     
-    if (isValidUrl) {
+    if (resolvedUrl && logoUrl?.startsWith('/uploads/')) {
         return (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-                src={`${API_BASE}${logoUrl}`}
+                src={resolvedUrl}
                 alt={orgName ?? 'Org logo'}
                 className={className || "w-8 h-8 md:w-9 md:h-9 rounded-full object-cover ring-2 ring-primary/20 shrink-0"}
             />

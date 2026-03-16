@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ExternalLink, Calendar, MapPin, Mail, Phone, Tag, Hash, Building2 } from 'lucide-react';
+import { X } from 'lucide-react';
 
 export interface DataField {
     label: string;
     value: React.ReactNode;
-    icon?: React.ElementType;
+    icon?: React.ElementType | string;
     fullWidth?: boolean;
 }
 
@@ -60,8 +60,8 @@ export function DataViewModal({ isOpen, onClose, title, subtitle, fields, action
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-10">
                         {fields.map((field, idx) => (
                             <div key={idx} className={`${field.fullWidth ? 'col-span-1 md:col-span-2' : ''} space-y-3`}>
-                                <div className="flex items-center gap-2 text-[11px] font-black opacity-40 uppercase tracking-[0.25em]">
-                                    {field.icon && <field.icon className="w-3.5 h-3.5" />}
+                                <div className="flex items-center gap-2 text-[11px] font-black opacity-80 uppercase tracking-[0.25em]">
+                                    {field.icon && (typeof field.icon === 'string' ? <img src={`http://localhost:3000${field.icon}`} alt="Org Logo/Icon" className="w-6 h-6 rounded-full" /> : <field.icon className="w-3.5 h-3.5" />)}
                                     {field.label}
                                 </div>
                                 <div className="text-base font-bold wrap-break-word leading-relaxed">

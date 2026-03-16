@@ -21,6 +21,8 @@ export interface User {
     role: Role;
     phone?: string;
     orgSlug?: string;
+    avatarUrl?: string | null;
+    avatarUpdatedAt?: string | null;
 }
 
 export interface Teacher {
@@ -130,6 +132,8 @@ export interface AuthResponse {
     email?: string;
     access_token?: string;
     message?: string;
+    avatarUrl?: string | null;
+    avatarUpdatedAt?: string | null;
 }
 
 export interface UpdateOrgSettingsRequest {

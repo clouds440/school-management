@@ -1,12 +1,11 @@
 import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException, ForbiddenException, ConflictException } from '@nestjs/common';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { Role, OrgStatus, SupportTopic, TeacherStatus, StudentStatus } from '../common/enums';
+import { PrismaService } from '../prisma/prisma.service';
 
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
-import { CreateCourseDto } from './dto/create-course.dto';
-import { UpdateCourseDto } from './dto/update-course.dto';
 import { CreateSectionDto } from './dto/create-section.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
@@ -18,9 +17,10 @@ import { FilesService } from '../files/files.service';
 
 @Injectable()
 export class OrgService {
-    private prisma = new PrismaClient();
-
-    constructor(private readonly filesService: FilesService) { }
+    constructor(
+        private readonly filesService: FilesService,
+        private readonly prisma: PrismaService
+    ) { }
 
     // --- Settings ---
     async getSettings(orgId: string) {
@@ -119,6 +119,56 @@ export class OrgService {
         });
     }
 
+    async updateUserAvatar(
+        userId: string,
+        file: Express.Multer.File,
+        uploadedBy: string,
+    ) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, avatarUrl: true, organizationId: true },
+        });
+        if (!user) throw new NotFoundException('User not found');
+
+        // Delete old avatar from disk (best-effort)
+        if (user.avatarUrl) {
+            const oldAbsolute = path.resolve(user.avatarUrl.replace(/^\/uploads\//, 'uploads/'));
+            if (fs.existsSync(oldAbsolute)) {
+                fs.unlinkSync(oldAbsolute);
+            }
+        }
+
+        // Derive a portable relative path from file.path regardless of OS.
+        const forwardSlash = file.path.replace(/\\/g, '/');
+        const uploadsIndex = forwardSlash.indexOf('uploads/');
+        const relativePath = uploadsIndex >= 0
+            ? forwardSlash.slice(uploadsIndex)
+            : forwardSlash;
+        const publicUrl = `/${relativePath}`;
+
+        // Save new file record via FilesService (for audit trail)
+        await this.filesService.saveFile(
+            { orgId: user.organizationId ?? 'system', entityType: 'userAvatar', entityId: user.id },
+            file,
+            uploadedBy,
+        );
+
+        // Update user with new avatar URL and bump cache-buster timestamp
+        return this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                avatarUrl: publicUrl,
+                avatarUpdatedAt: new Date(),
+            },
+            select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+                avatarUpdatedAt: true,
+            },
+        });
+    }
+
     async submitSupportTicket(orgId: string, topic: SupportTopic, message: string) {
         // Check for existing unresolved tickets
         const existingTicket = await this.prisma.supportTicket.findFirst({
@@ -176,7 +226,7 @@ export class OrgService {
         };
 
         // Handle nested sorting for user fields
-        let orderBy: any = {};
+        let orderBy: Prisma.TeacherOrderByWithRelationInput = {};
         const userFields = ['name', 'email', 'phone'];
 
         if (sortBy.startsWith('user.')) {
@@ -336,7 +386,7 @@ export class OrgService {
                             userData.password = await bcrypt.hash(value, 10);
                         }
                     } else if (key !== 'email') {
-                        (userData as any)[key] = value;
+                        (userData as Record<string, unknown>)[key] = value;
                     }
                 } else if (key === 'isManager') {
                     userData.role = value ? Role.ORG_MANAGER : Role.TEACHER;
@@ -350,7 +400,7 @@ export class OrgService {
                         }
                     }
                 } else if (teacherFields.includes(key)) {
-                    (teacherData as any)[key] = value;
+                    (teacherData as Record<string, unknown>)[key] = value;
                 }
             }
 
@@ -403,19 +453,19 @@ export class OrgService {
     }
 
     // --- Courses ---
-    async getCourses(orgId: string, options: { 
-        page?: number; 
-        limit?: number; 
+    async getCourses(orgId: string, options: {
+        page?: number;
+        limit?: number;
         search?: string;
         sortBy?: string;
         sortOrder?: 'asc' | 'desc';
     } = {}) {
-        const { 
-            page = 1, 
-            limit = 10, 
+        const {
+            page = 1,
+            limit = 10,
             search = '',
             sortBy = 'name',
-            sortOrder = 'asc' 
+            sortOrder = 'asc'
         } = options;
         const skip = (page - 1) * limit;
         const take = limit;
@@ -450,16 +500,16 @@ export class OrgService {
     }
 
     // --- Sections ---
-    async getSections(orgId: string, options: { 
-        page?: number; 
-        limit?: number; 
+    async getSections(orgId: string, options: {
+        page?: number;
+        limit?: number;
         search?: string;
         sortBy?: string;
         sortOrder?: 'asc' | 'desc';
     }) {
-        const { 
-            page = 1, 
-            limit = 10, 
+        const {
+            page = 1,
+            limit = 10,
             search = '',
             sortBy = 'createdAt',
             sortOrder = 'desc'
@@ -481,7 +531,7 @@ export class OrgService {
         };
 
         // Handle nested sorting for course name
-        let orderBy: any = {};
+        let orderBy: Prisma.SectionOrderByWithRelationInput = {};
         if (sortBy === 'courseName') {
             orderBy = { course: { name: sortOrder } };
         } else {
@@ -573,7 +623,7 @@ export class OrgService {
         };
 
         // Handle nested sorting for user fields
-        let orderBy: any = {};
+        let orderBy: Prisma.StudentOrderByWithRelationInput = {};
         const userFields = ['name', 'email', 'phone'];
 
         if (sortBy.startsWith('user.')) {
@@ -736,7 +786,7 @@ export class OrgService {
                             userData.password = await bcrypt.hash(value, 10);
                         }
                     } else if (key !== 'email') {
-                        (userData as any)[key] = value;
+                        (userData as Record<string, unknown>)[key] = value;
                     }
                 } else if (key === 'registrationNumber' && value !== student.registrationNumber) {
                     const existing = await tx.student.findFirst({
@@ -750,13 +800,13 @@ export class OrgService {
                     if (value) {
                         const date = new Date(value as string);
                         if (!isNaN(date.getTime())) {
-                            (studentData as any)[key] = date;
+                            (studentData as Record<string, unknown>)[key] = date;
                         }
                     } else if (key === 'graduationDate') {
-                        (studentData as any)[key] = null; // Graduation date can be cleared
+                        (studentData as Record<string, unknown>)[key] = null; // Graduation date can be cleared
                     }
                 } else if (studentFields.includes(key)) {
-                    (studentData as any)[key] = value;
+                    (studentData as Record<string, unknown>)[key] = value;
                 }
             }
 
@@ -819,7 +869,7 @@ export class OrgService {
             throw new BadRequestException('Only rejected organizations can re-apply');
         }
 
-        const history = (org.statusHistory as any[]) || [];
+        const history = (org.statusHistory as Prisma.JsonArray) || [];
         const newHistory = [
             ...history,
             {

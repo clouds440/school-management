@@ -15,7 +15,7 @@ export interface BasePaginationParams {
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
     search?: string;
-    [key: string]: any; // Allow for extra filter fields
+    [key: string]: unknown; // Allow for extra filter fields
 }
 
 export function usePaginatedData<T, P extends BasePaginationParams = BasePaginationParams>(

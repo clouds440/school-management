@@ -51,6 +51,8 @@ model User {
   name           String?
   phone          String?
   tokenVersion   Int           @default(0)
+  avatarUrl      String?
+  avatarUpdatedAt DateTime?
   studentProfile Student?
   teacherProfile Teacher?
   organization   Organization? @relation(fields: [organizationId], references: [id])

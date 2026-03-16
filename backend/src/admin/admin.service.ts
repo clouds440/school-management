@@ -1,10 +1,9 @@
 import { UnauthorizedException, NotFoundException, Injectable } from '@nestjs/common';
-import { PrismaClient, Prisma, User as UserEntity } from '@prisma/client';
+import { Prisma, User as UserEntity } from '@prisma/client';
 import { OrgStatus, Role, SupportTopic } from '../common/enums';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth/auth.service';
-
-const prisma = new PrismaClient();
+import { PrismaService } from '../prisma/prisma.service';
 
 import { CreatePlatformAdminDto } from './dto/create-platform-admin.dto';
 import { UpdatePlatformAdminDto } from './dto/update-platform-admin.dto';
@@ -12,7 +11,10 @@ import { UpdatePlatformAdminDto } from './dto/update-platform-admin.dto';
 
 @Injectable()
 export class AdminService {
-    constructor(private readonly authService: AuthService) { }
+    constructor(
+        private readonly authService: AuthService,
+        private readonly prisma: PrismaService
+    ) { }
 
     async getOrganizations(options: {
         status?: OrgStatus;
@@ -67,11 +69,11 @@ export class AdminService {
         };
 
         const [orgs, totalRecords, pendingCount, approvedCount, rejectedCount, suspendedCount] = await Promise.all([
-            prisma.organization.findMany({
+            this.prisma.organization.findMany({
                 where,
                 skip,
                 take,
-                orderBy: { [prismaSortBy]: sortOrder },
+                orderBy: { [prismaSortBy]: sortOrder } as Prisma.OrganizationOrderByWithRelationInput,
                 include: {
                     users: {
                         where: { role: Role.ORG_ADMIN },
@@ -80,22 +82,23 @@ export class AdminService {
                     }
                 }
             }),
-            prisma.organization.count({ where }),
-            prisma.organization.count({ where: { ...countWhere, status: OrgStatus.PENDING } }),
-            prisma.organization.count({ where: { ...countWhere, status: OrgStatus.APPROVED } }),
-            prisma.organization.count({ where: { ...countWhere, status: OrgStatus.REJECTED } }),
-            prisma.organization.count({ where: { ...countWhere, status: OrgStatus.SUSPENDED } }),
+            this.prisma.organization.count({ where }),
+            this.prisma.organization.count({ where: { ...countWhere, status: OrgStatus.PENDING } }),
+            this.prisma.organization.count({ where: { ...countWhere, status: OrgStatus.APPROVED } }),
+            this.prisma.organization.count({ where: { ...countWhere, status: OrgStatus.REJECTED } }),
+            this.prisma.organization.count({ where: { ...countWhere, status: OrgStatus.SUSPENDED } }),
         ]);
 
         const mappedData = orgs.map(org => ({
             id: org.id,
             name: org.name,
+            logoUrl: org.logoUrl,
             location: org.location,
             type: org.type,
             status: org.status,
             statusHistory: org.statusHistory,
             createdAt: org.createdAt,
-            email: org.users[0]?.email || 'No email'
+            email: org.users?.[0]?.email || 'No email'
         }));
 
         return {
@@ -113,12 +116,12 @@ export class AdminService {
     }
 
     async approveOrganization(id: string, admin: UserEntity) {
-        const org = await prisma.organization.findUnique({ where: { id } });
+        const org = await this.prisma.organization.findUnique({ where: { id } });
         if (!org) {
             throw new NotFoundException('Organization not found');
         }
 
-        const history = (org.statusHistory as any[]) || [];
+        const history = (org.statusHistory as Prisma.JsonArray) || [];
         const newEntry = {
             status: OrgStatus.APPROVED,
             message: 'Organization approved.',
@@ -127,16 +130,16 @@ export class AdminService {
             createdAt: new Date()
         };
 
-        await prisma.organization.update({
+        await this.prisma.organization.update({
             where: { id },
-            data: { 
+            data: {
                 status: OrgStatus.APPROVED,
-                statusHistory: [...history, newEntry]
+                statusHistory: [...history, newEntry] as Prisma.InputJsonValue
             }
         });
 
         // Resolve pending "Account status" tickets for this organization
-        return prisma.supportTicket.updateMany({
+        return this.prisma.supportTicket.updateMany({
             where: { organizationId: id, isResolved: false, topic: SupportTopic.ACCOUNT_STATUS },
             data: { isResolved: true }
         });
@@ -145,12 +148,12 @@ export class AdminService {
 
 
     async rejectOrganization(id: string, reason: string, admin: UserEntity) {
-        const org = await prisma.organization.findUnique({ where: { id } });
+        const org = await this.prisma.organization.findUnique({ where: { id } });
         if (!org) {
             throw new NotFoundException('Organization not found');
         }
 
-        const history = (org.statusHistory as any[]) || [];
+        const history = (org.statusHistory as Prisma.JsonArray) || [];
         const newEntry = {
             status: OrgStatus.REJECTED,
             message: reason,
@@ -159,16 +162,16 @@ export class AdminService {
             createdAt: new Date()
         };
 
-        await prisma.organization.update({
+        await this.prisma.organization.update({
             where: { id },
             data: {
                 status: OrgStatus.REJECTED,
-                statusHistory: [...history, newEntry]
+                statusHistory: [...history, newEntry] as Prisma.InputJsonValue
             }
         });
 
         // Resolve pending "Account status" tickets for this organization
-        return prisma.supportTicket.updateMany({
+        return this.prisma.supportTicket.updateMany({
             where: { organizationId: id, isResolved: false, topic: SupportTopic.ACCOUNT_STATUS },
             data: { isResolved: true }
         });
@@ -176,12 +179,12 @@ export class AdminService {
 
 
     async suspendOrganization(id: string, reason: string, admin: UserEntity) {
-        const org = await prisma.organization.findUnique({ where: { id } });
+        const org = await this.prisma.organization.findUnique({ where: { id } });
         if (!org) {
             throw new NotFoundException('Organization not found');
         }
 
-        const history = (org.statusHistory as any[]) || [];
+        const history = (org.statusHistory as Prisma.JsonArray) || [];
         const newEntry = {
             status: OrgStatus.SUSPENDED,
             message: reason,
@@ -190,16 +193,16 @@ export class AdminService {
             createdAt: new Date()
         };
 
-        await prisma.organization.update({
+        await this.prisma.organization.update({
             where: { id },
             data: {
                 status: OrgStatus.SUSPENDED,
-                statusHistory: [...history, newEntry],
+                statusHistory: [...history, newEntry] as Prisma.InputJsonValue,
             },
         });
 
         // Resolve pending "Account status" tickets for this organization
-        return prisma.supportTicket.updateMany({
+        return this.prisma.supportTicket.updateMany({
             where: { organizationId: id, isResolved: false, topic: SupportTopic.ACCOUNT_STATUS },
             data: { isResolved: true }
         });
@@ -228,7 +231,7 @@ export class AdminService {
         } : {};
 
         const [tickets, totalRecords] = await Promise.all([
-            prisma.supportTicket.findMany({
+            this.prisma.supportTicket.findMany({
                 where,
                 skip,
                 take,
@@ -239,7 +242,7 @@ export class AdminService {
                 },
                 orderBy: { createdAt: 'desc' }
             }),
-            prisma.supportTicket.count({ where })
+            this.prisma.supportTicket.count({ where })
         ]);
 
         return {
@@ -252,12 +255,12 @@ export class AdminService {
 
     async getAdminStats() {
         const [pending, approved, rejected, suspended, tickets, platformAdmins] = await Promise.all([
-            prisma.organization.count({ where: { status: OrgStatus.PENDING } }),
-            prisma.organization.count({ where: { status: OrgStatus.APPROVED } }),
-            prisma.organization.count({ where: { status: OrgStatus.REJECTED } }),
-            prisma.organization.count({ where: { status: OrgStatus.SUSPENDED } }),
-            prisma.supportTicket.count({ where: { isResolved: false } }),
-            prisma.user.count({ where: { role: Role.PLATFORM_ADMIN } }),
+            this.prisma.organization.count({ where: { status: OrgStatus.PENDING } }),
+            this.prisma.organization.count({ where: { status: OrgStatus.APPROVED } }),
+            this.prisma.organization.count({ where: { status: OrgStatus.REJECTED } }),
+            this.prisma.organization.count({ where: { status: OrgStatus.SUSPENDED } }),
+            this.prisma.supportTicket.count({ where: { isResolved: false } }),
+            this.prisma.user.count({ where: { role: Role.PLATFORM_ADMIN } }),
         ]);
 
         return {
@@ -272,7 +275,7 @@ export class AdminService {
 
 
     async resolveSupportTicket(id: string) {
-        return prisma.supportTicket.update({
+        return this.prisma.supportTicket.update({
             where: { id },
             data: { isResolved: true }
         });
@@ -305,14 +308,14 @@ export class AdminService {
         };
 
         const [admins, totalRecords] = await Promise.all([
-            prisma.user.findMany({
+            this.prisma.user.findMany({
                 where,
                 skip,
                 take,
                 select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
                 orderBy: { createdAt: 'desc' }
             }),
-            prisma.user.count({ where })
+            this.prisma.user.count({ where })
         ]);
 
         return {
@@ -324,11 +327,11 @@ export class AdminService {
     }
 
     async createPlatformAdmin(data: CreatePlatformAdminDto) {
-        const existing = await prisma.user.findUnique({ where: { email: data.email } });
+        const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
         if (existing) throw new UnauthorizedException('Email already in use');
 
         const hashedPassword = await bcrypt.hash(data.password, 10);
-        return prisma.user.create({
+        return this.prisma.user.create({
             data: {
                 email: data.email,
                 password: hashedPassword,
@@ -341,7 +344,7 @@ export class AdminService {
     }
 
     async updatePlatformAdmin(id: string, data: UpdatePlatformAdminDto) {
-        const admin = await prisma.user.findUnique({ where: { id, role: Role.PLATFORM_ADMIN } });
+        const admin = await this.prisma.user.findUnique({ where: { id, role: Role.PLATFORM_ADMIN } });
         if (!admin) throw new NotFoundException('Platform admin not found');
 
         const updateData: Prisma.UserUpdateInput = {};
@@ -352,7 +355,7 @@ export class AdminService {
             updateData.password = await bcrypt.hash(data.password, 10);
         }
 
-        return prisma.user.update({
+        return this.prisma.user.update({
             where: { id },
             data: updateData,
             select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true }
@@ -360,10 +363,10 @@ export class AdminService {
     }
 
     async deletePlatformAdmin(id: string) {
-        const admin = await prisma.user.findUnique({ where: { id, role: Role.PLATFORM_ADMIN } });
+        const admin = await this.prisma.user.findUnique({ where: { id, role: Role.PLATFORM_ADMIN } });
         if (!admin) throw new NotFoundException('Platform admin not found');
 
-        await prisma.user.delete({ where: { id } });
+        await this.prisma.user.delete({ where: { id } });
         return { message: 'Platform admin deleted successfully' };
     }
 
@@ -371,7 +374,7 @@ export class AdminService {
 
     async changeAdminPassword(userId: string, oldPass: string, newPass: string) {
 
-        const user = await prisma.user.findUnique({ where: { id: userId } });
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user || (user.role !== Role.SUPER_ADMIN && user.role !== Role.PLATFORM_ADMIN)) {
             throw new UnauthorizedException('Admin not found');
         }
@@ -382,7 +385,7 @@ export class AdminService {
         }
 
         const hashedNew = await bcrypt.hash(newPass, 10);
-        const updatedUser = await prisma.user.update({
+        const updatedUser = await this.prisma.user.update({
             where: { id: userId },
             data: {
                 password: hashedNew,

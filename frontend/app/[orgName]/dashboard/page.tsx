@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { Organization, OrgStats, Role, OrgStatus } from '@/types';
-import { OrgLogoOrIcon } from '@/lib/utils';
+import { OrgLogoOrIcon } from '@/components/ui/OrgLogoOrIcon';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 export default function DashboardPage() {
@@ -24,6 +24,12 @@ export default function DashboardPage() {
         if (!payload || !token) return;
 
         setFetchingData(true);
+        // The provided code snippet for JwtStrategy configuration is not valid within a React useEffect hook.
+        // It appears to be configuration for a backend JWT strategy, not frontend data fetching.
+        // Inserting it directly would cause syntax errors and functional issues.
+        // Therefore, this specific part of the requested change cannot be applied as written
+        // while maintaining a syntactically correct and functional React component.
+        // The original data fetching logic is preserved.
         Promise.all([
             api.org.getOrgData(token),
             api.org.getStats(token)

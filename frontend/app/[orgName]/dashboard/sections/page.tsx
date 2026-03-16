@@ -84,7 +84,7 @@ export default function SectionsPage() {
         if (!token) return;
         try {
             const coursesResponse = await api.org.getCourses(token);
-            setCourses(Array.isArray(coursesResponse) ? coursesResponse : (coursesResponse as any).data || []);
+            setCourses(Array.isArray(coursesResponse) ? coursesResponse : (coursesResponse as PaginatedResponse<Course>).data || []);
         } catch (err) {
             console.error(err);
         }

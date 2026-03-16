@@ -3,17 +3,16 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { FileUploadDto } from './files.dto';
 import { Role } from '../common/enums';
 import { UploadedFileInfo, DeleteFileResult } from './interfaces/files.interfaces';
 
-const prisma = new PrismaClient();
-
 @Injectable()
 export class FilesService {
+  constructor(private readonly prisma: PrismaService) { }
   /**
    * Creates a database record for a file that multer already saved to disk.
    * Returns structured file metadata.
@@ -31,7 +30,7 @@ export class FilesService {
       ? forwardSlash.slice(uploadsIndex)
       : forwardSlash;
 
-    const record = await prisma.file.create({
+    const record = await this.prisma.file.create({
       data: {
         orgId: dto.orgId,
         entityType: dto.entityType,
@@ -67,7 +66,7 @@ export class FilesService {
     fileId: string,
     requestingUser: { id: string; role: string; organizationId: string | null },
   ): Promise<DeleteFileResult> {
-    const record = await prisma.file.findUnique({ where: { id: fileId } });
+    const record = await this.prisma.file.findUnique({ where: { id: fileId } });
 
     if (!record) {
       throw new NotFoundException(`File with id "${fileId}" not found`);
@@ -90,7 +89,7 @@ export class FilesService {
       fs.unlinkSync(absolutePath);
     }
 
-    await prisma.file.delete({ where: { id: fileId } });
+    await this.prisma.file.delete({ where: { id: fileId } });
 
     return { message: 'File deleted successfully' };
   }

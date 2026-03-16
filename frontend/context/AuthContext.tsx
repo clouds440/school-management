@@ -15,6 +15,8 @@ export interface JwtPayload {
     orgSlug?: string;
     orgName?: string;
     orgLogoUrl?: string | null;
+    avatarUrl?: string | null;
+    avatarUpdatedAt?: string | null;
     role?: Role;
     designation?: string;
     type?: string;

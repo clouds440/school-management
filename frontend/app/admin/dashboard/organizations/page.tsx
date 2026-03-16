@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { ShieldOff, ShieldAlert, ShieldCheck, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone, Info, Hash, Clock } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Organization, AdminStats, OrgStatus, Role, PaginatedResponse } from '@/types';
+import { Organization, AdminStats, OrgStatus, PaginatedResponse } from '@/types';
+import { getPublicUrl } from '@/lib/utils';
 import { TableActions, AdminAction } from '@/components/ui/TableActions';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -25,7 +26,6 @@ export default function OrganizationsPage() {
     const { user, token, loading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const pathname = usePathname();
     const { showToast } = useToast();
 
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Organization> | null>(null);
@@ -34,7 +34,7 @@ export default function OrganizationsPage() {
     const [stats, setStats] = useState<AdminStats | null>(null);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [operatingOrg, setOperatingOrg] = useState<{ id: string, name: string, email: string, statusHistory?: any[] } | null>(null);
+    const [operatingOrg, setOperatingOrg] = useState<{ id: string, name: string, email: string, statusHistory?: Organization['statusHistory'] } | null>(null);
     const [modalMode, setModalMode] = useState<'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE'>('REJECT');
     const [reason, setReason] = useState('');
 
@@ -49,11 +49,11 @@ export default function OrganizationsPage() {
         limit: 10
     };
 
-    const { 
-        data: fetchedData, 
-        loading: isInitialLoading, 
-        fetching: isFetching, 
-        refresh 
+    const {
+        data: fetchedData,
+        loading: isInitialLoading,
+        fetching: isFetching,
+        refresh
     } = usePaginatedData<Organization, AdminOrgParams>(
         (p) => api.admin.getOrganizations(token!, p),
         orgParams,
@@ -77,6 +77,8 @@ export default function OrganizationsPage() {
             api.admin.getAdminStats(token).then(setStats).catch(console.error);
         }
     }, [token]);
+
+    console.log(paginatedData);
 
     const updateQueryParams = (updates: Record<string, string | number | undefined>) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -110,7 +112,7 @@ export default function OrganizationsPage() {
         }
     };
 
-    const handleOpenModal = (id: string, name: string, email: string, mode: 'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE', currentHistory?: any[]) => {
+    const handleOpenModal = (id: string, name: string, email: string, mode: 'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE', currentHistory?: Organization['statusHistory']) => {
         setOperatingOrg({ id, name, email, statusHistory: currentHistory });
         setModalMode(mode);
         const lastMessage = currentHistory && currentHistory.length > 0 ? currentHistory[currentHistory.length - 1].message : '';
@@ -153,13 +155,8 @@ export default function OrganizationsPage() {
         }
     };
 
-    // For type filter, if it's not supported by backend yet, we can either filter client-side 
-    // or just pass it to backend if we updated it. 
-    // Assuming backend only filters by status and search for now.
-    const organizations = paginatedData?.data || [];
-    
     // Use dynamic counts from server if available, otherwise fallback to stats
-    const dynamicCounts = (paginatedData as any)?.counts || stats;
+    const dynamicCounts = (paginatedData as (PaginatedResponse<Organization> & { counts: Record<string, number> }))?.counts || stats;
 
     const statusTabs: { id: OrgStatus, label: string, icon: LucideIcon, color: string, bg: string, count?: number }[] = [
         { id: OrgStatus.PENDING, label: 'Pending', icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-600/10', count: dynamicCounts?.PENDING },
@@ -175,8 +172,12 @@ export default function OrganizationsPage() {
             sortKey: 'name',
             accessor: (row) => (
                 <div className="flex items-start gap-4 min-w-0">
-                    <div className="w-10 h-10 bg-indigo-50 rounded-sm flex items-center justify-center text-indigo-600 shrink-0">
-                        <Building2 className="w-5 h-5" />
+                    <div className={`w-10 h-10 ${row.logoUrl ? 'bg-transparent' : 'bg-indigo-50'} rounded-sm flex items-center justify-center text-indigo-600 shrink-0`}>
+                        {row.logoUrl ? (
+                            <img src={getPublicUrl(row.logoUrl)} alt="Org Logo/Icon" className="w-10 h-10 bg-transparent rounded-full" />
+                        ) : (
+                            <Building2 className="w-5 h-5" />
+                        )}
                     </div>
                     <div className="min-w-0 flex-1">
                         <h4 className="text-sm font-black text-gray-900 leading-tight">{row.name}</h4>
@@ -265,7 +266,7 @@ export default function OrganizationsPage() {
 
                 return (
                     <div className="flex flex-col gap-1 shrink-0 items-end">
-                        <TableActions extraActions={getActions()} />
+                        <TableActions extraActions={getActions()} showLabels={window.innerWidth > 1440} />
                         {activeStatusTab === OrgStatus.APPROVED && (
                             <div className="px-2 py-0.5 bg-green-50 text-green-700 rounded-sm font-bold text-[9px] border border-green-100 uppercase">
                                 Active
@@ -288,7 +289,7 @@ export default function OrganizationsPage() {
     const handleViewOrg = (org: Organization) => {
         const viewFields: DataField[] = [
             { label: 'Organization ID', value: org.id, icon: Hash, fullWidth: true },
-            { label: 'Organization Name', value: org.name, icon: Building2 },
+            { label: 'Organization Name', value: org.name, icon: org.logoUrl ? org.logoUrl : Building2 },
             { label: 'Location', value: org.location, icon: MapPin },
             { label: 'Type', value: org.type, icon: Tag },
             { label: 'Contact Email', value: org.email, icon: Mail },

@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
-import { LogoUploadPicker } from '@/components/ui/LogoUploadPicker';
+import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -106,8 +106,9 @@ export default function RegisterPage() {
             <Label className="mb-3">
               Organization Logo <span className="text-gray-400 font-normal">(optional)</span>
             </Label>
-            <LogoUploadPicker
+            <PhotoUploadPicker
               onFileReady={handleLogoReady}
+              type="org"
               hint="Square image, PNG or JPG, max 5 MB"
             />
           </div>

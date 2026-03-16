@@ -11,7 +11,8 @@ import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
-import { LogoUploadPicker } from '@/components/ui/LogoUploadPicker';
+import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
+import { getPublicUrl } from '@/lib/utils';
 
 
 export default function SettingsPage() {
@@ -53,9 +54,10 @@ export default function SettingsPage() {
                 });
                 setLoading(false);
             })
-            .catch((err: any) => {
+            .catch((err) => {
                 console.error('Failed to load settings', err);
-                showToast('Failed to load settings', 'error');
+                const message = err instanceof Error ? err.message : 'Failed to load settings';
+                showToast(message, 'error');
                 setLoading(false);
             });
     }, [token, showToast]);
@@ -175,9 +177,10 @@ export default function SettingsPage() {
                     {/* Logo section */}
                     <div className="flex flex-col items-center gap-2 pb-6 border-b border-white/10">
                         <Label className="mb-1">Organization Logo</Label>
-                        <LogoUploadPicker
-                            currentLogoUrl={orgData?.logoUrl}
+                        <PhotoUploadPicker
+                            currentImageUrl={orgData?.logoUrl}
                             onFileReady={handleLogoReady}
+                            type="org"
                             hint="Click to change logo — saved when you click Save Settings"
                         />
                         {pendingLogoFile && (

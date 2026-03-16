@@ -14,6 +14,9 @@ import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { api } from '@/lib/api';
 import { Section, Student, StudentStatus } from '@/types';
 
+import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
+import { getPublicUrl } from '@/lib/utils';
+
 interface StudentFormProps {
     studentId?: string;
     orgSlug: string;
@@ -26,6 +29,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
     const { showToast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
     const [sections, setSections] = useState<Section[]>([]);
+    const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
 
     // Initialize form state from initialData if provided (edit mode)
     const [formData, setFormData] = useState(() => {
@@ -33,6 +37,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
             return {
                 name: initialData.user?.name || '',
                 email: initialData.user?.email || '',
+                avatarUrl: initialData.user?.avatarUrl || null,
                 password: '',
                 phone: initialData.user?.phone || '',
                 registrationNumber: initialData.registrationNumber || '',
@@ -55,6 +60,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
         return {
             name: '',
             email: '',
+            avatarUrl: null as string | null,
             password: '',
             phone: '',
             registrationNumber: '',
@@ -101,7 +107,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
         setIsSaving(true);
 
         try {
-            const { password, ...rest } = formData;
+            const { password, avatarUrl, ...rest } = formData;
             const payload = {
                 ...rest,
                 fee: formData.fee ? Number(formData.fee) : null,
@@ -109,10 +115,21 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                 ...(studentId ? (password ? { password } : {}) : { password })
             };
 
+            let savedStudent: Student;
             if (studentId) {
-                await api.org.updateStudent(studentId, payload, token!);
+                savedStudent = await api.org.updateStudent(studentId, payload, token!);
             } else {
-                await api.org.createStudent(payload, token!);
+                savedStudent = await api.org.createStudent(payload, token!);
+            }
+
+            // Handle Photo Upload if pending
+            if (pendingPhoto && savedStudent.userId) {
+                try {
+                    await api.org.uploadAvatar(savedStudent.userId, pendingPhoto, token!);
+                } catch (uploadError) {
+                    console.error('Avatar upload failed', uploadError);
+                    showToast('Student registered, but photo upload failed', 'info');
+                }
             }
 
             showToast(`Student ${studentId ? 'updated' : 'registered'} successfully.`, 'success');
@@ -132,27 +149,37 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
         <form onSubmit={handleSubmit} className="space-y-12">
             {/* Mandatory Information */}
             <div className="bg-primary/5 p-6 rounded-sm border border-white/10">
-                <div className="mb-6">
-                    <h3 className="text-xl font-bold text-card-text flex items-center gap-2">
-                        <ShieldCheck className="w-6 h-6 text-primary" />
-                        Mandatory Information
-                    </h3>
-                    <p className="text-card-text/60 text-sm mt-1">These fields are required for administrative setup and account creation.</p>
+                <div className="flex flex-col md:flex-row gap-8 items-start mb-10">
+                    <PhotoUploadPicker
+                        currentImageUrl={getPublicUrl(formData.avatarUrl)}
+                        onFileReady={(file) => setPendingPhoto(file)}
+                        hint="Student Profile Picture"
+                    />
+                    <div className="flex-1">
+                        <div className="mb-6">
+                            <h3 className="text-xl font-bold text-card-text flex items-center gap-2">
+                                <ShieldCheck className="w-6 h-6 text-primary" />
+                                Mandatory Information
+                            </h3>
+                            <p className="text-card-text/60 text-sm mt-1">These fields are required for administrative setup and account creation.</p>
+                        </div>
+
+                        <div className="col-span-1 md:col-span-3">
+                            <Label>Full Name *</Label>
+                            <Input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                required={!studentId}
+                                icon={User}
+                                placeholder="Alex Johnson"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="col-span-1 md:col-span-3">
-                        <Label>Full Name *</Label>
-                        <Input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            required={!studentId}
-                            icon={User}
-                            placeholder="Alex Johnson"
-                        />
-                    </div>
 
                     <div>
                         <Label>Email Address *</Label>

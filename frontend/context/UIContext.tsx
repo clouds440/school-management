@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 export interface DataField {
     label: string;
     value: React.ReactNode;
-    icon?: React.ElementType;
+    icon?: React.ElementType | string;
     fullWidth?: boolean;
 }
 
@@ -45,7 +45,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
 
     const toggleSidebar = () => setIsExpanded(!isExpanded);
     const toggleMobileSidebar = () => setIsMobileOpen(!isMobileOpen);
-    
+
     const openViewModal = (config: Omit<ModalConfig, 'isOpen'>) => {
         setModalConfig({ ...config, isOpen: true });
     };
