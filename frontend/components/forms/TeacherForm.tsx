@@ -78,8 +78,8 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
 
     const fetchSections = async () => {
         try {
-            const data = await api.org.getSections(token!);
-            setSections(data);
+            const response = await api.org.getSections(token!);
+            setSections(response.data || []);
         } catch (error) {
             console.error('Failed to fetch sections', error);
         }

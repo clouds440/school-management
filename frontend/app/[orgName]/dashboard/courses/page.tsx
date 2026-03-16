@@ -3,25 +3,56 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Plus } from 'lucide-react';
-import { DataTable } from '@/components/ui/DataTable';
+import { DataTable, Column } from '@/components/ui/DataTable';
 import { api } from '@/lib/api';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Button } from '@/components/ui/Button';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
-import { Course, Role } from '@/types';
+import { Course, Role, PaginatedResponse } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
+import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+
+interface CourseParams extends BasePaginationParams {}
 
 export default function CoursesPage() {
     const { token, user } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { showToast } = useToast();
-    const [courses, setCourses] = useState<Course[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Course> | null>(null);
+
+    // URL State
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const searchTerm = searchParams.get('search') || '';
+    const sortBy = searchParams.get('sortBy') || 'name';
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
+
+    const courseParams: CourseParams = {
+        page,
+        limit: 10,
+        search: searchTerm,
+        sortBy,
+        sortOrder,
+    };
+
+    const { 
+        data: fetchedData, 
+        loading: isInitialLoading, 
+        fetching: isFetching, 
+        refresh 
+    } = usePaginatedData<Course, CourseParams>(
+        (p) => api.org.getCourses(token!, p),
+        courseParams,
+        `courses-${user?.orgSlug || pathname.split('/')[1]}`
+    );
+
+    useEffect(() => {
+        setPaginatedData(fetchedData);
+    }, [fetchedData]);
 
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -31,22 +62,19 @@ export default function CoursesPage() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deletingCourse, setDeletingCourse] = useState<Course | null>(null);
 
-    const fetchCourses = useCallback(async () => {
-        if (!token) return;
-        try {
-            const data = await api.org.getCourses(token);
-            setCourses(Array.isArray(data) ? data : []);
-        } catch (err) {
-            console.error(err);
-            showToast('Failed to load courses', 'error');
-        } finally {
-            setLoading(false);
-        }
-    }, [token, showToast]);
+    const updateQueryParams = (updates: Record<string, string | number | undefined>) => {
+        const params = new URLSearchParams(searchParams.toString());
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value === undefined || value === '') {
+                params.delete(key);
+            } else {
+                params.set(key, String(value));
+            }
+        });
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    };
 
-    useEffect(() => {
-        fetchCourses();
-    }, [fetchCourses]);
+    // We no longer need fetchCourses locally as it's handled by the hook
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,7 +84,7 @@ export default function CoursesPage() {
             await api.org.updateCourse(editingCourse.id, editFormData, token);
             setEditModalOpen(false);
             showToast('Course updated successfully', 'success');
-            fetchCourses();
+            refresh();
         } catch (err: unknown) {
             showToast(err instanceof Error ? err.message : 'Error updating course', 'error');
         } finally {
@@ -70,22 +98,19 @@ export default function CoursesPage() {
             await api.org.deleteCourse(deletingCourse.id, token);
             showToast('Course deleted successfully', 'success');
             setDeleteDialogOpen(false);
-            fetchCourses();
+            refresh();
         } catch (err: unknown) {
             showToast(err instanceof Error ? err.message : 'Error deleting course', 'error');
         }
     };
 
-    const filteredCourses = courses.filter(course => {
-        return course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            course.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    });
+    const courses = paginatedData?.data || [];
 
     const columns = [
         {
             header: 'Course Name',
             sortable: true,
-            sortAccessor: (row: Course) => row.name,
+            sortKey: 'name',
             accessor: (row: Course) => (
                 <div className="flex flex-col">
                     <span className="font-semibold text-card-text">{row.name}</span>
@@ -95,12 +120,13 @@ export default function CoursesPage() {
         {
             header: 'Description',
             sortable: true,
+            sortKey: 'description',
             accessor: (row: Course) => row.description || <span className="text-gray-400 italic">No description</span>
         },
         {
             header: 'Last Updated',
             sortable: true,
-            sortAccessor: (row: Course) => new Date(row.updatedAt || '').getTime(),
+            sortKey: 'updatedAt',
             accessor: (row: Course) => row.updatedBy ? (
                 <div className="flex flex-col">
                     <span className="font-medium text-card-text/80">{row.updatedBy}</span>
@@ -140,6 +166,14 @@ export default function CoursesPage() {
 
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
+    if ((!token && !user) || (isFetching && !paginatedData)) {
+        return (
+            <div className="flex items-center justify-center p-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
             <div className="mb-6">
@@ -159,16 +193,16 @@ export default function CoursesPage() {
             <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-6 md:p-8 mb-10">
                 <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex-1 max-w-xl">
-                        <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name or description..." />
+                        <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name or description..." />
                     </div>
                 </div>
 
                 <div className="relative">
                     <DataTable
-                        data={filteredCourses}
+                        data={courses}
                         columns={columns}
                         keyExtractor={(row) => row.id}
-                        isLoading={loading}
+                        isLoading={isFetching}
                         onRowClick={(row) => {
                             const isAdmin = user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER;
                             const isTeacher = user?.role === Role.TEACHER;
@@ -181,6 +215,13 @@ export default function CoursesPage() {
                                 setEditModalOpen(true);
                             }
                         }}
+                        currentPage={page}
+                        totalPages={paginatedData?.totalPages || 1}
+                        totalResults={paginatedData?.totalRecords || 0}
+                        pageSize={10}
+                        onPageChange={(p) => updateQueryParams({ page: p })}
+                        sortConfig={{ key: sortBy, direction: sortOrder }}
+                        onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                     />
                 </div>
             </div>

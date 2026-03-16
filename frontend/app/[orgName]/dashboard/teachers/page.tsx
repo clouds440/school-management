@@ -1,29 +1,62 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Users, Trash2, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { DataTable } from '@/components/ui/DataTable';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
-import { Teacher, Role } from '@/types';
+import { Teacher, Role, PaginatedResponse } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { TableActions } from '@/components/ui/TableActions';
+import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+
+interface TeacherParams extends BasePaginationParams { }
 
 export default function TeachersPage() {
     const { token, user } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { showToast } = useToast();
-    const [teachers, setTeachers] = useState<Teacher[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
 
+    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Teacher> | null>(null);
+
+    // URL State
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
+
+    // URL State
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const searchTerm = searchParams.get('search') || '';
+    const sortBy = searchParams.get('sortBy') || 'name';
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
+
+    const teacherParams: TeacherParams = {
+        page,
+        limit: 10,
+        search: searchTerm,
+        sortBy,
+        sortOrder,
+    };
+
+    const {
+        data: fetchedData,
+        loading: isInitialLoading,
+        fetching: isFetching,
+        refresh
+    } = usePaginatedData<Teacher, TeacherParams>(
+        (p) => api.org.getTeachers(token!, p),
+        teacherParams,
+        `teachers-${user?.orgSlug || pathname.split('/')[1]}`
+    );
+
+    useEffect(() => {
+        setPaginatedData(fetchedData);
+    }, [fetchedData]);
 
     useEffect(() => {
         if (user && user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER) {
@@ -31,21 +64,19 @@ export default function TeachersPage() {
         }
     }, [user, router, pathname]);
 
-    const fetchData = useCallback(async () => {
-        if (!token || (user?.role !== Role.ORG_ADMIN && user?.role !== Role.ORG_MANAGER)) return;
-        try {
-            const data = await api.org.getTeachers(token);
-            setTeachers(data || []);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [token, user]);
+    const updateQueryParams = (updates: Record<string, string | number | undefined>) => {
+        const params = new URLSearchParams(searchParams.toString());
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value === undefined || value === '') {
+                params.delete(key);
+            } else {
+                params.set(key, String(value));
+            }
+        });
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    };
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    // We no longer need fetchData locally as it's handled by the hook
 
     const handleDeleteConfirm = async () => {
         if (!deletingTeacher || !token) return;
@@ -53,25 +84,19 @@ export default function TeachersPage() {
             await api.org.deleteTeacher(deletingTeacher.id, token);
             showToast('Teacher removed from organization', 'success');
             setDeleteDialogOpen(false);
-            fetchData();
+            refresh();
         } catch (err: unknown) {
             showToast(err instanceof Error ? err.message : 'Failed to delete teacher', 'error');
         }
     };
 
-    const filteredTeachers = teachers.filter(t =>
-        t.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (t.user.name && t.user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (t.designation && t.designation.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (t.subject && t.subject.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (t.department && t.department.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const teachers = paginatedData?.data || [];
 
     const columns = [
         {
             header: 'Teacher',
             sortable: true,
-            sortAccessor: (row: Teacher) => row.user.name || row.user.email,
+            sortKey: 'name',
             accessor: (row: Teacher) => (
                 <div>
                     <div className="font-semibold text-card-text">{row.user.name || 'No Name'}</div>
@@ -82,7 +107,7 @@ export default function TeachersPage() {
         {
             header: 'Role & Subject',
             sortable: true,
-            sortAccessor: (row: Teacher) => row.designation || '',
+            sortKey: 'designation',
             accessor: (row: Teacher) => (
                 <div className="flex flex-col">
                     <span className="font-medium text-card-text/80">{row.designation || <span className="text-card-text/30 italic">No Designation</span>}</span>
@@ -109,7 +134,7 @@ export default function TeachersPage() {
         {
             header: 'Contact',
             sortable: true,
-            sortAccessor: (row: Teacher) => row.user.phone || '',
+            sortKey: 'phone',
             accessor: (row: Teacher) => row.user.phone || <span className="text-card-text/30 italic">-</span>
         },
         {
@@ -130,6 +155,14 @@ export default function TeachersPage() {
 
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
+    if ((!token && !user) || (isFetching && !paginatedData)) {
+        return (
+            <div className="flex items-center justify-center p-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
             <div className="mb-6">
@@ -146,20 +179,27 @@ export default function TeachersPage() {
 
             <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-6 md:p-8 mb-10">
                 <div className="mb-10 flex">
-                    <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, email or subject..." />
+                    <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, email or subject..." />
                 </div>
 
                 <div className="relative">
                     <DataTable
-                        data={filteredTeachers}
+                        data={teachers}
                         columns={columns}
                         keyExtractor={(row) => row.id}
-                        isLoading={loading}
+                        isLoading={isFetching}
                         onRowClick={(row) => {
                             if (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) {
                                 router.push(`/${orgSlug}/dashboard/teachers/edit/${row.id}`);
                             }
                         }}
+                        currentPage={page}
+                        totalPages={paginatedData?.totalPages || 1}
+                        totalResults={paginatedData?.totalRecords || 0}
+                        pageSize={10}
+                        onPageChange={(p) => updateQueryParams({ page: p })}
+                        sortConfig={{ key: sortBy, direction: sortOrder }}
+                        onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                     />
                 </div>
             </div>

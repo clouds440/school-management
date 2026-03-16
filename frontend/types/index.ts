@@ -1,6 +1,19 @@
 import { Role, TeacherStatus, StudentStatus, SupportTopic, OrganizationType, OrgStatus } from './enums';
 export { Role, TeacherStatus, StudentStatus, SupportTopic, OrganizationType, OrgStatus } from './enums';
 
+export interface PaginatedResponse<T> {
+    data: T[];
+    totalRecords: number;
+    totalPages: number;
+    currentPage: number;
+    counts?: {
+        PENDING: number;
+        APPROVED: number;
+        REJECTED: number;
+        SUSPENDED: number;
+    };
+}
+
 export interface User {
     id: string;
     name: string;
@@ -71,6 +84,14 @@ export interface Student {
     updatedAt?: string;
 }
 
+export interface StatusHistoryEntry {
+    status: OrgStatus;
+    message: string;
+    adminName: string;
+    adminRole: string;
+    createdAt: string;
+}
+
 export interface Organization {
     id: string;
     name: string;
@@ -83,7 +104,7 @@ export interface Organization {
     avatarUpdatedAt?: string | null;
     accentColor?: { primary?: string; secondary?: string } | null;
     status: OrgStatus;
-    statusMessage?: string;
+    statusHistory?: StatusHistoryEntry[];
     createdAt: string;
 }
 

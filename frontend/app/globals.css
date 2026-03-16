@@ -1,19 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  /* slate-50 */
-  --foreground: #0f172a;
-  /* slate-900 */
-  --primary: #4f46e5;
-  /* indigo-600 */
-  --primary-hover: #4338ca;
-  /* indigo-700 */
+  --background: #f8fafc; /* slate-50 */
+  --foreground: #0f172a; /* slate-900 */
+  --primary: #4f46e5;    /* indigo-600 */
+  --primary-hover: #4338ca; /* indigo-700 */
   --primary-rgb: 79, 70, 229;
+  --primary-text: #ffffff;
+  
   --secondary: #ffffff;
   --secondary-hover: #f1f5f9;
   --secondary-rgb: 255, 255, 255;
+  --secondary-text: #0f172a;
+
   --card-bg: #ffffff;
+  --card-text: #1e293b; /* slate-800 */
+  
+  --navbar-bg: #ffffff;
+  --navbar-text: #0f172a;
+  
+  --sidebar-bg: #1e293b; /* slate-800 */
+  --sidebar-text: #f8fafc;
+  --sidebar-active-bg: #4f46e5;
+  --sidebar-active-text: #ffffff;
+
+  --item-hover: #f1f5f9;
   --shadow-color: rgba(0, 0, 0, 0.1);
   --theme-bg: #f8fafc;
 }

@@ -1,9 +1,9 @@
-import { OrgStatus } from '@/types/enums';
 import {
     Teacher, Student, Organization, RegisterRequest, LoginRequest, AuthResponse,
     UpdateOrgSettingsRequest, PlatformAdmin, AdminStats, OrgStats, SupportTicket, Section, Course,
     CreateTeacherRequest, UpdateTeacherRequest, CreateStudentRequest, UpdateStudentRequest,
-    CreateSectionRequest, UpdateSectionRequest, CreateCourseRequest, UpdateCourseRequest
+    CreateSectionRequest, UpdateSectionRequest, CreateCourseRequest, UpdateCourseRequest,
+    PaginatedResponse, OrgStatus
 } from '@/types';
 
 
@@ -15,6 +15,18 @@ if (!API_BASE_URL) {
 
 interface RequestOptions extends RequestInit {
     token?: string;
+}
+
+interface QueryParams {
+    [key: string]: string | number | boolean | undefined;
+}
+
+function buildQueryString(params: QueryParams): string {
+    const query = Object.entries(params)
+        .filter(([_, value]) => value !== undefined && value !== '')
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+        .join('&');
+    return query ? `?${query}` : '';
 }
 
 /**
@@ -63,17 +75,19 @@ export const api = {
     },
 
     admin: {
-        getOrganizations: (token: string, status?: OrgStatus) =>
-            request<Organization[]>(`/admin/organizations${status ? `?status=${status}` : ''}`, { token }),
+        getOrganizations: (token: string, params: { status?: OrgStatus, page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', type?: string } = {}) =>
+            request<PaginatedResponse<Organization>>(`/admin/organizations${buildQueryString(params)}`, { token }),
         approveOrganization: (id: string, token: string) => request<void>(`/admin/organizations/${id}/approve`, { method: 'PATCH', token }),
         rejectOrganization: (id: string, reason: string, token: string) =>
             request<void>(`/admin/organizations/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }), token }),
         suspendOrganization: (id: string, reason: string, token: string) =>
             request<void>(`/admin/organizations/${id}/suspend`, { method: 'PATCH', body: JSON.stringify({ reason }), token }),
-        getSupportTickets: (token: string) => request<SupportTicket[]>('/admin/support', { token }),
+        getSupportTickets: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+            request<PaginatedResponse<SupportTicket>>(`/admin/support${buildQueryString(params)}`, { token }),
         resolveSupportTicket: (id: string, token: string) => request<void>(`/admin/support/${id}/resolve`, { method: 'PATCH', token }),
         getAdminStats: (token: string) => request<AdminStats>('/admin/stats', { token }),
-        getPlatformAdmins: (token: string) => request<PlatformAdmin[]>('/admin/platform-admins', { token }),
+        getPlatformAdmins: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+            request<PaginatedResponse<PlatformAdmin>>(`/admin/platform-admins${buildQueryString(params)}`, { token }),
         createPlatformAdmin: (data: Partial<PlatformAdmin> & { password?: string }, token: string) =>
             request<PlatformAdmin>('/admin/platform-admins', { method: 'POST', body: JSON.stringify(data), token }),
         updatePlatformAdmin: (id: string, data: Partial<PlatformAdmin>, token: string) =>
@@ -102,7 +116,8 @@ export const api = {
             return response.json();
         },
         getTeacher: (id: string, token: string) => request<Teacher>(`/org/teachers/${id}`, { token }),
-        getTeachers: (token: string) => request<Teacher[]>('/org/teachers', { token }),
+        getTeachers: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+            request<PaginatedResponse<Teacher>>(`/org/teachers${buildQueryString(params)}`, { token }),
         createTeacher: (data: CreateTeacherRequest, token: string) =>
             request<Teacher>('/org/teachers', { method: 'POST', body: JSON.stringify(data), token }),
         updateTeacher: (id: string, data: UpdateTeacherRequest, token: string) =>
@@ -110,21 +125,24 @@ export const api = {
         deleteTeacher: (id: string, token: string) => request<void>(`/org/teachers/${id}`, { method: 'DELETE', token }),
 
         getStudent: (id: string, token: string) => request<Student>(`/org/students/${id}`, { token }),
-        getStudents: (token: string) => request<Student[]>('/org/students', { token }),
+        getStudents: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+            request<PaginatedResponse<Student>>(`/org/students${buildQueryString(params)}`, { token }),
         createStudent: (data: CreateStudentRequest, token: string) =>
             request<Student>('/org/students', { method: 'POST', body: JSON.stringify(data), token }),
         updateStudent: (id: string, data: UpdateStudentRequest, token: string) =>
             request<Student>(`/org/students/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
         deleteStudent: (id: string, token: string) => request<void>(`/org/students/${id}`, { method: 'DELETE', token }),
 
-        getSections: (token: string) => request<Section[]>('/org/sections', { token }),
+        getSections: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+            request<PaginatedResponse<Section>>(`/org/sections${buildQueryString(params)}`, { token }),
         createSection: (data: CreateSectionRequest, token: string) =>
             request<Section>('/org/sections', { method: 'POST', body: JSON.stringify(data), token }),
         updateSection: (id: string, data: UpdateSectionRequest, token: string) =>
             request<Section>(`/org/sections/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
         deleteSection: (id: string, token: string) => request<void>(`/org/sections/${id}`, { method: 'DELETE', token }),
 
-        getCourses: (token: string) => request<Course[]>('/org/courses', { token }),
+        getCourses: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+            request<PaginatedResponse<Course>>(`/org/courses${buildQueryString(params)}`, { token }),
         createCourse: (data: CreateCourseRequest, token: string) =>
             request<Course>('/org/courses', { method: 'POST', body: JSON.stringify(data), token }),
         updateCourse: (id: string, data: UpdateCourseRequest, token: string) =>

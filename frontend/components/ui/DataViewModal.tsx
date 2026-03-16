@@ -36,36 +36,36 @@ export function DataViewModal({ isOpen, onClose, title, subtitle, fields, action
     if (!isOpen || !mounted) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
             <div
-                className="bg-white dark:bg-gray-900 w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-sm shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col animate-in zoom-in-95 duration-300"
+                className="bg-card text-card-text backdrop-blur-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden rounded-sm shadow-[0_30px_70px_rgba(0,0,0,0.2)] border border-white/50 flex flex-col animate-scale-in"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 flex items-center justify-between">
+                <div className="px-8 py-5 border-b border-card-text/10 bg-card-text/5 flex items-center justify-between">
                     <div>
-                        <h2 className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight uppercase leading-none">{title}</h2>
-                        {subtitle && <p className="text-xs font-bold text-gray-400 mt-2 uppercase tracking-widest">{subtitle}</p>}
+                        <h2 className="text-3xl font-black tracking-tight uppercase leading-none">{title}</h2>
+                        {subtitle && <p className="text-xs font-bold opacity-40 mt-2 uppercase tracking-[0.2em]">{subtitle}</p>}
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors group"
+                        className="p-2 hover:bg-primary/10 rounded-sm transition-all group"
                     >
-                        <X className="w-6 h-6 text-gray-400 group-hover:text-red-500" />
+                        <X className="w-8 h-8 opacity-40 group-hover:opacity-100 group-hover:text-red-500 transition-all" />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-8 scrollbar-thin">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-10">
                         {fields.map((field, idx) => (
-                            <div key={idx} className={`${field.fullWidth ? 'col-span-1 md:col-span-2' : ''} space-y-2`}>
-                                <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                                    {field.icon && <field.icon className="w-3 h-3" />}
+                            <div key={idx} className={`${field.fullWidth ? 'col-span-1 md:col-span-2' : ''} space-y-3`}>
+                                <div className="flex items-center gap-2 text-[11px] font-black opacity-40 uppercase tracking-[0.25em]">
+                                    {field.icon && <field.icon className="w-3.5 h-3.5" />}
                                     {field.label}
                                 </div>
-                                <div className="text-sm font-bold text-gray-700 dark:text-gray-300 wrap-break-word">
-                                    {field.value || <span className="opacity-30 italic">Not available</span>}
+                                <div className="text-base font-bold wrap-break-word leading-relaxed">
+                                    {field.value || <span className="opacity-20 italic font-medium">Not available</span>}
                                 </div>
                             </div>
                         ))}
@@ -73,11 +73,11 @@ export function DataViewModal({ isOpen, onClose, title, subtitle, fields, action
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 flex items-center justify-end gap-3">
+                <div className="p-2 border-t border-card-text/10 bg-card-text/5 flex items-center justify-end gap-4">
                     {actions}
                     <button
                         onClick={onClose}
-                        className="px-6 py-2.5 rounded-sm border border-gray-200 dark:border-gray-700 text-xs font-black uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-gray-800 transition-all text-gray-600 dark:text-gray-400"
+                        className="px-8 py-3.5 rounded-sm border border-card-text/20 text-xs font-black uppercase tracking-widest hover:bg-card-text/10 transition-all active:scale-95"
                     >
                         Close
                     </button>

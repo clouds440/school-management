@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,13 +7,159 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Organization {
+  id              String          @id @default(uuid())
+  name            String
+  location        String
+  type            String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  contactEmail    String?
+  phone           String?
+  status          OrgStatus       @default(PENDING)
+  statusHistory   Json?           // Stores array of { status, message, adminName, adminRole, createdAt }
+  avatarUpdatedAt DateTime?
+  logoUrl         String?
+  accentColor     Json?
+  courses         Course[]
+  students        Student[]
+  supportTickets  SupportTicket[]
+  teachers        Teacher[]
+  users           User[]
+}
+
+model SupportTicket {
+  id             String       @id @default(uuid())
+  organizationId String
+  topic          SupportTopic
+  message        String
+  isResolved     Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id             String        @id @default(uuid())
+  email          String        @unique
+  password       String
+  role           Role          @default(SUPER_ADMIN)
+  isFirstLogin   Boolean       @default(true)
+  organizationId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  name           String?
+  phone          String?
+  tokenVersion   Int           @default(0)
+  studentProfile Student?
+  teacherProfile Teacher?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+}
+
+model Teacher {
+  id               String        @id @default(uuid())
+  userId           String        @unique
+  organizationId   String
+  salary           Float?
+  subject          String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  designation      String?
+  education        String?
+  address          String?
+  bloodGroup       String?
+  department       String?
+  emergencyContact String?
+  joiningDate      DateTime      @default(now())
+  status           TeacherStatus @default(ACTIVE)
+  organization     Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sections         Section[]     @relation("SectionToTeacher")
+}
+
+model Course {
+  id             String       @id @default(uuid())
+  name           String
+  description    String?
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sections       Section[]
+}
+
+model Section {
+  id          String       @id @default(uuid())
+  name        String
+  semester    String?
+  year        String?
+  room        String?
+  courseId    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  enrollments Enrollment[]
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teachers    Teacher[]    @relation("SectionToTeacher")
+}
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  studentId String
+  sectionId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, sectionId])
+}
+
+model Student {
+  id                 String        @id @default(uuid())
+  userId             String        @unique
+  organizationId     String
+  registrationNumber String?
+  fatherName         String?
+  fee                Float?
+  age                Int?
+  address            String?
+  major              String?
+  updatedBy          String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  admissionDate      DateTime      @default(now())
+  bloodGroup         String?
+  department         String?
+  emergencyContact   String?
+  feePlan            String?
+  gender             String?
+  graduationDate     DateTime?
+  status             StudentStatus @default(ACTIVE)
+  enrollments        Enrollment[]
+  organization       Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model File {
+  id         String   @id @default(uuid())
+  orgId      String
+  entityType String
+  entityId   String
+  path       String
+  filename   String
+  mimeType   String
+  size       Int
+  uploadedBy String
+  createdAt  DateTime @default(now())
+}
+
 enum Role {
   SUPER_ADMIN
-  PLATFORM_ADMIN
   ORG_ADMIN
-  ORG_MANAGER
   TEACHER
   STUDENT
+  PLATFORM_ADMIN
+  ORG_MANAGER
 }
 
 enum OrgStatus {
@@ -48,152 +188,4 @@ enum StudentStatus {
   SUSPENDED
   ALUMNI
   DELETED
-}
-
-model Organization {
-  id               String    @id @default(uuid())
-  name             String
-  location         String
-  type             String
-  contactEmail     String?
-  phone            String?
-  logoUrl          String?   // Public HTTP path to the org logo file
-  avatarUpdatedAt  DateTime? // Bumped on every logo change for browser cache-busting
-  accentColor      Json?     // Stores { primary: "#hex", secondary: "#hex" }
-  status           OrgStatus @default(PENDING)
-  statusMessage    String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  users          User[]
-  teachers       Teacher[]
-  students       Student[]
-  courses        Course[]
-  supportTickets SupportTicket[]
-}
-
-model SupportTicket {
-  id             String       @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  topic          SupportTopic
-  message        String
-  isResolved     Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-}
-
-
-model User {
-  id             String        @id @default(uuid())
-  email          String        @unique
-  password       String
-  name           String?       // Added for richer user profiles
-  phone          String?       // Added for richer user profiles
-  role           Role          @default(SUPER_ADMIN)
-  isFirstLogin   Boolean       @default(true)
-  tokenVersion   Int           @default(0)
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  teacherProfile Teacher?
-  studentProfile Student?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-}
-
-model Teacher {
-  id             String       @id @default(uuid())
-  userId         String       @unique
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  salary         Float?
-  subject        String?
-  education      String?      // Added for richer teacher profiles
-  designation    String?      // Added for richer teacher profiles
-  department     String?      // Added: Department for filtering
-  joiningDate    DateTime     @default(now()) // Added: Date of joining
-  emergencyContact String?    // Added: For safety
-  bloodGroup     String?      // Added: For medical info
-  address        String?      // Added: Personal address
-  sections       Section[]
-  status         TeacherStatus @default(ACTIVE)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-}
-
-model Course {
-  id             String       @id @default(uuid())
-  name           String
-  description    String?
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  sections       Section[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-}
-
-model Section {
-  id             String       @id @default(uuid())
-  name           String       // e.g., "Math - Grade 10" or "Section A"
-  semester       String?
-  year           String?
-  room           String?
-  courseId       String
-  course         Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  teachers       Teacher[]    // Implicit M:N relationship
-  enrollments    Enrollment[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-}
-
-model Enrollment {
-  id             String       @id @default(uuid())
-  studentId      String
-  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  sectionId      String
-  section        Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@unique([studentId, sectionId])
-}
-
-model Student {
-  id                 String       @id @default(uuid())
-  userId             String       @unique
-  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organizationId     String
-  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  registrationNumber String?
-  fatherName         String?
-  fee                Float?
-  age                Int?
-  address                String?
-  major                  String?
-  department             String?      // Added: Department for filtering
-  admissionDate          DateTime     @default(now()) // Added: Date of admission
-  graduationDate         DateTime?    // Added: Expected graduation
-  emergencyContact       String?      // Added: For safety
-  bloodGroup             String?      // Added: For medical info
-  gender                 String?      // Added: For demographics
-  feePlan                String?      // Added: To track fee structure
-  enrollments            Enrollment[]
-  status                 StudentStatus @default(ACTIVE)
-  updatedBy              String?      // Tracks name of user who last modified this record
-  createdAt              DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-}
-
-model File {
-  id          String   @id @default(uuid())
-  orgId       String
-  entityType  String
-  entityId    String
-  path        String
-  filename    String
-  mimeType    String
-  size        Int
-  uploadedBy  String
-  createdAt   DateTime @default(now())
 }

@@ -1,24 +1,54 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Users, Mail, MessageSquare, Calendar, UserPlus, ShieldCheck } from 'lucide-react';
+import { Users, Mail, MessageSquare, Calendar, UserPlus } from 'lucide-react';
 import { api } from '@/lib/api';
-import { PlatformAdmin, Role } from '@/types';
+import { PlatformAdmin, Role, PaginatedResponse } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
+import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+
+interface PlatformAdminParams extends BasePaginationParams {}
 
 export default function PlatformAdminsPage() {
     const { user, token, loading } = useAuth();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
     const { showToast } = useToast();
 
-    const [platformAdmins, setPlatformAdmins] = useState<PlatformAdmin[]>([]);
-    const [fetching, setFetching] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<PlatformAdmin> | null>(null);
+    
+    // URL State
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const searchQuery = searchParams.get('search') || '';
+    const sortBy = searchParams.get('sortBy') || 'name';
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
+
+    const adminParams: PlatformAdminParams = {
+        page,
+        limit: 10,
+        search: searchQuery,
+        sortBy,
+        sortOrder,
+    };
+
+    const { 
+        data: fetchedData, 
+        loading: isInitialLoading, 
+        fetching, 
+        refresh 
+    } = usePaginatedData<PlatformAdmin, PlatformAdminParams>(
+        (p) => api.admin.getPlatformAdmins(token!, p),
+        adminParams,
+        'platform-admins'
+    );
 
     const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
     const [adminModalMode, setAdminModalMode] = useState<'CREATE' | 'EDIT'>('CREATE');
@@ -28,24 +58,22 @@ export default function PlatformAdminsPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     useEffect(() => {
-        if (!loading && user && user.role === Role.SUPER_ADMIN && token) {
-            fetchPlatformAdmins();
-        }
-    }, [loading, user, token]);
+        setPaginatedData(fetchedData);
+    }, [fetchedData]);
 
-    const fetchPlatformAdmins = async () => {
-        if (!token) return;
-        try {
-            setFetching(true);
-            const adminData = await api.admin.getPlatformAdmins(token);
-            setPlatformAdmins(adminData);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to fetch data';
-            showToast(message, 'error');
-        } finally {
-            setFetching(false);
-        }
+    const updateQueryParams = (updates: Record<string, string | number | undefined>) => {
+        const params = new URLSearchParams(searchParams.toString());
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value === undefined || value === '') {
+                params.delete(key);
+            } else {
+                params.set(key, String(value));
+            }
+        });
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
     };
+
+    // We no longer need fetchPlatformAdmins locally as it's handled by the hook
 
     const handleOpenAdminModal = (mode: 'CREATE' | 'EDIT', admin: PlatformAdmin | null = null) => {
         setAdminModalMode(mode);
@@ -64,16 +92,16 @@ export default function PlatformAdminsPage() {
         try {
             setActionLoading('admin-save');
             if (adminModalMode === 'CREATE') {
-                const newAdmin = await api.admin.createPlatformAdmin(adminFormData, token);
-                setPlatformAdmins(prev => [...prev, newAdmin]);
+                await api.admin.createPlatformAdmin(adminFormData, token);
+                refresh();
                 showToast('Platform Admin created successfully', 'success');
             } else if (operatingAdmin) {
-                const updatedAdmin = await api.admin.updatePlatformAdmin(operatingAdmin.id, {
+                await api.admin.updatePlatformAdmin(operatingAdmin.id, {
                     name: adminFormData.name,
                     phone: adminFormData.phone,
                     ...(adminFormData.password ? { password: adminFormData.password } : {})
                 }, token);
-                setPlatformAdmins(prev => prev.map(a => a.id === updatedAdmin.id ? updatedAdmin : a));
+                refresh();
                 showToast('Platform Admin updated successfully', 'success');
             }
             setIsAdminModalOpen(false);
@@ -96,7 +124,7 @@ export default function PlatformAdminsPage() {
         try {
             setActionLoading(`delete-${operatingAdmin.id}`);
             await api.admin.deletePlatformAdmin(operatingAdmin.id, token);
-            setPlatformAdmins(prev => prev.filter(admin => admin.id !== operatingAdmin.id));
+            refresh();
             showToast(`${operatingAdmin.name} deleted successfully`, 'success');
             setIsDeleteModalOpen(false);
             setOperatingAdmin(null);
@@ -107,16 +135,13 @@ export default function PlatformAdminsPage() {
         }
     };
 
-    const filteredAdmins = platformAdmins.filter(admin => {
-        return admin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            admin.email.toLowerCase().includes(searchQuery.toLowerCase());
-    });
+    const platformAdmins = paginatedData?.data || [];
 
     const columns: Column<PlatformAdmin>[] = [
         {
             header: 'Administrator',
             sortable: true,
-            sortAccessor: (row) => row.name,
+            sortKey: 'name',
             accessor: (row) => (
                 <div className="flex items-start gap-4 min-w-0">
                     <div className="w-10 h-10 bg-purple-50 rounded-sm flex items-center justify-center text-purple-600 shrink-0">
@@ -132,7 +157,7 @@ export default function PlatformAdminsPage() {
         {
             header: 'Contact Info',
             sortable: true,
-            sortAccessor: (row) => row.email,
+            sortKey: 'email',
             accessor: (row) => (
                 <div className="space-y-1">
                     <div className="flex items-center text-xs font-medium text-gray-600 gap-1.5">
@@ -151,7 +176,7 @@ export default function PlatformAdminsPage() {
         {
             header: 'Added On',
             sortable: true,
-            sortAccessor: (row) => new Date(row.createdAt).getTime(),
+            sortKey: 'createdAt',
             accessor: (row) => (
                 <div className="flex items-center text-xs font-medium text-gray-500 gap-1.5 opacity-80">
                     <Calendar className="w-3 h-3" />
@@ -189,18 +214,8 @@ export default function PlatformAdminsPage() {
     }
 
     return (
-        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
+        <div className="flex flex-col py-2 md:py-4 w-full animate-fade-in-up">
             <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
-                <div className="flex items-center gap-5">
-                    <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl shrink-0">
-                        <ShieldCheck className="w-8 h-8 md:w-10 md:h-10 text-purple-600" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight text-left">Platform Admins</h1>
-                        <p className="text-gray-500 font-bold opacity-80 mt-1 text-sm md:text-base text-left uppercase tracking-wider">System Administration</p>
-                    </div>
-                </div>
-
                 <button
                     onClick={() => handleOpenAdminModal('CREATE')}
                     className="px-6 py-3 rounded-sm bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 w-full sm:w-auto"
@@ -214,7 +229,7 @@ export default function PlatformAdminsPage() {
                 <div className="px-8 pt-6 pb-6 border-b border-gray-100 flex flex-col gap-6 bg-gray-50/50">
                     <SearchBar
                         value={searchQuery}
-                        onChange={setSearchQuery}
+                        onChange={(val) => updateQueryParams({ search: val, page: 1 })}
                         placeholder="Search admins by name or email..."
                     />
                 </div>
@@ -222,9 +237,16 @@ export default function PlatformAdminsPage() {
                 <div className="p-4 md:p-6 bg-gray-50/10">
                     <DataTable
                         columns={columns}
-                        data={filteredAdmins}
+                        data={platformAdmins}
                         keyExtractor={(row) => row.id}
                         isLoading={fetching}
+                        currentPage={paginatedData?.currentPage || 1}
+                        totalPages={paginatedData?.totalPages || 1}
+                        totalResults={paginatedData?.totalRecords || 0}
+                        pageSize={10}
+                        onPageChange={(p) => updateQueryParams({ page: p })}
+                        sortConfig={{ key: sortBy, direction: sortOrder }}
+                        onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                     />
                 </div>
             </div>

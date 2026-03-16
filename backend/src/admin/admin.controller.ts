@@ -7,6 +7,8 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { CreatePlatformAdminDto } from './dto/create-platform-admin.dto';
 import { UpdatePlatformAdminDto } from './dto/update-platform-admin.dto';
+import { User } from '../common/decorators/user.decorator';
+import type { User as UserEntity } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin')
@@ -16,8 +18,24 @@ export class AdminController {
 
     @Roles(Role.SUPER_ADMIN, Role.PLATFORM_ADMIN)
     @Get('organizations')
-    async getOrganizations(@Query('status') status?: OrgStatus) {
-        return this.adminService.getOrganizations(status);
+    async getOrganizations(
+        @Query('status') status?: OrgStatus,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+        @Query('sortBy') sortBy?: string,
+        @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+        @Query('type') type?: string,
+    ) {
+        return this.adminService.getOrganizations({
+            status,
+            page: page ? parseInt(page, 10) : 1,
+            limit: limit ? parseInt(limit, 10) : 10,
+            search,
+            sortBy,
+            sortOrder,
+            type,
+        });
     }
 
     @Roles(Role.SUPER_ADMIN, Role.PLATFORM_ADMIN)
@@ -30,26 +48,34 @@ export class AdminController {
 
     @Roles(Role.SUPER_ADMIN, Role.PLATFORM_ADMIN)
     @Patch('organizations/:id/approve')
-    approveOrganization(@Param('id') id: string) {
-        return this.adminService.approveOrganization(id);
+    approveOrganization(@Param('id') id: string, @User() admin: UserEntity) {
+        return this.adminService.approveOrganization(id, admin);
     }
 
     @Roles(Role.SUPER_ADMIN, Role.PLATFORM_ADMIN)
     @Patch('organizations/:id/reject')
-    rejectOrganization(@Param('id') id: string, @Body('reason') reason: string) {
-        return this.adminService.rejectOrganization(id, reason);
+    rejectOrganization(@Param('id') id: string, @Body('reason') reason: string, @User() admin: UserEntity) {
+        return this.adminService.rejectOrganization(id, reason, admin);
     }
 
     @Roles(Role.SUPER_ADMIN, Role.PLATFORM_ADMIN)
     @Patch('organizations/:id/suspend')
-    suspendOrganization(@Param('id') id: string, @Body('reason') reason: string) {
-        return this.adminService.suspendOrganization(id, reason);
+    suspendOrganization(@Param('id') id: string, @Body('reason') reason: string, @User() admin: UserEntity) {
+        return this.adminService.suspendOrganization(id, reason, admin);
     }
 
     @Roles(Role.SUPER_ADMIN, Role.PLATFORM_ADMIN)
     @Get('support')
-    getSupportTickets() {
-        return this.adminService.getSupportTickets();
+    async getSupportTickets(
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.adminService.getSupportTickets({
+            page: page ? parseInt(page, 10) : 1,
+            limit: limit ? parseInt(limit, 10) : 10,
+            search,
+        });
     }
 
     @Roles(Role.SUPER_ADMIN, Role.PLATFORM_ADMIN)
@@ -61,8 +87,16 @@ export class AdminController {
     // --- Platform Admins ---
     @Roles(Role.SUPER_ADMIN)
     @Get('platform-admins')
-    getPlatformAdmins() {
-        return this.adminService.getPlatformAdmins();
+    async getPlatformAdmins(
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.adminService.getPlatformAdmins({
+            page: page ? parseInt(page, 10) : 1,
+            limit: limit ? parseInt(limit, 10) : 10,
+            search,
+        });
     }
 
     @Roles(Role.SUPER_ADMIN)

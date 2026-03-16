@@ -1,41 +1,70 @@
 import React from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PaginationProps {
     currentPage: number;
     totalPages: number;
     onPageChange: (page: number) => void;
+    totalResults?: number;
+    pageSize?: number;
+    isLoading?: boolean;
 }
 
-export function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+export function Pagination({ currentPage, totalPages, onPageChange, totalResults, pageSize, isLoading }: PaginationProps) {
     if (totalPages <= 1) return null;
 
+    const isDisabled = isLoading;
+
     return (
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6 mt-4 rounded-sm">
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                    <p className="text-sm text-gray-700 gap-1 flex">
-                        Showing page <span className="font-medium">{currentPage}</span> of{' '}
-                        <span className="font-medium">{totalPages}</span>
-                    </p>
+        <div className="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200/20 bg-white/40 backdrop-blur-sm">
+            {totalResults !== undefined && pageSize !== undefined && (
+                <div className="text-xs font-bold text-card-text/40 order-2 sm:order-1">
+                    Showing <span className="text-primary">{(currentPage - 1) * pageSize + 1}</span> to <span className="text-primary">{Math.min(currentPage * pageSize, totalResults)}</span> of <span className="text-primary">{totalResults}</span> results
                 </div>
-                <div>
-                    <nav className="relative z-0 inline-flex shadow-sm rounded-sm space-x-1" aria-label="Pagination">
-                        <button
-                            onClick={() => onPageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className="relative inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-medium rounded-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Previous
-                        </button>
-                        <button
-                            onClick={() => onPageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className="relative inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-medium rounded-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Next
-                        </button>
-                    </nav>
+            )}
+            
+            <div className={`flex items-center gap-1 order-1 sm:order-2 ${totalResults === undefined ? 'w-full justify-center' : ''}`}>
+                <button
+                    onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
+                    disabled={currentPage === 1 || isDisabled}
+                    className="flex items-center gap-2 px-4 py-2 rounded-sm hover:bg-primary/10 disabled:opacity-20 disabled:hover:bg-transparent transition-all group text-card-text font-bold border border-transparent hover:border-primary/20 bg-white/30"
+                >
+                    <ChevronLeft className="w-4 h-4 text-primary transition-transform group-hover:-translate-x-0.5" />
+                    <span className="text-[10px] font-black uppercase tracking-wider">Previous</span>
+                </button>
+
+                <div className="flex items-center gap-1 px-2">
+                    {[...Array(totalPages)].map((_, i) => {
+                        const page = i + 1;
+                        if (totalPages > 7 && Math.abs(page - currentPage) > 2 && page !== 1 && page !== totalPages) {
+                            if (Math.abs(page - currentPage) === 3) return <span key={page} className="px-1 text-card-text/40 font-black">...</span>;
+                            return null;
+                        }
+                        return (
+                            <button
+                                key={page}
+                                onClick={() => onPageChange(page)}
+                                disabled={isDisabled}
+                                className={`w-8 h-8 flex items-center justify-center rounded-sm text-[11px] font-black transition-all ${
+                                    currentPage === page 
+                                        ? 'bg-primary text-white shadow-lg transform scale-110' 
+                                        : 'hover:bg-primary/10 text-card-text/80 border border-gray-200/50 hover:border-primary/20 bg-white/50'
+                                }`}
+                            >
+                                {page}
+                            </button>
+                        );
+                    })}
                 </div>
+
+                <button
+                    onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
+                    disabled={currentPage === totalPages || isDisabled}
+                    className="flex items-center gap-2 px-4 py-2 rounded-sm hover:bg-primary/10 disabled:opacity-20 disabled:hover:bg-transparent transition-all group text-card-text font-bold border border-transparent hover:border-primary/20 bg-white/30"
+                >
+                    <span className="text-[10px] font-black uppercase tracking-wider">Next</span>
+                    <ChevronRight className="w-4 h-4 text-primary transition-transform group-hover:translate-x-0.5" />
+                </button>
             </div>
         </div>
     );

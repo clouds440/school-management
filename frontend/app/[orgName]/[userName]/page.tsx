@@ -22,7 +22,9 @@ export default function StudentPersonalizedDashboard() {
             .then((data: Organization) => {
                 if (data?.name) setOrgName(data.name);
                 if (data?.status) setOrgStatus(data.status);
-                if (data?.statusMessage) setStatusMessage(data.statusMessage);
+                if (data?.statusHistory && data.statusHistory.length > 0) {
+                    setStatusMessage(data.statusHistory[data.statusHistory.length - 1].message);
+                }
             })
             .catch(() => { });
     }, [user, token]);
@@ -87,7 +89,7 @@ export default function StudentPersonalizedDashboard() {
                     </div>
                 )}
 
-                {(orgStatus || user.status) === OrgStatus.PENDING && (
+                {(orgStatus || user.status) === OrgStatus.SUSPENDED && (
                     <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-orange-200 text-center max-w-2xl mx-auto mt-10 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01]">
                         <div className="p-6 bg-orange-50 rounded-full mb-6">
                             <ShieldOff className="w-20 h-20 text-orange-500" />

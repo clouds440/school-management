@@ -50,7 +50,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
     return (
         <div className="flex w-full bg-theme-bg h-full overflow-hidden relative">
             {/* Global View Modal */}
-            <DataViewModal 
+            <DataViewModal
                 isOpen={modalConfig.isOpen}
                 onClose={closeViewModal}
                 title={modalConfig.title}
@@ -217,7 +217,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                 </header>
 
                 {/* Universal Content Wrapper - This is the ONLY scrollable area */}
-                <div className="flex-1 w-full px-[4px] md:px-8 py-4 md:py-8 overflow-y-auto animate-fade-in-up scrollbar-thin overflow-x-hidden">
+                <div className="flex-1 w-full px-[3px] md:px-3 py-4 md:py-8 overflow-y-auto animate-fade-in-up scrollbar-thin overflow-x-hidden">
                     {children}
                 </div>
             </main>

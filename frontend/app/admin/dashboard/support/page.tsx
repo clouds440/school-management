@@ -1,47 +1,74 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { MessageSquare, Calendar, Hash, Building2, Tag, Info } from 'lucide-react';
 import { api } from '@/lib/api';
-import { SupportTicket, SupportTopic, OrgStatus, Role } from '@/types';
+import { SupportTicket, SupportTopic, OrgStatus, Role, PaginatedResponse } from '@/types';
 import { TableActions, AdminAction } from '@/components/ui/TableActions';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { DataField, useUI } from '@/context/UIContext';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 export default function SupportPage() {
     const { user, token, loading } = useAuth();
+    const pathname = usePathname();
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const { showToast } = useToast();
 
-    const [tickets, setTickets] = useState<SupportTicket[]>([]);
+    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<SupportTicket> | null>(null);
     const { openViewModal } = useUI();
     const [fetching, setFetching] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [topicFilter, setTopicFilter] = useState<SupportTopic | 'ALL'>('ALL');
 
-    useEffect(() => {
-        if (!loading && user && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && token) {
-            fetchTickets();
-        }
-    }, [loading, user, token]);
+    // URL State
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const searchQuery = searchParams.get('search') || '';
+    const topicFilter = (searchParams.get('topic') as SupportTopic | 'ALL') || 'ALL';
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
 
-    const fetchTickets = async () => {
+    const updateQueryParams = (updates: Record<string, string | number | undefined>) => {
+        const params = new URLSearchParams(searchParams.toString());
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value === undefined || value === '' || value === 'ALL') {
+                params.delete(key);
+            } else {
+                params.set(key, String(value));
+            }
+        });
+        router.push(`${pathname}?${params.toString()}`);
+    };
+
+    const fetchTickets = useCallback(async () => {
         if (!token) return;
         try {
             setFetching(true);
-            const ticketData = await api.admin.getSupportTickets(token);
-            setTickets((ticketData as SupportTicket[]).filter(t => !t.isResolved));
+            const response = await api.admin.getSupportTickets(token, {
+                page,
+                limit: 10,
+                search: searchQuery,
+                sortBy,
+                sortOrder,
+            });
+            setPaginatedData(response);
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to fetch data';
             showToast(message, 'error');
         } finally {
             setFetching(false);
         }
-    };
+    }, [token, page, searchQuery, sortBy, sortOrder, showToast]);
+
+    useEffect(() => {
+        if (!loading && user && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && token) {
+            fetchTickets();
+        }
+    }, [loading, user, token, fetchTickets]);
 
     const handleResolveTicket = async (id: string) => {
         if (!token) return;
@@ -49,7 +76,7 @@ export default function SupportPage() {
             setActionLoading(`resolve-${id}`);
             await api.admin.resolveSupportTicket(id, token);
             showToast('Ticket marked as resolved', 'success');
-            setTickets(prev => prev.filter(ticket => ticket.id !== id));
+            fetchTickets();
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to resolve ticket';
             showToast(message, 'error');
@@ -66,7 +93,7 @@ export default function SupportPage() {
             setActionLoading(`approve-${id}`);
             await api.admin.approveOrganization(id, token);
             showToast(`${name} approved successfully`, 'success');
-            setTickets(prev => prev.filter(ticket => ticket.organizationId !== id || ticket.topic !== SupportTopic.ACCOUNT_STATUS));
+            fetchTickets();
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to approve organization';
             showToast(message, 'error');
@@ -75,20 +102,19 @@ export default function SupportPage() {
         }
     };
 
+    const tickets = paginatedData?.data || [];
+
+    // Topic filtering if not done on server
     const filteredTickets = tickets.filter(ticket => {
-        const matchesSearch = ticket.organization?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            ticket.organization?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            ticket.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            ticket.message.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesTopic = topicFilter === 'ALL' || ticket.topic === topicFilter;
-        return matchesSearch && matchesTopic;
+        return matchesTopic;
     });
 
     const columns: Column<SupportTicket>[] = [
         {
             header: 'Organization',
             sortable: true,
-            sortAccessor: (row) => row.organization?.name || '',
+            sortKey: 'organizationName', // backend needs to handle this
             accessor: (row) => (
                 <div className="flex items-start gap-4 min-w-0">
                     <div className="w-10 h-10 bg-indigo-50 rounded-sm flex items-center justify-center text-indigo-600 shrink-0">
@@ -112,9 +138,9 @@ export default function SupportPage() {
             header: 'Message',
             accessor: (row) => (
                 <div className="max-w-[400px]">
-                    <MarkdownRenderer 
-                        content={row.message} 
-                        className="text-xs text-gray-700 italic line-clamp-2" 
+                    <MarkdownRenderer
+                        content={row.message}
+                        className="text-xs text-gray-700 italic line-clamp-2"
                     />
                 </div>
             )
@@ -122,7 +148,7 @@ export default function SupportPage() {
         {
             header: 'Date',
             sortable: true,
-            sortAccessor: (row) => new Date(row.createdAt).getTime(),
+            sortKey: 'createdAt',
             accessor: (row) => (
                 <div className="flex items-center text-xs font-medium text-gray-500 gap-1.5 opacity-80">
                     <Calendar className="w-3 h-3" />
@@ -135,7 +161,7 @@ export default function SupportPage() {
             accessor: (row: SupportTicket) => {
                 const getActions = (): AdminAction[] => {
                     const actions: AdminAction[] = [];
-                    
+
                     if (row.topic === 'ACCOUNT_STATUS' && (row.organization?.status === OrgStatus.REJECTED || row.organization?.status === OrgStatus.SUSPENDED)) {
                         actions.push({
                             variant: 'approve',
@@ -144,13 +170,13 @@ export default function SupportPage() {
                             title: 'Approve Organization'
                         });
                     }
-                    
+
                     actions.push({
                         variant: 'resolve',
                         onClick: () => handleResolveTicket(row.id),
                         loading: actionLoading === `resolve-${row.id}`
                     });
-                    
+
                     return actions;
                 };
 
@@ -176,11 +202,11 @@ export default function SupportPage() {
             { label: 'Ticket ID', value: ticket.id, icon: Hash, fullWidth: true },
             { label: 'Organization', value: ticket.organization?.name, icon: Building2 },
             { label: 'Topic', value: ticket.topic.replace('_', ' '), icon: Tag },
-            { 
-                label: 'Message', 
-                value: <MarkdownRenderer content={ticket.message} className="text-sm bg-gray-50 p-4 rounded-sm border border-gray-100 min-h-[100px]" />, 
-                icon: Info, 
-                fullWidth: true 
+            {
+                label: 'Message',
+                value: <MarkdownRenderer content={ticket.message} className="text-sm bg-gray-50 p-4 rounded-sm border border-gray-100 min-h-[100px]" />,
+                icon: Info,
+                fullWidth: true
             },
             {
                 label: 'Status', value: (
@@ -201,26 +227,14 @@ export default function SupportPage() {
     };
 
     return (
-        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
-            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
-                <div className="flex items-center gap-5">
-                    <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl shrink-0">
-                        <MessageSquare className="w-8 h-8 md:w-10 md:h-10 text-indigo-600" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight text-left">Support Mails</h1>
-                        <p className="text-gray-500 font-bold opacity-80 mt-1 text-sm md:text-base text-left uppercase tracking-wider">Inquiries & Ticket Resolution</p>
-                    </div>
-                </div>
-            </div>
-
+        <div className="flex flex-col py-2 md:py-4 w-full animate-fade-in-up">
             <div className="bg-white/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/50 flex flex-col w-full overflow-hidden">
                 <div className="px-8 pt-8 pb-6 border-b border-gray-100 flex flex-col gap-6 bg-gray-50/50">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
                             <select
                                 value={topicFilter}
-                                onChange={(e) => setTopicFilter(e.target.value as SupportTopic | 'ALL')}
+                                onChange={(e) => updateQueryParams({ topic: e.target.value as SupportTopic | 'ALL', page: 1 })}
                                 className="px-4 py-2.5 rounded-sm bg-white border border-gray-200 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer shadow-sm min-w-[160px]"
                             >
                                 <option value="ALL">All Topics</option>
@@ -232,7 +246,7 @@ export default function SupportPage() {
 
                             <SearchBar
                                 value={searchQuery}
-                                onChange={setSearchQuery}
+                                onChange={(val) => updateQueryParams({ search: val, page: 1 })}
                                 placeholder="Search tickets..."
                             />
                         </div>
@@ -246,6 +260,13 @@ export default function SupportPage() {
                         keyExtractor={(row) => row.id}
                         isLoading={fetching}
                         onRowClick={handleViewTicket}
+                        currentPage={paginatedData?.currentPage || 1}
+                        totalPages={paginatedData?.totalPages || 1}
+                        totalResults={paginatedData?.totalRecords || 0}
+                        pageSize={10}
+                        onPageChange={(p) => updateQueryParams({ page: p })}
+                        sortConfig={{ key: sortBy, direction: sortOrder }}
+                        onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                     />
                 </div>
             </div>

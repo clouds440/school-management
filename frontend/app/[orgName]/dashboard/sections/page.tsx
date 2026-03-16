@@ -3,28 +3,62 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { BookOpen, Plus, Trash2 } from 'lucide-react';
-import { DataTable } from '@/components/ui/DataTable';
+import { DataTable, Column } from '@/components/ui/DataTable';
 import { api } from '@/lib/api';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
-import { Section, Course, Role } from '@/types';
+import { Section, Course, Role, PaginatedResponse } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
+import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+
+interface SectionParams extends BasePaginationParams {
+    my?: boolean;
+}
 
 export default function SectionsPage() {
     const { token, user } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { showToast } = useToast();
-    const [sections, setSections] = useState<Section[]>([]);
+    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Section> | null>(null);
     const [courses, setCourses] = useState<Course[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [showOnlyMySections, setShowOnlyMySections] = useState(false);
+
+    // URL State
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const searchTerm = searchParams.get('search') || '';
+    const sortBy = searchParams.get('sortBy') || 'name';
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+    const showOnlyMySections = searchParams.get('my') === 'true';
+
+    const sectionParams: SectionParams = {
+        page,
+        limit: 10,
+        search: searchTerm,
+        sortBy,
+        sortOrder,
+        my: showOnlyMySections
+    };
+
+    const { 
+        data: fetchedData, 
+        loading: isInitialLoading, 
+        fetching: isFetching, 
+        refresh 
+    } = usePaginatedData<Section, SectionParams>(
+        (p) => api.org.getSections(token!, p),
+        sectionParams,
+        `sections-${user?.orgSlug || pathname.split('/')[1]}`
+    );
+
+    useEffect(() => {
+        setPaginatedData(fetchedData);
+    }, [fetchedData]);
 
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingSection, setEditingSection] = useState<Section | null>(null);
@@ -34,27 +68,31 @@ export default function SectionsPage() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deletingSection, setDeletingSection] = useState<Section | null>(null);
 
-    const fetchSectionsAndCourses = useCallback(async () => {
+    const updateQueryParams = (updates: Record<string, string | number | undefined | boolean>) => {
+        const params = new URLSearchParams(searchParams.toString());
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value === undefined || value === '' || value === false) {
+                params.delete(key);
+            } else {
+                params.set(key, String(value));
+            }
+        });
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    };
+
+    const fetchCoursesOnly = useCallback(async () => {
         if (!token) return;
         try {
-            const [sectionsData, coursesData] = await Promise.all([
-                api.org.getSections(token),
-                api.org.getCourses(token)
-            ]);
-
-            setSections(Array.isArray(sectionsData) ? sectionsData : []);
-            setCourses(Array.isArray(coursesData) ? coursesData : []);
+            const coursesResponse = await api.org.getCourses(token);
+            setCourses(Array.isArray(coursesResponse) ? coursesResponse : (coursesResponse as any).data || []);
         } catch (err) {
             console.error(err);
-            showToast('Failed to load sections or courses', 'error');
-        } finally {
-            setLoading(false);
         }
-    }, [token, showToast]);
+    }, [token]);
 
     useEffect(() => {
-        fetchSectionsAndCourses();
-    }, [fetchSectionsAndCourses]);
+        if (token) fetchCoursesOnly();
+    }, [token, fetchCoursesOnly]);
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -64,7 +102,7 @@ export default function SectionsPage() {
             await api.org.updateSection(editingSection.id, editFormData, token);
             setEditModalOpen(false);
             showToast('Section updated successfully', 'success');
-            fetchSectionsAndCourses();
+            refresh();
         } catch (err: unknown) {
             showToast(err instanceof Error ? err.message : 'Error updating section', 'error');
         } finally {
@@ -78,29 +116,27 @@ export default function SectionsPage() {
             await api.org.deleteSection(deletingSection.id, token);
             showToast('Section deleted successfully', 'success');
             setDeleteDialogOpen(false);
-            fetchSectionsAndCourses();
+            refresh();
         } catch (err: unknown) {
             showToast(err instanceof Error ? err.message : 'Error deleting section', 'error');
         }
     };
 
+    const sections = paginatedData?.data || [];
+    
+    // Client-side filter for "My Sections" if not handled by server
     const filteredSections = sections.filter(section => {
-        const matchesSearch =
-            section.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            section.course?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            section.room?.toLowerCase().includes(searchTerm.toLowerCase());
-
-        const isMySection = user?.role === Role.TEACHER && section.teachers?.some(t => t.userId === (user.sub || user.id));
-        const matchesFilter = !showOnlyMySections || isMySection;
-
-        return matchesSearch && matchesFilter;
+        if (!showOnlyMySections) return true;
+        
+        const loggedInUserId = user?.sub || user?.id;
+        return section.teachers?.some(t => t.userId === loggedInUserId);
     });
 
     const columns = [
         {
             header: 'Section Name',
             sortable: true,
-            sortAccessor: (row: Section) => row.name,
+            sortKey: 'name',
             accessor: (row: Section) => (
                 <div className="flex flex-col">
                     <span className="font-semibold text-card-text">{row.name}</span>
@@ -110,8 +146,7 @@ export default function SectionsPage() {
         },
         {
             header: 'Enrolled Teachers',
-            sortable: true,
-            sortAccessor: (row: Section) => row.teachers?.length || 0,
+            sortable: false,
             accessor: (row: Section) => (
                 <div className="flex flex-wrap gap-1">
                     {row.teachers && row.teachers.length > 0 ? (
@@ -129,12 +164,13 @@ export default function SectionsPage() {
         {
             header: 'Term',
             sortable: true,
-            sortAccessor: (row: Section) => `${row.semester} ${row.year}`,
+            sortKey: 'semester',
             accessor: (row: Section) => row.semester && row.year ? `${row.semester} ${row.year}` : <span className="text-gray-400 italic">Unspecified</span>
         },
         {
             header: 'Room',
             sortable: true,
+            sortKey: 'room',
             accessor: (row: Section) => row.room || <span className="text-gray-400 italic">TBD</span>
         },
         {
@@ -172,6 +208,14 @@ export default function SectionsPage() {
 
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
+    if ((!token && !user) || (isFetching && !paginatedData)) {
+        return (
+            <div className="flex items-center justify-center p-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
             <div className="mb-6">
@@ -191,13 +235,12 @@ export default function SectionsPage() {
             <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-6 md:p-8 mb-10">
                 <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex-1 max-w-xl">
-                        <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, course, or room..." />
+                        <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, course, or room..." />
                     </div>
-
                     {user?.role === Role.TEACHER && (
                         <div className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10">
                             <button
-                                onClick={() => setShowOnlyMySections(!showOnlyMySections)}
+                                onClick={() => updateQueryParams({ my: !showOnlyMySections, page: 1 })}
                                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMySections ? 'bg-primary' : 'bg-gray-200'
                                     }`}
                             >
@@ -216,7 +259,7 @@ export default function SectionsPage() {
                         data={filteredSections}
                         columns={columns}
                         keyExtractor={(row) => row.id}
-                        isLoading={loading}
+                        isLoading={isFetching}
                         onRowClick={(row) => {
                             const isAdmin = user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER;
                             const isAssignedTeacher = user?.role === Role.TEACHER && row.teachers?.some(t => t.userId === (user.sub || user.id));
@@ -232,6 +275,13 @@ export default function SectionsPage() {
                                 setEditModalOpen(true);
                             }
                         }}
+                        currentPage={page}
+                        totalPages={paginatedData?.totalPages || 1}
+                        totalResults={paginatedData?.totalRecords || 0}
+                        pageSize={10}
+                        onPageChange={(p) => updateQueryParams({ page: p })}
+                        sortConfig={{ key: sortBy, direction: sortOrder }}
+                        onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                     />
                 </div>
             </div>

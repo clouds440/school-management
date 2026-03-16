@@ -7,16 +7,16 @@ const prisma = new PrismaClient();
 const TARGET_ORG_ID = '7375c4e6-3a3b-4698-9cbd-68e5c85774e2';
 
 async function main() {
-    const adminEmail = process.env.SUPER_ADMIN_USERNAME || 'admin@school.com';
-    const adminPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin123';
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    const adminEmail = process.env.SUPER_ADMIN_USERNAME;
+    const adminPassword = process.env.SUPER_ADMIN_PASSWORD;
+    const hashedPassword = await bcrypt.hash(adminPassword!, 10);
 
     console.log('--- Seeding Super Admin ---');
     await prisma.user.upsert({
         where: { email: adminEmail },
         update: {},
         create: {
-            email: adminEmail,
+            email: adminEmail!,
             password: hashedPassword,
             role: Role.SUPER_ADMIN,
             isFirstLogin: false,
@@ -25,7 +25,7 @@ async function main() {
     });
 
     console.log('--- Seeding Many Organizations ---');
-    const orgsToCreate = 25;
+    const orgsToCreate = 400;
     for (let i = 0; i < orgsToCreate; i++) {
         const name = faker.company.name();
         await prisma.organization.create({
@@ -78,7 +78,7 @@ async function main() {
         const firstName = faker.person.firstName();
         const lastName = faker.person.lastName();
         const email = faker.internet.email({ firstName, lastName }).toLowerCase();
-        
+
         const user = await prisma.user.create({
             data: {
                 email,
@@ -158,7 +158,7 @@ async function main() {
         // Enroll student in 2-3 random sections
         const numEnrollments = faker.number.int({ min: 2, max: 3 });
         const selectedSections = faker.helpers.arrayElements(sections, numEnrollments);
-        
+
         for (const section of selectedSections) {
             await prisma.enrollment.create({
                 data: {

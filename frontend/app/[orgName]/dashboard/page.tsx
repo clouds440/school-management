@@ -131,7 +131,9 @@ export default function DashboardPage() {
                         <div className="bg-red-50 border border-red-100 p-6 rounded-sm mb-8 text-left w-full">
                             <p className="text-xs font-bold text-red-400 uppercase tracking-widest mb-2">Rejection Reason</p>
                             <MarkdownRenderer
-                                content={orgData.statusMessage || 'No reason provided.'}
+                                content={orgData.statusHistory && orgData.statusHistory.length > 0
+                                    ? orgData.statusHistory[orgData.statusHistory.length - 1].message
+                                    : 'No reason provided.'}
                                 className="text-red-700 text-lg font-medium"
                             />
                         </div>
@@ -162,7 +164,9 @@ export default function DashboardPage() {
                         <div className="bg-orange-50 text-orange-800 p-6 rounded-sm border border-orange-100 w-full mb-8 text-left shadow-inner">
                             <h3 className="font-bold mb-2 flex items-center gap-2 text-sm uppercase tracking-wider text-orange-900/60"><ShieldOff className="w-4 h-4" /> Suspension Reason</h3>
                             <MarkdownRenderer 
-                                content={orgData?.statusMessage || 'Please contact your institution\'s administration or EduManage support for more details.'} 
+                                content={orgData.statusHistory && orgData.statusHistory.length > 0 
+                                    ? orgData.statusHistory[orgData.statusHistory.length - 1].message 
+                                    : 'Please contact your institution\'s administration or EduManage support for more details.'} 
                                 className="italic font-bold text-orange-900" 
                             />
                         </div>

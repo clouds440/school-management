@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldOff, ShieldAlert, ShieldCheck, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone, Info, Hash } from 'lucide-react';
+import { ShieldOff, ShieldAlert, ShieldCheck, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone, Info, Hash, Clock } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Organization, AdminStats, OrgStatus, Role } from '@/types';
+import { Organization, AdminStats, OrgStatus, Role, PaginatedResponse } from '@/types';
 import { TableActions, AdminAction } from '@/components/ui/TableActions';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -13,45 +14,83 @@ import { DataTable, Column } from '@/components/ui/DataTable';
 import { DataField, useUI } from '@/context/UIContext';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
+import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+
+interface AdminOrgParams extends BasePaginationParams {
+    status: OrgStatus;
+    type: string;
+}
 
 export default function OrganizationsPage() {
     const { user, token, loading } = useAuth();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
     const { showToast } = useToast();
 
-    const [organizations, setOrganizations] = useState<Organization[]>([]);
+    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Organization> | null>(null);
     const { openViewModal } = useUI();
-    const [fetching, setFetching] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [activeStatusTab, setActiveStatusTab] = useState<OrgStatus>(OrgStatus.PENDING);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [orgTypeFilter, setOrgTypeFilter] = useState<string>('ALL');
     const [stats, setStats] = useState<AdminStats | null>(null);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [operatingOrg, setOperatingOrg] = useState<{ id: string, name: string, email: string, statusMessage?: string } | null>(null);
+    const [operatingOrg, setOperatingOrg] = useState<{ id: string, name: string, email: string, statusHistory?: any[] } | null>(null);
     const [modalMode, setModalMode] = useState<'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE'>('REJECT');
     const [reason, setReason] = useState('');
 
+    // URL State
+    const orgParams: AdminOrgParams = {
+        status: (searchParams.get('status') as OrgStatus) || OrgStatus.PENDING,
+        page: parseInt(searchParams.get('page') || '1', 10),
+        search: searchParams.get('search') || '',
+        sortBy: searchParams.get('sortBy') || 'name',
+        sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc',
+        type: searchParams.get('type') || 'ALL',
+        limit: 10
+    };
+
+    const { 
+        data: fetchedData, 
+        loading: isInitialLoading, 
+        fetching: isFetching, 
+        refresh 
+    } = usePaginatedData<Organization, AdminOrgParams>(
+        (p) => api.admin.getOrganizations(token!, p),
+        orgParams,
+        'admin-organizations'
+    );
+
+    const activeStatusTab = orgParams.status;
+    const page = orgParams.page || 1;
+    const searchQuery = orgParams.search || '';
+    const sortBy = orgParams.sortBy || 'name';
+    const sortOrder = orgParams.sortOrder || 'asc';
+    const orgTypeFilter = orgParams.type || 'ALL';
+
     useEffect(() => {
-        if (!loading && user && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && token) {
-            fetchOrganizations();
+        setPaginatedData(fetchedData);
+    }, [fetchedData]);
+
+
+    useEffect(() => {
+        if (token) {
             api.admin.getAdminStats(token).then(setStats).catch(console.error);
         }
-    }, [loading, user, activeStatusTab, token]);
+    }, [token]);
 
-    const fetchOrganizations = async () => {
-        if (!token) return;
-        try {
-            setFetching(true);
-            const orgData = await api.admin.getOrganizations(token, activeStatusTab);
-            setOrganizations(orgData);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to fetch data';
-            showToast(message, 'error');
-        } finally {
-            setFetching(false);
-        }
+    const updateQueryParams = (updates: Record<string, string | number | undefined>) => {
+        const params = new URLSearchParams(searchParams.toString());
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value === undefined || value === '') {
+                params.delete(key);
+            } else {
+                params.set(key, String(value));
+            }
+        });
+        router.push(`?${params.toString()}`, { scroll: false });
     };
+
+    // We no longer need fetchOrganizations locally as it's handled by the hook
 
     const handleApprove = async (id: string, name: string) => {
         if (!token) return;
@@ -59,7 +98,10 @@ export default function OrganizationsPage() {
             setActionLoading(`approve-${id}`);
             await api.admin.approveOrganization(id, token);
             showToast(`${name} approved successfully`, 'success');
-            setOrganizations(prev => prev.filter(org => org.id !== id));
+            // Re-fetch to update the current page data
+            refresh();
+            // Also refresh stats
+            api.admin.getAdminStats(token!).then(setStats).catch(console.error);
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to approve organization';
             showToast(message, 'error');
@@ -68,10 +110,11 @@ export default function OrganizationsPage() {
         }
     };
 
-    const handleOpenModal = (id: string, name: string, email: string, mode: 'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE', currentMessage?: string) => {
-        setOperatingOrg({ id, name, email, statusMessage: currentMessage });
+    const handleOpenModal = (id: string, name: string, email: string, mode: 'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE', currentHistory?: any[]) => {
+        setOperatingOrg({ id, name, email, statusHistory: currentHistory });
         setModalMode(mode);
-        setReason(currentMessage || '');
+        const lastMessage = currentHistory && currentHistory.length > 0 ? currentHistory[currentHistory.length - 1].message : '';
+        setReason(lastMessage || '');
         setIsModalOpen(true);
     };
 
@@ -84,11 +127,11 @@ export default function OrganizationsPage() {
             if (modalMode === 'REJECT') {
                 await api.admin.rejectOrganization(operatingOrg.id, reason, token);
                 showToast(`${operatingOrg.name} rejected`, 'info');
-                setOrganizations(prev => prev.filter(org => org.id !== operatingOrg.id));
+                refresh();
             } else if (modalMode === 'SUSPEND') {
                 await api.admin.suspendOrganization(operatingOrg.id, reason, token);
                 showToast(`${operatingOrg.name} suspended`, 'info');
-                setOrganizations(prev => prev.filter(org => org.id !== operatingOrg.id));
+                refresh();
             } else {
                 if (activeStatusTab === OrgStatus.REJECTED) {
                     await api.admin.rejectOrganization(operatingOrg.id, reason, token);
@@ -96,7 +139,8 @@ export default function OrganizationsPage() {
                     await api.admin.suspendOrganization(operatingOrg.id, reason, token);
                 }
                 showToast(`Status message updated for ${operatingOrg.name}`, 'success');
-                setOrganizations(prev => prev.map(org => org.id === operatingOrg.id ? { ...org, statusMessage: reason } : org));
+                // We fetch again to get the updated history from backend
+                refresh();
             }
             setIsModalOpen(false);
             setOperatingOrg(null);
@@ -109,26 +153,26 @@ export default function OrganizationsPage() {
         }
     };
 
-    const filteredOrganizations = organizations.filter(org => {
-        const matchesSearch = org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            org.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            org.location.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesType = orgTypeFilter === 'ALL' || org.type === orgTypeFilter;
-        return matchesSearch && matchesType;
-    });
+    // For type filter, if it's not supported by backend yet, we can either filter client-side 
+    // or just pass it to backend if we updated it. 
+    // Assuming backend only filters by status and search for now.
+    const organizations = paginatedData?.data || [];
+    
+    // Use dynamic counts from server if available, otherwise fallback to stats
+    const dynamicCounts = (paginatedData as any)?.counts || stats;
 
     const statusTabs: { id: OrgStatus, label: string, icon: LucideIcon, color: string, bg: string, count?: number }[] = [
-        { id: OrgStatus.PENDING, label: 'Pending', icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-600/10', count: stats?.PENDING },
-        { id: OrgStatus.APPROVED, label: 'Approved', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-600/10', count: stats?.APPROVED },
-        { id: OrgStatus.REJECTED, label: 'Rejected', icon: ShieldOff, color: 'text-red-600', bg: 'bg-red-600/10', count: stats?.REJECTED },
-        { id: OrgStatus.SUSPENDED, label: 'Suspended', icon: ShieldAlert, color: 'text-gray-600', bg: 'bg-gray-600/10', count: stats?.SUSPENDED },
+        { id: OrgStatus.PENDING, label: 'Pending', icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-600/10', count: dynamicCounts?.PENDING },
+        { id: OrgStatus.APPROVED, label: 'Approved', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-600/10', count: dynamicCounts?.APPROVED },
+        { id: OrgStatus.REJECTED, label: 'Rejected', icon: ShieldOff, color: 'text-red-600', bg: 'bg-red-600/10', count: dynamicCounts?.REJECTED },
+        { id: OrgStatus.SUSPENDED, label: 'Suspended', icon: ShieldAlert, color: 'text-gray-600', bg: 'bg-gray-600/10', count: dynamicCounts?.SUSPENDED },
     ];
 
     const columns: Column<Organization>[] = [
         {
             header: 'Organization',
             sortable: true,
-            sortAccessor: (row) => row.name,
+            sortKey: 'name',
             accessor: (row) => (
                 <div className="flex items-start gap-4 min-w-0">
                     <div className="w-10 h-10 bg-indigo-50 rounded-sm flex items-center justify-center text-indigo-600 shrink-0">
@@ -144,7 +188,7 @@ export default function OrganizationsPage() {
         {
             header: 'Contact Info',
             sortable: true,
-            sortAccessor: (row) => row.email,
+            sortKey: 'email',
             accessor: (row) => (
                 <div className="space-y-1">
                     <div className="flex items-center text-xs font-medium text-gray-600 gap-1.5">
@@ -161,7 +205,7 @@ export default function OrganizationsPage() {
         {
             header: 'Created On',
             sortable: true,
-            sortAccessor: (row) => new Date(row.createdAt).getTime(),
+            sortKey: 'createdAt',
             accessor: (row) => (
                 <div className="flex items-center text-xs font-medium text-gray-500 gap-1.5 opacity-80">
                     <Calendar className="w-3 h-3" />
@@ -211,7 +255,7 @@ export default function OrganizationsPage() {
                     if (row.status === OrgStatus.REJECTED || row.status === OrgStatus.SUSPENDED) {
                         actions.push({
                             variant: 'editMessage',
-                            onClick: () => handleOpenModal(row.id, row.name, row.email, 'EDIT_MESSAGE', row.statusMessage),
+                            onClick: () => handleOpenModal(row.id, row.name, row.email, 'EDIT_MESSAGE', row.statusHistory),
                             title: 'Edit Status Message'
                         });
                     }
@@ -233,7 +277,7 @@ export default function OrganizationsPage() {
         }
     ];
 
-    if (loading || (!user && !loading)) {
+    if ((loading || (!user && !loading)) || (isFetching && !paginatedData)) {
         return (
             <div className="flex flex-1 items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -251,9 +295,61 @@ export default function OrganizationsPage() {
             { label: 'Phone Number', value: org.phone || 'N/A', icon: Phone },
             { label: 'Created At', value: new Date(org.createdAt).toLocaleString(), icon: Calendar },
             {
-                label: 'Status Message',
-                value: org.statusMessage ? <MarkdownRenderer content={org.statusMessage} className="text-sm bg-gray-50 p-4 rounded-sm border border-gray-100 min-h-[100px]" /> : 'N/A',
-                icon: Info,
+                label: 'Status History',
+                value: org.statusHistory && org.statusHistory.length > 0 ? (
+                    <div className="space-y-4 mt-2 max-h-[500px] overflow-y-auto pr-6 custom-scrollbar -ml-2">
+                        {[...org.statusHistory].reverse().map((entry, idx) => (
+                            <div key={idx} className="relative pl-8 border-l-2 border-primary/10 last:border-l-0 pb-8 last:pb-2">
+                                {/* Timeline Dot */}
+                                <div className="absolute left-2 top-0.5 w-5 h-5 rounded-full bg-card border-4 border-primary/20 flex items-center justify-center shadow-sm">
+                                    <div className={`w-2 h-2 rounded-full ${entry.status === 'APPROVED' ? 'bg-green-500' :
+                                        entry.status === 'REJECTED' ? 'bg-red-500' :
+                                            'bg-amber-500'
+                                        }`} />
+                                </div>
+
+                                {/* Content Card */}
+                                <div className="bg-card-text/5 rounded-sm p-6 border border-card-text/10 shadow-sm relative transition-all hover:bg-card-text/[0.07]">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-sm shadow-sm ${entry.status === 'APPROVED' ? 'bg-green-500 text-white' :
+                                                entry.status === 'REJECTED' ? 'bg-red-500 text-white' :
+                                                    'bg-amber-600 text-white'
+                                                }`}>
+                                                {entry.status}
+                                            </span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black opacity-30 uppercase tracking-widest leading-none mb-1">Date & Time</span>
+                                                <span className="text-[11px] font-black opacity-60">
+                                                    {new Date(entry.createdAt).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col sm:items-end">
+                                            <span className="text-[10px] font-black opacity-30 uppercase tracking-widest leading-none mb-1 text-left sm:text-right">Action By</span>
+                                            <span className="text-[11px] font-black opacity-80 uppercase tracking-tighter">
+                                                {entry.adminName} <span className="opacity-40 ml-1">({entry.adminRole})</span>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 pt-4 border-t border-card-text/5">
+                                        <MarkdownRenderer
+                                            content={entry.message}
+                                            className="text-sm prose prose-sm max-w-none prose-headings:font-black prose-p:font-bold prose-headings:text-card-text prose-p:text-card-text/80 leading-relaxed"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="p-8 border-2 border-dashed border-card-text/5 rounded-sm flex flex-col items-center justify-center text-center">
+                        <Info className="w-8 h-8 opacity-20 mb-3" />
+                        <p className="text-xs font-black opacity-30 uppercase tracking-widest italic">No history details available</p>
+                    </div>
+                ),
+                icon: Clock,
                 fullWidth: true
             },
         ];
@@ -266,26 +362,14 @@ export default function OrganizationsPage() {
     };
 
     return (
-        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
-            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
-                <div className="flex items-center gap-5">
-                    <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl shrink-0">
-                        <Building2 className="w-8 h-8 md:w-10 md:h-10 text-indigo-600" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight text-left">Organizations</h1>
-                        <p className="text-gray-500 font-bold opacity-80 mt-1 text-sm md:text-base text-left uppercase tracking-wider">Management & Verification</p>
-                    </div>
-                </div>
-            </div>
-
+        <div className="flex flex-col py-2 md:py-4 w-full animate-fade-in-up">
             <div className="bg-white/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/50 flex flex-col w-full overflow-hidden">
                 <div className="px-6 md:px-8 pt-8 pb-6 border-b border-gray-100 flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-gray-50/50">
                     <div className="flex overflow-x-auto mb-4 xl:mb-0 pb-2 gap-3 scrollbar-none sm:flex-wrap">
                         {statusTabs.map((tab) => (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveStatusTab(tab.id)}
+                                onClick={() => updateQueryParams({ status: tab.id, page: 1 })}
                                 className={`px-5 py-2.5 rounded-sm font-bold text-sm cursor-pointer transition-all flex items-center gap-2 shadow-sm border whitespace-nowrap ${activeStatusTab === tab.id
                                     ? 'bg-white border-gray-200 text-gray-900 shadow-[0_4px_12px_rgba(0,0,0,0.05)]'
                                     : 'bg-gray-100/50 border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'
@@ -306,7 +390,7 @@ export default function OrganizationsPage() {
                     <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto px-2">
                         <select
                             value={orgTypeFilter}
-                            onChange={(e) => setOrgTypeFilter(e.target.value)}
+                            onChange={(e) => updateQueryParams({ type: e.target.value, page: 1 })}
                             className="w-full sm:w-auto px-4 py-2.5 rounded-sm bg-white border border-gray-200 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer shadow-sm min-w-[160px]"
                         >
                             <option value="ALL">All Org Types</option>
@@ -318,7 +402,7 @@ export default function OrganizationsPage() {
 
                         <SearchBar
                             value={searchQuery}
-                            onChange={setSearchQuery}
+                            onChange={(val) => updateQueryParams({ search: val, page: 1 })}
                             placeholder="Search organizations..."
                         />
                     </div>
@@ -327,10 +411,17 @@ export default function OrganizationsPage() {
                 <div className="p-4 md:p-6 bg-gray-50/10">
                     <DataTable
                         columns={columns}
-                        data={filteredOrganizations}
+                        data={paginatedData?.data || []}
                         keyExtractor={(row) => row.id}
-                        isLoading={fetching}
+                        isLoading={isFetching}
                         onRowClick={handleViewOrg}
+                        currentPage={page}
+                        totalPages={paginatedData?.totalPages || 1}
+                        totalResults={paginatedData?.totalRecords || 0}
+                        pageSize={10}
+                        onPageChange={(p) => updateQueryParams({ page: p })}
+                        sortConfig={{ key: sortBy, direction: sortOrder }}
+                        onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                     />
                 </div>
             </div>

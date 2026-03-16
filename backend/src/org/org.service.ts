@@ -37,7 +37,7 @@ export class OrgService {
                 avatarUpdatedAt: true,
                 accentColor: true,
                 status: true,
-                statusMessage: true,
+                statusHistory: true,
                 createdAt: true,
             },
 
@@ -61,7 +61,7 @@ export class OrgService {
                 avatarUpdatedAt: true,
                 accentColor: true,
                 status: true,
-                statusMessage: true,
+                statusHistory: true,
                 createdAt: true,
             },
 
@@ -143,22 +143,79 @@ export class OrgService {
     }
 
     // --- Teachers ---
-    async getTeachers(orgId: string) {
-        return this.prisma.teacher.findMany({
-            where: { organizationId: orgId, status: { not: TeacherStatus.DELETED } },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        email: true,
-                        name: true,
-                        phone: true,
-                        role: true,
+    async getTeachers(orgId: string, options: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+    }) {
+        const {
+            page = 1,
+            limit = 10,
+            search = '',
+            sortBy = 'user.name', // Default sort
+            sortOrder = 'asc'
+        } = options;
+
+        const skip = (page - 1) * limit;
+        const take = limit;
+
+        const where: Prisma.TeacherWhereInput = {
+            organizationId: orgId,
+            status: { not: TeacherStatus.DELETED },
+            ...(search ? {
+                OR: [
+                    { user: { name: { contains: search, mode: 'insensitive' } } },
+                    { user: { email: { contains: search, mode: 'insensitive' } } },
+                    { subject: { contains: search, mode: 'insensitive' } },
+                    { department: { contains: search, mode: 'insensitive' } },
+                    { designation: { contains: search, mode: 'insensitive' } },
+                ]
+            } : {})
+        };
+
+        // Handle nested sorting for user fields
+        let orderBy: any = {};
+        const userFields = ['name', 'email', 'phone'];
+
+        if (sortBy.startsWith('user.')) {
+            const field = sortBy.split('.')[1];
+            orderBy = { user: { [field]: sortOrder } };
+        } else if (userFields.includes(sortBy)) {
+            orderBy = { user: { [sortBy]: sortOrder } };
+        } else {
+            orderBy = { [sortBy]: sortOrder };
+        }
+
+        const [teachers, totalRecords] = await Promise.all([
+            this.prisma.teacher.findMany({
+                where,
+                skip,
+                take,
+                orderBy,
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            phone: true,
+                            role: true,
+                        },
                     },
+                    sections: { select: { id: true, name: true } },
                 },
-                sections: { select: { id: true, name: true } },
-            },
-        });
+            }),
+            this.prisma.teacher.count({ where })
+        ]);
+
+        return {
+            data: teachers,
+            totalRecords,
+            totalPages: Math.ceil(totalRecords / limit),
+            currentPage: page
+        };
     }
 
     async getTeacher(orgId: string, id: string) {
@@ -346,50 +403,111 @@ export class OrgService {
     }
 
     // --- Courses ---
-    async getCourses(orgId: string) {
-        return this.prisma.course.findMany({
-            where: { organizationId: orgId },
-            include: { sections: true }
-        });
-    }
+    async getCourses(orgId: string, options: { 
+        page?: number; 
+        limit?: number; 
+        search?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+    } = {}) {
+        const { 
+            page = 1, 
+            limit = 10, 
+            search = '',
+            sortBy = 'name',
+            sortOrder = 'asc' 
+        } = options;
+        const skip = (page - 1) * limit;
+        const take = limit;
 
-    async createCourse(orgId: string, data: CreateCourseDto) {
-        return this.prisma.course.create({
-            data: {
-                name: data.name,
-                description: data.description,
-                organizationId: orgId,
-            },
-        });
-    }
+        const where: Prisma.CourseWhereInput = {
+            organizationId: orgId,
+            ...(search ? {
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { description: { contains: search, mode: 'insensitive' } },
+                ]
+            } : {})
+        };
 
-    async updateCourse(orgId: string, id: string, data: UpdateCourseDto) {
-        return this.prisma.course.update({
-            where: { id, organizationId: orgId },
-            data,
-        });
-    }
+        const [courses, totalRecords] = await Promise.all([
+            this.prisma.course.findMany({
+                where,
+                skip,
+                take,
+                include: { sections: true },
+                orderBy: { [sortBy]: sortOrder }
+            }),
+            this.prisma.course.count({ where })
+        ]);
 
-    async deleteCourse(orgId: string, id: string) {
-        const course = await this.prisma.course.findFirst({
-            where: { id, organizationId: orgId }
-        });
-        if (!course) throw new NotFoundException('Course not found');
-
-        await this.prisma.course.delete({ where: { id } });
-        return { message: 'Course deleted successfully' };
+        return {
+            data: courses,
+            totalRecords,
+            totalPages: Math.ceil(totalRecords / limit),
+            currentPage: page
+        };
     }
 
     // --- Sections ---
-    async getSections(orgId: string) {
-        return this.prisma.section.findMany({
-            where: { course: { organizationId: orgId } },
-            include: {
-                course: true,
-                teachers: { include: { user: { select: { email: true, name: true } } } },
-                enrollments: !!orgId ? undefined : undefined // To fetch enrolls if needed later
-            }
-        });
+    async getSections(orgId: string, options: { 
+        page?: number; 
+        limit?: number; 
+        search?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+    }) {
+        const { 
+            page = 1, 
+            limit = 10, 
+            search = '',
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
+        } = options;
+        const skip = (page - 1) * limit;
+        const take = limit;
+
+        const where: Prisma.SectionWhereInput = {
+            course: { organizationId: orgId },
+            ...(search ? {
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { semester: { contains: search, mode: 'insensitive' } },
+                    { year: { contains: search, mode: 'insensitive' } },
+                    { room: { contains: search, mode: 'insensitive' } },
+                    { course: { name: { contains: search, mode: 'insensitive' } } },
+                ]
+            } : {})
+        };
+
+        // Handle nested sorting for course name
+        let orderBy: any = {};
+        if (sortBy === 'courseName') {
+            orderBy = { course: { name: sortOrder } };
+        } else {
+            orderBy = { [sortBy]: sortOrder };
+        }
+
+        const [sections, totalRecords] = await Promise.all([
+            this.prisma.section.findMany({
+                where,
+                skip,
+                take,
+                include: {
+                    course: true,
+                    teachers: { include: { user: { select: { email: true, name: true } } } },
+                },
+                orderBy
+            }),
+            this.prisma.section.count({ where })
+        ]);
+
+        return {
+            data: sections,
+            totalRecords,
+            totalPages: Math.ceil(totalRecords / limit),
+            currentPage: page
+        };
     }
 
     async createSection(orgId: string, data: CreateSectionDto) {
@@ -422,27 +540,84 @@ export class OrgService {
     }
 
     // --- Students ---
-    async getStudents(orgId: string) {
-        return this.prisma.student.findMany({
-            where: { organizationId: orgId, status: { not: StudentStatus.DELETED } },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        email: true,
-                        name: true,
-                        phone: true,
+    async getStudents(orgId: string, options: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+    }) {
+        const {
+            page = 1,
+            limit = 10,
+            search = '',
+            sortBy = 'user.name',
+            sortOrder = 'asc'
+        } = options;
+
+        const skip = (page - 1) * limit;
+        const take = limit;
+
+        const where: Prisma.StudentWhereInput = {
+            organizationId: orgId,
+            status: { not: StudentStatus.DELETED },
+            ...(search ? {
+                OR: [
+                    { user: { name: { contains: search, mode: 'insensitive' } } },
+                    { user: { email: { contains: search, mode: 'insensitive' } } },
+                    { registrationNumber: { contains: search, mode: 'insensitive' } },
+                    { major: { contains: search, mode: 'insensitive' } },
+                    { department: { contains: search, mode: 'insensitive' } },
+                ]
+            } : {})
+        };
+
+        // Handle nested sorting for user fields
+        let orderBy: any = {};
+        const userFields = ['name', 'email', 'phone'];
+
+        if (sortBy.startsWith('user.')) {
+            const field = sortBy.split('.')[1];
+            orderBy = { user: { [field]: sortOrder } };
+        } else if (userFields.includes(sortBy)) {
+            orderBy = { user: { [sortBy]: sortOrder } };
+        } else {
+            orderBy = { [sortBy]: sortOrder };
+        }
+
+        const [students, totalRecords] = await Promise.all([
+            this.prisma.student.findMany({
+                where,
+                skip,
+                take,
+                orderBy,
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            phone: true,
+                        },
                     },
-                },
-                enrollments: {
-                    include: {
-                        section: {
-                            include: { course: true },
+                    enrollments: {
+                        include: {
+                            section: {
+                                include: { course: true },
+                            },
                         },
                     },
                 },
-            },
-        });
+            }),
+            this.prisma.student.count({ where })
+        ]);
+
+        return {
+            data: students,
+            totalRecords,
+            totalPages: Math.ceil(totalRecords / limit),
+            currentPage: page
+        };
     }
 
     async getStudent(orgId: string, id: string) {
@@ -644,11 +819,23 @@ export class OrgService {
             throw new BadRequestException('Only rejected organizations can re-apply');
         }
 
+        const history = (org.statusHistory as any[]) || [];
+        const newHistory = [
+            ...history,
+            {
+                status: OrgStatus.PENDING,
+                message: 'Organization has re-applied for verification.',
+                adminName: 'System',
+                adminRole: 'Automation',
+                createdAt: new Date().toISOString(),
+            }
+        ];
+
         return this.prisma.organization.update({
             where: { id: orgId },
             data: {
                 status: OrgStatus.PENDING,
-                statusMessage: null,
+                statusHistory: newHistory,
             },
         });
     }

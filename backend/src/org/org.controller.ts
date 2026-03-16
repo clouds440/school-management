@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, BadRequestException, Query } from '@nestjs/common';
 import { Role, SupportTopic } from '../common/enums';
 
 import { OrgService } from './org.service';
@@ -106,8 +106,21 @@ export class OrgController {
     // --- Teachers ---
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Get('teachers')
-    getTeachers(@OrgId() orgId: string) {
-        return this.orgService.getTeachers(orgId);
+    async getTeachers(
+        @OrgId() orgId: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+        @Query('sortBy') sortBy?: string,
+        @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+    ) {
+        return this.orgService.getTeachers(orgId, {
+            page: page ? parseInt(page, 10) : 1,
+            limit: limit ? parseInt(limit, 10) : 10,
+            search,
+            sortBy,
+            sortOrder,
+        });
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
@@ -136,32 +149,40 @@ export class OrgController {
 
     // --- Courses ---
     @Get('courses')
-    getCourses(@OrgId() orgId: string) {
-        return this.orgService.getCourses(orgId);
-    }
-
-    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
-    @Post('courses')
-    createCourse(@OrgId() orgId: string, @Body() createCourseDto: CreateCourseDto) {
-        return this.orgService.createCourse(orgId, createCourseDto);
-    }
-
-    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
-    @Patch('courses/:id')
-    updateCourse(@OrgId() orgId: string, @Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
-        return this.orgService.updateCourse(orgId, id, updateCourseDto);
-    }
-
-    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
-    @Delete('courses/:id')
-    deleteCourse(@OrgId() orgId: string, @Param('id') id: string) {
-        return this.orgService.deleteCourse(orgId, id);
+    async getCourses(
+        @OrgId() orgId: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+        @Query('sortBy') sortBy?: string,
+        @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+    ) {
+        return this.orgService.getCourses(orgId, {
+            page: page ? parseInt(page, 10) : 1,
+            limit: limit ? parseInt(limit, 10) : 10,
+            search,
+            sortBy,
+            sortOrder,
+        });
     }
 
     // --- Sections ---
     @Get('sections')
-    getSections(@OrgId() orgId: string) {
-        return this.orgService.getSections(orgId);
+    async getSections(
+        @OrgId() orgId: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+        @Query('sortBy') sortBy?: string,
+        @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+    ) {
+        return this.orgService.getSections(orgId, {
+            page: page ? parseInt(page, 10) : 1,
+            limit: limit ? parseInt(limit, 10) : 10,
+            search,
+            sortBy,
+            sortOrder,
+        });
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
@@ -184,8 +205,21 @@ export class OrgController {
 
     // --- Students ---
     @Get('students')
-    getStudents(@OrgId() orgId: string) {
-        return this.orgService.getStudents(orgId);
+    async getStudents(
+        @OrgId() orgId: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+        @Query('sortBy') sortBy?: string,
+        @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+    ) {
+        return this.orgService.getStudents(orgId, {
+            page: page ? parseInt(page, 10) : 1,
+            limit: limit ? parseInt(limit, 10) : 10,
+            search,
+            sortBy,
+            sortOrder,
+        });
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
