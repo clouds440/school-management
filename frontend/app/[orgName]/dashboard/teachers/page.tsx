@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { TableActions } from '@/components/ui/TableActions';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+import { getPublicUrl } from '@/lib/utils';
 
 interface TeacherParams extends BasePaginationParams { }
 
@@ -98,9 +99,18 @@ export default function TeachersPage() {
             sortable: true,
             sortKey: 'name',
             accessor: (row: Teacher) => (
-                <div>
-                    <div className="font-semibold text-card-text">{row.user.name || 'No Name'}</div>
-                    <div className="text-sm text-card-text/60">{row.user.email}</div>
+                <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 ${row.user.avatarUrl ? 'bg-transparent' : 'bg-indigo-50'} rounded-sm flex items-center justify-center text-indigo-600 shrink-0`}>
+                        {row.user.avatarUrl ? (
+                            <img src={getPublicUrl(row.user.avatarUrl)} alt="Teacher photo" className="w-10 h-10 bg-transparent rounded-full" />
+                        ) : (
+                            row.user.name.charAt(0).toUpperCase()
+                        )}
+                    </div>
+                    <div className="flex flex-col">
+                        <div className="font-semibold text-card-text">{row.user.name || 'No Name'}</div>
+                        <div className="text-sm text-card-text/60">{row.user.email}</div>
+                    </div>
                 </div>
             )
         },

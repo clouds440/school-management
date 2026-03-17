@@ -15,7 +15,7 @@ import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { teacherSchema, TeacherFormData } from '@/lib/schemas';
+import { teacherCreateSchema, teacherUpdateSchema, TeacherCreateFormData, TeacherUpdateFormData } from '@/lib/schemas';
 
 interface TeacherFormProps {
     teacherId?: string;
@@ -39,7 +39,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
         trigger,
         formState: { errors },
     } = useForm({
-        resolver: zodResolver(teacherSchema),
+        resolver: zodResolver(teacherId ? teacherUpdateSchema : teacherCreateSchema),
         defaultValues: initialData ? {
             name: initialData.user?.name || '',
             phone: initialData.user?.phone || '',
@@ -79,7 +79,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
 
     const formData = watch();
 
-    const onSubmit: SubmitHandler<TeacherFormData> = async (data) => {
+    const onSubmit: SubmitHandler<TeacherCreateFormData | TeacherUpdateFormData> = async (data) => {
         setIsSaving(true);
         try {
             const { password, salary, ...rest } = data;

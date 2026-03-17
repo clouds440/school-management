@@ -209,6 +209,7 @@ export class OrgService {
                             name: true,
                             phone: true,
                             role: true,
+                            avatarUrl: true,
                         },
                     },
                     sections: { select: { id: true, name: true } },
@@ -231,6 +232,7 @@ export class OrgService {
                         name: true,
                         phone: true,
                         role: true,
+                        avatarUrl: true,
                     },
                 },
                 sections: { select: { id: true, name: true } },
@@ -563,6 +565,7 @@ export class OrgService {
                             email: true,
                             name: true,
                             phone: true,
+                            avatarUrl: true,
                         },
                     },
                     enrollments: {
@@ -590,6 +593,7 @@ export class OrgService {
                         email: true,
                         name: true,
                         phone: true,
+                        avatarUrl: true,
                     },
                 },
                 enrollments: {

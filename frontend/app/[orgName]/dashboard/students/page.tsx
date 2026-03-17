@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { TableActions } from '@/components/ui/TableActions';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+import { getPublicUrl } from '@/lib/utils';
 
 interface StudentParams extends BasePaginationParams {
     my?: boolean;
@@ -46,11 +47,11 @@ export default function StudentsPage() {
         my: showOnlyMyStudents
     };
 
-    const { 
-        data: fetchedData, 
-        loading: isInitialLoading, 
-        fetching: isFetching, 
-        refresh 
+    const {
+        data: fetchedData,
+        loading: isInitialLoading,
+        fetching: isFetching,
+        refresh
     } = usePaginatedData<Student, StudentParams>(
         (p) => api.org.getStudents(token!, p),
         studentParams,
@@ -76,11 +77,11 @@ export default function StudentsPage() {
     // We no longer need fetchStudents locally as it's handled by the hook
 
     const students = paginatedData?.data || [];
-    
+
     // Client-side filter for "My Students" if not handled by server
     const filteredStudents = students.filter((student: Student) => {
         if (!showOnlyMyStudents) return true;
-        
+
         const loggedInUserId = user?.sub || user?.id;
         return student.enrollments?.some(e =>
             e.section?.teachers?.some(t => t.userId === loggedInUserId)
@@ -94,8 +95,12 @@ export default function StudentsPage() {
             sortKey: 'name',
             accessor: (row: Student) => (
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
-                        {(row.user.name || 'N').charAt(0).toUpperCase()}
+                    <div className={`w-10 h-10 ${row.user.avatarUrl ? 'bg-transparent' : 'bg-indigo-50'} rounded-sm flex items-center justify-center text-indigo-600 shrink-0`}>
+                        {row.user.avatarUrl ? (
+                            <img src={getPublicUrl(row.user.avatarUrl)} alt="Student photo" className="w-10 h-10 bg-transparent rounded-full" />
+                        ) : (
+                            row.user.name.charAt(0).toUpperCase()
+                        )}
                     </div>
                     <span className="font-semibold text-card-text">{row.user.name || 'N/A'}</span>
                 </div>

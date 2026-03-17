@@ -15,7 +15,7 @@ import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { studentSchema, StudentFormData } from '@/lib/schemas';
+import { studentCreateSchema, studentUpdateSchema, StudentCreateFormData, StudentUpdateFormData } from '@/lib/schemas';
 
 interface StudentFormProps {
     studentId?: string;
@@ -39,7 +39,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
         trigger,
         formState: { errors },
     } = useForm({
-        resolver: zodResolver(studentSchema),
+        resolver: zodResolver(studentId ? studentUpdateSchema : studentCreateSchema),
         defaultValues: initialData ? {
             name: initialData.user?.name || '',
             email: initialData.user?.email || '',
@@ -85,7 +85,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
 
     const formData = watch();
 
-    const onSubmit: SubmitHandler<StudentFormData> = async (data) => {
+    const onSubmit: SubmitHandler<StudentCreateFormData | StudentUpdateFormData> = async (data) => {
         setIsSaving(true);
         try {
             const { password, fee, age, ...rest } = data;
@@ -230,7 +230,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                                 error={!!errors.status}
                                 icon={
                                     formData.status === StudentStatus.ACTIVE ? ShieldCheck :
-                                    formData.status === StudentStatus.SUSPENDED ? UserX : GraduationCap
+                                        formData.status === StudentStatus.SUSPENDED ? UserX : GraduationCap
                                 }
                             />
                             {errors.status && <p className="mt-1 text-xs text-red-500 font-bold">{errors.status.message}</p>}
@@ -434,7 +434,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                             </div>
                             <textarea
                                 {...register('address')}
-                                className={`w-full pl-11 pr-4 py-3 rounded-sm border ${errors.address ? 'border-red-500 ring-4 ring-red-500/10' : 'border-white/10 ring-primary/10' } bg-primary/5 text-card-text placeholder:text-card-text/40 focus:bg-card focus:border-primary focus:ring-4 sm:text-sm transition-all duration-200 shadow-sm min-h-[160px] outline-none font-bold`}
+                                className={`w-full pl-11 pr-4 py-3 rounded-sm border ${errors.address ? 'border-red-500 ring-4 ring-red-500/10' : 'border-white/10 ring-primary/10'} bg-primary/5 text-card-text placeholder:text-card-text/40 focus:bg-card focus:border-primary focus:ring-4 sm:text-sm transition-all duration-200 shadow-sm min-h-[160px] outline-none font-bold`}
                                 placeholder="123 Education Lane, Learning City"
                             />
                         </div>

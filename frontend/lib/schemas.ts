@@ -4,19 +4,24 @@ import { OrganizationType, TeacherStatus, StudentStatus } from '@/types';
 // --- Shared Patterns ---
 const phoneRegex = /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/;
 
+// --- Password Rules (Single Source of Truth) ---
 const passwordRules = z.string()
     .min(8, 'Password must be at least 8 characters long')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number');
 
-// For updates, the field can be empty to keep current password.
-// If it has content, it MUST follow rules.
-const optionalPasswordRules = z.string().optional().or(z.literal(''))
-    .refine(val => !val || (val.length >= 8), 'Password must be at least 8 characters long')
-    .refine(val => !val || /[A-Z]/.test(val), 'Password must contain at least one uppercase letter')
-    .refine(val => !val || /[a-z]/.test(val), 'Password must contain at least one lowercase letter')
-    .refine(val => !val || /[0-9]/.test(val), 'Password must contain at least one number');
+// Optional password (for updates only)
+const optionalPasswordRules = z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => {
+        if (!val) return true;
+        return passwordRules.safeParse(val).success;
+    }, {
+        message: 'Password must be at least 8 characters long and include uppercase, lowercase, and number',
+    });
 
 // --- Registration Schema ---
 export const registerSchema = z.object({
@@ -31,12 +36,14 @@ export const registerSchema = z.object({
 
 export type RegisterFormData = z.infer<typeof registerSchema>;
 
-// --- Teacher Schema ---
-export const teacherSchema = z.object({
+// =========================
+// --- TEACHER SCHEMAS ---
+// =========================
+
+const teacherBaseSchema = z.object({
     name: z.string().min(1, 'Full Name is required'),
     phone: z.string().regex(phoneRegex, 'Invalid phone number'),
     email: z.string().email('Invalid email address'),
-    password: optionalPasswordRules,
     education: z.string().min(1, 'Education details are required'),
     designation: z.string().min(1, 'Designation is required'),
     subject: z.string().min(1, 'Subject expertise is required'),
@@ -51,13 +58,26 @@ export const teacherSchema = z.object({
     sectionIds: z.array(z.string()).min(1, 'At least one section must be assigned'),
 });
 
-export type TeacherFormData = z.infer<typeof teacherSchema>;
+// Create → password REQUIRED
+export const teacherCreateSchema = teacherBaseSchema.extend({
+    password: passwordRules,
+});
 
-// --- Student Schema ---
-export const studentSchema = z.object({
+// Update → password OPTIONAL
+export const teacherUpdateSchema = teacherBaseSchema.extend({
+    password: optionalPasswordRules,
+});
+
+export type TeacherCreateFormData = z.infer<typeof teacherCreateSchema>;
+export type TeacherUpdateFormData = z.infer<typeof teacherUpdateSchema>;
+
+// =========================
+// --- STUDENT SCHEMAS ---
+// =========================
+
+const studentBaseSchema = z.object({
     name: z.string().min(1, 'Full Name is required'),
     email: z.string().email('Invalid email address'),
-    password: optionalPasswordRules,
     registrationNumber: z.string().min(1, 'Registration number is required'),
     admissionDate: z.string().min(1, 'Admission date is required'),
     status: z.nativeEnum(StudentStatus),
@@ -76,4 +96,15 @@ export const studentSchema = z.object({
     sectionIds: z.array(z.string()).min(1, 'At least one section must be assigned'),
 });
 
-export type StudentFormData = z.infer<typeof studentSchema>;
+// Create → password REQUIRED
+export const studentCreateSchema = studentBaseSchema.extend({
+    password: passwordRules,
+});
+
+// Update → password OPTIONAL
+export const studentUpdateSchema = studentBaseSchema.extend({
+    password: optionalPasswordRules,
+});
+
+export type StudentCreateFormData = z.infer<typeof studentCreateSchema>;
+export type StudentUpdateFormData = z.infer<typeof studentUpdateSchema>;
