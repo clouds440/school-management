@@ -166,6 +166,24 @@ export class OrgController {
         });
     }
 
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+    @Post('courses')
+    createCourse(@OrgId() orgId: string, @Body() createCourseDto: CreateCourseDto) {
+        return this.orgService.createCourse(orgId, createCourseDto);
+    }
+
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+    @Patch('courses/:id')
+    updateCourse(@OrgId() orgId: string, @Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
+        return this.orgService.updateCourse(orgId, id, updateCourseDto);
+    }
+
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+    @Delete('courses/:id')
+    deleteCourse(@OrgId() orgId: string, @Param('id') id: string) {
+        return this.orgService.deleteCourse(orgId, id);
+    }
+
     // --- Sections ---
     @Get('sections')
     async getSections(

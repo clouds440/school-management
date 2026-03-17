@@ -14,7 +14,7 @@ model Organization {
   type            String
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-  contactEmail    String?
+  contactEmail    String
   phone           String?
   status          OrgStatus       @default(PENDING)
   statusHistory   Json?           // Stores array of { status, message, adminName, adminRole, createdAt }

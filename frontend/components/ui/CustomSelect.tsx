@@ -18,6 +18,7 @@ export interface CustomSelectProps<T extends string = string> {
     className?: string;
     disabled?: boolean;
     required?: boolean;
+    error?: boolean;
 }
 
 export function CustomSelect<T extends string = string>({
@@ -28,7 +29,8 @@ export function CustomSelect<T extends string = string>({
     icon: Icon,
     className = "",
     disabled = false,
-    required = false
+    required = false,
+    error = false
 }: CustomSelectProps<T>) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -75,14 +77,16 @@ export function CustomSelect<T extends string = string>({
                     flex items-center w-full px-4 py-3 rounded-sm border transition-all duration-200 outline-none
                     ${isOpen
                         ? 'border-primary ring-4 ring-primary/10 bg-card'
-                        : 'border-white/10 bg-primary/5 hover:border-white/20'
+                        : error
+                            ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/50'
+                            : 'border-white/10 bg-primary/5 hover:border-white/20'
                     }
                     ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                     text-card-text font-bold text-left
                 `}
             >
                 {Icon && (
-                    <Icon className={`h-5 w-5 mr-3 transition-colors ${isOpen ? 'text-primary' : 'text-card-text/40 group-focus-within:text-primary'}`} />
+                    <Icon className={`h-5 w-5 mr-3 transition-colors ${isOpen ? 'text-primary' : error ? 'text-red-500' : 'text-card-text/40 group-focus-within:text-primary'}`} />
                 )}
 
                 <span className={`flex-1 truncate ${!selectedOption ? 'text-card-text/40' : ''}`}>

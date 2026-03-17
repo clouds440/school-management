@@ -18,6 +18,7 @@ export interface CustomMultiSelectProps {
     icon?: LucideIcon;
     className?: string;
     disabled?: boolean;
+    error?: boolean;
 }
 
 export function CustomMultiSelect({
@@ -27,7 +28,8 @@ export function CustomMultiSelect({
     placeholder = "Select options...",
     icon: Icon,
     className = "",
-    disabled = false
+    disabled = false,
+    error = false
 }: CustomMultiSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");

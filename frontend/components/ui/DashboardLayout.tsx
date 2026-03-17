@@ -147,7 +147,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                 <div className="p-4 border-t border-sidebar-text/10 bg-sidebar-text/5 shrink-0">
                     {user && (
                         <div className={`flex items-center ${!isExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
-                            <div className="w-9 h-9 rounded-sm bg-transparent flex items-center justify-center text-sidebar-active-text font-bold shrink-0 shadow-inner overflow-hidden relative">
+                            <div className={`w-9 h-9 rounded-sm ${user.avatarUrl || user.orgLogoUrl ? 'bg-transparent' : 'bg-primary'} flex items-center justify-center text-sidebar-active-text font-bold shrink-0 shadow-inner overflow-hidden relative`}>
                                 {user.avatarUrl || user.orgLogoUrl ? (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
@@ -168,18 +168,18 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
 
                     <div className="space-y-2">
                         {user?.orgSlug && (
-                                <Link
-                                    href="/support"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        router.push('/support');
-                                    }}
-                                    className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 hover:bg-sidebar-text/10 transition-all py-2 border border-transparent shadow-sm`}
-                                    title="Help & Support"
-                                >
-                                    <LifeBuoy className="w-4 h-4 shrink-0" />
-                                    {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Support</span>}
-                                </Link>
+                            <Link
+                                href="/support"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    router.push('/support');
+                                }}
+                                className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 hover:bg-sidebar-text/10 transition-all py-2 border border-transparent shadow-sm`}
+                                title="Help & Support"
+                            >
+                                <LifeBuoy className="w-4 h-4 shrink-0" />
+                                {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Support</span>}
+                            </Link>
                         )}
                         <Link
                             href={user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : `/${user?.orgSlug}/change-password`}

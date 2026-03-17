@@ -6,14 +6,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
+import { CreateCourseDto } from './dto/create-course.dto';
+import { UpdateCourseDto } from './dto/update-course.dto';
 import { CreateSectionDto } from './dto/create-section.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import * as bcrypt from 'bcrypt';
-import * as fs from 'fs';
-import * as path from 'path';
 import { FilesService } from '../files/files.service';
+import { getPaginationOptions, formatPaginatedResponse, handleFileUpdate, extractUpdateFields, PaginationOptions } from '../common/utils';
 
 @Injectable()
 export class OrgService {
@@ -79,22 +80,7 @@ export class OrgService {
         });
         if (!org) throw new NotFoundException('Organization not found');
 
-        // Delete old logo from disk (best-effort)
-        if (org.logoUrl) {
-            const oldAbsolute = path.resolve(org.logoUrl.replace(/^\/uploads\//, 'uploads/'));
-            if (fs.existsSync(oldAbsolute)) {
-                fs.unlinkSync(oldAbsolute);
-            }
-        }
-
-        // Derive a portable relative path from file.path regardless of OS.
-        // On Windows multer returns an absolute path like C:\...\uploads\orgs\...
-        const forwardSlash = file.path.replace(/\\/g, '/');
-        const uploadsIndex = forwardSlash.indexOf('uploads/');
-        const relativePath = uploadsIndex >= 0
-            ? forwardSlash.slice(uploadsIndex)            // → uploads/orgs/...
-            : forwardSlash;
-        const publicUrl = `/${relativePath}`;             // → /uploads/orgs/...
+        const publicUrl = await handleFileUpdate(org.logoUrl, file);
 
         // Save new file record via FilesService (for audit trail)
         await this.filesService.saveFile(
@@ -130,21 +116,7 @@ export class OrgService {
         });
         if (!user) throw new NotFoundException('User not found');
 
-        // Delete old avatar from disk (best-effort)
-        if (user.avatarUrl) {
-            const oldAbsolute = path.resolve(user.avatarUrl.replace(/^\/uploads\//, 'uploads/'));
-            if (fs.existsSync(oldAbsolute)) {
-                fs.unlinkSync(oldAbsolute);
-            }
-        }
-
-        // Derive a portable relative path from file.path regardless of OS.
-        const forwardSlash = file.path.replace(/\\/g, '/');
-        const uploadsIndex = forwardSlash.indexOf('uploads/');
-        const relativePath = uploadsIndex >= 0
-            ? forwardSlash.slice(uploadsIndex)
-            : forwardSlash;
-        const publicUrl = `/${relativePath}`;
+        const publicUrl = await handleFileUpdate(user.avatarUrl, file);
 
         // Save new file record via FilesService (for audit trail)
         await this.filesService.saveFile(
@@ -193,34 +165,19 @@ export class OrgService {
     }
 
     // --- Teachers ---
-    async getTeachers(orgId: string, options: {
-        page?: number;
-        limit?: number;
-        search?: string;
-        sortBy?: string;
-        sortOrder?: 'asc' | 'desc';
-    }) {
-        const {
-            page = 1,
-            limit = 10,
-            search = '',
-            sortBy = 'user.name', // Default sort
-            sortOrder = 'asc'
-        } = options;
-
-        const skip = (page - 1) * limit;
-        const take = limit;
+    async getTeachers(orgId: string, options: PaginationOptions) {
+        const { skip, take, sortBy, sortOrder } = getPaginationOptions(options);
 
         const where: Prisma.TeacherWhereInput = {
             organizationId: orgId,
             status: { not: TeacherStatus.DELETED },
-            ...(search ? {
+            ...(options.search ? {
                 OR: [
-                    { user: { name: { contains: search, mode: 'insensitive' } } },
-                    { user: { email: { contains: search, mode: 'insensitive' } } },
-                    { subject: { contains: search, mode: 'insensitive' } },
-                    { department: { contains: search, mode: 'insensitive' } },
-                    { designation: { contains: search, mode: 'insensitive' } },
+                    { user: { name: { contains: options.search, mode: 'insensitive' } } },
+                    { user: { email: { contains: options.search, mode: 'insensitive' } } },
+                    { subject: { contains: options.search, mode: 'insensitive' } },
+                    { department: { contains: options.search, mode: 'insensitive' } },
+                    { designation: { contains: options.search, mode: 'insensitive' } },
                 ]
             } : {})
         };
@@ -260,12 +217,7 @@ export class OrgService {
             this.prisma.teacher.count({ where })
         ]);
 
-        return {
-            data: teachers,
-            totalRecords,
-            totalPages: Math.ceil(totalRecords / limit),
-            currentPage: page
-        };
+        return formatPaginatedResponse(teachers, totalRecords, options.page, options.limit);
     }
 
     async getTeacher(orgId: string, id: string) {
@@ -353,7 +305,6 @@ export class OrgService {
     }
 
     async updateTeacher(orgId: string, id: string, data: UpdateTeacherDto, userContext: { id: string, role: string }) {
-        // We only allow updating the teacher profile for now
         const teacher = await this.prisma.teacher.findFirst({
             where: { id, organizationId: orgId },
             include: { user: true }
@@ -367,43 +318,27 @@ export class OrgService {
             }
         }
 
-        return this.prisma.$transaction(async (tx) => {
-            const userFields = ['name', 'email', 'phone', 'password'];
-            const teacherFields = ['salary', 'subject', 'education', 'designation', 'department', 'emergencyContact', 'bloodGroup', 'address', 'status'];
-            const userData: Prisma.UserUpdateInput = {};
-            const teacherData: Prisma.TeacherUpdateInput = {};
+        const userFields = ['name', 'email', 'phone', 'password'];
+        const teacherFields = ['salary', 'subject', 'education', 'designation', 'department', 'emergencyContact', 'bloodGroup', 'address', 'status'];
 
-            for (const [key, value] of Object.entries(data)) {
-                if (value === undefined) continue;
+        const { userData, entityData: teacherData } = await extractUpdateFields(data, userFields, teacherFields, teacher.user.email);
 
-                if (userFields.includes(key)) {
-                    if (key === 'email' && value !== teacher.user.email) {
-                        const existing = await tx.user.findUnique({ where: { email: value as string } });
-                        if (existing) throw new BadRequestException('Email already in use');
-                        userData.email = value;
-                    } else if (key === 'password') {
-                        if (typeof value === 'string' && value.trim() !== '') {
-                            userData.password = await bcrypt.hash(value, 10);
-                        }
-                    } else if (key !== 'email') {
-                        (userData as Record<string, unknown>)[key] = value;
-                    }
-                } else if (key === 'isManager') {
-                    userData.role = value ? Role.ORG_MANAGER : Role.TEACHER;
-                } else if (key === 'sectionIds') {
-                    teacherData.sections = { set: (value as string[]).map(id => ({ id })) };
-                } else if (key === 'joiningDate') {
-                    if (value) {
-                        const date = new Date(value as string);
-                        if (!isNaN(date.getTime())) {
-                            teacherData.joiningDate = date;
-                        }
-                    }
-                } else if (teacherFields.includes(key)) {
-                    (teacherData as Record<string, unknown>)[key] = value;
-                }
+        if (data.isManager !== undefined) {
+            userData.role = data.isManager ? Role.ORG_MANAGER : Role.TEACHER;
+        }
+
+        if (data.sectionIds !== undefined) {
+            teacherData.sections = { set: data.sectionIds.map(id => ({ id })) };
+        }
+
+        if (data.joiningDate) {
+            const date = new Date(data.joiningDate);
+            if (!isNaN(date.getTime())) {
+                teacherData.joiningDate = date;
             }
+        }
 
+        return this.prisma.$transaction(async (tx) => {
             if (Object.keys(userData).length > 0) {
                 await tx.user.update({
                     where: { id: teacher.userId },
@@ -411,7 +346,6 @@ export class OrgService {
                 });
             }
 
-            // 2. Update Teacher
             if (Object.keys(teacherData).length > 0) {
                 await tx.teacher.update({
                     where: { id },
@@ -453,29 +387,15 @@ export class OrgService {
     }
 
     // --- Courses ---
-    async getCourses(orgId: string, options: {
-        page?: number;
-        limit?: number;
-        search?: string;
-        sortBy?: string;
-        sortOrder?: 'asc' | 'desc';
-    } = {}) {
-        const {
-            page = 1,
-            limit = 10,
-            search = '',
-            sortBy = 'name',
-            sortOrder = 'asc'
-        } = options;
-        const skip = (page - 1) * limit;
-        const take = limit;
+    async getCourses(orgId: string, options: PaginationOptions = {}) {
+        const { skip, take, sortBy, sortOrder } = getPaginationOptions({ ...options, sortBy: options.sortBy || 'name', sortOrder: options.sortOrder || 'asc' });
 
         const where: Prisma.CourseWhereInput = {
             organizationId: orgId,
-            ...(search ? {
+            ...(options.search ? {
                 OR: [
-                    { name: { contains: search, mode: 'insensitive' } },
-                    { description: { contains: search, mode: 'insensitive' } },
+                    { name: { contains: options.search, mode: 'insensitive' } },
+                    { description: { contains: options.search, mode: 'insensitive' } },
                 ]
             } : {})
         };
@@ -491,41 +411,56 @@ export class OrgService {
             this.prisma.course.count({ where })
         ]);
 
-        return {
-            data: courses,
-            totalRecords,
-            totalPages: Math.ceil(totalRecords / limit),
-            currentPage: page
-        };
+        return formatPaginatedResponse(courses, totalRecords, options.page, options.limit);
+    }
+
+    async createCourse(orgId: string, data: CreateCourseDto) {
+        return this.prisma.course.create({
+            data: {
+                ...data,
+                organizationId: orgId
+            }
+        });
+    }
+
+    async updateCourse(orgId: string, id: string, data: UpdateCourseDto) {
+        const course = await this.prisma.course.findUnique({ where: { id } });
+        if (!course || course.organizationId !== orgId) {
+            throw new NotFoundException('Course not found');
+        }
+        return this.prisma.course.update({
+            where: { id },
+            data
+        });
+    }
+
+    async deleteCourse(orgId: string, id: string) {
+        const course = await this.prisma.course.findUnique({
+            where: { id },
+            include: { sections: true }
+        });
+        if (!course || course.organizationId !== orgId) {
+            throw new NotFoundException('Course not found');
+        }
+        if (course.sections.length > 0) {
+            throw new BadRequestException('Cannot delete course with active sections');
+        }
+        return this.prisma.course.delete({ where: { id } });
     }
 
     // --- Sections ---
-    async getSections(orgId: string, options: {
-        page?: number;
-        limit?: number;
-        search?: string;
-        sortBy?: string;
-        sortOrder?: 'asc' | 'desc';
-    }) {
-        const {
-            page = 1,
-            limit = 10,
-            search = '',
-            sortBy = 'createdAt',
-            sortOrder = 'desc'
-        } = options;
-        const skip = (page - 1) * limit;
-        const take = limit;
+    async getSections(orgId: string, options: PaginationOptions) {
+        const { skip, take, sortBy, sortOrder } = getPaginationOptions({ ...options, sortBy: options.sortBy || 'createdAt', sortOrder: options.sortOrder || 'desc' });
 
         const where: Prisma.SectionWhereInput = {
             course: { organizationId: orgId },
-            ...(search ? {
+            ...(options.search ? {
                 OR: [
-                    { name: { contains: search, mode: 'insensitive' } },
-                    { semester: { contains: search, mode: 'insensitive' } },
-                    { year: { contains: search, mode: 'insensitive' } },
-                    { room: { contains: search, mode: 'insensitive' } },
-                    { course: { name: { contains: search, mode: 'insensitive' } } },
+                    { name: { contains: options.search, mode: 'insensitive' } },
+                    { semester: { contains: options.search, mode: 'insensitive' } },
+                    { year: { contains: options.search, mode: 'insensitive' } },
+                    { room: { contains: options.search, mode: 'insensitive' } },
+                    { course: { name: { contains: options.search, mode: 'insensitive' } } },
                 ]
             } : {})
         };
@@ -552,12 +487,7 @@ export class OrgService {
             this.prisma.section.count({ where })
         ]);
 
-        return {
-            data: sections,
-            totalRecords,
-            totalPages: Math.ceil(totalRecords / limit),
-            currentPage: page
-        };
+        return formatPaginatedResponse(sections, totalRecords, options.page, options.limit);
     }
 
     async createSection(orgId: string, data: CreateSectionDto) {
@@ -590,34 +520,19 @@ export class OrgService {
     }
 
     // --- Students ---
-    async getStudents(orgId: string, options: {
-        page?: number;
-        limit?: number;
-        search?: string;
-        sortBy?: string;
-        sortOrder?: 'asc' | 'desc';
-    }) {
-        const {
-            page = 1,
-            limit = 10,
-            search = '',
-            sortBy = 'user.name',
-            sortOrder = 'asc'
-        } = options;
-
-        const skip = (page - 1) * limit;
-        const take = limit;
+    async getStudents(orgId: string, options: PaginationOptions) {
+        const { skip, take, sortBy, sortOrder } = getPaginationOptions(options);
 
         const where: Prisma.StudentWhereInput = {
             organizationId: orgId,
             status: { not: StudentStatus.DELETED },
-            ...(search ? {
+            ...(options.search ? {
                 OR: [
-                    { user: { name: { contains: search, mode: 'insensitive' } } },
-                    { user: { email: { contains: search, mode: 'insensitive' } } },
-                    { registrationNumber: { contains: search, mode: 'insensitive' } },
-                    { major: { contains: search, mode: 'insensitive' } },
-                    { department: { contains: search, mode: 'insensitive' } },
+                    { user: { name: { contains: options.search, mode: 'insensitive' } } },
+                    { user: { email: { contains: options.search, mode: 'insensitive' } } },
+                    { registrationNumber: { contains: options.search, mode: 'insensitive' } },
+                    { major: { contains: options.search, mode: 'insensitive' } },
+                    { department: { contains: options.search, mode: 'insensitive' } },
                 ]
             } : {})
         };
@@ -662,12 +577,7 @@ export class OrgService {
             this.prisma.student.count({ where })
         ]);
 
-        return {
-            data: students,
-            totalRecords,
-            totalPages: Math.ceil(totalRecords / limit),
-            currentPage: page
-        };
+        return formatPaginatedResponse(students, totalRecords, options.page, options.limit);
     }
 
     async getStudent(orgId: string, id: string) {
@@ -762,54 +672,41 @@ export class OrgService {
 
         if (!student) throw new NotFoundException('Student not found');
 
-        return this.prisma.$transaction(async (tx) => {
-            const userFields = ['name', 'email', 'phone', 'password'];
-            const userData: Prisma.UserUpdateInput = {};
-            const studentData: Prisma.StudentUpdateInput = {};
+        const userFields = ['name', 'email', 'phone', 'password'];
+        const studentFields = [
+            'registrationNumber', 'fatherName', 'fee', 'age', 'address', 'major',
+            'department', 'admissionDate', 'graduationDate', 'emergencyContact',
+            'bloodGroup', 'gender', 'feePlan', 'status'
+        ];
 
-            const studentFields = [
-                'registrationNumber', 'fatherName', 'fee', 'age', 'address', 'major',
-                'department', 'admissionDate', 'graduationDate', 'emergencyContact',
-                'bloodGroup', 'gender', 'feePlan', 'status'
-            ];
+        const { userData, entityData: studentData } = await extractUpdateFields(data, userFields, studentFields, student.user.email);
 
-            for (const [key, value] of Object.entries(data)) {
-                if (value === undefined) continue;
+        if (data.registrationNumber && data.registrationNumber !== student.registrationNumber) {
+            const existing = await this.prisma.student.findFirst({
+                where: { organizationId: orgId, registrationNumber: data.registrationNumber, id: { not: id } }
+            });
+            if (existing) throw new BadRequestException('Registration number already in use');
+        }
 
-                if (userFields.includes(key)) {
-                    if (key === 'email' && value !== student.user.email) {
-                        const existing = await tx.user.findUnique({ where: { email: value as string } });
-                        if (existing) throw new BadRequestException('Email already in use');
-                        userData.email = value;
-                    } else if (key === 'password') {
-                        if (typeof value === 'string' && value.trim() !== '') {
-                            userData.password = await bcrypt.hash(value, 10);
-                        }
-                    } else if (key !== 'email') {
-                        (userData as Record<string, unknown>)[key] = value;
-                    }
-                } else if (key === 'registrationNumber' && value !== student.registrationNumber) {
-                    const existing = await tx.student.findFirst({
-                        where: { organizationId: orgId, registrationNumber: value as string, id: { not: id } }
-                    });
-                    if (existing) throw new BadRequestException('Registration number already in use');
-                    studentData.registrationNumber = value;
-                } else if (key === 'sectionIds') {
-                    // Handled separately
-                } else if (key === 'admissionDate' || key === 'graduationDate') {
-                    if (value) {
-                        const date = new Date(value as string);
-                        if (!isNaN(date.getTime())) {
-                            (studentData as Record<string, unknown>)[key] = date;
-                        }
-                    } else if (key === 'graduationDate') {
-                        (studentData as Record<string, unknown>)[key] = null; // Graduation date can be cleared
-                    }
-                } else if (studentFields.includes(key)) {
-                    (studentData as Record<string, unknown>)[key] = value;
-                }
+        if (data.admissionDate) {
+            const date = new Date(data.admissionDate);
+            if (!isNaN(date.getTime())) {
+                studentData.admissionDate = date;
             }
+        }
 
+        if (data.graduationDate !== undefined) {
+            if (data.graduationDate) {
+                const date = new Date(data.graduationDate);
+                if (!isNaN(date.getTime())) {
+                    studentData.graduationDate = date;
+                }
+            } else {
+                studentData.graduationDate = null;
+            }
+        }
+
+        return this.prisma.$transaction(async (tx) => {
             if (Object.keys(userData).length > 0) {
                 await tx.user.update({
                     where: { id: student.userId },

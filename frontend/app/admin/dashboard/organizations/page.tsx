@@ -51,7 +51,6 @@ export default function OrganizationsPage() {
 
     const {
         data: fetchedData,
-        loading: isInitialLoading,
         fetching: isFetching,
         refresh
     } = usePaginatedData<Organization, AdminOrgParams>(
@@ -77,8 +76,6 @@ export default function OrganizationsPage() {
             api.admin.getAdminStats(token).then(setStats).catch(console.error);
         }
     }, [token]);
-
-    console.log(paginatedData);
 
     const updateQueryParams = (updates: Record<string, string | number | undefined>) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -194,11 +191,11 @@ export default function OrganizationsPage() {
                 <div className="space-y-1">
                     <div className="flex items-center text-xs font-medium text-gray-600 gap-1.5">
                         <MapPin className="w-3 h-3 text-indigo-400" />
-                        {row.location}
+                        {row.location || 'N/A'}
                     </div>
                     <div className="flex items-center text-xs font-medium text-gray-600 gap-1.5">
                         <Mail className="w-3 h-3 text-indigo-400" />
-                        {row.email}
+                        {row.email || 'N/A'}
                     </div>
                 </div>
             )
@@ -267,11 +264,6 @@ export default function OrganizationsPage() {
                 return (
                     <div className="flex flex-col gap-1 shrink-0 items-end">
                         <TableActions extraActions={getActions()} showLabels={window.innerWidth > 1440} />
-                        {activeStatusTab === OrgStatus.APPROVED && (
-                            <div className="px-2 py-0.5 bg-green-50 text-green-700 rounded-sm font-bold text-[9px] border border-green-100 uppercase">
-                                Active
-                            </div>
-                        )}
                     </div>
                 );
             }

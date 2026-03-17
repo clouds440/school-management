@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Lock, BookOpen, DollarSign, Phone, Plus, ShieldCheck, UserX, CalendarClock } from 'lucide-react';
-import Link from 'next/link';
+import { User, Mail, Lock, BookOpen, DollarSign, Phone, Plus, ShieldCheck, UserX, CalendarClock, MapPin } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Section, Teacher, TeacherStatus, Role } from '@/types';
+import { Section, Teacher, TeacherStatus, Role, CreateTeacherRequest, UpdateTeacherRequest } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -14,50 +13,54 @@ import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
-import { getPublicUrl } from '@/lib/utils';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { teacherSchema, TeacherFormData } from '@/lib/schemas';
 
 interface TeacherFormProps {
     teacherId?: string;
     orgSlug: string;
-    initialData?: Teacher; // Pre-fetched teacher data for edit mode
+    initialData?: Teacher;
 }
 
 export default function TeacherForm({ teacherId, orgSlug, initialData }: TeacherFormProps) {
-    const { token, user } = useAuth();
+    const { token } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
-    const [isSaving, setIsSaving] = useState(false);
     const [sections, setSections] = useState<Section[]>([]);
     const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-    // Initialize form state from initialData if provided (edit mode)
-    const [formData, setFormData] = useState(() => {
-        if (initialData) {
-            return {
-                name: initialData.user?.name || '',
-                phone: initialData.user?.phone || '',
-                email: initialData.user?.email || '',
-                avatarUrl: initialData.user?.avatarUrl || null,
-                password: '',
-                education: initialData.education || '',
-                designation: initialData.designation || '',
-                subject: initialData.subject || '',
-                salary: initialData.salary?.toString() || '',
-                isManager: initialData.user?.role === Role.ORG_MANAGER,
-                department: initialData.department || '',
-                joiningDate: initialData.joiningDate ? new Date(initialData.joiningDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                address: initialData.address || '',
-                emergencyContact: initialData.emergencyContact || '',
-                bloodGroup: initialData.bloodGroup || '',
-                status: initialData.status || TeacherStatus.ACTIVE,
-                sectionIds: initialData.sections?.map(s => s.id) || []
-            };
-        }
-        return {
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        trigger,
+        formState: { errors },
+    } = useForm({
+        resolver: zodResolver(teacherSchema),
+        defaultValues: initialData ? {
+            name: initialData.user?.name || '',
+            phone: initialData.user?.phone || '',
+            email: initialData.user?.email || '',
+            password: '',
+            education: initialData.education || '',
+            designation: initialData.designation || '',
+            subject: initialData.subject || '',
+            salary: initialData.salary?.toString() || '',
+            isManager: !!(initialData.user?.role === Role.ORG_MANAGER),
+            department: initialData.department || '',
+            joiningDate: initialData.joiningDate ? new Date(initialData.joiningDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            address: initialData.address || '',
+            emergencyContact: initialData.emergencyContact || '',
+            bloodGroup: initialData.bloodGroup || '',
+            status: initialData.status as TeacherStatus || TeacherStatus.ACTIVE,
+            sectionIds: initialData.sections?.map(s => s.id) || []
+        } : {
             name: '',
             phone: '',
             email: '',
-            avatarUrl: null as string | null,
             password: '',
             education: '',
             designation: '',
@@ -70,60 +73,33 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
             emergencyContact: '',
             bloodGroup: '',
             status: TeacherStatus.ACTIVE,
-            sectionIds: [] as string[]
-        };
+            sectionIds: []
+        }
     });
 
-    // Fetch sections for the dropdown — this is always needed
-    useEffect(() => {
-        if (token) {
-            fetchSections();
-        }
-    }, [token]);
+    const formData = watch();
 
-    const fetchSections = async () => {
-        try {
-            const response = await api.org.getSections(token!);
-            setSections(response.data || []);
-        } catch (error) {
-            console.error('Failed to fetch sections', error);
-        }
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit: SubmitHandler<TeacherFormData> = async (data) => {
         setIsSaving(true);
-
         try {
-            const { password, avatarUrl, ...rest } = formData;
-            const payload = {
+            const { password, salary, ...rest } = data;
+            const payload: CreateTeacherRequest | UpdateTeacherRequest = {
                 ...rest,
-                salary: formData.salary ? Number(formData.salary) : null,
-                isManager: formData.isManager,
+                salary: salary ? Number(salary) : null,
                 ...(teacherId ? (password ? { password } : {}) : { password })
             };
 
             let savedTeacher: Teacher;
             if (teacherId) {
-                savedTeacher = await api.org.updateTeacher(teacherId, payload, token!);
+                savedTeacher = await api.org.updateTeacher(teacherId, payload as UpdateTeacherRequest, token!);
             } else {
-                savedTeacher = await api.org.createTeacher(payload, token!);
+                savedTeacher = await api.org.createTeacher(payload as CreateTeacherRequest, token!);
             }
 
-            // Handle Photo Upload if pending
             if (pendingPhoto && savedTeacher.userId) {
                 try {
                     await api.org.uploadAvatar(savedTeacher.userId, pendingPhoto, token!);
-                } catch (uploadError) {
-                    console.error('Avatar upload failed', uploadError);
+                } catch {
                     showToast('Teacher created, but photo upload failed', 'info');
                 }
             }
@@ -131,296 +107,318 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
             showToast(`Teacher account ${teacherId ? 'updated' : 'created'} successfully`, 'success');
             router.push(`/${orgSlug}/dashboard/teachers`);
         } catch (error: unknown) {
-            showToast(error instanceof Error ? error.message : 'Action failed', 'error');
+            const err = error as { response?: { data?: { message?: string | string[] } } };
+            const message = err.response?.data?.message;
+            if (Array.isArray(message)) {
+                message.forEach((m: string) => showToast(m, 'error'));
+            } else {
+                showToast(message || 'Failed to save teacher', 'error');
+            }
+        } finally {
             setIsSaving(false);
         }
     };
 
-    const sectionOptions = sections.map(sec => ({
-        value: sec.id,
-        label: `${sec.name} ${sec.course?.name ? `(${sec.course.name})` : ''}`
-    }));
+    useEffect(() => {
+        if (token) {
+            api.org.getSections(token).then(res => setSections(res.data || [])).catch(console.error);
+        }
+    }, [token]);
+
+    const handlePhotoReady = useCallback((file: File) => {
+        setPendingPhoto(file);
+    }, []);
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-12">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-12" noValidate>
             {/* Mandatory Information */}
             <div className="bg-primary/5 p-6 rounded-sm border border-white/10">
                 <div className="flex flex-col md:flex-row gap-8 items-start mb-10">
-                    <PhotoUploadPicker
-                        currentImageUrl={getPublicUrl(formData.avatarUrl)}
-                        onFileReady={(file) => setPendingPhoto(file)}
-                        hint="Teacher Profile Picture"
-                    />
-                    <div className="flex-1">
-                        <div className="mb-6">
-                            <h3 className="text-xl font-bold text-card-text flex items-center gap-2">
-                                <ShieldCheck className="w-6 h-6 text-primary" />
-                                Mandatory Information
-                            </h3>
-                            <p className="text-card-text/60 text-sm mt-1">These fields are required for administrative setup and account creation.</p>
+                    <div className="shrink-0 group relative">
+                        <PhotoUploadPicker
+                            onFileReady={handlePhotoReady}
+                            type="user"
+                            currentImageUrl={initialData?.user?.avatarUrl}
+                        />
+                        <p className="mt-3 text-[10px] text-center font-black uppercase tracking-widest text-card-text/40 group-hover:text-primary transition-colors">
+                            {teacherId ? 'Update Photo' : 'Upload Photo'}
+                        </p>
+                    </div>
+
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                        <div className="space-y-2">
+                            <Label>Full Name</Label>
+                            <Input
+                                type="text"
+                                {...register('name')}
+                                error={!!errors.name}
+                                icon={User}
+                                placeholder="Dr. Sarah Wilson"
+                            />
+                            {errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{errors.name.message}</p>}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2">
-                                <Label>Full Name *</Label>
-                                <Input
-                                    type="text"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    required={!teacherId}
-                                    icon={User}
-                                    placeholder="John Doe"
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <Label>Status</Label>
+                            <CustomSelect
+                                options={[
+                                    { value: TeacherStatus.ACTIVE, label: 'Active', icon: ShieldCheck },
+                                    { value: TeacherStatus.SUSPENDED, label: 'Suspended', icon: UserX },
+                                    { value: TeacherStatus.ON_LEAVE, label: 'On Leave', icon: CalendarClock }
+                                ]}
+                                value={formData.status}
+                                onChange={(val) => {
+                                    setValue('status', val as TeacherStatus);
+                                    trigger('status');
+                                }}
+                                error={!!errors.status}
+                                icon={
+                                    formData.status === TeacherStatus.ACTIVE ? ShieldCheck :
+                                        formData.status === TeacherStatus.SUSPENDED ? UserX : CalendarClock
+                                }
+                            />
+                            {errors.status && <p className="mt-1 text-xs text-red-500 font-bold">{errors.status.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Email Address</Label>
+                            <Input
+                                type="email"
+                                {...register('email')}
+                                error={!!errors.email}
+                                disabled={!!teacherId}
+                                icon={Mail}
+                                placeholder="sarah.wilson@school.com"
+                                className={teacherId ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            />
+                            {errors.email && <p className="mt-1 text-xs text-red-500 font-bold">{errors.email.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Account Password</Label>
+                            <Input
+                                type="password"
+                                {...register('password')}
+                                error={!!errors.password}
+                                icon={Lock}
+                                placeholder={teacherId ? "Leave blank to keep current" : "Min 8 chars, 1 upper, 1 lower, 1 num"}
+                            />
+                            {errors.password && <p className="mt-1 text-xs text-red-500 font-bold">{errors.password.message}</p>}
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                    <div>
-                        <Label>Email Address *</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                        <Label>Education / Degree</Label>
                         <Input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            required={!teacherId}
-                            disabled={!!teacherId}
-                            icon={Mail}
-                            placeholder="john.doe@example.com"
-                            className={teacherId ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            type="text"
+                            {...register('education')}
+                            error={!!errors.education}
+                            icon={BookOpen}
+                            placeholder="Ph.D. in Computer Science"
                         />
-                        {teacherId && <p className="text-[10px] text-primary/60 mt-1 font-bold italic uppercase">Email cannot be changed after creation</p>}
+                        {errors.education && <p className="mt-1 text-xs text-red-500 font-bold">{errors.education.message}</p>}
                     </div>
-
-                    <div>
-                        <Label>{teacherId ? 'Update Password (Optional)' : 'Initial Password *'}</Label>
+                    <div className="space-y-2">
+                        <Label>Designation</Label>
                         <Input
-                            type="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            required={!teacherId}
-                            minLength={8}
-                            icon={Lock}
-                            autoComplete="new-password"
-                            placeholder={teacherId ? "Leave blank to keep current" : "Min 8 chars, 1 upper, 1 lower, 1 num"}
+                            type="text"
+                            {...register('designation')}
+                            error={!!errors.designation}
+                            icon={User}
+                            placeholder="Senior Faculty / HOD"
                         />
+                        {errors.designation && <p className="mt-1 text-xs text-red-500 font-bold">{errors.designation.message}</p>}
                     </div>
+                    <div className="space-y-2">
+                        <Label>Subject Expertise</Label>
+                        <Input
+                            type="text"
+                            {...register('subject')}
+                            error={!!errors.subject}
+                            icon={BookOpen}
+                            placeholder="Mathematics / AI / Physics"
+                        />
+                        {errors.subject && <p className="mt-1 text-xs text-red-500 font-bold">{errors.subject.message}</p>}
+                    </div>
+                </div>
+            </div>
 
-                    <div>
-                        <Label>Joining Date *</Label>
+            {/* Workplace & Compensation */}
+            <div className="bg-card p-8 rounded-sm border border-white/5 shadow-sm">
+                <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
+                    <div className="p-2 bg-primary/10 rounded-sm">
+                        <ShieldCheck className="w-5 h-5 text-primary" />
+                    </div>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-card-text">Workplace & Compensation</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="space-y-2">
+                        <Label>Monthly Salary</Label>
+                        <Input
+                            type="number"
+                            {...register('salary')}
+                            error={!!errors.salary}
+                            icon={DollarSign}
+                            placeholder="5000"
+                        />
+                        {errors.salary && <p className="mt-1 text-xs text-red-500 font-bold">{errors.salary.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Department</Label>
+                        <Input
+                            type="text"
+                            {...register('department')}
+                            error={!!errors.department}
+                            icon={BookOpen}
+                            placeholder="Computer Science"
+                        />
+                        {errors.department && <p className="mt-1 text-xs text-red-500 font-bold">{errors.department.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Joining Date</Label>
                         <Input
                             type="date"
-                            name="joiningDate"
-                            value={formData.joiningDate}
-                            onChange={handleChange}
-                            required={!teacherId}
+                            {...register('joiningDate')}
+                            error={!!errors.joiningDate}
                         />
+                        {errors.joiningDate && <p className="mt-1 text-xs text-red-500 font-bold">{errors.joiningDate.message}</p>}
+                    </div>
+                </div>
+
+                <div className="mt-8 p-5 bg-primary/5 rounded-sm border border-primary/10 flex items-center justify-between group hover:bg-primary/10 transition-all">
+                    <div className="flex items-center gap-4">
+                        <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 cursor-pointer ${formData.isManager ? 'bg-primary' : 'bg-gray-200'}`}
+                            onClick={() => {
+                                setValue('isManager', !formData.isManager);
+                                trigger('isManager');
+                            }}>
+                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${formData.isManager ? 'left-7' : 'left-1'}`} />
+                        </div>
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-widest text-card-text">Administrative Privileges</p>
+                            <p className="text-[10px] font-bold text-card-text/40 uppercase tracking-tight mt-0.5">Allow this teacher to manage school settings and users</p>
+                        </div>
+                    </div>
+                    {formData.isManager && (
+                        <div className="px-3 py-1 bg-primary/20 rounded-sm border border-primary/20 animate-in fade-in zoom-in">
+                            <span className="text-[10px] font-black text-primary uppercase tracking-widest italic outline-none">Manager Mode Active</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Assignments */}
+            <div className="bg-card p-8 rounded-sm border border-white/5 shadow-sm">
+                <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
+                    <div className="p-2 bg-primary/10 rounded-sm">
+                        <Plus className="w-5 h-5 text-primary" />
+                    </div>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-card-text">Section Assignments</h3>
+                </div>
+
+                <div className="space-y-2 max-w-2xl">
+                    <Label>Assign to Sections</Label>
+                    <CustomMultiSelect
+                        options={sections.map(s => ({
+                            value: s.id,
+                            label: `${s.name} ${s.course?.name ? `(${s.course.name})` : ''}`
+                        }))}
+                        values={formData.sectionIds}
+                        onChange={(vals) => {
+                            setValue('sectionIds', vals);
+                            trigger('sectionIds');
+                        }}
+                        placeholder="Choose one or more sections..."
+                        error={!!errors.sectionIds}
+                    />
+                    {errors.sectionIds && <p className="mt-1 text-xs text-red-500 font-bold">{errors.sectionIds.message}</p>}
+                    <p className="text-[10px] font-bold text-card-text/40 uppercase tracking-[0.05em] pt-2">
+                        Teacher will be able to manage students and grading for selected sections.
+                    </p>
+                </div>
+            </div>
+
+            {/* Personal Details */}
+            <div className="bg-card p-8 rounded-sm border border-white/5 shadow-sm">
+                <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
+                    <div className="p-2 bg-primary/10 rounded-sm">
+                        <User className="w-5 h-5 text-primary" />
+                    </div>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-card-text">Personal Details</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <Label>Contact Phone</Label>
+                            <Input
+                                type="text"
+                                {...register('phone')}
+                                error={!!errors.phone}
+                                icon={Phone}
+                                placeholder="+1 555-0123"
+                            />
+                            {errors.phone && <p className="mt-1 text-xs text-red-500 font-bold">{errors.phone.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Emergency Contact</Label>
+                            <Input
+                                type="text"
+                                {...register('emergencyContact')}
+                                error={!!errors.emergencyContact}
+                                icon={Phone}
+                                placeholder="Name - Relation - Phone"
+                            />
+                            {errors.emergencyContact && <p className="mt-1 text-xs text-red-500 font-bold">{errors.emergencyContact.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Blood Group</Label>
+                            <Input
+                                type="text"
+                                {...register('bloodGroup')}
+                                error={!!errors.bloodGroup}
+                                icon={Plus}
+                                placeholder="O+, A-, etc."
+                            />
+                            {errors.bloodGroup && <p className="mt-1 text-xs text-red-500 font-bold">{errors.bloodGroup.message}</p>}
+                        </div>
                     </div>
 
-                    <div>
-                        <Label>Status *</Label>
-                        <CustomSelect
-                            options={[
-                                { value: TeacherStatus.ACTIVE, label: 'Active', icon: ShieldCheck },
-                                { value: TeacherStatus.SUSPENDED, label: 'Suspended', icon: UserX },
-                                { value: TeacherStatus.ON_LEAVE, label: 'On Leave', icon: CalendarClock }
-                            ]}
-                            value={formData.status}
-                            onChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
-                            placeholder="Select Status"
-                            icon={
-                                formData.status === TeacherStatus.ACTIVE ? ShieldCheck :
-                                    formData.status === TeacherStatus.SUSPENDED ? UserX :
-                                        CalendarClock
-                            }
-                        />
-                    </div>
-
-                    <div className="md:col-span-2 mt-4 p-6 bg-primary/5 border border-white/10 rounded-sm flex items-start space-x-6">
-                        <div className="flex items-center h-8">
-                            <input
-                                id="isManager"
-                                name="isManager"
-                                type="checkbox"
-                                checked={formData.isManager}
-                                onChange={handleChange}
-                                disabled={user?.role === Role.ORG_MANAGER}
-                                className="w-6 h-6 text-primary border-white/20 rounded-sm focus:ring-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-primary/5"
+                    <div className="space-y-2">
+                        <Label>Residential Address</Label>
+                        <div className="relative group">
+                            <div className={`absolute top-3.5 left-0 pl-3.5 flex items-start pointer-events-none transition-colors ${errors.address ? 'text-red-500' : 'text-card-text/40 group-focus-within:text-primary'}`}>
+                                <MapPin className="h-5 w-5" />
+                            </div>
+                            <textarea
+                                {...register('address')}
+                                className={`w-full pl-11 pr-4 py-3 rounded-sm border ${errors.address ? 'border-red-500 ring-4 ring-red-500/10' : 'border-white/10 ring-primary/10'} bg-primary/5 text-card-text placeholder:text-card-text/40 focus:bg-card focus:border-primary focus:ring-4 sm:text-sm transition-all duration-200 shadow-sm min-h-[160px] outline-none font-bold`}
+                                placeholder="123 Education Lane, Learning City"
                             />
                         </div>
-                        <div className="flex flex-col">
-                            <label htmlFor="isManager" className={`text-lg font-bold text-card-text ${user?.role === Role.ORG_MANAGER ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-                                Make Org-Manager
-                            </label>
-                            <p className="text-card-text/60 font-medium text-sm mt-1">
-                                Org-Managers have full access to organization settings and can manage other teachers.
-                            </p>
-                        </div>
+                        {errors.address && <p className="mt-1 text-xs text-red-500 font-bold">{errors.address.message}</p>}
                     </div>
                 </div>
             </div>
 
-            {/* Optional / Profile Details */}
-            <div className="p-6 rounded-sm border border-white/5 bg-white/2">
-                <div className="mb-6">
-                    <h3 className="text-xl font-bold text-card-text flex items-center gap-2">
-                        <User className="w-6 h-6 text-card-text/60" />
-                        Optional Profile Details
-                    </h3>
-                    <p className="text-card-text/60 text-sm mt-1">These fields can be filled now or updated by the teacher later from their profile.</p>
-                </div>
-
-                <div className="space-y-8">
-                    {/* Academic Details */}
-                    <div>
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary/60 mb-4 border-b border-white/5 pb-1">Specialization & Department</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <Label>Department</Label>
-                                <Input
-                                    type="text"
-                                    name="department"
-                                    value={formData.department}
-                                    onChange={handleChange}
-                                    icon={BookOpen}
-                                    placeholder="Science / Arts / Engineering"
-                                />
-                            </div>
-                            <div>
-                                <Label>Subject Specialization</Label>
-                                <Input
-                                    type="text"
-                                    name="subject"
-                                    value={formData.subject}
-                                    onChange={handleChange}
-                                    icon={BookOpen}
-                                    placeholder="E.g., Mathematics"
-                                />
-                            </div>
-                            <div className="md:col-span-2">
-                                <Label>Section Assignment</Label>
-                                <CustomMultiSelect
-                                    options={sectionOptions}
-                                    values={formData.sectionIds}
-                                    onChange={(vals) => setFormData(prev => ({ ...prev, sectionIds: vals }))}
-                                    icon={BookOpen}
-                                    placeholder="Select Sections"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Professional Details */}
-                    <div>
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary/60 mb-4 border-b border-white/5 pb-1">Professional Details</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
-                                <Label>Education</Label>
-                                <Input
-                                    type="text"
-                                    name="education"
-                                    value={formData.education}
-                                    onChange={handleChange}
-                                    icon={BookOpen}
-                                    placeholder="M.S. Computer Science"
-                                />
-                            </div>
-                            <div>
-                                <Label>Designation</Label>
-                                <Input
-                                    type="text"
-                                    name="designation"
-                                    value={formData.designation}
-                                    onChange={handleChange}
-                                    icon={User}
-                                    placeholder="Senior Teacher"
-                                />
-                            </div>
-                            <div>
-                                <Label>Base Salary</Label>
-                                <Input
-                                    type="number"
-                                    name="salary"
-                                    value={formData.salary}
-                                    onChange={handleChange}
-                                    icon={DollarSign}
-                                    placeholder="50000"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Contact & Personal */}
-                    <div>
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary/60 mb-4 border-b border-white/5 pb-1">Contact & Personal</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
-                                <Label>Phone Number</Label>
-                                <Input
-                                    type="text"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    icon={Phone}
-                                    placeholder="+1 (555) 000-0000"
-                                />
-                            </div>
-                            <div>
-                                <Label>Emergency Contact</Label>
-                                <Input
-                                    type="text"
-                                    name="emergencyContact"
-                                    value={formData.emergencyContact}
-                                    onChange={handleChange}
-                                    icon={Phone}
-                                    placeholder="Name - Relationship - Phone"
-                                />
-                            </div>
-                            <div>
-                                <Label>Blood Group</Label>
-                                <Input
-                                    type="text"
-                                    name="bloodGroup"
-                                    value={formData.bloodGroup}
-                                    onChange={handleChange}
-                                    icon={Plus}
-                                    placeholder="O+, A-, etc."
-                                />
-                            </div>
-                            <div className="md:col-span-3">
-                                <Label>Residential Address</Label>
-                                <Input
-                                    type="text"
-                                    name="address"
-                                    value={formData.address}
-                                    onChange={handleChange}
-                                    icon={User}
-                                    placeholder="123 Main St, City, Country"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="pt-10 mt-10 border-t border-white/10 flex justify-end gap-5">
-                <Link
-                    href={`/${orgSlug}/dashboard/teachers`}
-                    className="px-8 py-3 text-base font-bold text-secondary-text bg-secondary rounded-sm hover:brightness-110 transition-all hover:scale-105 active:scale-95 flex items-center shadow-lg border border-transparent"
-                >
+            <div className="flex items-center justify-end gap-4 pb-12">
+                <Button type="button" variant="secondary" className="w-32" onClick={() => router.back()}>
                     Cancel
-                </Link>
-                <Button
-                    type="submit"
-                    isLoading={isSaving}
-                    loadingText={teacherId ? "Updating..." : "Creating..."}
-                    className="px-10"
-                >
-                    {teacherId ? 'Update Teacher Account' : 'Create Teacher Account'}
+                </Button>
+                <Button type="submit" className="w-64 h-12" disabled={isSaving}>
+                    {isSaving ? (
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <span className="font-black uppercase tracking-widest text-[10px]">Processing...</span>
+                        </div>
+                    ) : (
+                        <span className="font-black uppercase tracking-widest text-[10px] italic">
+                            {teacherId ? 'Update Faculty Member' : 'Create Faculty Account'}
+                        </span>
+                    )}
                 </Button>
             </div>
         </form>

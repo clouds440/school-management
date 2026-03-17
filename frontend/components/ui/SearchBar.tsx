@@ -16,6 +16,10 @@ export function SearchBar({ value, onChange, placeholder = 'Search...', delay = 
     // Sync local state with prop when it change externally (e.g. cleared from parent)
     useEffect(() => {
         setLocalValue(value);
+
+        return () => {
+            setLocalValue('');
+        };
     }, [value]);
 
     // Trigger parent onChange only when debounced value changes

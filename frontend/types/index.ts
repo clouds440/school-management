@@ -100,7 +100,7 @@ export interface Organization {
     location: string;
     type: OrganizationType;
     email: string;
-    contactEmail?: string;
+    contactEmail: string;
     phone?: string;
     logoUrl?: string | null;
     avatarUpdatedAt?: string | null;
@@ -115,7 +115,7 @@ export interface RegisterRequest {
     location: string;
     type: OrganizationType;
     email: string;
-    contactEmail?: string;
+    contactEmail: string;
     phone?: string;
     password: string;
 }

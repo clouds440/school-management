@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
 import { X, Check, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
@@ -62,6 +63,15 @@ export function ImageCropperModal({
   const [rotation, setRotation] = useState(0);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   const onCropComplete = useCallback((_: Area, croppedPixels: Area) => {
     setCroppedAreaPixels(croppedPixels);
@@ -81,12 +91,17 @@ export function ImageCropperModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg flex flex-col overflow-hidden">
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+      <div
+        className="bg-white rounded-lg shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h3 className="text-base font-bold text-gray-900">Crop Logo Image</h3>
+          <h3 className="text-base font-bold text-gray-900 uppercase tracking-tight leading-none">Crop Logo Image</h3>
           <button
             type="button"
             onClick={onCancel}
@@ -97,7 +112,7 @@ export function ImageCropperModal({
         </div>
 
         {/* Cropper */}
-        <div className="relative bg-gray-900" style={{ height: 320 }}>
+        <div className="relative bg-gray-900" style={{ height: 480 }}>
           <Cropper
             image={imageSrc}
             crop={crop}
@@ -107,15 +122,16 @@ export function ImageCropperModal({
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={onCropComplete}
-            cropShape="round"
-            showGrid={false}
+            cropShape="rect"
+            showGrid={true}
           />
         </div>
 
         {/* Controls */}
-        <div className="px-5 py-4 space-y-3 border-t border-gray-100">
+        <div className="px-5 py-4 space-y-4 border-t border-gray-100 bg-gray-50/50">
           {/* Zoom */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 w-12">Zoom</span>
             <ZoomOut className="w-4 h-4 text-gray-400 shrink-0" />
             <input
               type="range"
@@ -130,7 +146,8 @@ export function ImageCropperModal({
           </div>
 
           {/* Rotation */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 w-12">Rotate</span>
             <RotateCw className="w-4 h-4 text-gray-400 shrink-0" />
             <input
               type="range"
@@ -141,16 +158,16 @@ export function ImageCropperModal({
               onChange={(e) => setRotation(Number(e.target.value))}
               className="flex-1 h-1.5 appearance-none rounded-full bg-gray-200 accent-indigo-600 cursor-pointer"
             />
-            <span className="text-xs text-gray-400 w-10 text-right">{rotation}°</span>
+            <span className="text-xs font-bold text-gray-500 w-10 text-right">{rotation}°</span>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 px-5 pb-5">
+        <div className="flex gap-3 px-5 py-5 bg-gray-50 border-t border-gray-100">
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 py-2.5 rounded-md border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+            className="flex-1 py-3 rounded-sm border border-gray-300 text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-white hover:border-gray-400 transition-all active:scale-95"
           >
             Cancel
           </button>
@@ -158,7 +175,7 @@ export function ImageCropperModal({
             type="button"
             onClick={handleConfirm}
             disabled={confirming}
-            className="flex-1 py-2.5 rounded-md bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+            className="flex-1 py-3 rounded-sm bg-indigo-600 text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 disabled:opacity-60 active:scale-95 shadow-lg shadow-indigo-600/20"
           >
             {confirming ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -169,6 +186,7 @@ export function ImageCropperModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

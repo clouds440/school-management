@@ -5,259 +5,267 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { School, MapPin, Building, Mail, Lock, UserPlus, Phone } from 'lucide-react';
 import Link from 'next/link';
-import { OrganizationType } from '@/types';
-import { useToast } from '@/context/ToastContext';
+import { RegisterRequest, OrganizationType } from '@/types';
 import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
+import { useToast } from '@/context/ToastContext';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { registerSchema, RegisterFormData } from '@/lib/schemas';
+import { useEffect } from 'react';
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const { showToast } = useToast();
-  const [formData, setFormData] = useState({
-    name: '',
-    location: '',
-    type: OrganizationType.HIGH_SCHOOL,
-    email: '',
-    contactEmail: '',
-    phone: '',
-    password: '',
-  });
-  const [sameAsLoginEmail, setSameAsLoginEmail] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+    const router = useRouter();
+    const { showToast } = useToast();
+    const [sameAsLoginEmail, setSameAsLoginEmail] = useState(false);
+    const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-  const handleLogoReady = useCallback((file: File) => {
-    setPendingLogoFile(file);
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const payload = {
-        ...formData,
-        contactEmail: sameAsLoginEmail ? formData.email : formData.contactEmail,
-      };
-
-      // 1. Register the org
-      await api.auth.register(payload);
-
-      // 2. If a logo was selected, log in temporarily to get a token and upload it
-      if (pendingLogoFile) {
-        try {
-          const loginRes = await api.auth.login({ email: formData.email, password: formData.password });
-          if (loginRes.access_token) {
-            await api.org.uploadLogo(pendingLogoFile, loginRes.access_token);
-          }
-        } catch {
-          // Logo upload failure should not block registration
-          showToast('Account created! Logo upload failed — you can add it from Settings.', 'info');
-          router.push('/login');
-          return;
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        trigger,
+        formState: { errors },
+    } = useForm({
+        resolver: zodResolver(registerSchema),
+        defaultValues: {
+            name: '',
+            location: '',
+            type: OrganizationType.HIGH_SCHOOL,
+            email: '',
+            contactEmail: '',
+            phone: '',
+            password: '',
         }
-      }
+    });
 
-      showToast('Registration successful! Please wait for approval.', 'success');
-      router.push('/login');
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
-      showToast(errorMessage, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const formData = watch();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    useEffect(() => {
+        if (sameAsLoginEmail) {
+            setValue('contactEmail', formData.email);
+            if (errors.contactEmail) trigger('contactEmail');
+        }
+    }, [formData.email, sameAsLoginEmail, setValue, trigger, errors.contactEmail]);
 
-  return (
-    <div className="flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-y-auto min-h-full">
-      {/* Background decoration */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-4xl pointer-events-none">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-0 left-0 w-80 h-80 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-40 w-80 h-80 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-      </div>
+    const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
+        setIsSaving(true);
+        try {
+            const payload: RegisterRequest = {
+                ...data,
+                contactEmail: sameAsLoginEmail ? data.email : (data.contactEmail || data.email),
+            };
 
-      <div className="w-full max-w-2xl space-y-10 bg-white/70 backdrop-blur-2xl p-12 sm:p-16 rounded-sm shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50 relative z-10 mx-auto transition-all duration-500">
-        <div className="text-center">
-          <div className="mx-auto bg-primary/10 w-20 h-20 rounded-sm flex items-center justify-center mb-8 shadow-inner border border-white/20">
-            <UserPlus className="w-10 h-10 text-primary drop-shadow-sm" />
-          </div>
-          <h2 className="mt-2 text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-gray-900 to-gray-700 tracking-tight">
-            Register Organization
-          </h2>
-          <p className="mt-3 text-sm text-gray-500 font-medium tracking-tight">
-            Already have an account?{' '}
-            <Link href="/login" className="font-bold text-primary hover:text-primary/80 transition-colors">
-              Sign in here
-            </Link>
-          </p>
-        </div>
+            // 1. Register the org
+            await api.auth.register(payload);
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {/* Logo picker */}
-          <div className="flex flex-col items-center pb-2">
-            <Label className="mb-3">
-              Organization Logo <span className="text-gray-400 font-normal">(optional)</span>
-            </Label>
-            <PhotoUploadPicker
-              onFileReady={handleLogoReady}
-              type="org"
-              hint="Square image, PNG or JPG, max 5 MB"
-            />
-          </div>
+            // 2. Logo upload (optional, post-auth)
+            if (pendingLogoFile) {
+                try {
+                    const loginRes = await api.auth.login({ email: data.email, password: data.password });
+                    if (loginRes.access_token) {
+                        await api.org.uploadLogo(pendingLogoFile, loginRes.access_token);
+                    }
+                } catch {
+                    showToast('Account created! Logo upload failed — you can add it from Settings.', 'info');
+                }
+            }
 
-          <div className="space-y-5">
-            <div>
-              <Label htmlFor="name">Organization Name</Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                required
-                icon={School}
-                placeholder="Greenwood High School"
-                value={formData.name}
-                onChange={handleChange}
-              />
+            showToast('Registration successful! Please wait for approval.', 'success');
+            router.push('/login');
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string | string[] } } };
+            const message = err.response?.data?.message;
+            if (Array.isArray(message)) {
+                message.forEach((m: string) => showToast(m, 'error'));
+            } else {
+                showToast(message || 'Registration failed', 'error');
+            }
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleLogoReady = useCallback((file: File) => {
+        setPendingLogoFile(file);
+    }, []);
+
+    return (
+        <div className="flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-y-auto min-h-full">
+            {/* Background decoration */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-4xl pointer-events-none">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+                <div className="absolute top-0 left-0 w-80 h-80 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+                <div className="absolute -bottom-8 left-40 w-80 h-80 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <Label htmlFor="type">Organization Type</Label>
-                <CustomSelect
-                  value={formData.type}
-                  onChange={(value) => setFormData({ ...formData, type: value as OrganizationType })}
-                  icon={Building}
-                  options={[
-                    { value: OrganizationType.HIGH_SCHOOL, label: 'High School' },
-                    { value: OrganizationType.UNIVERSITY, label: 'University' },
-                    { value: OrganizationType.PRIMARY_SCHOOL, label: 'Primary School' },
-                    { value: OrganizationType.OTHER, label: 'Other' },
-                  ]}
-                  placeholder="Select Organization Type"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  name="location"
-                  type="text"
-                  required
-                  icon={MapPin}
-                  placeholder="New York, NY"
-                  value={formData.location}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="email-address">Admin Login Email</Label>
-              <Input
-                id="email-address"
-                name="email"
-                type="email"
-                required
-                icon={Mail}
-                placeholder="admin@school.edu"
-                value={formData.email}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2 pl-1 pr-1">
-                <Label className="mb-0">Organization Contact Email</Label>
-                <label className="flex items-center group cursor-pointer select-none">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={sameAsLoginEmail}
-                      onChange={(e) => setSameAsLoginEmail(e.target.checked)}
-                      className="peer sr-only"
-                    />
-                    <div className="w-5 h-5 bg-gray-100 border-2 border-gray-200 rounded-sm peer-checked:bg-primary peer-checked:border-primary transition-all duration-200 group-hover:border-primary/40 shadow-sm flex items-center justify-center">
-                      <svg
-                        className={`w-3.5 h-3.5 text-white transition-opacity duration-200 ${sameAsLoginEmail ? 'opacity-100' : 'opacity-0'}`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="3.5"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
+            <div className="w-full max-w-2xl space-y-10 bg-white/70 backdrop-blur-2xl p-12 sm:p-16 rounded-sm shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50 relative z-10 mx-auto transition-all duration-500">
+                <div className="text-center">
+                    <div className="mx-auto bg-primary/10 w-20 h-20 rounded-sm flex items-center justify-center mb-8 shadow-inner border border-white/20">
+                        <UserPlus className="w-10 h-10 text-primary drop-shadow-sm" />
                     </div>
-                  </div>
-                  <span className="ml-3 text-sm font-medium text-gray-600 group-hover:text-gray-900 transition-colors">
-                    Same as login
-                  </span>
-                </label>
-              </div>
-              {!sameAsLoginEmail && (
-                <Input
-                  id="contactEmail"
-                  name="contactEmail"
-                  type="email"
-                  required={!sameAsLoginEmail}
-                  icon={Mail}
-                  placeholder="contact@school.edu"
-                  value={formData.contactEmail}
-                  onChange={handleChange}
-                />
-              )}
-            </div>
+                    <h2 className="mt-2 text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-gray-900 to-gray-700 tracking-tight">
+                        Register Organization
+                    </h2>
+                    <p className="mt-3 text-sm text-gray-500 font-medium tracking-tight">
+                        Already have an account?{' '}
+                        <Link href="/login" className="font-bold text-primary hover:text-primary/80 transition-colors">
+                            Sign in here
+                        </Link>
+                    </p>
+                </div>
 
-            <div>
-              <Label htmlFor="phone">Organization Phone Number</Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="text"
-                required
-                icon={Phone}
-                placeholder="+1 (555) 000-0000"
-                value={formData.phone}
-                onChange={handleChange}
-              />
-            </div>
+                <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
+                    {/* Logo picker */}
+                    <div className="flex flex-col items-center pb-2">
+                        <Label className="mb-3">
+                            Organization Logo <span className="text-gray-400 font-normal">(optional)</span>
+                        </Label>
+                        <PhotoUploadPicker
+                            onFileReady={handleLogoReady}
+                            type="org"
+                            hint="Square image, PNG or JPG, max 5 MB"
+                        />
+                    </div>
 
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                icon={Lock}
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
+                    <div className="space-y-5">
+                        <div>
+                            <Label htmlFor="name">Organization Name</Label>
+                            <Input
+                                id="name"
+                                {...register('name')}
+                                error={!!errors.name}
+                                icon={School}
+                                placeholder="EduPulse Academy"
+                            />
+                            {errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{errors.name.message}</p>}
+                        </div>
 
-          <div>
-            <Button
-              type="submit"
-              isLoading={loading}
-              loadingText="REGISTERING..."
-              className="w-full py-4 text-lg"
-            >
-              CREATE ORGANIZATION ACCOUNT
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <Label htmlFor="type">Organization Type</Label>
+                                <CustomSelect
+                                    options={[
+                                        { value: OrganizationType.HIGH_SCHOOL, label: 'High School', icon: Building },
+                                        { value: OrganizationType.PRIMARY_SCHOOL, label: 'Primary School', icon: Building },
+                                        { value: OrganizationType.UNIVERSITY, label: 'University', icon: Building },
+                                    ]}
+                                    value={formData.type}
+                                    onChange={(val) => {
+                                        setValue('type', val as OrganizationType);
+                                        trigger('type');
+                                    }}
+                                    error={!!errors.type}
+                                    placeholder="Select Type"
+                                />
+                                {errors.type && <p className="mt-1 text-xs text-red-500 font-bold">{errors.type.message}</p>}
+                            </div>
+                            <div>
+                                <Label htmlFor="location">Location</Label>
+                                <Input
+                                    id="location"
+                                    {...register('location')}
+                                    error={!!errors.location}
+                                    icon={MapPin}
+                                    placeholder="New York, USA"
+                                />
+                                {errors.location && <p className="mt-1 text-xs text-red-500 font-bold">{errors.location.message}</p>}
+                            </div>
+                        </div>
+
+                        <div>
+                            <Label htmlFor="email">Admin Login Email</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                {...register('email')}
+                                error={!!errors.email}
+                                icon={Mail}
+                                placeholder="admin@school.com"
+                            />
+                            {errors.email && <p className="mt-1 text-xs text-red-500 font-bold">{errors.email.message}</p>}
+                            <p className="mt-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                This will be used for your administrator login account.
+                            </p>
+                        </div>
+
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <Label htmlFor="contactEmail">Organization Contact Email</Label>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const next = !sameAsLoginEmail;
+                                        setSameAsLoginEmail(next);
+                                        if (next) {
+                                            setValue('contactEmail', formData.email);
+                                            trigger('contactEmail');
+                                        }
+                                    }}
+                                    className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline"
+                                >
+                                    {sameAsLoginEmail ? 'Use different email' : 'Same as login email'}
+                                </button>
+                            </div>
+                            <Input
+                                id="contactEmail"
+                                type="email"
+                                {...register('contactEmail')}
+                                error={!!errors.contactEmail}
+                                disabled={sameAsLoginEmail}
+                                icon={Mail}
+                                placeholder="info@school.com"
+                                className={sameAsLoginEmail ? 'bg-gray-50/50 opacity-60' : ''}
+                            />
+                            {errors.contactEmail && !sameAsLoginEmail && (
+                                <p className="mt-1 text-xs text-red-500 font-bold">{errors.contactEmail.message}</p>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <Label htmlFor="phone">Phone Number</Label>
+                                <Input
+                                    id="phone"
+                                    {...register('phone')}
+                                    error={!!errors.phone}
+                                    icon={Phone}
+                                    placeholder="+1 (555) 000-0000"
+                                />
+                                {errors.phone && <p className="mt-1 text-xs text-red-500 font-bold">{errors.phone.message}</p>}
+                            </div>
+                            <div>
+                                <Label htmlFor="password">Login Password</Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    {...register('password')}
+                                    error={!!errors.password}
+                                    icon={Lock}
+                                    placeholder="••••••••"
+                                />
+                                {errors.password && <p className="mt-1 text-xs text-red-500 font-bold">{errors.password.message}</p>}
+                            </div>
+                        </div>
+                    </div>
+
+                    <Button type="submit" className="w-full h-14" disabled={isSaving}>
+                        {isSaving ? (
+                            <div className="flex items-center gap-3">
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <span className="font-black uppercase tracking-widest text-xs">Registering...</span>
+                            </div>
+                        ) : (
+                            <span className="font-black uppercase tracking-widest text-xs italic">Create Organization Account</span>
+                        )}
+                    </Button>
+                </form>
+            </div>
+        </div>
+    );
 }

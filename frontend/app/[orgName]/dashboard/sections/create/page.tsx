@@ -42,7 +42,7 @@ export default function CreateSectionPage() {
 
         if (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER) {
             api.org.getCourses(token)
-                .then(data => setCourses(Array.isArray(data) ? data : []))
+                .then(res => setCourses(res.data || []))
                 .catch(err => console.error('Failed to load courses', err));
         }
     }, [token, user, router, orgSlug]);

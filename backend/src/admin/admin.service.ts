@@ -4,6 +4,7 @@ import { OrgStatus, Role, SupportTopic } from '../common/enums';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { getPaginationOptions, formatPaginatedResponse, mapStatusCounts, PaginationOptions } from '../common/utils';
 
 import { CreatePlatformAdminDto } from './dto/create-platform-admin.dto';
 import { UpdatePlatformAdminDto } from './dto/update-platform-admin.dto';
@@ -16,27 +17,11 @@ export class AdminService {
         private readonly prisma: PrismaService
     ) { }
 
-    async getOrganizations(options: {
+    async getOrganizations(options: PaginationOptions & {
         status?: OrgStatus;
-        page?: number;
-        limit?: number;
-        search?: string;
-        sortBy?: string;
-        sortOrder?: 'asc' | 'desc';
         type?: string;
     }) {
-        const {
-            status,
-            page = 1,
-            limit = 10,
-            search = '',
-            sortBy = 'createdAt',
-            sortOrder = 'desc',
-            type = 'ALL'
-        } = options;
-
-        const skip = (page - 1) * limit;
-        const take = limit;
+        const { skip, take, sortBy, sortOrder } = getPaginationOptions({ ...options, sortBy: options.sortBy || 'createdAt', sortOrder: options.sortOrder || 'desc' });
 
         // Map frontend sort keys to Prisma fields
         let prismaSortBy = sortBy;
@@ -45,49 +30,45 @@ export class AdminService {
         }
 
         const where: Prisma.OrganizationWhereInput = {
-            ...(status ? { status } : {}),
-            ...(type && type !== 'ALL' ? { type } : {}),
-            ...(search ? {
+            ...(options.status ? { status: options.status } : {}),
+            ...(options.type && options.type !== 'ALL' ? { type: options.type } : {}),
+            ...(options.search ? {
                 OR: [
-                    { name: { contains: search, mode: 'insensitive' } },
-                    { location: { contains: search, mode: 'insensitive' } },
-                    { type: { contains: search, mode: 'insensitive' } },
+                    { name: { contains: options.search, mode: 'insensitive' } },
+                    { location: { contains: options.search, mode: 'insensitive' } },
+                    { type: { contains: options.search, mode: 'insensitive' } },
                 ]
             } : {})
         };
 
         // For dynamic counts based on SEARCH and TYPE but NOT on status
         const countWhere: Prisma.OrganizationWhereInput = {
-            ...(type && type !== 'ALL' ? { type } : {}),
-            ...(search ? {
+            ...(options.type && options.type !== 'ALL' ? { type: options.type } : {}),
+            ...(options.search ? {
                 OR: [
-                    { name: { contains: search, mode: 'insensitive' } },
-                    { location: { contains: search, mode: 'insensitive' } },
-                    { type: { contains: search, mode: 'insensitive' } },
+                    { name: { contains: options.search, mode: 'insensitive' } },
+                    { location: { contains: options.search, mode: 'insensitive' } },
+                    { type: { contains: options.search, mode: 'insensitive' } },
                 ]
             } : {})
         };
 
-        const [orgs, totalRecords, pendingCount, approvedCount, rejectedCount, suspendedCount] = await Promise.all([
+        const [orgs, totalRecords, statusCounts] = await Promise.all([
             this.prisma.organization.findMany({
                 where,
                 skip,
                 take,
-                orderBy: { [prismaSortBy]: sortOrder } as Prisma.OrganizationOrderByWithRelationInput,
-                include: {
-                    users: {
-                        where: { role: Role.ORG_ADMIN },
-                        select: { email: true },
-                        take: 1
-                    }
-                }
+                orderBy: { [prismaSortBy]: sortOrder } as Prisma.OrganizationOrderByWithRelationInput
             }),
             this.prisma.organization.count({ where }),
-            this.prisma.organization.count({ where: { ...countWhere, status: OrgStatus.PENDING } }),
-            this.prisma.organization.count({ where: { ...countWhere, status: OrgStatus.APPROVED } }),
-            this.prisma.organization.count({ where: { ...countWhere, status: OrgStatus.REJECTED } }),
-            this.prisma.organization.count({ where: { ...countWhere, status: OrgStatus.SUSPENDED } }),
+            this.prisma.organization.groupBy({
+                by: ['status'],
+                where: countWhere,
+                _count: { _all: true }
+            })
         ]);
+
+        const countsMap = mapStatusCounts(statusCounts, OrgStatus);
 
         const mappedData = orgs.map(org => ({
             id: org.id,
@@ -98,20 +79,14 @@ export class AdminService {
             status: org.status,
             statusHistory: org.statusHistory,
             createdAt: org.createdAt,
-            email: org.users?.[0]?.email || 'No email'
+            phone: org.phone,
+            email: org.contactEmail
         }));
 
+        const response = formatPaginatedResponse(mappedData, totalRecords, options.page, options.limit);
         return {
-            data: mappedData,
-            totalRecords,
-            totalPages: Math.ceil(totalRecords / limit),
-            currentPage: page,
-            counts: {
-                PENDING: pendingCount,
-                APPROVED: approvedCount,
-                REJECTED: rejectedCount,
-                SUSPENDED: suspendedCount
-            }
+            ...response,
+            counts: countsMap
         };
     }
 
@@ -209,19 +184,8 @@ export class AdminService {
     }
 
 
-    async getSupportTickets(options: {
-        page?: number;
-        limit?: number;
-        search?: string;
-    }) {
-        const {
-            page = 1,
-            limit = 10,
-            search = ''
-        } = options;
-
-        const skip = (page - 1) * limit;
-        const take = limit;
+    async getSupportTickets(options: PaginationOptions) {
+        const { skip, take, search } = getPaginationOptions(options);
 
         const where: Prisma.SupportTicketWhereInput = search ? {
             OR: [
@@ -245,29 +209,23 @@ export class AdminService {
             this.prisma.supportTicket.count({ where })
         ]);
 
-        return {
-            data: tickets,
-            totalRecords,
-            totalPages: Math.ceil(totalRecords / limit),
-            currentPage: page
-        };
+        return formatPaginatedResponse(tickets, totalRecords, options.page, options.limit);
     }
 
     async getAdminStats() {
-        const [pending, approved, rejected, suspended, tickets, platformAdmins] = await Promise.all([
-            this.prisma.organization.count({ where: { status: OrgStatus.PENDING } }),
-            this.prisma.organization.count({ where: { status: OrgStatus.APPROVED } }),
-            this.prisma.organization.count({ where: { status: OrgStatus.REJECTED } }),
-            this.prisma.organization.count({ where: { status: OrgStatus.SUSPENDED } }),
+        const [orgStatusCounts, tickets, platformAdmins] = await Promise.all([
+            this.prisma.organization.groupBy({
+                by: ['status'],
+                _count: { _all: true }
+            }),
             this.prisma.supportTicket.count({ where: { isResolved: false } }),
             this.prisma.user.count({ where: { role: Role.PLATFORM_ADMIN } }),
         ]);
 
+        const orgCounts = mapStatusCounts(orgStatusCounts, OrgStatus);
+
         return {
-            PENDING: pending,
-            APPROVED: approved,
-            REJECTED: rejected,
-            SUSPENDED: suspended,
+            ...orgCounts,
             SUPPORT: tickets,
             PLATFORM_ADMINS: platformAdmins
         };
@@ -282,19 +240,8 @@ export class AdminService {
     }
 
     // --- Platform Admins ---
-    async getPlatformAdmins(options: {
-        page?: number;
-        limit?: number;
-        search?: string;
-    }) {
-        const {
-            page = 1,
-            limit = 10,
-            search = ''
-        } = options;
-
-        const skip = (page - 1) * limit;
-        const take = limit;
+    async getPlatformAdmins(options: PaginationOptions) {
+        const { skip, take, search } = getPaginationOptions(options);
 
         const where: Prisma.UserWhereInput = {
             role: Role.PLATFORM_ADMIN,
@@ -318,12 +265,7 @@ export class AdminService {
             this.prisma.user.count({ where })
         ]);
 
-        return {
-            data: admins,
-            totalRecords,
-            totalPages: Math.ceil(totalRecords / limit),
-            currentPage: page
-        };
+        return formatPaginatedResponse(admins, totalRecords, options.page, options.limit);
     }
 
     async createPlatformAdmin(data: CreatePlatformAdminDto) {
