@@ -23,16 +23,20 @@ export class CreateStudentDto {
     phone?: string;
 
     @IsString()
-    @IsOptional()
-    registrationNumber?: string;
+    @IsNotEmpty()
+    registrationNumber: string;
+
+    @IsString()
+    @IsNotEmpty()
+    rollNumber: string;
 
     @IsString()
     @IsOptional()
     fatherName?: string;
 
     @IsNumber()
-    @IsOptional()
-    fee?: number;
+    @IsNotEmpty()
+    fee: number;
 
     @IsNumber()
     @IsOptional()
@@ -43,8 +47,8 @@ export class CreateStudentDto {
     address?: string;
 
     @IsString()
-    @IsOptional()
-    major?: string;
+    @IsNotEmpty()
+    major: string;
 
     @IsArray()
     @IsString({ each: true })
@@ -57,11 +61,12 @@ export class CreateStudentDto {
 
     @IsDateString()
     @IsOptional()
+    @ValidateIf((o) => o.admissionDate !== '' && o.admissionDate !== null)
     admissionDate?: string;
 
     @IsDateString()
     @IsOptional()
-    @ValidateIf((o) => o.graduationDate !== '' && o.graduationDate !== null)
+    @ValidateIf((o) => o.graduationDate !== '' && o.graduationDate !== null && o.graduationDate !== undefined)
     graduationDate?: string;
 
     @IsString()
@@ -73,12 +78,12 @@ export class CreateStudentDto {
     bloodGroup?: string;
 
     @IsString()
-    @IsOptional()
-    gender?: string;
+    @IsNotEmpty()
+    gender: string;
 
     @IsString()
-    @IsOptional()
-    feePlan?: string;
+    @IsNotEmpty()
+    feePlan: string;
 
     @IsEnum(StudentStatus)
     @IsOptional()

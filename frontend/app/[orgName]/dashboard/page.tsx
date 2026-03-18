@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
     Clock, Users, GraduationCap, ShieldOff, RefreshCw, Mail, Settings,
-    Building, BookOpen, MapPin, Phone, Calendar, CheckCircle, FileText, PlusCircle, UserPlus,
-    Info, ChevronRight, LayoutDashboard, Layers, LogOut, CheckCircle2, AlertCircle
+    Building, BookOpen, MapPin, Phone, Calendar, CheckCircle, FileText, PlusCircle, UserPlus
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -23,13 +22,6 @@ export default function DashboardPage() {
     useEffect(() => {
         if (!payload || !token) return;
 
-        setFetchingData(true);
-        // The provided code snippet for JwtStrategy configuration is not valid within a React useEffect hook.
-        // It appears to be configuration for a backend JWT strategy, not frontend data fetching.
-        // Inserting it directly would cause syntax errors and functional issues.
-        // Therefore, this specific part of the requested change cannot be applied as written
-        // while maintaining a syntactically correct and functional React component.
-        // The original data fetching logic is preserved.
         Promise.all([
             api.org.getOrgData(token),
             api.org.getStats(token)
@@ -118,7 +110,7 @@ export default function DashboardPage() {
                         <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Awaiting Approval</h2>
                         <p className="text-gray-600 text-lg mb-8 font-medium">
                             Your organization registration is currently being verified.
-                            You'll have full dashboard access once EduManage confirms your details.
+                            You&apos;ll have full dashboard access once EduManage confirms your details.
                         </p>
                         <div className="animate-pulse-orange text-white px-10 py-5 rounded-sm font-black text-xl border border-yellow-300 w-full shadow-2xl flex items-center justify-center gap-3">
                             <div className="w-3 h-3 bg-white rounded-full animate-ping"></div>
@@ -140,7 +132,7 @@ export default function DashboardPage() {
                                 content={orgData.statusHistory && orgData.statusHistory.length > 0
                                     ? orgData.statusHistory[orgData.statusHistory.length - 1].message
                                     : 'No reason provided.'}
-                                className="text-red-700 text-lg font-medium"
+                                className="text-red-700 text-lg font-medium prose prose-red prose-sm max-w-none"
                             />
                         </div>
                         <p className="text-gray-600 text-lg mb-8 font-medium">
@@ -151,7 +143,7 @@ export default function DashboardPage() {
                             className="inline-flex items-center gap-3 bg-red-600 hover:bg-red-700 text-white px-10 py-5 rounded-sm font-black text-xl shadow-2xl shadow-red-600/30 transition-all hover:-translate-y-1 active:scale-95"
                         >
                             <RefreshCw className="w-6 h-6" />
-                            EDIT & RE-APPLY
+                            EDIT &amp; RE-APPLY
                         </Link>
                     </div>
                 )}
@@ -169,11 +161,11 @@ export default function DashboardPage() {
                         </p>
                         <div className="bg-orange-50 text-orange-800 p-6 rounded-sm border border-orange-100 w-full mb-8 text-left shadow-inner">
                             <h3 className="font-bold mb-2 flex items-center gap-2 text-sm uppercase tracking-wider text-orange-900/60"><ShieldOff className="w-4 h-4" /> Suspension Reason</h3>
-                            <MarkdownRenderer 
-                                content={orgData.statusHistory && orgData.statusHistory.length > 0 
-                                    ? orgData.statusHistory[orgData.statusHistory.length - 1].message 
-                                    : 'Please contact your institution\'s administration or EduManage support for more details.'} 
-                                className="italic font-bold text-orange-900" 
+                            <MarkdownRenderer
+                                content={orgData.statusHistory && orgData.statusHistory.length > 0
+                                    ? orgData.statusHistory[orgData.statusHistory.length - 1].message
+                                    : 'Please contact your institution\'s administration or EduManage support for more details.'}
+                                className="italic font-bold text-orange-900 prose prose-orange prose-sm max-w-none"
                             />
                         </div>
                         <Link

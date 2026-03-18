@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Plus } from 'lucide-react';
@@ -49,7 +50,6 @@ export default function StudentsPage() {
 
     const {
         data: fetchedData,
-        loading: isInitialLoading,
         fetching: isFetching,
         refresh
     } = usePaginatedData<Student, StudentParams>(
@@ -97,7 +97,7 @@ export default function StudentsPage() {
                 <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 ${row.user.avatarUrl ? 'bg-transparent' : 'bg-indigo-50'} rounded-sm flex items-center justify-center text-indigo-600 shrink-0`}>
                         {row.user.avatarUrl ? (
-                            <img src={getPublicUrl(row.user.avatarUrl)} alt="Student photo" className="w-10 h-10 bg-transparent rounded-full" />
+                            <Image src={getPublicUrl(row.user.avatarUrl)} alt="Student photo" width={40} height={40} className="w-10 h-10 bg-transparent rounded-full object-cover" unoptimized />
                         ) : (
                             row.user.name.charAt(0).toUpperCase()
                         )}
@@ -107,10 +107,17 @@ export default function StudentsPage() {
             )
         },
         {
-            header: 'Reg No.',
+            header: 'Reg / Roll No.',
             sortable: true,
             sortKey: 'registrationNumber',
-            accessor: (row: Student) => row.registrationNumber || '-'
+            accessor: (row: Student) => (
+                <div className="flex flex-col">
+                    <span className="font-semibold text-card-text">{row.registrationNumber || '-'}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-card-text/40 leading-none mt-1">
+                        Roll: {row.rollNumber || '-'}
+                    </span>
+                </div>
+            )
         },
         {
             header: 'Major / Course',
@@ -224,7 +231,7 @@ export default function StudentsPage() {
             <div className="bg-card text-card-text rounded-sm md:rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-4 md:p-8 mb-10 overflow-hidden">
                 <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
                     <div className="flex-1 max-w-xl">
-                        <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, registration or major..." />
+                        <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, reg, roll or major..." />
                     </div>
 
                     {user?.role === 'TEACHER' && (

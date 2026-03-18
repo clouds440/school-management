@@ -6,7 +6,7 @@ interface CacheEntry<T> {
     timestamp: number;
 }
 
-const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+const CACHE_TTL = 1000 * 60 * 30; // 30 minutes
 
 // Generic type for pagination parameters
 export interface BasePaginationParams {
@@ -27,7 +27,7 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
     const [loading, setLoading] = useState(true);
     const [fetching, setFetching] = useState(false);
     const [params, setParams] = useState<P>(initialParams);
-    
+
     // Stability: keep current versions in refs to avoid re-triggering effects
     // if the parent component passes a new function/object on every render.
     const fetcherRef = useRef(fetcher);
@@ -53,10 +53,11 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
     const isCacheable = useCallback((p: P) => {
         // Standard pagination/sorting params are okay to cache.
         // But if any search or filter is active, it should be live.
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { page, limit, sortBy, sortOrder, ...filters } = p;
-        
+
         // Check if any filter has a value that isn't empty or default
-        return Object.values(filters).every(v => 
+        return Object.values(filters).every(v =>
             v === undefined || v === '' || v === 'ALL' || v === false || v === null
         );
     }, []);
@@ -64,7 +65,7 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
     const fetchData = useCallback(async (currentParams: P, useCache = true) => {
         const cacheKey = `${cacheKeyPrefixRef.current}-${JSON.stringify(currentParams)}`;
         const canCache = isCacheable(currentParams);
-        
+
         if (useCache && canCache && cache.current[cacheKey]) {
             const entry = cache.current[cacheKey];
             if (Date.now() - entry.timestamp < CACHE_TTL) {
@@ -78,9 +79,9 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
         try {
             // We only show the initial loading spinner if we don't have any data yet
             setFetching(true);
-            
+
             const result = await fetcherRef.current(currentParams);
-            
+
             // Only update cache if it's a default (non-filtered) page
             if (canCache) {
                 cache.current[cacheKey] = {
@@ -88,9 +89,9 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
                     timestamp: Date.now()
                 };
             }
-            
+
             setData(result);
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error fetching paginated data:', error);
         } finally {
             setLoading(false);

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, LogOut, X, Key, LifeBuoy } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -31,16 +32,17 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
     const { isExpanded, isMobileOpen, toggleSidebar, setIsMobileOpen, modalConfig, closeViewModal } = useUI();
     const pathname = usePathname();
     const router = useRouter();
-    const [currentTitle, setCurrentTitle] = React.useState<SidebarLink | null>(links[0]);
-
-    React.useEffect(() => {
-        const found = [...links, ...bottomLinks].find(l => {
-            const isDashboardLink = l.href.endsWith('/dashboard');
-            return pathname === l.href || (!isDashboardLink && pathname.startsWith(`${l.href}/`));
-        });
-        if (found) {
-            setCurrentTitle(found);
-        }
+    const activeLink = React.useMemo(() => {
+        const allLinks = [...links, ...bottomLinks];
+        // 1. Try exact match first
+        const exactMatch = allLinks.find(l => pathname === l.href);
+        if (exactMatch) return exactMatch;
+        
+        // 2. Try sub-path matches (longest first to avoid partial matches on shorter bases)
+        return allLinks
+            .filter(l => !l.href.endsWith('/dashboard')) // Don't allow /dashboard to match /dashboard/something if we have more specific matches
+            .sort((a,b) => (b.href?.length || 0) - (a.href?.length || 0))
+            .find(l => pathname.startsWith(`${l.href}/`));
     }, [pathname, links, bottomLinks]);
 
     const handleLogout = () => {
@@ -108,8 +110,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                 {/* Branded Sidebar Links */}
                 <div className="flex-1 overflow-y-auto scrollbar-none py-6 px-3 space-y-1.5">
                     {links.map((link) => {
-                        const isDashboardLink = link.href.endsWith('/dashboard');
-                        const isActive = pathname === link.href || (!isDashboardLink && pathname.startsWith(`${link.href}/`));
+                        const isActive = activeLink?.id === link.id;
                         return (
                             <Link
                                 key={link.id}
@@ -149,11 +150,12 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                         <div className={`flex items-center ${!isExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
                             <div className={`w-9 h-9 rounded-sm ${user.avatarUrl || user.orgLogoUrl ? 'bg-transparent' : 'bg-primary'} flex items-center justify-center text-sidebar-active-text font-bold shrink-0 shadow-inner overflow-hidden relative`}>
                                 {user.avatarUrl || user.orgLogoUrl ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img
+                                    <Image
                                         src={getPublicUrl(user.avatarUrl || user.orgLogoUrl, user.avatarUpdatedAt)}
                                         alt="Avatar"
-                                        className="w-full h-full object-cover rounded-full"
+                                        fill
+                                        className="object-cover rounded-full"
+                                        unoptimized
                                     />
                                 ) : (
                                     user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()
@@ -223,13 +225,13 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                                 <BackButton />
                             )}
                             <div className="flex items-center gap-3">
-                                {currentTitle && currentTitle.icon && (
+                                {activeLink && activeLink.icon && (
                                     <div className="p-2 bg-primary/10 rounded-sm text-white">
-                                        <currentTitle.icon className="w-5 h-5" />
+                                        <activeLink.icon className="w-5 h-5" />
                                     </div>
                                 )}
                                 <h2 className="text-xl font-black tracking-tight uppercase truncate max-w-[200px] md:max-w-none">
-                                    {currentTitle?.label}
+                                    {activeLink?.label || title}
                                 </h2>
                             </div>
                         </div>

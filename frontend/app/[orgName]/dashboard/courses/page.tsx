@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Plus } from 'lucide-react';
-import { DataTable, Column } from '@/components/ui/DataTable';
+import { Plus, BookOpen } from 'lucide-react';
+import { DataTable } from '@/components/ui/DataTable';
 import { api } from '@/lib/api';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -11,11 +11,13 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { Button } from '@/components/ui/Button';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
-import { Course, Role, PaginatedResponse } from '@/types';
+import { Course, Role, PaginatedResponse, ApiError } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 
-interface CourseParams extends BasePaginationParams {}
+type CourseParams = BasePaginationParams;
 
 export default function CoursesPage() {
     const { token, user } = useAuth();
@@ -39,11 +41,10 @@ export default function CoursesPage() {
         sortOrder,
     };
 
-    const { 
-        data: fetchedData, 
-        loading: isInitialLoading, 
-        fetching: isFetching, 
-        refresh 
+    const {
+        data: fetchedData,
+        fetching: isFetching,
+        refresh
     } = usePaginatedData<Course, CourseParams>(
         (p) => api.org.getCourses(token!, p),
         courseParams,
@@ -85,8 +86,9 @@ export default function CoursesPage() {
             setEditModalOpen(false);
             showToast('Course updated successfully', 'success');
             refresh();
-        } catch (err: unknown) {
-            showToast(err instanceof Error ? err.message : 'Error updating course', 'error');
+        } catch (err: any) {
+            const message = err instanceof Error ? err.message : 'Error updating course';
+            showToast(message, 'error');
         } finally {
             setIsSaving(false);
         }
@@ -99,8 +101,9 @@ export default function CoursesPage() {
             showToast('Course deleted successfully', 'success');
             setDeleteDialogOpen(false);
             refresh();
-        } catch (err: unknown) {
-            showToast(err instanceof Error ? err.message : 'Error deleting course', 'error');
+        } catch (err: any) {
+            const message = err instanceof Error ? err.message : 'Error deleting course';
+            showToast(message, 'error');
         }
     };
 
@@ -236,19 +239,21 @@ export default function CoursesPage() {
             >
                 <div className="space-y-8 py-2">
                     <div className="space-y-2">
-                        <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Course Name *</label>
-                        <input
+                        <Label htmlFor="courseName">Course Name *</Label>
+                        <Input
+                            id="courseName"
                             type="text"
                             required
                             value={editFormData.name}
                             onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                            className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-card-text font-bold"
                             placeholder="e.g. Mathematics"
+                            icon={BookOpen}
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Description</label>
+                        <Label htmlFor="description">Description</Label>
                         <textarea
+                            id="description"
                             value={editFormData.description}
                             onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                             className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all min-h-[120px] text-card-text font-bold resize-none"

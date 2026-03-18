@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { School, MapPin, Building, Mail, Lock, UserPlus, Phone } from 'lucide-react';
 import Link from 'next/link';
-import { RegisterRequest, OrganizationType } from '@/types';
+import { RegisterRequest, OrganizationType, ApiError } from '@/types';
 import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Label } from '@/components/ui/Label';
@@ -15,7 +15,6 @@ import { useToast } from '@/context/ToastContext';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, RegisterFormData } from '@/lib/schemas';
-import { useEffect } from 'react';
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -31,7 +30,7 @@ export default function RegisterPage() {
         watch,
         trigger,
         formState: { errors },
-    } = useForm({
+    } = useForm<RegisterFormData>({
         resolver: zodResolver(registerSchema),
         defaultValues: {
             name: '',
@@ -78,13 +77,15 @@ export default function RegisterPage() {
 
             showToast('Registration successful! Please wait for approval.', 'success');
             router.push('/login');
-        } catch (error: unknown) {
-            const err = error as { response?: { data?: { message?: string | string[] } } };
-            const message = err.response?.data?.message;
+        } catch (error: any) {
+            const message = error instanceof Error 
+                ? error.message 
+                : (error?.response?.data?.message || 'Registration failed');
+            
             if (Array.isArray(message)) {
                 message.forEach((m: string) => showToast(m, 'error'));
             } else {
-                showToast(message || 'Registration failed', 'error');
+                showToast(message, 'error');
             }
         } finally {
             setIsSaving(false);

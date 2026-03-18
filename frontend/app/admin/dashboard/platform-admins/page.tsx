@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Users, Mail, MessageSquare, Calendar, UserPlus } from 'lucide-react';
 import { api } from '@/lib/api';
-import { PlatformAdmin, Role, PaginatedResponse } from '@/types';
+import { PlatformAdmin, PaginatedResponse } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -13,7 +13,7 @@ import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 
-interface PlatformAdminParams extends BasePaginationParams {}
+type PlatformAdminParams = BasePaginationParams;
 
 export default function PlatformAdminsPage() {
     const { user, token, loading } = useAuth();
@@ -24,7 +24,7 @@ export default function PlatformAdminsPage() {
 
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<PlatformAdmin> | null>(null);
-    
+
     // URL State
     const page = parseInt(searchParams.get('page') || '1', 10);
     const searchQuery = searchParams.get('search') || '';
@@ -39,11 +39,10 @@ export default function PlatformAdminsPage() {
         sortOrder,
     };
 
-    const { 
-        data: fetchedData, 
-        loading: isInitialLoading, 
-        fetching, 
-        refresh 
+    const {
+        data: fetchedData,
+        fetching,
+        refresh
     } = usePaginatedData<PlatformAdmin, PlatformAdminParams>(
         (p) => api.admin.getPlatformAdmins(token!, p),
         adminParams,
@@ -72,8 +71,6 @@ export default function PlatformAdminsPage() {
         });
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
     };
-
-    // We no longer need fetchPlatformAdmins locally as it's handled by the hook
 
     const handleOpenAdminModal = (mode: 'CREATE' | 'EDIT', admin: PlatformAdmin | null = null) => {
         setAdminModalMode(mode);
@@ -239,6 +236,7 @@ export default function PlatformAdminsPage() {
                         columns={columns}
                         data={platformAdmins}
                         keyExtractor={(row) => row.id}
+                        onRowClick={(row) => handleOpenAdminModal('EDIT', row)}
                         isLoading={fetching}
                         currentPage={paginatedData?.currentPage || 1}
                         totalPages={paginatedData?.totalPages || 1}
@@ -288,6 +286,7 @@ export default function PlatformAdminsPage() {
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block ml-1">Phone (Optional)</label>
                         <input
                             type="tel"
+                            autoComplete='off'
                             value={adminFormData.phone}
                             onChange={e => setAdminFormData(prev => ({ ...prev, phone: e.target.value }))}
                             className="w-full px-4 py-3 rounded-sm bg-gray-50/50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-bold text-gray-900"

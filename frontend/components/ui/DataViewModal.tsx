@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { getPublicUrl } from '@/lib/utils';
 
 export interface DataField {
     label: string;
@@ -22,6 +24,7 @@ export function DataViewModal({ isOpen, onClose, title, subtitle, fields, action
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
         if (isOpen) {
             document.body.style.overflow = 'hidden';
@@ -61,7 +64,7 @@ export function DataViewModal({ isOpen, onClose, title, subtitle, fields, action
                         {fields.map((field, idx) => (
                             <div key={idx} className={`${field.fullWidth ? 'col-span-1 md:col-span-2' : ''} space-y-3`}>
                                 <div className="flex items-center gap-2 text-[11px] font-black opacity-80 uppercase tracking-[0.25em]">
-                                    {field.icon && (typeof field.icon === 'string' ? <img src={`http://localhost:3000${field.icon}`} alt="Org Logo/Icon" className="w-6 h-6 rounded-full" /> : <field.icon className="w-3.5 h-3.5" />)}
+                                    {field.icon && (typeof field.icon === 'string' ? <Image src={getPublicUrl(field.icon)} alt="Org Logo/Icon" width={24} height={24} className="w-6 h-6 rounded-full object-contain" unoptimized /> : <field.icon className="w-3.5 h-3.5" />)}
                                     {field.label}
                                 </div>
                                 <div className="text-base font-bold wrap-break-word leading-relaxed">

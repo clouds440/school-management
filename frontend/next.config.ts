@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
         port: '3000',
         pathname: '/uploads/**',
       },
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '3000',
+        pathname: '/uploads/**',
+      },
     ],
     // Allow blob: and data: object URLs for local crop previews
     dangerouslyAllowSVG: true,

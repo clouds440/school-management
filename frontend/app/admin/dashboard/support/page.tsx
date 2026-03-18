@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { MessageSquare, Calendar, Hash, Building2, Tag, Info } from 'lucide-react';
+import { MessageSquare, Calendar, Hash, Building2, Tag, Info, ShieldAlert, Bug, Lightbulb } from 'lucide-react';
 import { api } from '@/lib/api';
 import { SupportTicket, SupportTopic, OrgStatus, Role, PaginatedResponse } from '@/types';
 import { TableActions, AdminAction } from '@/components/ui/TableActions';
@@ -12,6 +12,7 @@ import { DataTable, Column } from '@/components/ui/DataTable';
 import { DataField, useUI } from '@/context/UIContext';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function SupportPage() {
     const { user, token, loading } = useAuth();
@@ -56,7 +57,7 @@ export default function SupportPage() {
                 sortOrder,
             });
             setPaginatedData(response);
-        } catch (error) {
+        } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Failed to fetch data';
             showToast(message, 'error');
         } finally {
@@ -77,7 +78,7 @@ export default function SupportPage() {
             await api.admin.resolveSupportTicket(id, token);
             showToast('Ticket marked as resolved', 'success');
             fetchTickets();
-        } catch (error) {
+        } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Failed to resolve ticket';
             showToast(message, 'error');
         } finally {
@@ -94,7 +95,7 @@ export default function SupportPage() {
             await api.admin.approveOrganization(id, token);
             showToast(`${name} approved successfully`, 'success');
             fetchTickets();
-        } catch (error) {
+        } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Failed to approve organization';
             showToast(message, 'error');
         } finally {
@@ -221,7 +222,7 @@ export default function SupportPage() {
 
         openViewModal({
             title: "Support Ticket Details",
-            subtitle: ticket.organization?.name || 'Inquiry Details',
+            subtitle: ticket.organization?.name,
             fields: viewFields
         });
     };
@@ -232,17 +233,19 @@ export default function SupportPage() {
                 <div className="px-8 pt-8 pb-6 border-b border-gray-100 flex flex-col gap-6 bg-gray-50/50">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
-                            <select
+                            <CustomSelect
                                 value={topicFilter}
-                                onChange={(e) => updateQueryParams({ topic: e.target.value as SupportTopic | 'ALL', page: 1 })}
-                                className="px-4 py-2.5 rounded-sm bg-white border border-gray-200 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer shadow-sm min-w-[160px]"
-                            >
-                                <option value="ALL">All Topics</option>
-                                <option value={SupportTopic.ACCOUNT_STATUS}>Account Status</option>
-                                <option value={SupportTopic.GENERAL_SUPPORT}>General Support</option>
-                                <option value={SupportTopic.BUG_ISSUE}>Bug/Issue</option>
-                                <option value={SupportTopic.SUGGESTION}>Suggestion</option>
-                            </select>
+                                onChange={(val) => updateQueryParams({ topic: val as SupportTopic | 'ALL', page: 1 })}
+                                options={[
+                                    { value: 'ALL', label: 'All Topics', icon: MessageSquare },
+                                    { value: SupportTopic.ACCOUNT_STATUS, label: 'Account Status', icon: ShieldAlert },
+                                    { value: SupportTopic.GENERAL_SUPPORT, label: 'General Support', icon: MessageSquare },
+                                    { value: SupportTopic.BUG_ISSUE, label: 'Bug/Issue', icon: Bug },
+                                    { value: SupportTopic.SUGGESTION, label: 'Suggestion', icon: Lightbulb },
+                                ]}
+                                className="w-full sm:w-[200px]"
+                                placeholder="Topic"
+                            />
 
                             <SearchBar
                                 value={searchQuery}

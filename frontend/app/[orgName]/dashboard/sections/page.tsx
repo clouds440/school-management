@@ -2,18 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { BookOpen, Plus, Trash2 } from 'lucide-react';
-import { DataTable, Column } from '@/components/ui/DataTable';
+import { BookOpen, Plus } from 'lucide-react';
+import { DataTable } from '@/components/ui/DataTable';
 import { api } from '@/lib/api';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Button } from '@/components/ui/Button';
-import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
-import { Section, Course, Role, PaginatedResponse } from '@/types';
+import { Section, Course, Role, PaginatedResponse, ApiError } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 
 interface SectionParams extends BasePaginationParams {
@@ -45,11 +47,10 @@ export default function SectionsPage() {
         my: showOnlyMySections
     };
 
-    const { 
-        data: fetchedData, 
-        loading: isInitialLoading, 
-        fetching: isFetching, 
-        refresh 
+    const {
+        data: fetchedData,
+        fetching: isFetching,
+        refresh
     } = usePaginatedData<Section, SectionParams>(
         (p) => api.org.getSections(token!, p),
         sectionParams,
@@ -85,7 +86,7 @@ export default function SectionsPage() {
         try {
             const coursesResponse = await api.org.getCourses(token);
             setCourses(Array.isArray(coursesResponse) ? coursesResponse : (coursesResponse as PaginatedResponse<Course>).data || []);
-        } catch (err) {
+        } catch (err: unknown) {
             console.error(err);
         }
     }, [token]);
@@ -103,8 +104,9 @@ export default function SectionsPage() {
             setEditModalOpen(false);
             showToast('Section updated successfully', 'success');
             refresh();
-        } catch (err: unknown) {
-            showToast(err instanceof Error ? err.message : 'Error updating section', 'error');
+        } catch (err: any) {
+            const message = err instanceof Error ? err.message : 'Error updating section';
+            showToast(message, 'error');
         } finally {
             setIsSaving(false);
         }
@@ -117,17 +119,18 @@ export default function SectionsPage() {
             showToast('Section deleted successfully', 'success');
             setDeleteDialogOpen(false);
             refresh();
-        } catch (err: unknown) {
-            showToast(err instanceof Error ? err.message : 'Error deleting section', 'error');
+        } catch (err: any) {
+            const message = err instanceof Error ? err.message : 'Error deleting section';
+            showToast(message, 'error');
         }
     };
 
     const sections = paginatedData?.data || [];
-    
+
     // Client-side filter for "My Sections" if not handled by server
     const filteredSections = sections.filter(section => {
         if (!showOnlyMySections) return true;
-        
+
         const loggedInUserId = user?.sub || user?.id;
         return section.teachers?.some(t => t.userId === loggedInUserId);
     });
@@ -296,70 +299,58 @@ export default function SectionsPage() {
             >
                 <div className="space-y-8 py-2">
                     <div className="space-y-2">
-                        <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Section Name *</label>
-                        <input
+                        <Label htmlFor="sectionName">Section Name *</Label>
+                        <Input
+                            id="sectionName"
                             type="text"
                             required
                             value={editFormData.name}
                             onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                            className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-card-text font-bold"
                             placeholder="e.g. Section A"
+                            icon={BookOpen}
                         />
                     </div>
-                    {(user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER') && (
+                    {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                         <div className="space-y-2">
-                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Course</label>
-                            <div className="relative group">
-                                <select
-                                    required
-                                    value={editFormData.courseId}
-                                    onChange={(e) => setEditFormData({ ...editFormData, courseId: e.target.value })}
-                                    className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-card-text font-bold appearance-none"
-                                >
-                                    <option value="" disabled>Select Course</option>
-                                    {courses.map((c) => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-5 text-gray-400">
-                                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </div>
-                            </div>
+                            <Label>Course</Label>
+                            <CustomSelect
+                                options={courses.map(c => ({ value: c.id, label: c.name, icon: BookOpen }))}
+                                value={editFormData.courseId}
+                                onChange={(val) => setEditFormData({ ...editFormData, courseId: val })}
+                                placeholder="Select Course"
+                                required
+                            />
                         </div>
                     )}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Semester</label>
-                            <input
+                            <Label htmlFor="semester">Semester</Label>
+                            <Input
+                                id="semester"
                                 type="text"
                                 value={editFormData.semester}
                                 onChange={(e) => setEditFormData({ ...editFormData, semester: e.target.value })}
-                                className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-card-text font-bold"
                                 placeholder="E.g., Fall"
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Year</label>
-                            <input
+                            <Label htmlFor="year">Year</Label>
+                            <Input
+                                id="year"
                                 type="text"
                                 value={editFormData.year}
                                 onChange={(e) => setEditFormData({ ...editFormData, year: e.target.value })}
-                                className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-card-text font-bold"
                                 placeholder="E.g., 2026"
                             />
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <label className="block text-sm font-black text-gray-700 uppercase tracking-wider ml-1">Room</label>
-                        <input
+                        <Label htmlFor="room">Room</Label>
+                        <Input
+                            id="room"
                             type="text"
                             value={editFormData.room}
                             onChange={(e) => setEditFormData({ ...editFormData, room: e.target.value })}
-                            className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-card-text font-bold"
                             placeholder="E.g., 101-B"
                         />
                     </div>

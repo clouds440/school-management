@@ -29,23 +29,23 @@ export function CustomMultiSelect({
     icon: Icon,
     className = "",
     disabled = false,
-    error = false
 }: CustomMultiSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const containerRef = useRef<HTMLDivElement>(null);
-    
+
     // Derived state for selected options
     const selectedOptions = options.filter(opt => values.includes(opt.value));
 
     // Filtered options based on search term
     const filteredOptions = React.useMemo(() => {
-        return options.filter(opt => 
+        return options.filter(opt =>
             opt.label.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [options, searchTerm]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (!isOpen) setSearchTerm("");
     }, [isOpen]);
 
@@ -78,8 +78,8 @@ export function CustomMultiSelect({
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={`
                     flex flex-wrap items-center w-full min-h-[52px] px-4 py-2 rounded-sm border transition-all duration-200 outline-none
-                    ${isOpen 
-                        ? 'border-primary ring-4 ring-primary/10 bg-card' 
+                    ${isOpen
+                        ? 'border-primary ring-4 ring-primary/10 bg-card'
                         : 'border-white/10 bg-primary/5 hover:border-white/20'
                     }
                     ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
@@ -89,11 +89,11 @@ export function CustomMultiSelect({
                 {Icon && (
                     <Icon className={`h-5 w-5 mr-3 shrink-0 transition-colors ${isOpen ? 'text-primary' : 'text-card-text/40'}`} />
                 )}
-                
+
                 <div className="flex flex-wrap gap-2 flex-1 items-center overflow-hidden">
                     {selectedOptions.length > 0 ? (
                         selectedOptions.map(opt => (
-                            <span 
+                            <span
                                 key={opt.value}
                                 className="inline-flex items-center bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-sm text-xs font-black animate-in zoom-in-95 duration-100"
                             >
@@ -146,7 +146,7 @@ export function CustomMultiSelect({
                             />
                         </div>
                     </div>
-                    
+
                     <div className="overflow-y-auto flex-1">
                         {filteredOptions.length === 0 ? (
                             <div className="px-4 py-3 text-sm text-card-text/40 italic text-center">No options found</div>
@@ -160,8 +160,8 @@ export function CustomMultiSelect({
                                         onClick={() => toggleOption(option.value)}
                                         className={`
                                             flex items-center justify-between w-full px-4 py-3 text-sm font-bold transition-all
-                                            ${isSelected 
-                                                ? 'bg-primary/5 text-primary' 
+                                            ${isSelected
+                                                ? 'bg-primary/5 text-primary'
                                                 : 'text-card-text hover:bg-primary/5'
                                             }
                                             text-left

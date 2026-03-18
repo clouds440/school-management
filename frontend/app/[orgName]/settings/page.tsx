@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';
-import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School, RefreshCw, ShieldOff, Palette } from 'lucide-react';
+import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School, RefreshCw, ShieldOff } from 'lucide-react';
 import { BackButton } from '@/components/ui/BackButton';
 import { api } from '@/lib/api';
 import { Organization } from '@/types';
@@ -12,13 +11,11 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
-import { getPublicUrl } from '@/lib/utils';
-
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 export default function SettingsPage() {
     const { token } = useAuth();
     const { showToast } = useToast();
-    const { setThemeColors } = useTheme();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [reapplying, setReapplying] = useState(false);
@@ -66,15 +63,15 @@ export default function SettingsPage() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleColorChange = (type: 'primary' | 'secondary', value: string) => {
-        const newColors = { ...formData.accentColor, [type]: value };
-        setFormData({
-            ...formData,
-            accentColor: newColors
-        });
-        // Live preview
-        setThemeColors(newColors.primary, newColors.secondary);
-    };
+    // const handleColorChange = (type: 'primary' | 'secondary', value: string) => {
+    //     const newColors = { ...formData.accentColor, [type]: value };
+    //     setFormData({
+    //         ...formData,
+    //         accentColor: newColors
+    //     });
+    //     // Live preview
+    //     setThemeColors(newColors.primary, newColors.secondary);
+    // };
 
     const handleLogoReady = useCallback((file: File) => {
         setPendingLogoFile(file);
@@ -99,6 +96,7 @@ export default function SettingsPage() {
             showToast('Settings updated successfully!', 'success');
         } catch (error) {
             showToast('Failed to update settings. Please try again.', 'error');
+            console.error('Failed to update settings', error);
         } finally {
             setSaving(false);
         }
@@ -114,6 +112,7 @@ export default function SettingsPage() {
             setOrgData(data);
         } catch (error) {
             showToast('Failed to re-apply', 'error');
+            console.error('Failed to re-apply', error);
         } finally {
             setReapplying(false);
         }
@@ -152,9 +151,14 @@ export default function SettingsPage() {
                             </div>
                             <div>
                                 <h4 className="text-lg font-black text-red-600 leading-tight">Your application was rejected</h4>
-                                <p className="text-sm text-red-600/70 font-medium mt-1">
-                                    Please correct the details below and re-submit for review.
-                                </p>
+                                <div className="mt-2">
+                                    <MarkdownRenderer
+                                        content={orgData?.statusHistory && orgData.statusHistory.length > 0
+                                            ? orgData.statusHistory[orgData.statusHistory.length - 1].message
+                                            : 'Please correct the details below and re-submit for review.'}
+                                        className="text-sm text-red-600/70 font-medium prose prose-red prose-sm max-w-none"
+                                    />
+                                </div>
                             </div>
                         </div>
                         <button

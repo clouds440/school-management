@@ -42,30 +42,40 @@ export type RegisterFormData = z.infer<typeof registerSchema>;
 
 const teacherBaseSchema = z.object({
     name: z.string().min(1, 'Full Name is required'),
-    phone: z.string().regex(phoneRegex, 'Invalid phone number'),
+    phone: z.string().regex(phoneRegex, 'Invalid phone number').optional().or(z.literal('')),
     email: z.string().email('Invalid email address'),
-    education: z.string().min(1, 'Education details are required'),
-    designation: z.string().min(1, 'Designation is required'),
-    subject: z.string().min(1, 'Subject expertise is required'),
+    education: z.string().optional().or(z.literal('')),
+    designation: z.string().optional().or(z.literal('')),
+    subject: z.string().optional().or(z.literal('')),
     salary: z.string().nullable().optional(),
-    department: z.string().min(1, 'Department is required'),
-    joiningDate: z.string().min(1, 'Joining Date is required'),
+    department: z.string().optional().or(z.literal('')),
+    joiningDate: z.string().optional().or(z.literal('')),
     address: z.string().optional().or(z.literal('')),
     emergencyContact: z.string().optional().or(z.literal('')),
     bloodGroup: z.string().optional().or(z.literal('')),
     status: z.nativeEnum(TeacherStatus),
     isManager: z.boolean(),
-    sectionIds: z.array(z.string()).min(1, 'At least one section must be assigned'),
+    sectionIds: z.array(z.string()).default([]),
 });
 
-// Create → password REQUIRED
+// Create → password REQUIRED + metadata REQUIRED
 export const teacherCreateSchema = teacherBaseSchema.extend({
     password: passwordRules,
+    education: z.string().min(1, 'Education is required'),
+    designation: z.string().min(1, 'Designation is required'),
+    subject: z.string().min(1, 'Subject Expertise is required'),
+    salary: z.string().min(1, 'Salary is required'),
+    phone: z.string().regex(phoneRegex, 'Invalid phone number').min(1, 'Phone number is required'),
 });
 
-// Update → password OPTIONAL
+// Update → password OPTIONAL + metadata REQUIRED
 export const teacherUpdateSchema = teacherBaseSchema.extend({
     password: optionalPasswordRules,
+    education: z.string().min(1, 'Education is required'),
+    designation: z.string().min(1, 'Designation is required'),
+    subject: z.string().min(1, 'Subject Expertise is required'),
+    salary: z.string().min(1, 'Salary is required'),
+    phone: z.string().regex(phoneRegex, 'Invalid phone number').min(1, 'Phone number is required'),
 });
 
 export type TeacherCreateFormData = z.infer<typeof teacherCreateSchema>;
@@ -78,32 +88,45 @@ export type TeacherUpdateFormData = z.infer<typeof teacherUpdateSchema>;
 const studentBaseSchema = z.object({
     name: z.string().min(1, 'Full Name is required'),
     email: z.string().email('Invalid email address'),
-    registrationNumber: z.string().min(1, 'Registration number is required'),
-    admissionDate: z.string().min(1, 'Admission date is required'),
+    registrationNumber: z.string().optional().or(z.literal('')),
+    rollNumber: z.string().optional().or(z.literal('')),
+    admissionDate: z.string().optional().or(z.literal('')),
     status: z.nativeEnum(StudentStatus),
-    major: z.string().min(1, 'Major is required'),
-    department: z.string().min(1, 'Department is required'),
+    major: z.string().optional().or(z.literal('')),
+    department: z.string().optional().or(z.literal('')),
     fatherName: z.string().optional().or(z.literal('')),
     age: z.string().nullable().optional(),
-    gender: z.string().min(1, 'Gender is required'),
+    gender: z.string().optional().or(z.literal('')),
     fee: z.string().nullable().optional(),
     feePlan: z.string().optional().or(z.literal('')),
     graduationDate: z.string().optional().or(z.literal('')),
-    phone: z.string().regex(phoneRegex, 'Invalid phone number'),
+    phone: z.string().regex(phoneRegex, 'Invalid phone number').optional().or(z.literal('')),
     emergencyContact: z.string().optional().or(z.literal('')),
     bloodGroup: z.string().optional().or(z.literal('')),
     address: z.string().optional().or(z.literal('')),
-    sectionIds: z.array(z.string()).min(1, 'At least one section must be assigned'),
+    sectionIds: z.array(z.string()).default([]),
 });
 
-// Create → password REQUIRED
+// Create → password REQUIRED + metadata REQUIRED
 export const studentCreateSchema = studentBaseSchema.extend({
     password: passwordRules,
+    registrationNumber: z.string().min(1, 'Registration Number is required'),
+    rollNumber: z.string().min(1, 'Roll Number is required'),
+    major: z.string().min(1, 'Major/Program is required'),
+    gender: z.string().min(1, 'Gender is required'),
+    fee: z.string().min(1, 'Fee is required'),
+    feePlan: z.string().min(1, 'Fee Plan is required'),
 });
 
-// Update → password OPTIONAL
+// Update → password OPTIONAL + metadata REQUIRED
 export const studentUpdateSchema = studentBaseSchema.extend({
     password: optionalPasswordRules,
+    registrationNumber: z.string().min(1, 'Registration Number is required'),
+    rollNumber: z.string().min(1, 'Roll Number is required'),
+    major: z.string().min(1, 'Major/Program is required'),
+    gender: z.string().min(1, 'Gender is required'),
+    fee: z.string().min(1, 'Fee is required'),
+    feePlan: z.string().min(1, 'Fee Plan is required'),
 });
 
 export type StudentCreateFormData = z.infer<typeof studentCreateSchema>;

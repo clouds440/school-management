@@ -96,11 +96,12 @@ export function PhotoUploadPicker({
                 unoptimized
               />
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={resolvedSrc}
                 alt="Saved photo"
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                unoptimized
               />
             )
           ) : (

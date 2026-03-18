@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsNotEmpty, IsOptional, IsNumber, MinLength, IsBoolean, Matches, IsDateString, IsArray, IsEnum } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, IsOptional, IsNumber, MinLength, IsBoolean, Matches, IsDateString, IsArray, IsEnum, ValidateIf } from 'class-validator';
 import { TeacherStatus } from '../../common/enums';
 
 export class CreateTeacherDto {
@@ -19,24 +19,24 @@ export class CreateTeacherDto {
     name: string; // Used for general info if needed by user schema
 
     @IsNumber()
-    @IsOptional()
-    salary?: number;
+    @IsNotEmpty()
+    salary: number;
 
     @IsString()
-    @IsOptional()
-    subject?: string;
+    @IsNotEmpty()
+    subject: string;
 
     @IsString()
-    @IsOptional()
-    phone?: string;
+    @IsNotEmpty()
+    phone: string;
 
     @IsString()
-    @IsOptional()
-    education?: string;
+    @IsNotEmpty()
+    education: string;
 
     @IsString()
-    @IsOptional()
-    designation?: string;
+    @IsNotEmpty()
+    designation: string;
 
     @IsBoolean()
     @IsOptional()
@@ -48,6 +48,7 @@ export class CreateTeacherDto {
 
     @IsDateString()
     @IsOptional()
+    @ValidateIf((o) => o.joiningDate !== '' && o.joiningDate !== null)
     joiningDate?: string;
 
     @IsString()

@@ -62,12 +62,12 @@ model Teacher {
   id               String        @id @default(uuid())
   userId           String        @unique
   organizationId   String
-  salary           Float?
-  subject          String?
+  salary           Float         @default(0.0)
+  subject          String        @default("Unassigned")
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
-  designation      String?
-  education        String?
+  designation      String        @default("Unassigned")
+  education        String        @default("Unassigned")
   address          String?
   bloodGroup       String?
   department       String?
@@ -120,12 +120,13 @@ model Student {
   id                 String        @id @default(uuid())
   userId             String        @unique
   organizationId     String
-  registrationNumber String?
+  registrationNumber String        @default("TEMP_ID")
+  rollNumber         String        @default("TEMP_ROLL")
   fatherName         String?
-  fee                Float?
+  fee                Float         @default(0.0)
   age                Int?
   address            String?
-  major              String?
+  major              String        @default("Unassigned")
   updatedBy          String?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
@@ -133,8 +134,8 @@ model Student {
   bloodGroup         String?
   department         String?
   emergencyContact   String?
-  feePlan            String?
-  gender             String?
+  feePlan            String        @default("Unassigned")
+  gender             String        @default("Unassigned")
   graduationDate     DateTime?
   status             StudentStatus @default(ACTIVE)
   enrollments        Enrollment[]

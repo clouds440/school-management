@@ -1,6 +1,7 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
+import { usePathname } from 'next/navigation';
 
 interface SearchBarProps {
     value: string;
@@ -12,22 +13,35 @@ interface SearchBarProps {
 export function SearchBar({ value, onChange, placeholder = 'Search...', delay = 500 }: SearchBarProps) {
     const [localValue, setLocalValue] = useState(value);
     const debouncedValue = useDebounce(localValue, delay);
+    const lastValueRef = useRef(value);
+    const pathname = usePathname();
 
-    // Sync local state with prop when it change externally (e.g. cleared from parent)
+    // Sync from parent prop (external change like route param update)
     useEffect(() => {
-        setLocalValue(value);
-
-        return () => {
-            setLocalValue('');
-        };
+        if (value !== lastValueRef.current) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setLocalValue(value);
+            lastValueRef.current = value;
+        }
     }, [value]);
 
-    // Trigger parent onChange only when debounced value changes
+    // Clear search on route change (unconditional, as per user request)
     useEffect(() => {
-        if (debouncedValue !== value) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setLocalValue('');
+        lastValueRef.current = '';
+        // Note: we don't call onChange('') here to avoid unnecessary router.push 
+        // if the route change already cleared the params.
+    }, [pathname]);
+
+    // Trigger parent onChange only when debounced value changes 
+    // AND it's different from what we last saw from the parent
+    useEffect(() => {
+        if (debouncedValue !== lastValueRef.current) {
+            lastValueRef.current = debouncedValue;
             onChange(debouncedValue);
         }
-    }, [debouncedValue, onChange, value]);
+    }, [debouncedValue, onChange]);
 
     return (
         <div className="relative w-full sm:max-w-xs">

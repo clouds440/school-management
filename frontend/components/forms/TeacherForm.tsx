@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { User, Mail, Lock, BookOpen, DollarSign, Phone, Plus, ShieldCheck, UserX, CalendarClock, MapPin } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Section, Teacher, TeacherStatus, Role, CreateTeacherRequest, UpdateTeacherRequest } from '@/types';
+import { Section, Teacher, TeacherStatus, Role, CreateTeacherRequest, UpdateTeacherRequest, ApiError } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -106,13 +106,15 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
 
             showToast(`Teacher account ${teacherId ? 'updated' : 'created'} successfully`, 'success');
             router.push(`/${orgSlug}/dashboard/teachers`);
-        } catch (error: unknown) {
-            const err = error as { response?: { data?: { message?: string | string[] } } };
-            const message = err.response?.data?.message;
+        } catch (error: any) {
+            const message = error instanceof Error 
+                ? error.message 
+                : (error?.response?.data?.message || 'Failed to save teacher');
+            
             if (Array.isArray(message)) {
                 message.forEach((m: string) => showToast(m, 'error'));
             } else {
-                showToast(message || 'Failed to save teacher', 'error');
+                showToast(message, 'error');
             }
         } finally {
             setIsSaving(false);
@@ -210,7 +212,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                        <Label>Education / Degree</Label>
+                        <Label>Education / Degree <span className="text-red-500">*</span></Label>
                         <Input
                             type="text"
                             {...register('education')}
@@ -221,7 +223,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                         {errors.education && <p className="mt-1 text-xs text-red-500 font-bold">{errors.education.message}</p>}
                     </div>
                     <div className="space-y-2">
-                        <Label>Designation</Label>
+                        <Label>Designation <span className="text-red-500">*</span></Label>
                         <Input
                             type="text"
                             {...register('designation')}
@@ -232,7 +234,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                         {errors.designation && <p className="mt-1 text-xs text-red-500 font-bold">{errors.designation.message}</p>}
                     </div>
                     <div className="space-y-2">
-                        <Label>Subject Expertise</Label>
+                        <Label>Subject Expertise <span className="text-red-500">*</span></Label>
                         <Input
                             type="text"
                             {...register('subject')}
@@ -256,7 +258,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="space-y-2">
-                        <Label>Monthly Salary</Label>
+                        <Label>Monthly Salary <span className="text-red-500">*</span></Label>
                         <Input
                             type="number"
                             {...register('salary')}
@@ -326,7 +328,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                             value: s.id,
                             label: `${s.name} ${s.course?.name ? `(${s.course.name})` : ''}`
                         }))}
-                        values={formData.sectionIds}
+                        values={formData.sectionIds || []}
                         onChange={(vals) => {
                             setValue('sectionIds', vals);
                             trigger('sectionIds');
@@ -353,7 +355,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-6">
                         <div className="space-y-2">
-                            <Label>Contact Phone</Label>
+                            <Label>Contact Phone <span className="text-red-500">*</span></Label>
                             <Input
                                 type="text"
                                 {...register('phone')}

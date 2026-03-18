@@ -1,0 +1,243 @@
+﻿
+> frontend@0.1.0 lint
+> eslint
+
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\app\[orgName]\[userName]\page.tsx
+  130:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\app\[orgName]\dashboard\page.tsx
+   25:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\app\[orgName]\dashboard\page.tsx:25:9
+  23 |         if (!payload || !token) return;
+  24 |
+> 25 |         setFetchingData(true);
+     |         ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  26 |         Promise.all([
+  27 |             api.org.getOrgData(token),
+  28 |             api.org.getStats(token)  react-hooks/set-state-in-effect
+  114:32  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            react/no-unescaped-entities
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\app\[orgName]\dashboard\students\page.tsx
+  99:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\app\[orgName]\dashboard\teachers\page.tsx
+   18:11  error    An interface declaring no members is equivalent to its supertype                                                                                                                                                                                                                         @typescript-eslint/no-empty-object-type
+   49:18  warning  'isInitialLoading' is assigned a value but never used                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+  105:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\app\[orgName]\settings\page.tsx
+  20:13  warning  'setThemeColors' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\app\admin\dashboard\organizations\page.tsx
+  175:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\app\admin\dashboard\platform-admins\page.tsx
+  16:11  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\app\login\page.tsx
+   4:10  warning  'useRouter' is defined but never used                            @typescript-eslint/no-unused-vars
+  69:16  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\student\StudentPortalShell.tsx
+  75:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\student\StudentPortalShell.tsx:75:13
+  73 |
+  74 |         if (user.status === 'SUSPENDED') {
+> 75 |             setUserStatusMessage('Your account has been temporarily suspended by the administration. Please contact the office for details.');
+     |             ^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  76 |         } else if (user.status === 'ALUMNI') {
+  77 |             setUserStatusMessage('You are marked as alumni. You can view your records but cannot access active courses.');
+  78 |         }  react-hooks/set-state-in-effect
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\ConfirmDialog.tsx
+  28:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\ConfirmDialog.tsx:28:9
+  26 |
+  27 |     useEffect(() => {
+> 28 |         setMounted(true);
+     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  29 |         if (isOpen) {
+  30 |             document.body.style.overflow = 'hidden';
+  31 |         } else {  react-hooks/set-state-in-effect
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\CustomMultiSelect.tsx
+  48:22  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\CustomMultiSelect.tsx:48:22
+  46 |
+  47 |     useEffect(() => {
+> 48 |         if (!isOpen) setSearchTerm("");
+     |                      ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  49 |     }, [isOpen]);
+  50 |
+  51 |     useEffect(() => {  react-hooks/set-state-in-effect
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\DataTable.tsx
+  74:9  error  Error: This value cannot be modified
+
+Modifying a variable defined outside a component or hook is not allowed. Consider using an effect.
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\DataTable.tsx:74:9
+  72 |         };
+  73 |         setResizingIndex(index);
+> 74 |         document.body.style.cursor = 'col-resize';
+     |         ^^^^^^^^^^^^^^^^^^^ value cannot be modified
+  75 |     };
+  76 |
+  77 |     useEffect(() => {  react-hooks/immutability
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\DataViewModal.tsx
+  25:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\DataViewModal.tsx:25:9
+  23 |
+  24 |     useEffect(() => {
+> 25 |         setMounted(true);
+     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  26 |         if (isOpen) {
+  27 |             document.body.style.overflow = 'hidden';
+  28 |         } else {  react-hooks/set-state-in-effect
+  64:86  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @next/next/no-img-element
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\Label.tsx
+  3:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\ModalForm.tsx
+  35:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\ModalForm.tsx:35:9
+  33 |
+  34 |     useEffect(() => {
+> 35 |         setMounted(true);
+     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  36 |         if (isOpen) {
+  37 |             document.body.style.overflow = 'hidden';
+  38 |         } else {  react-hooks/set-state-in-effect
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\SearchBar.tsx
+  22:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\SearchBar.tsx:22:13
+  20 |     useEffect(() => {
+  21 |         if (value !== lastValueRef.current) {
+> 22 |             setLocalValue(value);
+     |             ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  23 |             lastValueRef.current = value;
+  24 |         }
+  25 |     }, [value]);                                                                                                                            react-hooks/set-state-in-effect
+  29:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\components\ui\SearchBar.tsx:29:9
+  27 |     // Clear search on route change (unconditional, as per user request)
+  28 |     useEffect(() => {
+> 29 |         setLocalValue('');
+     |         ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  30 |         lastValueRef.current = '';
+  31 |         // Note: we don't call onChange('') here to avoid unnecessary router.push 
+  32 |         // if the route change already cleared the params  react-hooks/set-state-in-effect
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\context\AuthContext.tsx
+  57:8  warning  React Hook useEffect has a missing dependency: 'processToken'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\context\ThemeContext.tsx
+  119:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\context\ThemeContext.tsx:119:9
+  117 |
+  118 |     useEffect(() => {
+> 119 |         refreshTheme();
+      |         ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  120 |     }, [refreshTheme]);
+  121 |
+  122 |     return (  react-hooks/set-state-in-effect
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\context\UIContext.tsx
+  43:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\context\UIContext.tsx:43:9
+  41 |
+  42 |     useEffect(() => {
+> 43 |         setIsMobileOpen(false);
+     |         ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  44 |     }, [pathname]);
+  45 |
+  46 |     const toggleSidebar = () => setIsExpanded(!isExpanded);  react-hooks/set-state-in-effect
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\hooks\usePaginatedData.ts
+  56:17  warning  'page' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  56:23  warning  'limit' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  56:30  warning  'sortBy' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  56:38  warning  'sortOrder' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Open PC\Documents\Zigron\school-management\frontend\types\index.ts
+  202:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+  226:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+  236:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+  244:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+Γ£û 33 problems (20 errors, 13 warnings)
+

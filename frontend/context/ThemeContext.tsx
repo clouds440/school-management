@@ -109,13 +109,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             } else {
                 setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
             }
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Failed to fetch theme settings:', error);
             setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
         }
     }, [token, user, setThemeColors]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         refreshTheme();
     }, [refreshTheme]);
 

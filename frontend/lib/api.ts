@@ -23,7 +23,7 @@ interface QueryParams {
 
 function buildQueryString(params: QueryParams): string {
     const query = Object.entries(params)
-        .filter(([_, value]) => value !== undefined && value !== '')
+        .filter(([value]) => value !== undefined && value !== '')
         .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
         .join('&');
     return query ? `?${query}` : '';
@@ -53,8 +53,9 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
                 const text = await response.text();
                 if (text && text.length < 200) message = text;
             }
-        } catch (e) {
+        } catch (error) {
             // Ignore parsing errors for the error message itself
+            console.error('Error parsing error response:', error);
         }
         throw new Error(message);
     }

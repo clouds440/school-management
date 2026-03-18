@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { UserPlus } from 'lucide-react';
 import { DataTable } from '@/components/ui/DataTable';
@@ -15,7 +16,7 @@ import { TableActions } from '@/components/ui/TableActions';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 import { getPublicUrl } from '@/lib/utils';
 
-interface TeacherParams extends BasePaginationParams { }
+type TeacherParams = BasePaginationParams;
 
 export default function TeachersPage() {
     const { token, user } = useAuth();
@@ -46,7 +47,6 @@ export default function TeachersPage() {
 
     const {
         data: fetchedData,
-        loading: isInitialLoading,
         fetching: isFetching,
         refresh
     } = usePaginatedData<Teacher, TeacherParams>(
@@ -102,7 +102,7 @@ export default function TeachersPage() {
                 <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 ${row.user.avatarUrl ? 'bg-transparent' : 'bg-indigo-50'} rounded-sm flex items-center justify-center text-indigo-600 shrink-0`}>
                         {row.user.avatarUrl ? (
-                            <img src={getPublicUrl(row.user.avatarUrl)} alt="Teacher photo" className="w-10 h-10 bg-transparent rounded-full" />
+                            <Image src={getPublicUrl(row.user.avatarUrl)} alt="Teacher photo" width={40} height={40} className="w-10 h-10 bg-transparent rounded-full object-cover" unoptimized />
                         ) : (
                             row.user.name.charAt(0).toUpperCase()
                         )}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { School, LogIn, UserPlus, Menu, X, LayoutDashboard } from 'lucide-react';
+import { LogIn, UserPlus, Menu, X, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { Role } from '@/types';

@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Lock, Hash, Calendar, ShieldCheck, UserX, GraduationCap, BookOpen, MapPin, Phone, Plus, Users, DollarSign } from 'lucide-react';
+import { User, Mail, Lock, Hash, ShieldCheck, UserX, GraduationCap, BookOpen, MapPin, Phone, Plus, Users, DollarSign } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Section, Student, StudentStatus, CreateStudentRequest, UpdateStudentRequest } from '@/types';
+import { Section, Student, StudentStatus, CreateStudentRequest, UpdateStudentRequest, Role } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -24,7 +24,7 @@ interface StudentFormProps {
 }
 
 export default function StudentForm({ studentId, orgSlug, initialData }: StudentFormProps) {
-    const { token } = useAuth();
+    const { token, user: currentUser } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
     const [sections, setSections] = useState<Section[]>([]);
@@ -45,6 +45,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
             email: initialData.user?.email || '',
             password: '',
             registrationNumber: initialData.registrationNumber || '',
+            rollNumber: initialData.rollNumber || '',
             admissionDate: initialData.admissionDate ? new Date(initialData.admissionDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             status: initialData.status as StudentStatus || StudentStatus.ACTIVE,
             sectionIds: initialData.enrollments?.map(e => e.section.id) || [],
@@ -65,6 +66,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
             email: '',
             password: '',
             registrationNumber: '',
+            rollNumber: '',
             admissionDate: new Date().toISOString().split('T')[0],
             status: StudentStatus.ACTIVE,
             sectionIds: [],
@@ -113,13 +115,15 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
 
             showToast(`Student ${studentId ? 'updated' : 'registered'} successfully.`, 'success');
             router.push(`/${orgSlug}/dashboard/students`);
-        } catch (error: unknown) {
-            const err = error as { response?: { data?: { message?: string | string[] } } };
-            const message = err.response?.data?.message;
+        } catch (error: any) {
+            const message = error instanceof Error
+                ? error.message
+                : (error?.response?.data?.message || 'Failed to save student');
+
             if (Array.isArray(message)) {
                 message.forEach((m: string) => showToast(m, 'error'));
             } else {
-                showToast(message || 'Failed to save student', 'error');
+                showToast(message, 'error');
             }
         } finally {
             setIsSaving(false);
@@ -192,16 +196,31 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Registration Number</Label>
+                            <Label>Registration Number <span className="text-red-500">*</span></Label>
                             <Input
                                 type="text"
                                 {...register('registrationNumber')}
                                 error={!!errors.registrationNumber}
-                                disabled={!!studentId}
+                                disabled={!!studentId && currentUser?.role !== Role.ORG_ADMIN}
                                 icon={Hash}
                                 placeholder="ST-2026-001"
+                                className={!!studentId && currentUser?.role !== Role.ORG_ADMIN ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.registrationNumber && <p className="mt-1 text-xs text-red-500 font-bold">{errors.registrationNumber.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Roll Number <span className="text-red-500">*</span></Label>
+                            <Input
+                                type="text"
+                                {...register('rollNumber')}
+                                error={!!errors.rollNumber}
+                                disabled={!!studentId && currentUser?.role !== Role.ORG_ADMIN}
+                                icon={Hash}
+                                placeholder="2026-001"
+                                className={!!studentId && currentUser?.role !== Role.ORG_ADMIN ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            />
+                            {errors.rollNumber && <p className="mt-1 text-xs text-red-500 font-bold">{errors.rollNumber.message}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -240,7 +259,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <Label>Major / Program</Label>
+                        <Label>Major / Program <span className="text-red-500">*</span></Label>
                         <Input
                             type="text"
                             {...register('major')}
@@ -280,7 +299,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                             value: s.id,
                             label: `${s.name} ${s.course?.name ? `(${s.course.name})` : ''}`
                         }))}
-                        values={formData.sectionIds}
+                        values={formData.sectionIds || []}
                         onChange={(vals) => {
                             setValue('sectionIds', vals);
                             trigger('sectionIds');
@@ -303,7 +322,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="space-y-2">
-                        <Label>Annual/Semester Fee</Label>
+                        <Label>Annual/Semester Fee <span className="text-red-500">*</span></Label>
                         <Input
                             type="number"
                             {...register('fee')}
@@ -314,7 +333,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                         {errors.fee && <p className="mt-1 text-xs text-red-500 font-bold">{errors.fee.message}</p>}
                     </div>
                     <div className="space-y-2">
-                        <Label>Fee Plan</Label>
+                        <Label>Fee Plan <span className="text-red-500">*</span></Label>
                         <Input
                             type="text"
                             {...register('feePlan')}
@@ -369,14 +388,14 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                         {errors.age && <p className="mt-1 text-xs text-red-500 font-bold">{errors.age.message}</p>}
                     </div>
                     <div className="space-y-2">
-                        <Label>Gender Identification</Label>
+                        <Label>Gender Identification <span className="text-red-500">*</span></Label>
                         <CustomSelect
                             options={[
                                 { value: 'Male', label: 'Male' },
                                 { value: 'Female', label: 'Female' },
                                 { value: 'Other', label: 'Other' }
                             ]}
-                            value={formData.gender}
+                            value={formData.gender || ''}
                             onChange={(val) => {
                                 setValue('gender', val);
                                 trigger('gender');

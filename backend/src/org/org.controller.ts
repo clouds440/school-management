@@ -249,13 +249,20 @@ export class OrgController {
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
     @Post('students')
     createStudent(@OrgId() orgId: string, @Body() createStudentDto: CreateStudentDto, @Request() req: AuthenticatedRequest) {
-        return this.orgService.createStudent(orgId, createStudentDto, req.user);
+        return this.orgService.createStudent(orgId, createStudentDto, {
+            name: req.user.name,
+            email: req.user.email
+        });
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
     @Patch('students/:id')
     updateStudent(@OrgId() orgId: string, @Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto, @Request() req: AuthenticatedRequest) {
-        return this.orgService.updateStudent(orgId, id, updateStudentDto, req.user);
+        return this.orgService.updateStudent(orgId, id, updateStudentDto, {
+            role: req.user.role as unknown as Role,
+            name: req.user.name,
+            email: req.user.email
+        });
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)

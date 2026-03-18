@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldOff, ShieldAlert, ShieldCheck, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone, Info, Hash, Clock } from 'lucide-react';
+import { ShieldOff, ShieldAlert, ShieldCheck, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone, Info, Hash, Clock, GraduationCap, BookOpen } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Organization, AdminStats, OrgStatus, PaginatedResponse } from '@/types';
 import { getPublicUrl } from '@/lib/utils';
@@ -16,6 +17,7 @@ import { DataField, useUI } from '@/context/UIContext';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 interface AdminOrgParams extends BasePaginationParams {
     status: OrgStatus;
@@ -28,7 +30,7 @@ export default function OrganizationsPage() {
     const searchParams = useSearchParams();
     const { showToast } = useToast();
 
-    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Organization> | null>(null);
+    // const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Organization> | null>(null);
     const { openViewModal } = useUI();
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [stats, setStats] = useState<AdminStats | null>(null);
@@ -66,9 +68,7 @@ export default function OrganizationsPage() {
     const sortOrder = orgParams.sortOrder || 'asc';
     const orgTypeFilter = orgParams.type || 'ALL';
 
-    useEffect(() => {
-        setPaginatedData(fetchedData);
-    }, [fetchedData]);
+    // Sync is now direct via usePaginatedData data variable
 
 
     useEffect(() => {
@@ -101,7 +101,7 @@ export default function OrganizationsPage() {
             refresh();
             // Also refresh stats
             api.admin.getAdminStats(token!).then(setStats).catch(console.error);
-        } catch (error) {
+        } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Failed to approve organization';
             showToast(message, 'error');
         } finally {
@@ -144,7 +144,7 @@ export default function OrganizationsPage() {
             setIsModalOpen(false);
             setOperatingOrg(null);
             setReason('');
-        } catch (error) {
+        } catch (error: unknown) {
             const message = error instanceof Error ? error.message : `Failed to ${modalMode.toLowerCase()} organization`;
             showToast(message, 'error');
         } finally {
@@ -153,7 +153,7 @@ export default function OrganizationsPage() {
     };
 
     // Use dynamic counts from server if available, otherwise fallback to stats
-    const dynamicCounts = (paginatedData as (PaginatedResponse<Organization> & { counts: Record<string, number> }))?.counts || stats;
+    const dynamicCounts = (fetchedData as (PaginatedResponse<Organization> & { counts: Record<string, number> }))?.counts || stats;
 
     const statusTabs: { id: OrgStatus, label: string, icon: LucideIcon, color: string, bg: string, count?: number }[] = [
         { id: OrgStatus.PENDING, label: 'Pending', icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-600/10', count: dynamicCounts?.PENDING },
@@ -171,7 +171,7 @@ export default function OrganizationsPage() {
                 <div className="flex items-start gap-4 min-w-0">
                     <div className={`w-10 h-10 ${row.logoUrl ? 'bg-transparent' : 'bg-indigo-50'} rounded-sm flex items-center justify-center text-indigo-600 shrink-0`}>
                         {row.logoUrl ? (
-                            <img src={getPublicUrl(row.logoUrl)} alt="Org Logo/Icon" className="w-10 h-10 bg-transparent rounded-full" />
+                            <Image src={getPublicUrl(row.logoUrl)} alt="Org Logo/Icon" width={40} height={40} className="w-10 h-10 bg-transparent rounded-full object-contain" unoptimized />
                         ) : (
                             <Building2 className="w-5 h-5" />
                         )}
@@ -270,7 +270,7 @@ export default function OrganizationsPage() {
         }
     ];
 
-    if ((loading || (!user && !loading)) || (isFetching && !paginatedData)) {
+    if ((loading || (!user && !loading)) || (isFetching && !fetchedData)) {
         return (
             <div className="flex flex-1 items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -381,17 +381,19 @@ export default function OrganizationsPage() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto px-2">
-                        <select
+                        <CustomSelect
                             value={orgTypeFilter}
-                            onChange={(e) => updateQueryParams({ type: e.target.value, page: 1 })}
-                            className="w-full sm:w-auto px-4 py-2.5 rounded-sm bg-white border border-gray-200 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer shadow-sm min-w-[160px]"
-                        >
-                            <option value="ALL">All Org Types</option>
-                            <option value="HIGH_SCHOOL">High School</option>
-                            <option value="UNIVERSITY">University</option>
-                            <option value="PRIMARY_SCHOOL">Primary School</option>
-                            <option value="OTHER">Other</option>
-                        </select>
+                            onChange={(val) => updateQueryParams({ type: val, page: 1 })}
+                            options={[
+                                { value: 'ALL', label: 'All Org Types' },
+                                { value: 'HIGH_SCHOOL', label: 'High School', icon: Building2 },
+                                { value: 'UNIVERSITY', label: 'University', icon: GraduationCap },
+                                { value: 'PRIMARY_SCHOOL', label: 'Primary School', icon: BookOpen },
+                                { value: 'OTHER', label: 'Other', icon: Info },
+                            ]}
+                            className="w-full sm:w-[200px] px-3"
+                            placeholder="Org Type"
+                        />
 
                         <SearchBar
                             value={searchQuery}
@@ -404,13 +406,13 @@ export default function OrganizationsPage() {
                 <div className="p-4 md:p-6 bg-gray-50/10">
                     <DataTable
                         columns={columns}
-                        data={paginatedData?.data || []}
+                        data={fetchedData?.data || []}
                         keyExtractor={(row) => row.id}
                         isLoading={isFetching}
                         onRowClick={handleViewOrg}
                         currentPage={page}
-                        totalPages={paginatedData?.totalPages || 1}
-                        totalResults={paginatedData?.totalRecords || 0}
+                        totalPages={fetchedData?.totalPages || 1}
+                        totalResults={fetchedData?.totalRecords || 0}
                         pageSize={10}
                         onPageChange={(p) => updateQueryParams({ page: p })}
                         sortConfig={{ key: sortBy, direction: sortOrder }}

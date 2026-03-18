@@ -1,4 +1,5 @@
 import { School } from 'lucide-react';
+import Image from 'next/image';
 import { getPublicUrl } from '@/lib/utils';
 
 interface OrgLogoOrIconProps {
@@ -14,14 +15,17 @@ interface OrgLogoOrIconProps {
 export function OrgLogoOrIcon({ logoUrl, orgName, className }: OrgLogoOrIconProps) {
     const resolvedUrl = getPublicUrl(logoUrl);
     
-    if (resolvedUrl && logoUrl?.startsWith('/uploads/')) {
+    if (resolvedUrl && logoUrl?.includes('uploads/')) {
         return (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-                src={resolvedUrl}
-                alt={orgName ?? 'Org logo'}
-                className={className || "w-8 h-8 md:w-9 md:h-9 rounded-full object-cover ring-2 ring-primary/20 shrink-0"}
-            />
+            <div className={`relative shrink-0 overflow-hidden ${className || "w-8 h-8 md:w-9 md:h-9 rounded-full ring-2 ring-primary/20"}`}>
+                <Image
+                    src={resolvedUrl}
+                    alt={orgName ?? 'Org logo'}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                />
+            </div>
         );
     }
     

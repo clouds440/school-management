@@ -249,7 +249,7 @@ export class OrgService {
         });
 
         if (existingUser) {
-            throw new BadRequestException('User with this email already exists');
+            throw new ConflictException('A user with this email address already exists in the system');
         }
 
         if (data.isManager && userContext.role === Role.ORG_MANAGER) {
@@ -301,8 +301,16 @@ export class OrgService {
             });
             return result;
         } catch (error) {
-            console.error(error);
-            throw new InternalServerErrorException('Failed to create teacher');
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+                if (error.code === 'P2002') {
+                    const target = (error.meta?.target as string[]) || [];
+                    if (target.includes('email')) throw new ConflictException('Email address already in use');
+                    // Add other unique fields if necessary
+                }
+            }
+            if (error instanceof ForbiddenException || error instanceof ConflictException || error instanceof BadRequestException) throw error;
+            console.error('[CreateTeacher Error]:', error);
+            throw new InternalServerErrorException('An unexpected error occurred while creating the teacher account');
         }
     }
 
@@ -533,6 +541,7 @@ export class OrgService {
                     { user: { name: { contains: options.search, mode: 'insensitive' } } },
                     { user: { email: { contains: options.search, mode: 'insensitive' } } },
                     { registrationNumber: { contains: options.search, mode: 'insensitive' } },
+                    { rollNumber: { contains: options.search, mode: 'insensitive' } },
                     { major: { contains: options.search, mode: 'insensitive' } },
                     { department: { contains: options.search, mode: 'insensitive' } },
                 ]
@@ -615,7 +624,23 @@ export class OrgService {
         });
 
         if (existingUser) {
-            throw new BadRequestException('User with this email already exists');
+            throw new ConflictException('A user with this email address already exists in the system');
+        }
+
+        const existingRegNum = await this.prisma.student.findFirst({
+            where: { organizationId: orgId, registrationNumber: data.registrationNumber }
+        });
+
+        if (existingRegNum) {
+            throw new ConflictException(`Registration number "${data.registrationNumber}" is already assigned to another student in this organization`);
+        }
+
+        const existingRollNum = await this.prisma.student.findFirst({
+            where: { organizationId: orgId, rollNumber: data.rollNumber }
+        });
+
+        if (existingRollNum) {
+            throw new ConflictException(`Roll number "${data.rollNumber}" is already assigned to another student in this organization`);
         }
 
         const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -638,6 +663,7 @@ export class OrgService {
                         userId: user.id,
                         organizationId: orgId,
                         registrationNumber: data.registrationNumber,
+                        rollNumber: data.rollNumber,
                         fatherName: data.fatherName,
                         fee: data.fee,
                         age: data.age,
@@ -663,12 +689,21 @@ export class OrgService {
                 return student;
             });
         } catch (error) {
-            console.error(error);
-            throw new InternalServerErrorException('Failed to create student');
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+                if (error.code === 'P2002') {
+                    const target = (error.meta?.target as string[]) || [];
+                    if (target.includes('email')) throw new ConflictException('Email address already in use');
+                    if (target.includes('registrationNumber')) throw new ConflictException('Registration number already in use');
+                    if (target.includes('rollNumber')) throw new ConflictException('Roll number already in use');
+                }
+            }
+            if (error instanceof ConflictException || error instanceof BadRequestException) throw error;
+            console.error('[CreateStudent Error]:', error);
+            throw new InternalServerErrorException('An unexpected error occurred while creating the student record');
         }
     }
 
-    async updateStudent(orgId: string, id: string, data: UpdateStudentDto, user: { name?: string | null; email: string }) {
+    async updateStudent(orgId: string, id: string, data: UpdateStudentDto, userContext: { role: Role; name?: string | null; email: string }) {
         const student = await this.prisma.student.findFirst({
             where: { id, organizationId: orgId },
             include: { user: true }
@@ -678,18 +713,32 @@ export class OrgService {
 
         const userFields = ['name', 'email', 'phone', 'password'];
         const studentFields = [
-            'registrationNumber', 'fatherName', 'fee', 'age', 'address', 'major',
+            'registrationNumber', 'rollNumber', 'fatherName', 'fee', 'age', 'address', 'major',
             'department', 'admissionDate', 'graduationDate', 'emergencyContact',
             'bloodGroup', 'gender', 'feePlan', 'status'
         ];
 
         const { userData, entityData: studentData } = await extractUpdateFields(data, userFields, studentFields, student.user.email);
 
-        if (data.registrationNumber && data.registrationNumber !== student.registrationNumber) {
+        // --- Role-based Field Locking ---
+        const isOrgAdmin = userContext.role === Role.ORG_ADMIN;
+        if (!isOrgAdmin) {
+            delete studentData.registrationNumber;
+            delete studentData.rollNumber;
+        }
+
+        if (studentData.registrationNumber && studentData.registrationNumber !== student.registrationNumber) {
             const existing = await this.prisma.student.findFirst({
-                where: { organizationId: orgId, registrationNumber: data.registrationNumber, id: { not: id } }
+                where: { organizationId: orgId, registrationNumber: studentData.registrationNumber, id: { not: id } }
             });
             if (existing) throw new BadRequestException('Registration number already in use');
+        }
+
+        if (studentData.rollNumber && studentData.rollNumber !== student.rollNumber) {
+            const existing = await this.prisma.student.findFirst({
+                where: { organizationId: orgId, rollNumber: studentData.rollNumber, id: { not: id } }
+            });
+            if (existing) throw new BadRequestException('Roll number already in use');
         }
 
         if (data.admissionDate) {
@@ -719,7 +768,7 @@ export class OrgService {
             }
 
             if (Object.keys(studentData).length > 0) {
-                studentData.updatedBy = user.name || user.email;
+                studentData.updatedBy = userContext.name || userContext.email;
                 await tx.student.update({
                     where: { id },
                     data: studentData

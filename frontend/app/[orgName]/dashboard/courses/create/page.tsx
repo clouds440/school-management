@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { LibraryBig, AlertCircle, FileText } from 'lucide-react';
+import { LibraryBig, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';

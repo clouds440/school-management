@@ -1,8 +1,32 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateStudentDto } from './create-student.dto';
-import { IsOptional, MinLength, Matches, ValidateIf } from 'class-validator';
+import { IsOptional, MinLength, Matches, ValidateIf, IsNotEmpty } from 'class-validator';
 
 export class UpdateStudentDto extends PartialType(CreateStudentDto) {
+    @IsOptional()
+    @IsNotEmpty()
+    registrationNumber?: string;
+
+    @IsOptional()
+    @IsNotEmpty()
+    rollNumber?: string;
+
+    @IsOptional()
+    @IsNotEmpty()
+    major?: string;
+
+    @IsOptional()
+    @IsNotEmpty()
+    gender?: string;
+
+    @IsOptional()
+    @IsNotEmpty()
+    fee?: number;
+
+    @IsOptional()
+    @IsNotEmpty()
+    feePlan?: string;
+
     @IsOptional()
     @MinLength(8, { message: 'Password must be at least 8 characters long' })
     @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/, {

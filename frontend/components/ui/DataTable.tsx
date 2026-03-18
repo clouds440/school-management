@@ -71,6 +71,7 @@ export function DataTable<T>({
             startWidth: columnWidths[index]
         };
         setResizingIndex(index);
+        // eslint-disable-next-line react-hooks/immutability
         document.body.style.cursor = 'col-resize';
     };
 

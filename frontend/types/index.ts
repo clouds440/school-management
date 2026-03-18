@@ -66,6 +66,7 @@ export interface Section {
 export interface Student {
     id: string;
     registrationNumber?: string;
+    rollNumber?: string;
     fatherName?: string;
     fee?: number;
     age?: number;
@@ -199,7 +200,7 @@ export interface CreateTeacherRequest {
     sectionIds?: string[];
 }
 
-export interface UpdateTeacherRequest extends Partial<CreateTeacherRequest> { }
+export type UpdateTeacherRequest = Partial<CreateTeacherRequest>;
 
 export interface CreateStudentRequest {
     name: string;
@@ -207,6 +208,7 @@ export interface CreateStudentRequest {
     phone?: string | null;
     password?: string;
     registrationNumber?: string | null;
+    rollNumber?: string | null;
     fatherName?: string | null;
     fee?: number | null;
     age?: number | null;
@@ -223,7 +225,7 @@ export interface CreateStudentRequest {
     sectionIds?: string[];
 }
 
-export interface UpdateStudentRequest extends Partial<CreateStudentRequest> { }
+export type UpdateStudentRequest = Partial<CreateStudentRequest>;
 
 export interface CreateSectionRequest {
     name: string;
@@ -233,11 +235,20 @@ export interface CreateSectionRequest {
     courseId: string;
 }
 
-export interface UpdateSectionRequest extends Partial<CreateSectionRequest> { }
+export type UpdateSectionRequest = Partial<CreateSectionRequest>;
 
 export interface CreateCourseRequest {
     name: string;
     description?: string;
 }
 
-export interface UpdateCourseRequest extends Partial<CreateCourseRequest> { }
+
+export type UpdateCourseRequest = Partial<CreateCourseRequest>;
+
+export interface ApiError {
+    response?: {
+        data?: {
+            message?: string | string[];
+        };
+    };
+}

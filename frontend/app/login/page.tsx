@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
+import { Mail, Lock, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
@@ -12,7 +11,6 @@ import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 
 export default function LoginPage() {
-  const router = useRouter();
   const { login } = useAuth();
   const { showToast } = useToast();
   const [formData, setFormData] = useState({
@@ -67,9 +65,9 @@ export default function LoginPage() {
             Welcome back
           </h2>
           <p className="mt-3 text-sm text-gray-500 font-medium tracking-tight">
-            Don't have an account?{' '}
+            Don&apos;t have an account?
             <Link href="/register" className="font-bold text-primary hover:text-primary/80 transition-colors">
-              Register a new school
+              &nbsp;Register a new school
             </Link>
           </p>
         </div>

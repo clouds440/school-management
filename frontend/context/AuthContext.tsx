@@ -46,6 +46,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { showToast } = useToast();
 
 
+    const logout = React.useCallback(async () => {
+        if (token) {
+            try {
+                await api.auth.logout(token);
+            } catch (error) {
+                console.error("Backend logout failed", error);
+            }
+        }
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem('token');
+        router.push('/');
+    }, [token, router]);
+
+    const processToken = React.useCallback((t: string) => {
+        try {
+            const base64Url = t.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+                atob(base64)
+                    .split('')
+                    .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+            );
+            const decoded = JSON.parse(jsonPayload) as JwtPayload;
+
+            // Check expiration
+            if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+                showToast('Your session has expired. Please log in again.', 'info');
+                logout();
+                return;
+            }
+
+            setToken(t);
+            setUser(decoded);
+            localStorage.setItem('token', t);
+        } catch (error) {
+            console.warn('Invalid or expired token sessions cleaned up.', error);
+            logout();
+        } finally {
+            setLoading(false);
+        }
+    }, [showToast, logout]);
+
     useEffect(() => {
         // Initialize token from storage
         const storedToken = localStorage.getItem('token');
@@ -54,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
             setLoading(false);
         }
-    }, []);
+    }, [processToken]);
 
     useEffect(() => {
         // Route guarding
@@ -149,7 +193,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         }
     }, [user, loading, pathname, router]);
-
     // --- Dynamic tab title ---
     useEffect(() => {
         if (loading) return;
@@ -179,55 +222,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, [user, loading, pathname]);
 
-    const processToken = (t: string) => {
-
-        try {
-            const base64Url = t.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(
-                atob(base64)
-                    .split('')
-                    .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-                    .join('')
-            );
-            const decoded = JSON.parse(jsonPayload) as JwtPayload;
-
-            // Check expiration
-            if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-                showToast('Your session has expired. Please log in again.', 'info');
-                logout();
-                return;
-            }
-
-
-            setToken(t);
-            setUser(decoded);
-            localStorage.setItem('token', t);
-        } catch (e) {
-            console.warn('Invalid or expired token sessions cleaned up.');
-            logout();
-        } finally {
-
-            setLoading(false);
-        }
-    };
-
     const login = (newToken: string) => {
         processToken(newToken);
-    };
-
-    const logout = async () => {
-        if (token) {
-            try {
-                await api.auth.logout(token);
-            } catch (error) {
-                console.error("Backend logout failed", error);
-            }
-        }
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem('token');
-        router.push('/');
     };
 
     return (
