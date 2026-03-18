@@ -30,3 +30,14 @@ export function getPublicUrl(path: string | null | undefined, updatedAt?: string
 
     return finalUrl;
 }
+
+export function formatDate(date: string | Date | null | undefined): string {
+    if (!date) return 'N/A';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return d.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+}

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { OrganizationType, TeacherStatus, StudentStatus } from '@/types';
+import { OrganizationType, TeacherStatus, StudentStatus, AssessmentType, GradeStatus } from '@/types';
 
 // --- Shared Patterns ---
 const phoneRegex = /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/;
@@ -131,3 +131,29 @@ export const studentUpdateSchema = studentBaseSchema.extend({
 
 export type StudentCreateFormData = z.infer<typeof studentCreateSchema>;
 export type StudentUpdateFormData = z.infer<typeof studentUpdateSchema>;
+
+// =========================
+// --- ASSESSMENT SCHEMAS ---
+// =========================
+
+export const assessmentSchema = z.object({
+    title: z.string().min(1, 'Title is required'),
+    type: z.nativeEnum(AssessmentType),
+    totalMarks: z.string().min(1, 'Total Marks is required').refine(val => !isNaN(Number(val)) && Number(val) > 0, 'Must be a positive number'),
+    weightage: z.string().min(1, 'Weightage is required').refine(val => !isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 100, 'Must be between 0 and 100'),
+    dueDate: z.string().optional().or(z.literal('')),
+});
+
+export type AssessmentFormData = z.infer<typeof assessmentSchema>;
+
+// =========================
+// --- GRADE SCHEMAS ---
+// =========================
+
+export const gradeSchema = z.object({
+    marksObtained: z.string().min(1, 'Marks obtained is required').refine(val => !isNaN(Number(val)) && Number(val) >= 0, 'Must be a non-negative number'),
+    feedback: z.string().optional().or(z.literal('')),
+    status: z.nativeEnum(GradeStatus).optional(),
+});
+
+export type GradeFormData = z.infer<typeof gradeSchema>;

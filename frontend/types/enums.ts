@@ -41,3 +41,17 @@ export enum OrganizationType {
     PRIMARY_SCHOOL = 'PRIMARY_SCHOOL',
     OTHER = 'OTHER',
 }
+
+export enum AssessmentType {
+    ASSIGNMENT = 'ASSIGNMENT',
+    QUIZ = 'QUIZ',
+    MIDTERM = 'MIDTERM',
+    FINAL = 'FINAL',
+    PROJECT = 'PROJECT',
+}
+
+export enum GradeStatus {
+    DRAFT = 'DRAFT',
+    PUBLISHED = 'PUBLISHED',
+    FINALIZED = 'FINALIZED',
+}

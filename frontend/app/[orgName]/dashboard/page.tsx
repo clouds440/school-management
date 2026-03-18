@@ -268,11 +268,11 @@ export default function DashboardPage() {
                                             <Link href={`/${payload.orgSlug}/attendance`} className="flex items-center gap-3 p-2 hover:bg-white/20 rounded transition">
                                                 <CheckCircle className="w-4 h-4 text-primary" /> Take Attendance
                                             </Link>
-                                            <Link href={`/${payload.orgSlug}/grades`} className="flex items-center gap-3 p-2 hover:bg-white/20 rounded transition">
-                                                <FileText className="w-4 h-4 text-primary" /> Enter Grades
+                                            <Link href={`/${payload.orgSlug}/dashboard/grades`} className="flex items-center gap-3 p-2 hover:bg-white/20 rounded transition font-bold">
+                                                <FileText className="w-4 h-4 text-primary" /> Manage Grades
                                             </Link>
-                                            <Link href={`/${payload.orgSlug}/assignments`} className="flex items-center gap-3 p-2 hover:bg-white/20 rounded transition">
-                                                <BookOpen className="w-4 h-4 text-primary" /> New Assignment
+                                            <Link href={`/${payload.orgSlug}/dashboard/sections`} className="flex items-center gap-3 p-2 hover:bg-white/20 rounded transition font-bold">
+                                                <BookOpen className="w-4 h-4 text-primary" /> Manage Assessments
                                             </Link>
                                         </div>
                                     </div>

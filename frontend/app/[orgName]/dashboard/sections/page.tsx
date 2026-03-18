@@ -203,6 +203,13 @@ export default function SectionsPage() {
                         deleteTitle="Delete Section"
                         variant="default"
                         isViewAndEdit={true}
+                        extraActions={[
+                            {
+                                variant: 'unsuspend', // Using this for "View" as it has a check/eye-like feel or just generic
+                                onClick: () => router.push(`/${orgSlug}/dashboard/sections/${row.id}`),
+                                title: 'View Details'
+                            }
+                        ]}
                     />
                 );
             }
@@ -263,21 +270,7 @@ export default function SectionsPage() {
                         columns={columns}
                         keyExtractor={(row) => row.id}
                         isLoading={isFetching}
-                        onRowClick={(row) => {
-                            const isAdmin = user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER;
-                            const isAssignedTeacher = user?.role === Role.TEACHER && row.teachers?.some(t => t.userId === (user.sub || user.id));
-                            if (isAdmin || isAssignedTeacher) {
-                                setEditingSection(row);
-                                setEditFormData({
-                                    name: row.name,
-                                    semester: row.semester || '',
-                                    year: row.year || '',
-                                    room: row.room || '',
-                                    courseId: row.courseId || ''
-                                });
-                                setEditModalOpen(true);
-                            }
-                        }}
+                        onRowClick={(row) => router.push(`/${orgSlug}/dashboard/sections/${row.id}`)}
                         currentPage={page}
                         totalPages={paginatedData?.totalPages || 1}
                         totalResults={paginatedData?.totalRecords || 0}

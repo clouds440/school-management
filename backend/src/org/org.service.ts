@@ -500,6 +500,37 @@ export class OrgService {
         return formatPaginatedResponse(sections, totalRecords, options.page, options.limit);
     }
 
+    async getSection(orgId: string, id: string) {
+        const section = await this.prisma.section.findUnique({
+            where: { id },
+            include: {
+                course: true,
+                teachers: { include: { user: { select: { email: true, name: true } } } },
+                enrollments: {
+                    include: {
+                        student: {
+                            include: { user: { select: { id: true, name: true, email: true, avatarUrl: true } } }
+                        }
+                    }
+                },
+                assessments: true
+            }
+        });
+
+        if (!section || section.course.organizationId !== orgId) {
+            throw new NotFoundException('Section not found');
+        }
+
+        return {
+            ...section,
+            students: section.enrollments.map(e => ({
+                ...e.student,
+                user: e.student.user
+            })),
+            studentsCount: section.enrollments.length
+        };
+    }
+
     async createSection(orgId: string, data: CreateSectionDto) {
         return this.prisma.section.create({
             data: {
@@ -809,6 +840,243 @@ export class OrgService {
         return { message: 'Student deleted successfully' };
     }
 
+    async getStudentByUserId(userId: string) {
+        return this.prisma.student.findUnique({ where: { userId } });
+    }
+
+    // --- Assessments ---
+    async createAssessment(orgId: string, data: any) {
+        // Validate total weightage for the section
+        const sectionAssessments = await this.prisma.assessment.findMany({
+            where: { sectionId: data.sectionId }
+        });
+
+        const totalWeightage = sectionAssessments.reduce((sum, a) => sum + a.weightage, 0);
+        if (totalWeightage + data.weightage > 100) {
+            throw new BadRequestException(`Total weightage for this section cannot exceed 100%. Current total: ${totalWeightage}%`);
+        }
+
+        return this.prisma.assessment.create({
+            data: {
+                ...data,
+                organizationId: orgId,
+                dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+            }
+        });
+    }
+
+    async getAssessments(orgId: string, filters: { sectionId?: string, courseId?: string }) {
+        return this.prisma.assessment.findMany({
+            where: {
+                organizationId: orgId,
+                ...filters
+            },
+            include: {
+                _count: {
+                    select: { grades: true, submissions: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+    }
+
+    async updateAssessment(orgId: string, id: string, data: any) {
+        const assessment = await this.prisma.assessment.findUnique({ where: { id } });
+        if (!assessment || assessment.organizationId !== orgId) {
+            throw new NotFoundException('Assessment not found');
+        }
+
+        if (data.weightage !== undefined) {
+            const sectionAssessments = await this.prisma.assessment.findMany({
+                where: { sectionId: assessment.sectionId, id: { not: id } }
+            });
+
+            const totalWeightage = sectionAssessments.reduce((sum, a) => sum + a.weightage, 0);
+            if (totalWeightage + data.weightage > 100) {
+                throw new BadRequestException(`Total weightage for this section cannot exceed 100%. Current total: ${totalWeightage}%`);
+            }
+        }
+
+        return this.prisma.assessment.update({
+            where: { id },
+            data: {
+                ...data,
+                dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+            }
+        });
+    }
+
+    async deleteAssessment(orgId: string, id: string) {
+        const assessment = await this.prisma.assessment.findUnique({ where: { id } });
+        if (!assessment || assessment.organizationId !== orgId) {
+            throw new NotFoundException('Assessment not found');
+        }
+
+        return this.prisma.assessment.delete({ where: { id } });
+    }
+
+    // --- Grades ---
+    async getGrades(orgId: string, assessmentId: string) {
+        return this.prisma.grade.findMany({
+            where: {
+                assessment: { id: assessmentId, organizationId: orgId }
+            },
+            include: {
+                student: {
+                    include: { user: { select: { id: true, name: true, email: true } } }
+                }
+            }
+        });
+    }
+
+    async updateGrade(orgId: string, assessmentId: string, studentId: string, data: any, userId: string, userRole: Role) {
+        const assessment = await this.prisma.assessment.findUnique({ where: { id: assessmentId } });
+        if (!assessment || assessment.organizationId !== orgId) {
+            throw new NotFoundException('Assessment not found');
+        }
+
+        const grade = await this.prisma.grade.findUnique({
+            where: { assessmentId_studentId: { assessmentId, studentId } }
+        });
+
+        if (grade && grade.status === 'FINALIZED' && userRole !== Role.ORG_ADMIN) {
+            throw new ForbiddenException('Only Org Admin can update finalized grades');
+        }
+
+        if (data.marksObtained > assessment.totalMarks) {
+            throw new BadRequestException(`Marks obtained (${data.marksObtained}) cannot exceed total marks (${assessment.totalMarks})`);
+        }
+
+        return this.prisma.grade.upsert({
+            where: { assessmentId_studentId: { assessmentId, studentId } },
+            create: {
+                assessmentId,
+                studentId,
+                marksObtained: data.marksObtained,
+                feedback: data.feedback,
+                status: data.status || 'DRAFT',
+                updatedBy: userId,
+            },
+            update: {
+                marksObtained: data.marksObtained,
+                feedback: data.feedback,
+                status: data.status,
+                updatedBy: userId,
+            }
+        });
+    }
+
+    async publishGrades(orgId: string, assessmentId: string) {
+        return this.prisma.grade.updateMany({
+            where: { assessmentId, assessment: { organizationId: orgId } },
+            data: { status: 'PUBLISHED' }
+        });
+    }
+
+    async finalizeGrades(orgId: string, assessmentId: string) {
+        return this.prisma.grade.updateMany({
+            where: { assessmentId, assessment: { organizationId: orgId } },
+            data: { status: 'FINALIZED' }
+        });
+    }
+
+    async getAssessment(orgId: string, id: string) {
+        const assessment = await this.prisma.assessment.findUnique({
+            where: { id, organizationId: orgId },
+            include: {
+                course: true,
+                section: true,
+            },
+        });
+
+        if (!assessment) throw new NotFoundException('Assessment not found');
+        return assessment;
+    }
+
+    // --- Submissions ---
+    async createSubmission(orgId: string, studentId: string, data: any) {
+        const assessment = await this.prisma.assessment.findUnique({ where: { id: data.assessmentId } });
+        if (!assessment || assessment.organizationId !== orgId) {
+            throw new NotFoundException('Assessment not found');
+        }
+
+        if (assessment.dueDate && new Date() > assessment.dueDate) {
+            throw new BadRequestException('Submission deadline has passed');
+        }
+
+        return this.prisma.submission.create({
+            data: {
+                ...data,
+                studentId,
+            }
+        });
+    }
+
+    async getSubmissions(orgId: string, assessmentId: string) {
+        return this.prisma.submission.findMany({
+            where: { assessmentId, assessment: { organizationId: orgId } },
+            include: {
+                student: {
+                    include: { user: { select: { id: true, name: true, email: true } } }
+                }
+            }
+        });
+    }
+
+    // --- Grade Calculation ---
+    async calculateFinalGrade(studentId: string, sectionId?: string) {
+        // If sectionId is provided, calculate for that section. 
+        // Otherwise, calculate for all sections the student is enrolled in.
+        const enrollments = await this.prisma.enrollment.findMany({
+            where: {
+                studentId,
+                ...(sectionId ? { sectionId } : {})
+            },
+            include: {
+                section: {
+                    include: {
+                        course: true,
+                        assessments: {
+                            include: {
+                                grades: {
+                                    where: { studentId, status: { in: ['PUBLISHED', 'FINALIZED'] } }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        return enrollments.map(enrollment => {
+            const section = enrollment.section;
+            let totalPercentage = 0;
+            const assessmentGrades = section.assessments.map(a => {
+                const grade = a.grades[0];
+                const percentage = grade ? (grade.marksObtained / a.totalMarks) * a.weightage : 0;
+                totalPercentage += percentage;
+                return {
+                    assessmentId: a.id,
+                    title: a.title,
+                    type: a.type,
+                    weightage: a.weightage,
+                    marksObtained: grade?.marksObtained || 0,
+                    totalMarks: a.totalMarks,
+                    status: grade?.status || 'NOT_GRADED',
+                    percentage: percentage.toFixed(2)
+                };
+            });
+
+            return {
+                sectionId: section.id,
+                sectionName: section.name,
+                courseName: section.course.name,
+                finalPercentage: totalPercentage.toFixed(2),
+                assessments: assessmentGrades
+            };
+        });
+    }
+
     async reapply(orgId: string) {
         const org = await this.prisma.organization.findUnique({
             where: { id: orgId },
@@ -854,6 +1122,15 @@ export class OrgService {
             SECTIONS: sections,
             STUDENTS: students,
         };
+    }
+
+    async getStudentFinalGrades(orgId: string, studentId: string) {
+        const results = await this.calculateFinalGrade(studentId);
+        // Map to ensure it fits the expected response structure if needed
+        return results.map(r => ({
+            ...r,
+            // Additional fields if needed
+        }));
     }
 }
 

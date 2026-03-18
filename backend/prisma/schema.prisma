@@ -26,6 +26,7 @@ model Organization {
   supportTickets  SupportTicket[]
   teachers        Teacher[]
   users           User[]
+  assessments     Assessment[]
 }
 
 model SupportTicket {
@@ -88,6 +89,7 @@ model Course {
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   sections       Section[]
+  assessments    Assessment[]
 }
 
 model Section {
@@ -102,6 +104,7 @@ model Section {
   enrollments Enrollment[]
   course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   teachers    Teacher[]    @relation("SectionToTeacher")
+  assessments Assessment[]
 }
 
 model Enrollment {
@@ -141,6 +144,53 @@ model Student {
   enrollments        Enrollment[]
   organization       Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grades             Grade[]
+  submissions        Submission[]
+}
+
+model Assessment {
+  id          String         @id @default(uuid())
+  sectionId   String
+  courseId    String
+  title       String
+  type        AssessmentType
+  totalMarks  Float
+  weightage   Float          // percentage 0-100
+  dueDate     DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  section     Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  grades      Grade[]
+  submissions Submission[]
+}
+
+model Grade {
+  id             String      @id @default(uuid())
+  assessmentId   String
+  studentId      String
+  marksObtained  Float
+  feedback       String?
+  status         GradeStatus @default(DRAFT)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  updatedBy      String?      // userId
+  assessment     Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  student        Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, studentId])
+}
+
+model Submission {
+  id           String     @id @default(uuid())
+  assessmentId String
+  studentId    String
+  fileUrl      String?
+  submittedAt  DateTime   @default(now())
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
 model File {
@@ -191,4 +241,18 @@ enum StudentStatus {
   SUSPENDED
   ALUMNI
   DELETED
+}
+
+enum AssessmentType {
+  ASSIGNMENT
+  QUIZ
+  MIDTERM
+  FINAL
+  PROJECT
+}
+
+enum GradeStatus {
+  DRAFT
+  PUBLISHED
+  FINALIZED
 }

@@ -3,7 +3,9 @@ import {
     UpdateOrgSettingsRequest, PlatformAdmin, AdminStats, OrgStats, SupportTicket, Section, Course,
     CreateTeacherRequest, UpdateTeacherRequest, CreateStudentRequest, UpdateStudentRequest,
     CreateSectionRequest, UpdateSectionRequest, CreateCourseRequest, UpdateCourseRequest,
-    PaginatedResponse, OrgStatus
+    PaginatedResponse, OrgStatus,
+    Assessment, Grade, Submission, CreateAssessmentRequest, UpdateAssessmentRequest,
+    UpdateGradeRequest, CreateSubmissionRequest, FinalGradeResponse
 } from '@/types';
 
 
@@ -134,7 +136,8 @@ export const api = {
             request<Student>(`/org/students/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
         deleteStudent: (id: string, token: string) => request<void>(`/org/students/${id}`, { method: 'DELETE', token }),
 
-        getSections: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+        getSection: (id: string, token: string) => request<Section>(`/org/sections/${id}`, { token }),
+        getSections: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean } = {}) =>
             request<PaginatedResponse<Section>>(`/org/sections${buildQueryString(params)}`, { token }),
         createSection: (data: CreateSectionRequest, token: string) =>
             request<Section>('/org/sections', { method: 'POST', body: JSON.stringify(data), token }),
@@ -160,5 +163,37 @@ export const api = {
             if (!response.ok) throw new Error('Failed to upload avatar');
             return response.json();
         },
+
+        // --- Assessments ---
+        getAssessments: (token: string, params: { sectionId?: string, courseId?: string } = {}) =>
+            request<Assessment[]>(`/org/assessments${buildQueryString(params)}`, { token }),
+        getAssessment: (id: string, token: string) => request<Assessment>(`/org/assessments/${id}`, { token }),
+        createAssessment: (data: CreateAssessmentRequest, token: string) =>
+            request<Assessment>('/org/assessments', { method: 'POST', body: JSON.stringify(data), token }),
+        updateAssessment: (id: string, data: UpdateAssessmentRequest, token: string) =>
+            request<Assessment>(`/org/assessments/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+        deleteAssessment: (id: string, token: string) => request<void>(`/org/assessments/${id}`, { method: 'DELETE', token }),
+
+        // --- Grades ---
+        getGrades: (assessmentId: string, token: string) =>
+            request<Grade[]>(`/org/assessments/${assessmentId}/grades`, { token }),
+        updateGrade: (assessmentId: string, studentId: string, data: UpdateGradeRequest, token: string) =>
+            request<Grade>(`/org/grades/${assessmentId}/${studentId}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+        getOwnFinalGrades: (token: string) =>
+            request<FinalGradeResponse[]>('/org/grades/final', { token }),
+        publishGrades: (assessmentId: string, token: string) =>
+            request<void>(`/org/assessments/${assessmentId}/publish`, { method: 'PATCH', token }),
+        finalizeGrades: (assessmentId: string, token: string) =>
+            request<void>(`/org/assessments/${assessmentId}/finalize`, { method: 'PATCH', token }),
+
+        // --- Submissions ---
+        getSubmissions: (assessmentId: string, token: string) =>
+            request<Submission[]>(`/org/assessments/${assessmentId}/submissions`, { token }),
+        createSubmission: (assessmentId: string, data: CreateSubmissionRequest, token: string) =>
+            request<Submission>(`/org/assessments/${assessmentId}/submissions`, { method: 'POST', body: JSON.stringify(data), token }),
+
+        // --- Final Results ---
+        getStudentFinalGrades: (studentId: string, token: string, sectionId?: string) =>
+            request<FinalGradeResponse[]>(`/org/students/${studentId}/final-grades${buildQueryString({ sectionId })}`, { token }),
     }
 };

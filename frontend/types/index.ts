@@ -1,5 +1,5 @@
-import { Role, TeacherStatus, StudentStatus, SupportTopic, OrganizationType, OrgStatus } from './enums';
-export { Role, TeacherStatus, StudentStatus, SupportTopic, OrganizationType, OrgStatus } from './enums';
+import { Role, TeacherStatus, StudentStatus, SupportTopic, OrganizationType, OrgStatus, AssessmentType, GradeStatus } from './enums';
+export { Role, TeacherStatus, StudentStatus, SupportTopic, OrganizationType, OrgStatus, AssessmentType, GradeStatus } from './enums';
 
 export interface PaginatedResponse<T> {
     data: T[];
@@ -59,6 +59,8 @@ export interface Section {
     courseId?: string;
     course?: Course;
     teachers?: Teacher[];
+    students?: Student[];
+    studentsCount?: number;
     updatedBy?: string;
     updatedAt?: string;
 }
@@ -244,6 +246,88 @@ export interface CreateCourseRequest {
 
 
 export type UpdateCourseRequest = Partial<CreateCourseRequest>;
+
+export interface Assessment {
+    id: string;
+    sectionId: string;
+    courseId: string;
+    title: string;
+    type: AssessmentType;
+    totalMarks: number;
+    weightage: number;
+    dueDate?: string;
+    createdAt: string;
+    updatedAt: string;
+    _count?: {
+        grades: number;
+        submissions: number;
+    };
+}
+
+export interface Grade {
+    id: string;
+    assessmentId: string;
+    studentId: string;
+    marksObtained: number;
+    feedback?: string;
+    status: GradeStatus;
+    createdAt: string;
+    updatedAt: string;
+    updatedBy?: string;
+    student?: Student;
+}
+
+export interface Submission {
+    id: string;
+    assessmentId: string;
+    studentId: string;
+    fileUrl?: string;
+    submittedAt: string;
+    student?: Student;
+}
+
+export interface CreateAssessmentRequest {
+    sectionId: string;
+    courseId: string;
+    title: string;
+    type: AssessmentType;
+    totalMarks: number;
+    weightage: number;
+    dueDate?: string;
+}
+
+export type UpdateAssessmentRequest = Partial<CreateAssessmentRequest>;
+
+export interface UpdateGradeRequest {
+    marksObtained: number;
+    feedback?: string;
+    status?: GradeStatus;
+}
+
+export interface CreateSubmissionRequest {
+    assessmentId: string;
+    fileUrl?: string;
+}
+
+export interface FinalGradeDetail {
+    assessmentId: string;
+    title: string;
+    type: AssessmentType;
+    weightage: number;
+    marksObtained: number;
+    totalMarks: number;
+    status: string;
+    percentage: string;
+}
+
+export interface FinalGradeResponse {
+    sectionId: string;
+    sectionName: string;
+    courseName: string;
+    finalPercentage: number;
+    letterGrade?: string;
+    assessments: FinalGradeDetail[];
+}
 
 export interface ApiError {
     response?: {

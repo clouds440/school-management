@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, BadRequestException, Query, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, BadRequestException, Query, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Role, SupportTopic } from '../common/enums';
 
 import { OrgService } from './org.service';
@@ -20,6 +20,10 @@ import { diskStorage } from 'multer';
 import * as fs from 'fs';
 import * as path from 'path';
 import { OrgId } from '../common/decorators/org-id.decorator';
+import { CreateAssessmentDto } from './dto/create-assessment.dto';
+import { UpdateAssessmentDto } from './dto/update-assessment.dto';
+import { UpdateGradeDto } from './dto/update-grade.dto';
+import { CreateSubmissionDto } from './dto/create-submission.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('org')
@@ -203,6 +207,12 @@ export class OrgController {
         });
     }
 
+    @Get('sections/:id')
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+    getSection(@OrgId() orgId: string, @Param('id') id: string) {
+        return this.orgService.getSection(orgId, id);
+    }
+
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Post('sections')
     createSection(@OrgId() orgId: string, @Body() createSectionDto: CreateSectionDto) {
@@ -315,5 +325,108 @@ export class OrgController {
         }
 
         return this.orgService.updateUserAvatar(id, file, req.user.id);
+    }
+
+    // --- Assessments ---
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Post('assessments')
+    createAssessment(@OrgId() orgId: string, @Body() dto: CreateAssessmentDto) {
+        return this.orgService.createAssessment(orgId, dto);
+    }
+
+    @Get('assessments')
+    getAssessments(
+        @OrgId() orgId: string,
+        @Query('sectionId') sectionId?: string,
+        @Query('courseId') courseId?: string
+    ) {
+        return this.orgService.getAssessments(orgId, { sectionId, courseId });
+    }
+
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Patch('assessments/:id')
+    updateAssessment(@OrgId() orgId: string, @Param('id') id: string, @Body() dto: UpdateAssessmentDto) {
+        return this.orgService.updateAssessment(orgId, id, dto);
+    }
+
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Get('assessments/:id')
+    getAssessment(@OrgId() orgId: string, @Param('id') id: string) {
+        return this.orgService.getAssessment(orgId, id);
+    }
+
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Delete('assessments/:id')
+    deleteAssessment(@OrgId() orgId: string, @Param('id') id: string) {
+        return this.orgService.deleteAssessment(orgId, id);
+    }
+
+    @Get('grades/final')
+    getStudentFinalGrades(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
+        return this.orgService.getStudentFinalGrades(orgId, req.user.id);
+    }
+
+    // --- Grades ---
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Get('assessments/:id/grades')
+    getGrades(@OrgId() orgId: string, @Param('id') assessmentId: string) {
+        return this.orgService.getGrades(orgId, assessmentId);
+    }
+
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Patch('grades/:assessmentId/:studentId')
+    updateGrade(
+        @OrgId() orgId: string,
+        @Param('assessmentId') assessmentId: string,
+        @Param('studentId') studentId: string,
+        @Body() dto: UpdateGradeDto,
+        @Request() req: AuthenticatedRequest
+    ) {
+        return this.orgService.updateGrade(orgId, assessmentId, studentId, dto, req.user.id, req.user.role.toString() as Role);
+    }
+
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Patch('assessments/:id/publish')
+    publishGrades(@OrgId() orgId: string, @Param('id') id: string) {
+        return this.orgService.publishGrades(orgId, id);
+    }
+
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Patch('assessments/:id/finalize')
+    finalizeGrades(@OrgId() orgId: string, @Param('id') id: string) {
+        return this.orgService.finalizeGrades(orgId, id);
+    }
+
+    // --- Submissions ---
+    @Roles(Role.STUDENT)
+    @Post('assessments/:id/submissions')
+    createSubmission(
+        @OrgId() orgId: string,
+        @Param('id') assessmentId: string,
+        @Body() dto: CreateSubmissionDto,
+        @Request() req: AuthenticatedRequest
+    ) {
+        // Find student profile for the current user
+        return this.orgService.getStudentByUserId(req.user.id)
+            .then(student => {
+                if (!student) throw new NotFoundException('Student profile not found');
+                return this.orgService.createSubmission(orgId, student.id, { ...dto, assessmentId });
+            });
+    }
+
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Get('assessments/:id/submissions')
+    getSubmissions(@OrgId() orgId: string, @Param('id') assessmentId: string) {
+        return this.orgService.getSubmissions(orgId, assessmentId);
+    }
+
+    // --- Final Results ---
+    @Get('students/:id/final-grades')
+    getFinalGrades(
+        @OrgId() orgId: string,
+        @Param('id') studentId: string,
+        @Query('sectionId') sectionId?: string
+    ) {
+        return this.orgService.calculateFinalGrade(studentId, sectionId);
     }
 }
