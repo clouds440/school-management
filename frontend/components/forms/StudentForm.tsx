@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { User, Mail, Lock, Hash, ShieldCheck, UserX, GraduationCap, BookOpen, MapPin, Phone, Plus, Users, DollarSign } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Section, Student, StudentStatus, CreateStudentRequest, UpdateStudentRequest, Role } from '@/types';
+import { Section, Student, StudentStatus, CreateStudentRequest, UpdateStudentRequest, Role, ApiError } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -115,10 +115,9 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
 
             showToast(`Student ${studentId ? 'updated' : 'registered'} successfully.`, 'success');
             router.push(`/${orgSlug}/dashboard/students`);
-        } catch (error: any) {
-            const message = error instanceof Error
-                ? error.message
-                : (error?.response?.data?.message || 'Failed to save student');
+        } catch (error: unknown) {
+            const apiError = error as ApiError;
+            const message = apiError?.response?.data?.message || 'Failed to save student';
 
             if (Array.isArray(message)) {
                 message.forEach((m: string) => showToast(m, 'error'));

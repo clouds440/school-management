@@ -259,7 +259,7 @@ export class OrgController {
     @Patch('students/:id')
     updateStudent(@OrgId() orgId: string, @Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto, @Request() req: AuthenticatedRequest) {
         return this.orgService.updateStudent(orgId, id, updateStudentDto, {
-            role: req.user.role as unknown as Role,
+            role: req.user.role.toString() as Role,
             name: req.user.name,
             email: req.user.email
         });
