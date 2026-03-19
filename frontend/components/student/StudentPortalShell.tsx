@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo } from 'react';
 import {
     GraduationCap, Clock, Calendar, Trophy, ShieldOff, XCircle, CheckCircle,
     LayoutDashboard,
-    Book
+    Book,
+    Settings
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
@@ -48,7 +49,7 @@ export interface StudentAnnouncement {
 
 interface StudentPortalShellProps {
     children: React.ReactNode;
-    activeTab: 'overview' | 'courses' | 'grades' | 'attendance';
+    activeTab: 'overview' | 'courses' | 'grades' | 'attendance' | 'profile';
 }
 
 export function StudentPortalShell({ children }: StudentPortalShellProps) {
@@ -81,14 +82,17 @@ export function StudentPortalShell({ children }: StudentPortalShellProps) {
     }, [user, token]);
 
     const orgSlug = user?.orgSlug || '';
-    const nameSlug = user?.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
 
-    const studentLinks: SidebarLink[] = useMemo(() => [
-        { id: 'overview', label: 'Overview', href: `/${orgSlug}/${nameSlug}`, icon: LayoutDashboard },
-        { id: 'courses', label: 'My Courses', href: `/${orgSlug}/${nameSlug}/courses`, icon: Book },
-        { id: 'grades', label: 'Grades', href: `/${orgSlug}/${nameSlug}/grades`, icon: Trophy },
-        { id: 'attendance', label: 'Attendance', href: `/${orgSlug}/${nameSlug}/attendance`, icon: CheckCircle },
-    ], [orgSlug, nameSlug]);
+    const studentLinks: SidebarLink[] = useMemo(() => {
+        if (!user || !user.userName) return [];
+        return [
+            { id: 'overview', label: 'Overview', href: `/${orgSlug}/students/${user.userName}`, icon: LayoutDashboard },
+            { id: 'courses', label: 'My Courses', href: `/${orgSlug}/students/${user.userName}/courses`, icon: Book },
+            { id: 'grades', label: 'Grades', href: `/${orgSlug}/students/${user.userName}/grades`, icon: Trophy },
+            { id: 'attendance', label: 'Attendance', href: `/${orgSlug}/students/${user.userName}/attendance`, icon: CheckCircle },
+            { id: 'profile', label: 'Profile Settings', href: `/${orgSlug}/students/${user.userName}/profile`, icon: Settings },
+        ];
+    }, [orgSlug, user?.userName]);
 
     if (loading) {
         return (
@@ -163,32 +167,8 @@ export function StudentPortalShell({ children }: StudentPortalShellProps) {
     const statusOverlay = renderStatusOverlay();
 
     return (
-        <DashboardLayout links={studentLinks} title="Student Portal">
-            <div className="flex flex-col w-full animate-fade-in-up">
-                {/* Header Section */}
-                <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                        <h1 className="text-5xl font-black text-card-text tracking-tight drop-shadow-sm mb-2">
-                            Welcome, {user.name?.split(' ')[0] || 'Student'}
-                        </h1>
-                        <p className="text-primary font-bold opacity-80 uppercase tracking-widest text-xs">
-                            {orgName} • {user.status === 'ALUMNI' ? 'Alumni' : 'Active Student'}
-                        </p>
-                    </div>
-                    <div className="hidden md:flex items-center gap-3 bg-card px-6 py-3 rounded-sm border border-black/5 shadow-sm text-card-text/60">
-                        <Calendar className="w-4 h-4 text-primary" />
-                        <span className="text-xs font-bold uppercase tracking-wider">
-                            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                        </span>
-                    </div>
-                </div>
-
-                {statusOverlay ? (
-                    statusOverlay
-                ) : (
-                    children
-                )}
-            </div>
-        </DashboardLayout>
+        <div className="flex flex-col w-full animate-fade-in-up">
+            {children}
+        </div>
     );
 }

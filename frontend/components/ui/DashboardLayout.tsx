@@ -25,9 +25,10 @@ interface DashboardLayoutProps {
     links: SidebarLink[];
     bottomLinks?: SidebarLink[];
     title?: string;
+    brandHref?: string;
 }
 
-export function DashboardLayout({ children, links, bottomLinks = [], title = 'Dashboard' }: DashboardLayoutProps) {
+export function DashboardLayout({ children, links, bottomLinks = [], title = 'Dashboard', brandHref }: DashboardLayoutProps) {
     const { logout, user } = useAuth();
     const { isExpanded, isMobileOpen, toggleSidebar, setIsMobileOpen, modalConfig, closeViewModal } = useUI();
     const pathname = usePathname();
@@ -37,11 +38,11 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
         // 1. Try exact match first
         const exactMatch = allLinks.find(l => pathname === l.href);
         if (exactMatch) return exactMatch;
-        
+
         // 2. Try sub-path matches (longest first to avoid partial matches on shorter bases)
         return allLinks
-            .filter(l => !l.href.endsWith('/dashboard')) // Don't allow /dashboard to match /dashboard/something if we have more specific matches
-            .sort((a,b) => (b.href?.length || 0) - (a.href?.length || 0))
+            .filter(l => !l.href.endsWith('/dashboard') && !l.href.endsWith('/admin'))
+            .sort((a, b) => (b.href?.length || 0) - (a.href?.length || 0))
             .find(l => pathname.startsWith(`${l.href}/`));
     }, [pathname, links, bottomLinks]);
 
@@ -83,9 +84,12 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                 {/* Sidebar Header - Branded */}
                 <div className={`h-16 flex items-center px-6 border-b border-sidebar-text/10 bg-sidebar-text/5 shrink-0 ${!isExpanded ? 'justify-center' : 'justify-between'}`}>
                     {isExpanded && (
-                        <div className="font-black text-lg text-sidebar-text truncate transition-all animate-in fade-in duration-300">
-                            {title}
-                        </div>
+                        <Link
+                            href={brandHref || '#'}
+                            className="font-black text-lg text-sidebar-text truncate transition-all animate-in fade-in duration-300 hover:text-primary-hover"
+                        >
+                            Dashboard
+                        </Link>
                     )}
                     <button
                         onClick={() => setIsMobileOpen(false)}
@@ -221,9 +225,12 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                         </button>
 
                         <div className="flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-300">
-                            {pathname !== '/admin/dashboard' && !pathname.endsWith('/dashboard') && (
-                                <BackButton />
-                            )}
+                            {pathname !== '/admin/dashboard' &&
+                                !pathname.endsWith('/admin') &&
+                                pathname !== `/${user?.orgSlug}/teachers/${user?.userName}` &&
+                                pathname !== `/${user?.orgSlug}/students/${user?.userName}` && (
+                                    <BackButton />
+                                )}
                             <div className="flex items-center gap-3">
                                 {activeLink && activeLink.icon && (
                                     <div className="p-2 bg-primary/10 rounded-sm text-white">

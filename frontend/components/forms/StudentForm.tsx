@@ -15,15 +15,16 @@ import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { studentCreateSchema, studentUpdateSchema, StudentCreateFormData, StudentUpdateFormData } from '@/lib/schemas';
+import { studentCreateSchema, studentUpdateSchema, studentProfileSchema, StudentCreateFormData, StudentUpdateFormData, StudentProfileFormData } from '@/lib/schemas';
 
 interface StudentFormProps {
     studentId?: string;
     orgSlug: string;
     initialData?: Student;
+    isProfile?: boolean;
 }
 
-export default function StudentForm({ studentId, orgSlug, initialData }: StudentFormProps) {
+export default function StudentForm({ studentId, orgSlug, initialData, isProfile }: StudentFormProps) {
     const { token, user: currentUser } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
@@ -39,7 +40,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
         trigger,
         formState: { errors },
     } = useForm({
-        resolver: zodResolver(studentId ? studentUpdateSchema : studentCreateSchema),
+        resolver: zodResolver(isProfile ? studentProfileSchema : (studentId ? studentUpdateSchema : studentCreateSchema)),
         defaultValues: initialData ? {
             name: initialData.user?.name || '',
             email: initialData.user?.email || '',
@@ -87,7 +88,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
 
     const formData = watch();
 
-    const onSubmit: SubmitHandler<StudentCreateFormData | StudentUpdateFormData> = async (data) => {
+    const onSubmit: SubmitHandler<StudentCreateFormData | StudentUpdateFormData | StudentProfileFormData> = async (data) => {
         setIsSaving(true);
         try {
             const { password, fee, age, ...rest } = data;
@@ -99,7 +100,9 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
             };
 
             let savedStudent: Student;
-            if (studentId) {
+            if (isProfile) {
+                savedStudent = await api.org.updateProfile(payload, token!);
+            } else if (studentId) {
                 savedStudent = await api.org.updateStudent(studentId, payload as UpdateStudentRequest, token!);
             } else {
                 savedStudent = await api.org.createStudent(payload as CreateStudentRequest, token!);
@@ -109,12 +112,16 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                 try {
                     await api.org.uploadAvatar(savedStudent.userId, pendingPhoto, token!);
                 } catch {
-                    showToast('Student registered, but photo upload failed', 'info');
+                    showToast('Profile updated, but photo upload failed', 'info');
                 }
             }
 
-            showToast(`Student ${studentId ? 'updated' : 'registered'} successfully.`, 'success');
-            router.push(`/${orgSlug}/dashboard/students`);
+            showToast(`${isProfile ? 'Profile' : (studentId ? 'Record' : 'Student')} ${studentId || isProfile ? 'updated' : 'registered'} successfully.`, 'success');
+            if (isProfile) {
+                router.refresh();
+            } else {
+                router.push(`/${orgSlug}/students`);
+            }
         } catch (error: unknown) {
             const apiError = error as ApiError;
             const message = apiError?.response?.data?.message || 'Failed to save student';
@@ -162,8 +169,10 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                                 type="text"
                                 {...register('name')}
                                 error={!!errors.name}
+                                disabled={isProfile}
                                 icon={User}
                                 placeholder="Alex Johnson"
+                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{errors.name.message}</p>}
                         </div>
@@ -174,10 +183,10 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                                 type="email"
                                 {...register('email')}
                                 error={!!errors.email}
-                                disabled={!!studentId}
+                                disabled={!!studentId || isProfile}
                                 icon={Mail}
                                 placeholder="alex.j@example.com"
-                                className={studentId ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={studentId || isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.email && <p className="mt-1 text-xs text-red-500 font-bold">{errors.email.message}</p>}
                         </div>
@@ -200,10 +209,10 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                                 type="text"
                                 {...register('registrationNumber')}
                                 error={!!errors.registrationNumber}
-                                disabled={!!studentId && currentUser?.role !== Role.ORG_ADMIN}
+                                disabled={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
                                 icon={Hash}
                                 placeholder="ST-2026-001"
-                                className={!!studentId && currentUser?.role !== Role.ORG_ADMIN ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.registrationNumber && <p className="mt-1 text-xs text-red-500 font-bold">{errors.registrationNumber.message}</p>}
                         </div>
@@ -214,10 +223,10 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                                 type="text"
                                 {...register('rollNumber')}
                                 error={!!errors.rollNumber}
-                                disabled={!!studentId && currentUser?.role !== Role.ORG_ADMIN}
+                                disabled={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
                                 icon={Hash}
                                 placeholder="2026-001"
-                                className={!!studentId && currentUser?.role !== Role.ORG_ADMIN ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.rollNumber && <p className="mt-1 text-xs text-red-500 font-bold">{errors.rollNumber.message}</p>}
                         </div>
@@ -228,6 +237,8 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                                 type="date"
                                 {...register('admissionDate')}
                                 error={!!errors.admissionDate}
+                                disabled={isProfile}
+                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.admissionDate && <p className="mt-1 text-xs text-red-500 font-bold">{errors.admissionDate.message}</p>}
                         </div>
@@ -246,6 +257,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                                     trigger('status');
                                 }}
                                 error={!!errors.status}
+                                disabled={isProfile}
                                 icon={
                                     formData.status === StudentStatus.ACTIVE ? ShieldCheck :
                                         formData.status === StudentStatus.SUSPENDED ? UserX : GraduationCap
@@ -263,8 +275,10 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                             type="text"
                             {...register('major')}
                             error={!!errors.major}
+                            disabled={isProfile}
                             icon={GraduationCap}
                             placeholder="Computer Science"
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.major && <p className="mt-1 text-xs text-red-500 font-bold">{errors.major.message}</p>}
                     </div>
@@ -274,8 +288,10 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                             type="text"
                             {...register('department')}
                             error={!!errors.department}
+                            disabled={isProfile}
                             icon={BookOpen}
                             placeholder="Engineering & Tech"
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.department && <p className="mt-1 text-xs text-red-500 font-bold">{errors.department.message}</p>}
                     </div>
@@ -305,6 +321,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                         }}
                         placeholder="Select one or more sections..."
                         error={!!errors.sectionIds}
+                        disabled={isProfile}
                     />
                     {errors.sectionIds && <p className="mt-1 text-xs text-red-500 font-bold">{errors.sectionIds.message}</p>}
                 </div>
@@ -326,8 +343,10 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                             type="number"
                             {...register('fee')}
                             error={!!errors.fee}
+                            disabled={isProfile}
                             icon={DollarSign}
                             placeholder="12000"
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.fee && <p className="mt-1 text-xs text-red-500 font-bold">{errors.fee.message}</p>}
                     </div>
@@ -337,8 +356,10 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                             type="text"
                             {...register('feePlan')}
                             error={!!errors.feePlan}
+                            disabled={isProfile}
                             icon={BookOpen}
                             placeholder="Standard / Installments"
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.feePlan && <p className="mt-1 text-xs text-red-500 font-bold">{errors.feePlan.message}</p>}
                     </div>
@@ -348,6 +369,8 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                             type="date"
                             {...register('graduationDate')}
                             error={!!errors.graduationDate}
+                            disabled={isProfile}
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.graduationDate && <p className="mt-1 text-xs text-red-500 font-bold">{errors.graduationDate.message}</p>}
                     </div>
@@ -400,6 +423,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                                 trigger('gender');
                             }}
                             error={!!errors.gender}
+                            disabled={isProfile}
                             icon={Users}
                             placeholder="Gender"
                         />
@@ -473,7 +497,7 @@ export default function StudentForm({ studentId, orgSlug, initialData }: Student
                         </div>
                     ) : (
                         <span className="font-black uppercase tracking-widest text-[10px] italic">
-                            {studentId ? 'Update Student Record' : 'Register Student'}
+                            {isProfile ? 'Update Profile' : (studentId ? 'Update Student Record' : 'Register Student')}
                         </span>
                     )}
                 </Button>

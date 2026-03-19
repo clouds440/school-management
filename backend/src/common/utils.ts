@@ -9,6 +9,9 @@ export interface PaginationOptions {
     search?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
+    my?: boolean;
+    sectionId?: string;
+    userId?: string;
 }
 
 export interface PaginatedResult<T> {

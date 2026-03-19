@@ -78,8 +78,14 @@ export const teacherUpdateSchema = teacherBaseSchema.extend({
     phone: z.string().regex(phoneRegex, 'Invalid phone number').min(1, 'Phone number is required'),
 });
 
-export type TeacherCreateFormData = z.infer<typeof teacherCreateSchema>;
 export type TeacherUpdateFormData = z.infer<typeof teacherUpdateSchema>;
+ 
+// Profile Update (Teacher self-update)
+export const teacherProfileSchema = teacherBaseSchema.extend({
+    password: optionalPasswordRules,
+});
+ 
+export type TeacherProfileFormData = z.infer<typeof teacherProfileSchema>;
 
 // =========================
 // --- STUDENT SCHEMAS ---
@@ -131,6 +137,14 @@ export const studentUpdateSchema = studentBaseSchema.extend({
 
 export type StudentCreateFormData = z.infer<typeof studentCreateSchema>;
 export type StudentUpdateFormData = z.infer<typeof studentUpdateSchema>;
+ 
+// Profile Update (Student self-update) → Only personal/contact fields
+export const studentProfileSchema = studentBaseSchema.extend({
+    password: optionalPasswordRules,
+    // Other fields from base are already optional or have defaults
+});
+ 
+export type StudentProfileFormData = z.infer<typeof studentProfileSchema>;
 
 // =========================
 // --- ASSESSMENT SCHEMAS ---

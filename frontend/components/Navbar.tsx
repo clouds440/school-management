@@ -14,7 +14,8 @@ export default function Navbar() {
     const { toggleMobileSidebar, isMobileOpen } = useUI();
     const pathname = usePathname();
 
-    const isDashboard = pathname?.includes('/dashboard') || pathname?.startsWith('/admin/dashboard') || pathname?.split('/')[2] === 'dashboard';
+    const isDashboard = pathname?.startsWith('/admin/') ||
+        pathname?.split('/').length > 2; // Matches /[orgSlug]/something OR /admin/something
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-100 flex items-center justify-between px-4 py-3 md:px-10 backdrop-blur-xl bg-white/80 border-b border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.03)] h-16 transition-all duration-300">
@@ -28,7 +29,18 @@ export default function Navbar() {
                         {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                     </button>
                 )}
-                <Link href={user?.orgName ? `/${user.orgSlug}/dashboard` : '/'} className="flex items-center space-x-3 group outline-none">
+                <Link
+                    href={
+                        user?.orgSlug
+                            ? user.role === Role.ORG_ADMIN
+                                ? `/${user.orgSlug}/admin`
+                                : user.role === Role.TEACHER || user.role === Role.ORG_MANAGER
+                                    ? `/${user.orgSlug}/teachers/${user.userName}`
+                                    : `/${user.orgSlug}/students/${user.userName}`
+                            : '/'
+                    }
+                    className="flex items-center space-x-3 group outline-none"
+                >
                     <OrgLogoOrIcon logoUrl={user?.orgLogoUrl} orgName={user?.orgName} />
                     <span className="text-lg md:text-2xl font-bold text-primary tracking-tight truncate max-w-[120px] sm:max-w-none">
                         {user?.orgName || 'EduManage'}
@@ -37,25 +49,7 @@ export default function Navbar() {
             </div>
 
             <div className="flex items-center space-x-2 md:space-x-4">
-                {token && user ? (
-                    <div className="flex items-center space-x-2">
-                        {!pathname.includes('/dashboard') && (
-                            <Link
-                                href={
-                                    user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN
-                                        ? '/admin/dashboard'
-                                        : user.role === Role.STUDENT && user.name
-                                            ? `/${user.orgSlug}/${user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`
-                                            : `/${user.orgSlug}/dashboard`
-                                }
-                                className="flex items-center space-x-2 px-3 py-2 md:px-4 md:py-2.5 rounded-sm transition-all duration-300 font-medium shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-primary bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-100"
-                            >
-                                <LayoutDashboard className="w-4 h-4" />
-                                <span className="hidden sm:inline">Dashboard</span>
-                            </Link>
-                        )}
-                    </div>
-                ) : (
+                {token && user ? null : (
                     <div className="flex items-center p-1 rounded-sm bg-secondary/20 shadow-inner border border-secondary/10">
                         <Link
                             href="/login"

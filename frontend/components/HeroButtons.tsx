@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { Role } from '@/types';
 
 export function HeroButtons() {
     const { user, loading } = useAuth();
@@ -14,7 +15,15 @@ export function HeroButtons() {
         return (
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
-                    href={user.role === 'SUPER_ADMIN' ? '/admin/dashboard' : `/${user.orgSlug}/dashboard`}
+                    href={
+                        user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN
+                            ? '/admin/dashboard'
+                            : user.role === Role.ORG_ADMIN
+                                ? `/${user.orgSlug}/admin`
+                                : user.role === Role.TEACHER || user.role === Role.ORG_MANAGER
+                                    ? `/${user.orgSlug}/teachers/${user.userName}`
+                                    : `/${user.orgSlug}/students/${user.userName}`
+                    }
                     className="bg-indigo-600 text-white px-8 py-3 rounded-sm font-semibold hover:bg-indigo-700 transition-colors shadow-lg"
                 >
                     Go to Your Dashboard

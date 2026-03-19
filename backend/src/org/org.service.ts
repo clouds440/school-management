@@ -402,6 +402,15 @@ export class OrgService {
 
         const where: Prisma.CourseWhereInput = {
             organizationId: orgId,
+            ...(options.my && options.userId ? {
+                sections: {
+                    some: {
+                        teachers: {
+                            some: { userId: options.userId }
+                        }
+                    }
+                }
+            } : {}),
             ...(options.search ? {
                 OR: [
                     { name: { contains: options.search, mode: 'insensitive' } },
@@ -464,6 +473,12 @@ export class OrgService {
 
         const where: Prisma.SectionWhereInput = {
             course: { organizationId: orgId },
+            ...(options.my && options.userId ? {
+                OR: [
+                    { teachers: { some: { userId: options.userId } } },
+                    { enrollments: { some: { student: { userId: options.userId } } } }
+                ]
+            } : {}),
             ...(options.search ? {
                 OR: [
                     { name: { contains: options.search, mode: 'insensitive' } },
@@ -567,6 +582,22 @@ export class OrgService {
         const where: Prisma.StudentWhereInput = {
             organizationId: orgId,
             status: { not: StudentStatus.DELETED },
+            ...(options.sectionId ? {
+                enrollments: {
+                    some: { sectionId: options.sectionId }
+                }
+            } : {}),
+            ...(options.my && options.userId ? {
+                enrollments: {
+                    some: {
+                        section: {
+                            teachers: {
+                                some: { userId: options.userId }
+                            }
+                        }
+                    }
+                }
+            } : {}),
             ...(options.search ? {
                 OR: [
                     { user: { name: { contains: options.search, mode: 'insensitive' } } },
@@ -844,6 +875,81 @@ export class OrgService {
         return this.prisma.student.findUnique({ where: { userId } });
     }
 
+    async getTeacherByUserId(userId: string) {
+        return this.prisma.teacher.findUnique({ where: { userId } });
+    }
+
+    async getProfile(orgId: string, user: any) {
+        if (user.role === Role.STUDENT) {
+            const student = await this.prisma.student.findUnique({
+                where: { userId: user.id },
+                include: {
+                    user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true } },
+                    enrollments: { include: { section: { include: { course: true } } } }
+                }
+            });
+            if (!student) throw new NotFoundException('Student profile not found');
+            return student;
+        }
+
+        if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) {
+            const teacher = await this.prisma.teacher.findUnique({
+                where: { userId: user.id },
+                include: {
+                    user: { select: { id: true, email: true, name: true, phone: true, role: true, avatarUrl: true } },
+                    sections: { include: { course: true } }
+                }
+            });
+            if (!teacher) throw new NotFoundException('Teacher profile not found');
+            return teacher;
+        }
+
+        throw new ForbiddenException('Profile access not allowed for this role');
+    }
+
+    async updateProfile(orgId: string, user: any, data: any) {
+        if (user.role === Role.STUDENT) {
+            const student = await this.prisma.student.findUnique({ where: { userId: user.id } });
+            if (!student) throw new NotFoundException('Student profile not found');
+
+            // Strictly Allow only these fields for students
+            const allowedFields = ['phone', 'fatherName', 'age', 'address', 'emergencyContact', 'bloodGroup', 'password'];
+            const filteredData = Object.keys(data)
+                .filter(key => allowedFields.includes(key))
+                .reduce((obj, key) => {
+                    obj[key] = data[key];
+                    return obj;
+                }, {});
+
+            return this.updateStudent(orgId, student.id, filteredData as any, {
+                role: Role.STUDENT,
+                name: user.name,
+                email: user.email
+            });
+        }
+
+        if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) {
+            const teacher = await this.prisma.teacher.findUnique({ where: { userId: user.id } });
+            if (!teacher) throw new NotFoundException('Teacher profile not found');
+
+            // Standard protection for teachers updating their own profile
+            const allowedFields = ['emergencyContact', 'bloodGroup', 'address', 'password'];
+            const filteredData = Object.keys(data)
+                .filter(key => allowedFields.includes(key))
+                .reduce((obj, key) => {
+                    obj[key] = data[key];
+                    return obj;
+                }, {});
+
+            return this.updateTeacher(orgId, teacher.id, filteredData as any, {
+                id: user.id,
+                role: user.role
+            });
+        }
+
+        throw new ForbiddenException('Profile update not allowed for this role');
+    }
+
     // --- Assessments ---
     async createAssessment(orgId: string, data: any) {
         // Validate total weightage for the section
@@ -1071,7 +1177,7 @@ export class OrgService {
                 sectionId: section.id,
                 sectionName: section.name,
                 courseName: section.course.name,
-                finalPercentage: totalPercentage.toFixed(2),
+                finalPercentage: parseFloat(totalPercentage.toFixed(2)),
                 assessments: assessmentGrades
             };
         });
@@ -1124,13 +1230,12 @@ export class OrgService {
         };
     }
 
-    async getStudentFinalGrades(orgId: string, studentId: string) {
-        const results = await this.calculateFinalGrade(studentId);
-        // Map to ensure it fits the expected response structure if needed
-        return results.map(r => ({
-            ...r,
-            // Additional fields if needed
-        }));
+    async getStudentFinalGrades(orgId: string, userId: string) {
+        const student = await this.getStudentByUserId(userId);
+        if (!student) return [];
+        
+        const results = await this.calculateFinalGrade(student.id);
+        return results;
     }
 }
 

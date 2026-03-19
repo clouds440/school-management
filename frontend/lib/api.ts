@@ -128,7 +128,7 @@ export const api = {
         deleteTeacher: (id: string, token: string) => request<void>(`/org/teachers/${id}`, { method: 'DELETE', token }),
 
         getStudent: (id: string, token: string) => request<Student>(`/org/students/${id}`, { token }),
-        getStudents: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+        getStudents: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean, sectionId?: string } = {}) =>
             request<PaginatedResponse<Student>>(`/org/students${buildQueryString(params)}`, { token }),
         createStudent: (data: CreateStudentRequest, token: string) =>
             request<Student>('/org/students', { method: 'POST', body: JSON.stringify(data), token }),
@@ -145,7 +145,7 @@ export const api = {
             request<Section>(`/org/sections/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
         deleteSection: (id: string, token: string) => request<void>(`/org/sections/${id}`, { method: 'DELETE', token }),
 
-        getCourses: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+        getCourses: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean } = {}) =>
             request<PaginatedResponse<Course>>(`/org/courses${buildQueryString(params)}`, { token }),
         createCourse: (data: CreateCourseRequest, token: string) =>
             request<Course>('/org/courses', { method: 'POST', body: JSON.stringify(data), token }),
@@ -195,5 +195,9 @@ export const api = {
         // --- Final Results ---
         getStudentFinalGrades: (studentId: string, token: string, sectionId?: string) =>
             request<FinalGradeResponse[]>(`/org/students/${studentId}/final-grades${buildQueryString({ sectionId })}`, { token }),
+        getProfile: (token: string) =>
+            request<any>('/org/profile', { token }),
+        updateProfile: (data: any, token: string) =>
+            request<any>('/org/profile', { method: 'PATCH', body: JSON.stringify(data), token }),
     }
 };

@@ -160,6 +160,8 @@ export class OrgController {
         @Query('search') search?: string,
         @Query('sortBy') sortBy?: string,
         @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+        @Query('my') my?: string,
+        @Request() req?: AuthenticatedRequest,
     ) {
         return this.orgService.getCourses(orgId, {
             page: page ? parseInt(page, 10) : 1,
@@ -167,6 +169,8 @@ export class OrgController {
             search,
             sortBy,
             sortOrder,
+            my: my === 'true',
+            userId: req?.user?.id
         });
     }
 
@@ -197,6 +201,8 @@ export class OrgController {
         @Query('search') search?: string,
         @Query('sortBy') sortBy?: string,
         @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+        @Query('my') my?: string,
+        @Request() req?: AuthenticatedRequest,
     ) {
         return this.orgService.getSections(orgId, {
             page: page ? parseInt(page, 10) : 1,
@@ -204,6 +210,8 @@ export class OrgController {
             search,
             sortBy,
             sortOrder,
+            my: my === 'true',
+            userId: req?.user?.id
         });
     }
 
@@ -240,6 +248,9 @@ export class OrgController {
         @Query('search') search?: string,
         @Query('sortBy') sortBy?: string,
         @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+        @Query('my') my?: string,
+        @Query('sectionId') sectionId?: string,
+        @Request() req?: AuthenticatedRequest,
     ) {
         return this.orgService.getStudents(orgId, {
             page: page ? parseInt(page, 10) : 1,
@@ -247,6 +258,9 @@ export class OrgController {
             search,
             sortBy,
             sortOrder,
+            my: my === 'true',
+            sectionId,
+            userId: req?.user?.id
         });
     }
 
@@ -275,13 +289,19 @@ export class OrgController {
         });
     }
 
-    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
-    @Delete('students/:id')
-    deleteStudent(@OrgId() orgId: string, @Param('id') id: string) {
-        return this.orgService.deleteStudent(orgId, id);
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+    @Get('profile')
+    getProfile(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
+        return this.orgService.getProfile(orgId, req.user);
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+    @Patch('profile')
+    updateProfile(@OrgId() orgId: string, @Body() updateDto: any, @Request() req: AuthenticatedRequest) {
+        return this.orgService.updateProfile(orgId, req.user, updateDto);
+    }
+
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
     @Patch('users/:id/avatar')
     @UseInterceptors(FileInterceptor('file', {
         storage: diskStorage({

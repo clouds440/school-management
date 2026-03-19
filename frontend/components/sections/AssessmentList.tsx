@@ -152,7 +152,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
 
                                 {isTeacherOrAdmin && (
                                     <Link
-                                        href={`/${orgSlug}/dashboard/sections/${section.id}/assessments/${assessment.id}`}
+                                        href={`/${orgSlug}/sections/${section.id}/assessments/${assessment.id}`}
                                         className="h-8 px-4 text-[10px] uppercase font-black italic gap-1.5 flex items-center justify-center bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/20 transition-all rounded-sm shadow-sm"
                                     >
                                         <Users className="w-3.5 h-3.5" />

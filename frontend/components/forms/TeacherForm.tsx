@@ -15,16 +15,17 @@ import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { teacherCreateSchema, teacherUpdateSchema, TeacherCreateFormData, TeacherUpdateFormData } from '@/lib/schemas';
+import { teacherCreateSchema, teacherUpdateSchema, teacherProfileSchema, TeacherCreateFormData, TeacherUpdateFormData, TeacherProfileFormData } from '@/lib/schemas';
 
 interface TeacherFormProps {
     teacherId?: string;
     orgSlug: string;
     initialData?: Teacher;
+    isProfile?: boolean;
 }
 
-export default function TeacherForm({ teacherId, orgSlug, initialData }: TeacherFormProps) {
-    const { token } = useAuth();
+export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile }: TeacherFormProps) {
+    const { token, user: currentUser } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
     const [sections, setSections] = useState<Section[]>([]);
@@ -39,7 +40,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
         trigger,
         formState: { errors },
     } = useForm({
-        resolver: zodResolver(teacherId ? teacherUpdateSchema : teacherCreateSchema),
+        resolver: zodResolver(isProfile ? teacherProfileSchema : (teacherId ? teacherUpdateSchema : teacherCreateSchema)),
         defaultValues: initialData ? {
             name: initialData.user?.name || '',
             phone: initialData.user?.phone || '',
@@ -79,7 +80,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
 
     const formData = watch();
 
-    const onSubmit: SubmitHandler<TeacherCreateFormData | TeacherUpdateFormData> = async (data) => {
+    const onSubmit: SubmitHandler<TeacherCreateFormData | TeacherUpdateFormData | TeacherProfileFormData> = async (data) => {
         setIsSaving(true);
         try {
             const { password, salary, ...rest } = data;
@@ -90,7 +91,9 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
             };
 
             let savedTeacher: Teacher;
-            if (teacherId) {
+            if (isProfile) {
+                savedTeacher = await api.org.updateProfile(payload, token!);
+            } else if (teacherId) {
                 savedTeacher = await api.org.updateTeacher(teacherId, payload as UpdateTeacherRequest, token!);
             } else {
                 savedTeacher = await api.org.createTeacher(payload as CreateTeacherRequest, token!);
@@ -100,12 +103,16 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                 try {
                     await api.org.uploadAvatar(savedTeacher.userId, pendingPhoto, token!);
                 } catch {
-                    showToast('Teacher created, but photo upload failed', 'info');
+                    showToast('Profile updated, but photo upload failed', 'info');
                 }
             }
 
-            showToast(`Teacher account ${teacherId ? 'updated' : 'created'} successfully`, 'success');
-            router.push(`/${orgSlug}/dashboard/teachers`);
+            showToast(`${isProfile ? 'Profile' : 'Teacher account'} ${teacherId || isProfile ? 'updated' : 'created'} successfully`, 'success');
+            if (isProfile) {
+                router.refresh();
+            } else {
+                router.push(`/${orgSlug}/teachers`);
+            }
         } catch (error: any) {
             const message = error instanceof Error 
                 ? error.message 
@@ -154,8 +161,10 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                                 type="text"
                                 {...register('name')}
                                 error={!!errors.name}
+                                disabled={isProfile}
                                 icon={User}
                                 placeholder="Dr. Sarah Wilson"
+                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{errors.name.message}</p>}
                         </div>
@@ -174,6 +183,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                                     trigger('status');
                                 }}
                                 error={!!errors.status}
+                                disabled={isProfile}
                                 icon={
                                     formData.status === TeacherStatus.ACTIVE ? ShieldCheck :
                                         formData.status === TeacherStatus.SUSPENDED ? UserX : CalendarClock
@@ -188,10 +198,10 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                                 type="email"
                                 {...register('email')}
                                 error={!!errors.email}
-                                disabled={!!teacherId}
+                                disabled={!!teacherId || isProfile}
                                 icon={Mail}
                                 placeholder="sarah.wilson@school.com"
-                                className={teacherId ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={teacherId || isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.email && <p className="mt-1 text-xs text-red-500 font-bold">{errors.email.message}</p>}
                         </div>
@@ -217,8 +227,10 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                             type="text"
                             {...register('education')}
                             error={!!errors.education}
+                            disabled={isProfile}
                             icon={BookOpen}
                             placeholder="Ph.D. in Computer Science"
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.education && <p className="mt-1 text-xs text-red-500 font-bold">{errors.education.message}</p>}
                     </div>
@@ -228,8 +240,10 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                             type="text"
                             {...register('designation')}
                             error={!!errors.designation}
+                            disabled={isProfile}
                             icon={User}
                             placeholder="Senior Faculty / HOD"
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.designation && <p className="mt-1 text-xs text-red-500 font-bold">{errors.designation.message}</p>}
                     </div>
@@ -239,8 +253,10 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                             type="text"
                             {...register('subject')}
                             error={!!errors.subject}
+                            disabled={isProfile}
                             icon={BookOpen}
                             placeholder="Mathematics / AI / Physics"
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.subject && <p className="mt-1 text-xs text-red-500 font-bold">{errors.subject.message}</p>}
                     </div>
@@ -263,8 +279,10 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                             type="number"
                             {...register('salary')}
                             error={!!errors.salary}
+                            disabled={isProfile}
                             icon={DollarSign}
                             placeholder="5000"
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.salary && <p className="mt-1 text-xs text-red-500 font-bold">{errors.salary.message}</p>}
                     </div>
@@ -285,15 +303,18 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                             type="date"
                             {...register('joiningDate')}
                             error={!!errors.joiningDate}
+                            disabled={isProfile}
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.joiningDate && <p className="mt-1 text-xs text-red-500 font-bold">{errors.joiningDate.message}</p>}
                     </div>
                 </div>
 
                 <div className="mt-8 p-5 bg-primary/5 rounded-sm border border-primary/10 flex items-center justify-between group hover:bg-primary/10 transition-all">
-                    <div className="flex items-center gap-4">
+                    <div className={`flex items-center gap-4 ${isProfile ? 'pointer-events-none opacity-70' : ''}`}>
                         <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 cursor-pointer ${formData.isManager ? 'bg-primary' : 'bg-gray-200'}`}
                             onClick={() => {
+                                if (isProfile) return;
                                 setValue('isManager', !formData.isManager);
                                 trigger('isManager');
                             }}>
@@ -335,6 +356,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                         }}
                         placeholder="Choose one or more sections..."
                         error={!!errors.sectionIds}
+                        disabled={isProfile}
                     />
                     {errors.sectionIds && <p className="mt-1 text-xs text-red-500 font-bold">{errors.sectionIds.message}</p>}
                     <p className="text-[10px] font-bold text-card-text/40 uppercase tracking-[0.05em] pt-2">
@@ -360,8 +382,10 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                                 type="text"
                                 {...register('phone')}
                                 error={!!errors.phone}
+                                disabled={isProfile}
                                 icon={Phone}
                                 placeholder="+1 555-0123"
+                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.phone && <p className="mt-1 text-xs text-red-500 font-bold">{errors.phone.message}</p>}
                         </div>
@@ -418,7 +442,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData }: Teacher
                         </div>
                     ) : (
                         <span className="font-black uppercase tracking-widest text-[10px] italic">
-                            {teacherId ? 'Update Faculty Member' : 'Create Faculty Account'}
+                            {isProfile ? 'Update Profile' : (teacherId ? 'Update Faculty Member' : 'Create Faculty Account')}
                         </span>
                     )}
                 </Button>
