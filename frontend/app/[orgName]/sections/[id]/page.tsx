@@ -2,24 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { BookOpen, GraduationCap, Users, Trophy, Calendar, MapPin, ArrowLeft } from 'lucide-react';
+import { Users, GraduationCap, CheckCircle2, Calendar } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Section, Role } from '@/types';
+import { Section } from '@/types';
 import { useToast } from '@/context/ToastContext';
-import { useParams, useRouter } from 'next/navigation';
-import AssessmentList from '@/components/sections/AssessmentList';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function SectionDetailPage() {
-    const { token, user } = useAuth();
+export default function SectionOverviewPage() {
+    const { token } = useAuth();
     const params = useParams();
-    const router = useRouter();
     const { showToast } = useToast();
     const [section, setSection] = useState<Section | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const sectionId = params.id as string;
-    const orgSlug = params.orgName as string;
 
     const fetchSection = useCallback(async () => {
         if (!token || !sectionId) return;
@@ -30,11 +27,10 @@ export default function SectionDetailPage() {
         } catch (error) {
             console.error('Failed to fetch section:', error);
             showToast('Failed to load section details', 'error');
-            router.push(`/${orgSlug}/sections`);
         } finally {
             setIsLoading(false);
         }
-    }, [token, sectionId, showToast, router, orgSlug]);
+    }, [token, sectionId, showToast]);
 
     useEffect(() => {
         fetchSection();
@@ -42,8 +38,8 @@ export default function SectionDetailPage() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center p-12 h-[60vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div className="flex justify-center p-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
         );
     }
@@ -51,81 +47,94 @@ export default function SectionDetailPage() {
     if (!section) return null;
 
     return (
-        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up space-y-8">
-            {/* Navigation & Breadcrumb */}
-            <div className="flex items-center justify-between">
-                <Link
-                    href={`/${orgSlug}/sections`}
-                    className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-card-text/40 hover:text-primary transition-colors group"
-                >
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    Back to Sections
-                </Link>
-            </div>
-
-            {/* Header Card - Premium Design */}
-            <div className="bg-card text-card-text rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/20 p-8 md:p-12 relative overflow-hidden group">
-                {/* Decorative background element */}
-                <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-700"></div>
-
-                <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
-                    <div className="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
-                        <div className="p-6 bg-primary/10 rounded-sm shadow-inner border border-primary/20 transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                            <BookOpen className="w-16 h-16 text-primary" />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-3 justify-center md:justify-start mb-2">
-                                <span className="px-3 py-1 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] italic rounded-sm shadow-lg shadow-primary/20">
-                                    SECTION ID: {section.id.substring(0, 8).toUpperCase()}
-                                </span>
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            </div>
-                            <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter uppercase leading-none mb-4 text-transparent bg-clip-text bg-linear-to-r from-card-text to-card-text/60">
-                                {section.name}
-                            </h1>
-                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-[11px] font-black uppercase tracking-widest text-card-text/40">
-                                <span className="flex items-center gap-2 group/item">
-                                    <GraduationCap className="w-4 h-4 text-primary group-hover/item:scale-110 transition-transform" />
-                                    {section.course?.name || 'GENERIC COURSE'}
-                                </span>
-                                <span className="flex items-center gap-2 group/item">
-                                    <Users className="w-4 h-4 text-primary group-hover/item:scale-110 transition-transform" />
-                                    {section.students?.length || 0} ENROLLED STUDENTS
-                                </span>
-                                <span className="flex items-center gap-2 group/item">
-                                    <Calendar className="w-4 h-4 text-primary group-hover/item:scale-110 transition-transform" />
-                                    {section.semester} {section.year}
-                                </span>
-                                {section.room && (
-                                    <span className="flex items-center gap-2 group/item">
-                                        <MapPin className="w-4 h-4 text-primary group-hover/item:scale-110 transition-transform" />
-                                        ROOM: {section.room}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
+        <div className="space-y-8 mt-8">
+            {/* Stats Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white border border-slate-200 p-6 rounded-sm shadow-sm flex items-center gap-4">
+                    <div className="p-3 bg-primary/10 rounded-sm text-primary">
+                        <Users className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total Enrollment</p>
+                        <p className="text-2xl font-black italic text-slate-900">{section.students?.length || 0} Students</p>
+                    </div>
+                </div>
+                <div className="bg-white border border-slate-200 p-6 rounded-sm shadow-sm flex items-center gap-4">
+                    <div className="p-3 bg-primary/10 rounded-sm text-primary">
+                        <CheckCircle2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Status</p>
+                        <p className="text-2xl font-black italic text-emerald-500">ACTIVE</p>
+                    </div>
+                </div>
+                <div className="bg-white border border-slate-200 p-6 rounded-sm shadow-sm flex items-center gap-4">
+                    <div className="p-3 bg-primary/10 rounded-sm text-primary">
+                        <Calendar className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Schedule</p>
+                        <p className="text-2xl font-black italic text-slate-900">{section.room || 'TBD'}</p>
                     </div>
                 </div>
             </div>
 
-            {/* Main Content Area */}
-            <div className="grid grid-cols-1 gap-8">
-                {/* Assessments Panel */}
-                <div className="bg-card text-card-text rounded-sm shadow-2xl border border-white/10 overflow-hidden transform transition-all hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)]">
-                    <div className="p-8 border-b border-white/5 bg-linear-to-r from-primary/10 to-transparent flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-2.5 bg-primary/20 rounded-sm">
-                                <Trophy className="w-6 h-6 text-primary" />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none">Course Evaluations</h2>
-                                <p className="text-[10px] font-black text-card-text/40 uppercase tracking-widest mt-1">Manage assessments, quizzes & final grades</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="p-8 md:p-10">
-                        <AssessmentList section={section} role={user?.role as Role} />
-                    </div>
+            {/* Students List */}
+            <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                    <h3 className="text-lg font-black uppercase italic tracking-wider text-slate-900 flex items-center gap-2">
+                         <GraduationCap className="w-5 h-5 text-primary" /> Enrolled Students
+                    </h3>
+                    <span className="bg-primary text-white text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-widest">
+                        Official Roster
+                    </span>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50/50 border-b border-slate-100">
+                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400">Student Name</th>
+                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400">Reg #</th>
+                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400">Email</th>
+                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {section.students?.map((student) => (
+                                <tr key={student.id} className="hover:bg-slate-50 transition-colors group">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-black text-xs border border-primary/20">
+                                                {student.user.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="font-bold text-sm text-slate-900 leading-none">{student.user.name}</div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tabular-nums tracking-tighter">
+                                        {student.registrationNumber || 'N/A'}
+                                    </td>
+                                    <td className="px-6 py-4 text-xs font-bold text-slate-500">
+                                        {student.user.email}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <Link 
+                                            href={`/${params.orgName}/students/${student.user.userName}`}
+                                            className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline hover:text-primary-dark transition-colors"
+                                        >
+                                            View Profile
+                                        </Link>
+                                    </td>
+                                </tr>
+                            ))}
+                            {(!section.students || section.students.length === 0) && (
+                                <tr>
+                                    <td colSpan={4} className="px-6 py-12 text-center text-slate-400 italic font-black uppercase tracking-widest text-xs">
+                                        No students enrolled in this section.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

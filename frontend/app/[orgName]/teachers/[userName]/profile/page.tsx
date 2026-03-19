@@ -6,11 +6,15 @@ import { api } from '@/lib/api';
 import { Teacher } from '@/types';
 import TeacherForm from '@/components/forms/TeacherForm';
 import { Settings, UserCircle } from 'lucide-react';
+import { useParams } from 'next/navigation';
 
-export default function TeacherProfilePage({ params }: { params: { orgName: string; userName: string } }) {
+export default function TeacherProfilePage() {
     const { token } = useAuth();
+    const params = useParams();
     const [teacherData, setTeacherData] = useState<Teacher | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const orgSlug = params.orgName as string;
 
     useEffect(() => {
         if (!token) return;
@@ -21,37 +25,23 @@ export default function TeacherProfilePage({ params }: { params: { orgName: stri
     }, [token]);
 
     return (
-        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
-            <div className="bg-card rounded-sm border border-white/40 shadow-xl overflow-hidden">
-                <div className="p-8 border-b border-primary/10 bg-primary/5 flex items-center gap-4">
-                    <div className="p-4 bg-primary/10 rounded-sm shadow-inner group">
-                        <UserCircle className="w-10 h-10 text-primary group-hover:scale-110 transition-transform" />
+        <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden mt-8">
+            <div className="p-8">
+                {loading ? (
+                    <div className="py-20 flex justify-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
                     </div>
-                    <div>
-                        <h2 className="text-2xl font-black uppercase tracking-tight text-card-text underline decoration-primary/30 underline-offset-8">Account Settings</h2>
-                        <p className="text-xs font-bold text-card-text/40 uppercase tracking-widest mt-2 flex items-center gap-2">
-                            <Settings className="w-3 h-3" /> Update your personal information and security preferences
-                        </p>
+                ) : teacherData ? (
+                    <TeacherForm 
+                        orgSlug={orgSlug} 
+                        initialData={teacherData} 
+                        isProfile={true} 
+                    />
+                ) : (
+                    <div className="py-20 text-center text-slate-400 font-black uppercase tracking-widest bg-red-50/50 rounded-sm border border-red-100 italic text-xs">
+                        Failed to load teacher profile data...
                     </div>
-                </div>
-
-                <div className="p-8">
-                    {loading ? (
-                        <div className="py-20 flex justify-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
-                        </div>
-                    ) : teacherData ? (
-                        <TeacherForm 
-                            orgSlug={params.orgName} 
-                            initialData={teacherData} 
-                            isProfile={true} 
-                        />
-                    ) : (
-                        <div className="py-20 text-center text-card-text/60 font-bold uppercase tracking-widest bg-red-50/50 rounded-sm border border-red-100 italic">
-                            Failed to load teacher profile data...
-                        </div>
-                    )}
-                </div>
+                )}
             </div>
         </div>
     );

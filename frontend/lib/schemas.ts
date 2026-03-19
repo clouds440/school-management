@@ -68,6 +68,8 @@ export const teacherCreateSchema = teacherBaseSchema.extend({
     phone: z.string().regex(phoneRegex, 'Invalid phone number').min(1, 'Phone number is required'),
 });
 
+export type TeacherCreateFormData = z.infer<typeof teacherCreateSchema>;
+
 // Update → password OPTIONAL + metadata REQUIRED
 export const teacherUpdateSchema = teacherBaseSchema.extend({
     password: optionalPasswordRules,
