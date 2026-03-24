@@ -25,7 +25,7 @@ interface TeacherFormProps {
 }
 
 export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile }: TeacherFormProps) {
-    const { token, user: currentUser } = useAuth();
+    const { token, user: currentUser, updateUser } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
     const [sections, setSections] = useState<Section[]>([]);
@@ -92,7 +92,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
 
             let savedTeacher: Teacher;
             if (isProfile) {
-                savedTeacher = await api.org.updateProfile(payload, token!);
+                savedTeacher = await api.org.updateProfile<Teacher>(payload as UpdateTeacherRequest, token!);
             } else if (teacherId) {
                 savedTeacher = await api.org.updateTeacher(teacherId, payload as UpdateTeacherRequest, token!);
             } else {
@@ -101,22 +101,29 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
 
             if (pendingPhoto && savedTeacher.userId) {
                 try {
-                    await api.org.uploadAvatar(savedTeacher.userId, pendingPhoto, token!);
+                    const updatedUser = await api.org.uploadAvatar(savedTeacher.userId, pendingPhoto, token!);
+                    // Sync local auth state if the updated user is the current user
+                    if (currentUser?.id === savedTeacher.userId) {
+                        updateUser({
+                            avatarUrl: updatedUser.avatarUrl,
+                            avatarUpdatedAt: updatedUser.avatarUpdatedAt?.toString()
+                        });
+                    }
                 } catch {
                     showToast('Profile updated, but photo upload failed', 'info');
                 }
             }
 
+            window.dispatchEvent(new Event('stats-updated'));
             showToast(`${isProfile ? 'Profile' : 'Teacher account'} ${teacherId || isProfile ? 'updated' : 'created'} successfully`, 'success');
             if (isProfile) {
-                router.refresh();
+                router.back();
             } else {
                 router.push(`/${orgSlug}/teachers`);
             }
-        } catch (error: any) {
-            const message = error instanceof Error 
-                ? error.message 
-                : (error?.response?.data?.message || 'Failed to save teacher');
+        } catch (error: unknown) {
+            const apiError = error as ApiError;
+            const message = apiError?.response?.data?.message || 'Failed to save teacher';
             
             if (Array.isArray(message)) {
                 message.forEach((m: string) => showToast(m, 'error'));
@@ -160,6 +167,9 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                             <Input
                                 type="text"
                                 {...register('name')}
+                                onChange={isProfile ? undefined : register('name').onChange}
+                                readOnly={isProfile}
+                                value={watch('name') || ''}
                                 error={!!errors.name}
                                 disabled={isProfile}
                                 icon={User}
@@ -179,6 +189,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                                 ]}
                                 value={formData.status}
                                 onChange={(val) => {
+                                    if (isProfile) return;
                                     setValue('status', val as TeacherStatus);
                                     trigger('status');
                                 }}
@@ -197,6 +208,9 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                             <Input
                                 type="email"
                                 {...register('email')}
+                                onChange={(!!teacherId || isProfile) ? undefined : register('email').onChange}
+                                readOnly={!!teacherId || isProfile}
+                                value={watch('email') || ''}
                                 error={!!errors.email}
                                 disabled={!!teacherId || isProfile}
                                 icon={Mail}
@@ -226,6 +240,9 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                         <Input
                             type="text"
                             {...register('education')}
+                            onChange={isProfile ? undefined : register('education').onChange}
+                            readOnly={isProfile}
+                            value={watch('education') || ''}
                             error={!!errors.education}
                             disabled={isProfile}
                             icon={BookOpen}
@@ -239,6 +256,9 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                         <Input
                             type="text"
                             {...register('designation')}
+                            onChange={isProfile ? undefined : register('designation').onChange}
+                            readOnly={isProfile}
+                            value={watch('designation') || ''}
                             error={!!errors.designation}
                             disabled={isProfile}
                             icon={User}
@@ -252,6 +272,9 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                         <Input
                             type="text"
                             {...register('subject')}
+                            onChange={isProfile ? undefined : register('subject').onChange}
+                            readOnly={isProfile}
+                            value={watch('subject') || ''}
                             error={!!errors.subject}
                             disabled={isProfile}
                             icon={BookOpen}
@@ -278,6 +301,9 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                         <Input
                             type="number"
                             {...register('salary')}
+                            onChange={isProfile ? undefined : register('salary').onChange}
+                            readOnly={isProfile}
+                            value={watch('salary') || ''}
                             error={!!errors.salary}
                             disabled={isProfile}
                             icon={DollarSign}
@@ -302,6 +328,9 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                         <Input
                             type="date"
                             {...register('joiningDate')}
+                            onChange={isProfile ? undefined : register('joiningDate').onChange}
+                            readOnly={isProfile}
+                            value={watch('joiningDate') || ''}
                             error={!!errors.joiningDate}
                             disabled={isProfile}
                             className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
@@ -311,10 +340,10 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                 </div>
 
                 <div className="mt-8 p-5 bg-primary/5 rounded-sm border border-primary/10 flex items-center justify-between group hover:bg-primary/10 transition-all">
-                    <div className={`flex items-center gap-4 ${isProfile ? 'pointer-events-none opacity-70' : ''}`}>
+                    <div className={`flex items-center gap-4 ${currentUser?.role !== Role.ORG_ADMIN ? 'pointer-events-none opacity-70' : ''}`}>
                         <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 cursor-pointer ${formData.isManager ? 'bg-primary' : 'bg-gray-200'}`}
                             onClick={() => {
-                                if (isProfile) return;
+                                if (currentUser?.role !== Role.ORG_ADMIN) return;
                                 setValue('isManager', !formData.isManager);
                                 trigger('isManager');
                             }}>
@@ -351,6 +380,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                         }))}
                         values={formData.sectionIds || []}
                         onChange={(vals) => {
+                            if (isProfile) return;
                             setValue('sectionIds', vals);
                             trigger('sectionIds');
                         }}
@@ -382,10 +412,8 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                                 type="text"
                                 {...register('phone')}
                                 error={!!errors.phone}
-                                disabled={isProfile}
                                 icon={Phone}
                                 placeholder="+1 555-0123"
-                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.phone && <p className="mt-1 text-xs text-red-500 font-bold">{errors.phone.message}</p>}
                         </div>

@@ -115,7 +115,7 @@ export default function TeachersPage() {
                         )}
                         {(row.user.role === Role.ORG_ADMIN || row.user.role === Role.ORG_MANAGER) && (
                             <div
-                                className={`absolute -top-1 -right-1 p-0.5 rounded-full bg-white shadow-sm border ${row.user.role === Role.ORG_ADMIN
+                                className={`absolute -bottom-1 -right-1 p-0.5 rounded-full bg-white shadow-sm border ${row.user.role === Role.ORG_ADMIN
                                     ? 'text-amber-500 border-amber-200'
                                     : 'text-blue-500 border-blue-200'
                                     }`}
@@ -192,7 +192,7 @@ export default function TeachersPage() {
     }
 
     return (
-        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
+        <div className="flex flex-col w-full animate-fade-in-up">
             <div className="mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <Button

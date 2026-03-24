@@ -195,9 +195,35 @@ export const api = {
         // --- Final Results ---
         getStudentFinalGrades: (studentId: string, token: string, sectionId?: string) =>
             request<FinalGradeResponse[]>(`/org/students/${studentId}/final-grades${buildQueryString({ sectionId })}`, { token }),
-        getProfile: (token: string) =>
-            request<any>('/org/profile', { token }),
-        updateProfile: (data: any, token: string) =>
-            request<any>('/org/profile', { method: 'PATCH', body: JSON.stringify(data), token }),
+        getProfile: <T = Student | Teacher>(token: string) =>
+            request<T>('/org/profile', { token }),
+        updateProfile: <T = Student | Teacher>(data: UpdateStudentRequest | UpdateTeacherRequest, token: string) =>
+            request<T>('/org/profile', { method: 'PATCH', body: JSON.stringify(data), token }),
+    },
+
+    files: {
+        uploadFile: async (orgId: string, entityType: string, entityId: string, file: File, token: string) => {
+            const formData = new FormData();
+            formData.append('orgId', orgId);
+            formData.append('entityType', entityType);
+            formData.append('entityId', entityId);
+            formData.append('file', file);
+            
+            const response = await fetch(`${API_BASE_URL}/files`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
+            if (!response.ok) {
+                let errMessage = 'Failed to upload file';
+                try {
+                    const err = await response.json();
+                    errMessage = Array.isArray(err.message) ? err.message[0] : err.message || errMessage;
+                } catch (e) { }
+                throw new Error(errMessage);
+            }
+            return response.json();
+        },
+        deleteFile: (id: string, token: string) => request<void>(`/files/${id}`, { method: 'DELETE', token }),
     }
 };

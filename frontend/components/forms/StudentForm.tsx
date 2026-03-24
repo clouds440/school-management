@@ -25,7 +25,7 @@ interface StudentFormProps {
 }
 
 export default function StudentForm({ studentId, orgSlug, initialData, isProfile }: StudentFormProps) {
-    const { token, user: currentUser } = useAuth();
+    const { token, user: currentUser, updateUser } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
     const [sections, setSections] = useState<Section[]>([]);
@@ -101,7 +101,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
 
             let savedStudent: Student;
             if (isProfile) {
-                savedStudent = await api.org.updateProfile(payload, token!);
+                savedStudent = await api.org.updateProfile<Student>(payload as UpdateStudentRequest, token!);
             } else if (studentId) {
                 savedStudent = await api.org.updateStudent(studentId, payload as UpdateStudentRequest, token!);
             } else {
@@ -110,12 +110,20 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
 
             if (pendingPhoto && savedStudent.userId) {
                 try {
-                    await api.org.uploadAvatar(savedStudent.userId, pendingPhoto, token!);
+                    const updatedUser = await api.org.uploadAvatar(savedStudent.userId, pendingPhoto, token!);
+                    // Sync local auth state if the updated user is the current user
+                    if (currentUser?.id === savedStudent.userId) {
+                        updateUser({
+                            avatarUrl: updatedUser.avatarUrl,
+                            avatarUpdatedAt: updatedUser.avatarUpdatedAt?.toString()
+                        });
+                    }
                 } catch {
                     showToast('Profile updated, but photo upload failed', 'info');
                 }
             }
 
+            window.dispatchEvent(new Event('stats-updated'));
             showToast(`${isProfile ? 'Profile' : (studentId ? 'Record' : 'Student')} ${studentId || isProfile ? 'updated' : 'registered'} successfully.`, 'success');
             if (isProfile) {
                 router.refresh();
@@ -168,6 +176,9 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             <Input
                                 type="text"
                                 {...register('name')}
+                                onChange={isProfile ? undefined : register('name').onChange}
+                                readOnly={isProfile}
+                                value={watch('name') || ''}
                                 error={!!errors.name}
                                 disabled={isProfile}
                                 icon={User}
@@ -182,6 +193,9 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             <Input
                                 type="email"
                                 {...register('email')}
+                                onChange={(!!studentId || isProfile) ? undefined : register('email').onChange}
+                                readOnly={!!studentId || isProfile}
+                                value={watch('email') || ''}
                                 error={!!errors.email}
                                 disabled={!!studentId || isProfile}
                                 icon={Mail}
@@ -208,6 +222,9 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             <Input
                                 type="text"
                                 {...register('registrationNumber')}
+                                onChange={(isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)) ? undefined : register('registrationNumber').onChange}
+                                readOnly={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
+                                value={watch('registrationNumber') || ''}
                                 error={!!errors.registrationNumber}
                                 disabled={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
                                 icon={Hash}
@@ -222,6 +239,9 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             <Input
                                 type="text"
                                 {...register('rollNumber')}
+                                onChange={(isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)) ? undefined : register('rollNumber').onChange}
+                                readOnly={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
+                                value={watch('rollNumber') || ''}
                                 error={!!errors.rollNumber}
                                 disabled={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
                                 icon={Hash}
@@ -236,6 +256,9 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             <Input
                                 type="date"
                                 {...register('admissionDate')}
+                                onChange={isProfile ? undefined : register('admissionDate').onChange}
+                                readOnly={isProfile}
+                                value={watch('admissionDate') || ''}
                                 error={!!errors.admissionDate}
                                 disabled={isProfile}
                                 className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
@@ -253,6 +276,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                                 ]}
                                 value={formData.status}
                                 onChange={(val) => {
+                                    if (isProfile) return;
                                     setValue('status', val as StudentStatus);
                                     trigger('status');
                                 }}
@@ -274,6 +298,9 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                         <Input
                             type="text"
                             {...register('major')}
+                            onChange={isProfile ? undefined : register('major').onChange}
+                            readOnly={isProfile}
+                            value={watch('major') || ''}
                             error={!!errors.major}
                             disabled={isProfile}
                             icon={GraduationCap}
@@ -287,6 +314,9 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                         <Input
                             type="text"
                             {...register('department')}
+                            onChange={isProfile ? undefined : register('department').onChange}
+                            readOnly={isProfile}
+                            value={watch('department') || ''}
                             error={!!errors.department}
                             disabled={isProfile}
                             icon={BookOpen}
@@ -316,6 +346,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                         }))}
                         values={formData.sectionIds || []}
                         onChange={(vals) => {
+                            if (isProfile) return;
                             setValue('sectionIds', vals);
                             trigger('sectionIds');
                         }}
@@ -342,6 +373,9 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                         <Input
                             type="number"
                             {...register('fee')}
+                            onChange={isProfile ? undefined : register('fee').onChange}
+                            readOnly={isProfile}
+                            value={watch('fee') || ''}
                             error={!!errors.fee}
                             disabled={isProfile}
                             icon={DollarSign}
@@ -355,6 +389,9 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                         <Input
                             type="text"
                             {...register('feePlan')}
+                            onChange={isProfile ? undefined : register('feePlan').onChange}
+                            readOnly={isProfile}
+                            value={watch('feePlan') || ''}
                             error={!!errors.feePlan}
                             disabled={isProfile}
                             icon={BookOpen}
@@ -368,6 +405,9 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                         <Input
                             type="date"
                             {...register('graduationDate')}
+                            onChange={isProfile ? undefined : register('graduationDate').onChange}
+                            readOnly={isProfile}
+                            value={watch('graduationDate') || ''}
                             error={!!errors.graduationDate}
                             disabled={isProfile}
                             className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
@@ -419,6 +459,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             ]}
                             value={formData.gender || ''}
                             onChange={(val) => {
+                                if (isProfile) return;
                                 setValue('gender', val);
                                 trigger('gender');
                             }}

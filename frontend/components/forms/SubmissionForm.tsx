@@ -10,6 +10,7 @@ import { useToast } from '@/context/ToastContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Upload, FileCheck } from 'lucide-react';
+import { Submission, ApiError } from '@/types';
 
 const submissionSchema = z.object({
     fileUrl: z.string().url('Please provide a valid URL for your submission').or(z.literal('')),
@@ -19,7 +20,7 @@ type SubmissionFormValues = z.infer<typeof submissionSchema>;
 
 interface SubmissionFormProps {
     assessmentId: string;
-    onSuccess: (submission: any) => void;
+    onSuccess: (submission: Submission) => void;
     onCancel: () => void;
 }
 
@@ -45,9 +46,11 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
             }, token);
             showToast('Work submitted successfully!', 'success');
             onSuccess(submission);
-        } catch (error) {
+        } catch (error: unknown) {
+            const apiError = error as ApiError;
             console.error('Submission failed:', error);
-            showToast('Failed to submit work', 'error');
+            const message = apiError?.response?.data?.message || 'Failed to submit work';
+            showToast(Array.isArray(message) ? message[0] : message, 'error');
         } finally {
             setIsSubmitting(false);
         }

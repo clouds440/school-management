@@ -158,6 +158,9 @@ export const assessmentSchema = z.object({
     totalMarks: z.string().min(1, 'Total Marks is required').refine(val => !isNaN(Number(val)) && Number(val) > 0, 'Must be a positive number'),
     weightage: z.string().min(1, 'Weightage is required').refine(val => !isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 100, 'Must be between 0 and 100'),
     dueDate: z.string().optional().or(z.literal('')),
+    allowSubmissions: z.boolean(),
+    externalLink: z.string().url('Invalid URL').optional().or(z.literal('')),
+    isVideoLink: z.boolean().optional(),
 });
 
 export type AssessmentFormData = z.infer<typeof assessmentSchema>;

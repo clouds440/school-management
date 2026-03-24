@@ -297,7 +297,7 @@ export class OrgController {
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
     @Patch('profile')
-    updateProfile(@OrgId() orgId: string, @Body() updateDto: any, @Request() req: AuthenticatedRequest) {
+    updateProfile(@OrgId() orgId: string, @Body() updateDto: UpdateStudentDto | UpdateTeacherDto, @Request() req: AuthenticatedRequest) {
         return this.orgService.updateProfile(orgId, req.user, updateDto);
     }
 
@@ -354,13 +354,15 @@ export class OrgController {
         return this.orgService.createAssessment(orgId, dto);
     }
 
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
     @Get('assessments')
     getAssessments(
         @OrgId() orgId: string,
+        @Request() req: AuthenticatedRequest,
         @Query('sectionId') sectionId?: string,
         @Query('courseId') courseId?: string
     ) {
-        return this.orgService.getAssessments(orgId, { sectionId, courseId });
+        return this.orgService.getAssessments(orgId, req.user, { sectionId, courseId });
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
@@ -386,11 +388,10 @@ export class OrgController {
         return this.orgService.getStudentFinalGrades(orgId, req.user.id);
     }
 
-    // --- Grades ---
-    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
     @Get('assessments/:id/grades')
-    getGrades(@OrgId() orgId: string, @Param('id') assessmentId: string) {
-        return this.orgService.getGrades(orgId, assessmentId);
+    getGrades(@OrgId() orgId: string, @Param('id') assessmentId: string, @Request() req: AuthenticatedRequest) {
+        return this.orgService.getGrades(orgId, assessmentId, req.user);
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
@@ -434,10 +435,10 @@ export class OrgController {
             });
     }
 
-    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
     @Get('assessments/:id/submissions')
-    getSubmissions(@OrgId() orgId: string, @Param('id') assessmentId: string) {
-        return this.orgService.getSubmissions(orgId, assessmentId);
+    getSubmissions(@OrgId() orgId: string, @Param('id') assessmentId: string, @Request() req: AuthenticatedRequest) {
+        return this.orgService.getSubmissions(orgId, assessmentId, req.user);
     }
 
     // --- Final Results ---

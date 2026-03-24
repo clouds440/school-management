@@ -202,13 +202,6 @@ export default function SectionsPage() {
                         deleteTitle="Delete Section"
                         variant="default"
                         isViewAndEdit={true}
-                        extraActions={[
-                            {
-                                variant: 'unsuspend', // Using this for "View" as it has a check/eye-like feel or just generic
-                                onClick: () => router.push(`/${orgSlug}/sections/${row.id}`),
-                                title: 'View Details'
-                            }
-                        ]}
                     />
                 );
             }
@@ -226,7 +219,7 @@ export default function SectionsPage() {
     }
 
     return (
-        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
+        <div className="flex flex-col w-full animate-fade-in-up">
             <div className="mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (

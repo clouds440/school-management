@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { BookOpen, Calendar, Type, FileText, Percent } from 'lucide-react';
+import { BookOpen, Calendar, Type, FileText, Percent, UploadCloud, Link as LinkIcon, Check, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Assessment, AssessmentType, CreateAssessmentRequest, UpdateAssessmentRequest, ApiError } from '@/types';
 import { useToast } from '@/context/ToastContext';
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { assessmentSchema, AssessmentFormData } from '@/lib/schemas';
 
@@ -23,17 +23,18 @@ interface AssessmentFormProps {
     onCancel?: () => void;
 }
 
-export default function AssessmentForm({ 
-    sectionId, 
-    courseId, 
-    assessmentId, 
+export default function AssessmentForm({
+    sectionId,
+    courseId,
+    assessmentId,
     initialData,
     onSuccess,
-    onCancel 
+    onCancel
 }: AssessmentFormProps) {
     const { token } = useAuth();
     const { showToast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     const {
         register,
@@ -49,18 +50,24 @@ export default function AssessmentForm({
             totalMarks: initialData.totalMarks.toString(),
             weightage: initialData.weightage.toString(),
             dueDate: initialData.dueDate ? new Date(initialData.dueDate).toISOString().split('T')[0] : '',
+            allowSubmissions: initialData.allowSubmissions ?? true,
+            externalLink: initialData.externalLink || '',
+            isVideoLink: initialData.isVideoLink || false,
         } : {
             title: '',
             type: AssessmentType.ASSIGNMENT,
             totalMarks: '100',
             weightage: '10',
             dueDate: '',
+            allowSubmissions: true,
+            externalLink: '',
+            isVideoLink: false,
         }
     });
 
     const formData = watch();
 
-    const onSubmit: SubmitHandler<AssessmentFormData> = async (data) => {
+    const onSubmit = async (data: AssessmentFormData) => {
         setIsSaving(true);
         try {
             const payload: CreateAssessmentRequest = {
@@ -70,6 +77,9 @@ export default function AssessmentForm({
                 totalMarks: Number(data.totalMarks),
                 weightage: Number(data.weightage),
                 dueDate: data.dueDate || undefined,
+                allowSubmissions: data.allowSubmissions,
+                externalLink: data.externalLink || undefined,
+                isVideoLink: data.isVideoLink,
             };
 
             let savedAssessment: Assessment;
@@ -79,6 +89,19 @@ export default function AssessmentForm({
                 savedAssessment = await api.org.createAssessment(payload, token!);
             }
 
+            if (selectedFile) {
+                // Determine orgId from initialData or token/context (assuming teacher creates within their org context, 
+                // the section belongs to org. But api.files expects orgId. We can get it from savedAssessment parsing).
+                // Or simply pass savedAssessment.organizationId since it's returned by backend DTO.
+                const orgId = savedAssessment.organizationId || (initialData?.organizationId as string);
+                try {
+                    await api.files.uploadFile(orgId, 'ASSESSMENT', savedAssessment.id, selectedFile, token!);
+                } catch (err: any) {
+                    showToast(err.message || 'Assessment saved but file upload failed', 'error');
+                }
+            }
+
+            window.dispatchEvent(new Event('stats-updated'));
             showToast(`Assessment ${assessmentId ? 'updated' : 'created'} successfully.`, 'success');
             onSuccess?.(savedAssessment);
         } catch (error: unknown) {
@@ -164,6 +187,84 @@ export default function AssessmentForm({
                         />
                         {errors.weightage && <p className="text-xs text-red-500 font-bold">{errors.weightage.message}</p>}
                     </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center mb-1">
+                            <Label htmlFor="externalLink">External Link (Optional)</Label>
+                            <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-gray-400 font-bold uppercase hover:text-gray-400 transition-colors">
+                                <span className={watch('isVideoLink') ? 'text-primary' : 'text-gray-400'}>Embed as Video</span>
+                                <div className="relative inline-flex items-center">
+                                    <input type="checkbox" className="sr-only peer" {...register('isVideoLink')} />
+                                    <div className="w-7 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-600 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary"></div>
+                                </div>
+                            </label>
+                        </div>
+                        <Input
+                            id="externalLink"
+                            type="url"
+                            {...register('externalLink')}
+                            error={!!errors.externalLink}
+                            icon={LinkIcon}
+                            placeholder="https://youtube.com/..."
+                            disabled={isSaving}
+                        />
+                        {errors.externalLink && <p className="text-xs text-red-500 font-bold">{errors.externalLink.message}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                            <Label>Attachment (Optional)</Label>
+                            {selectedFile && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedFile(null);
+                                        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+                                        if (fileInput) fileInput.value = '';
+                                    }}
+                                    className="px-1 shrink-0 border border-red-500/60 hover:border-red-500/50 bg-white/5 hover:bg-red-500/10 text-card-text/40 hover:text-red-500 rounded-sm transition-colors shadow-sm"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            )}
+                        </div>
+                        <div className="relative flex items-center gap-2">
+                            <input
+                                type="file"
+                                id="file-upload"
+                                className="hidden"
+                                onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                        setSelectedFile(e.target.files[0]);
+                                    }
+                                }}
+                                accept=".txt,.pdf,image/*,.docx,.xlsx,.pptx,.zip"
+                            />
+                            <Label
+                                htmlFor="file-upload"
+                                className={`flex items-center gap-2 px-3 py-2 border rounded-sm cursor-pointer transition-colors flex-1 ${selectedFile ? 'border-primary/50 bg-primary/5 text-primary' : 'border-white/10 hover:border-white/20 text-gray-400 bg-white/5'}`}
+                            >
+                                <UploadCloud className="w-4 h-4" />
+                                <span className="truncate text-sm font-bold flex-1">
+                                    {selectedFile ? selectedFile.name : 'Choose file...'}
+                                </span>
+                                {selectedFile && <Check className="w-4 h-4 text-emerald-500" />}
+                            </Label>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-sm">
+                    <div className="space-y-0.5">
+                        <Label className="text-sm font-bold text-gray-300">Allow Submissions</Label>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Enable students to upload work for this assessment</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" {...register('allowSubmissions')} />
+                        <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
                 </div>
             </div>
 

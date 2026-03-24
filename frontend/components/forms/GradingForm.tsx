@@ -23,13 +23,13 @@ interface GradingFormProps {
     onCancel?: () => void;
 }
 
-export default function GradingForm({ 
-    assessmentId, 
-    student, 
+export default function GradingForm({
+    assessmentId,
+    student,
     initialData,
     totalMarks,
     onSuccess,
-    onCancel 
+    onCancel
 }: GradingFormProps) {
     const { token } = useAuth();
     const { showToast } = useToast();
@@ -105,7 +105,7 @@ export default function GradingForm({
                             {...register('marksObtained')}
                             error={!!errors.marksObtained}
                             icon={Star}
-                            placeholder="e.g. 85"
+                            placeholder={`e.g. ${totalMarks / 100 * 85}`}
                         />
                         {errors.marksObtained && <p className="text-xs text-red-500 font-bold">{errors.marksObtained.message}</p>}
                     </div>

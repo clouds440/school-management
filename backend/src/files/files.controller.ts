@@ -33,11 +33,12 @@ const ALLOWED_MIME_TYPES = new Set<string>([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',       // .xlsx
   'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
   'application/zip',
+  'text/plain',
 ]);
 
 const IMAGE_MIME_PREFIX = 'image/';
 const IMAGE_MAX_SIZE_BYTES = 5 * 1024 * 1024;   // 5 MB
-const DEFAULT_MAX_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
+const DEFAULT_MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
 
 @Controller('files')
 export class FilesController {
@@ -68,7 +69,8 @@ export class FilesController {
     }
 
     // Validate file size per type
-    const sizeLimit = file.mimetype.startsWith(IMAGE_MIME_PREFIX)
+    const isImageOrText = file.mimetype.startsWith(IMAGE_MIME_PREFIX) || file.mimetype === 'text/plain';
+    const sizeLimit = isImageOrText
       ? IMAGE_MAX_SIZE_BYTES
       : DEFAULT_MAX_SIZE_BYTES;
 

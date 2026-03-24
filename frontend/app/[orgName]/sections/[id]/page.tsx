@@ -2,13 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { BookOpen, GraduationCap, Users, Trophy, Calendar, MapPin, ArrowLeft } from 'lucide-react';
+import { BookOpen, GraduationCap, Users, Trophy, Calendar, MapPin } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Section, Role } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { useParams, useRouter } from 'next/navigation';
 import AssessmentList from '@/components/sections/AssessmentList';
-import Link from 'next/link';
 
 export default function SectionDetailPage() {
     const { token, user } = useAuth();
@@ -51,18 +50,7 @@ export default function SectionDetailPage() {
     if (!section) return null;
 
     return (
-        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up space-y-8">
-            {/* Navigation & Breadcrumb */}
-            <div className="flex items-center justify-between">
-                <Link
-                    href={`/${orgSlug}/sections`}
-                    className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-card-text/40 hover:text-primary transition-colors group"
-                >
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    Back to Sections
-                </Link>
-            </div>
-
+        <div className="flex flex-col w-full animate-fade-in-up space-y-8">
             {/* Header Card - Premium Design */}
             <div className="bg-card text-card-text rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/20 p-8 md:p-12 relative overflow-hidden group">
                 {/* Decorative background element */}

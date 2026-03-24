@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import ChangePasswordForm from '@/components/ChangePasswordForm';
-import { BackButton } from '@/components/ui/BackButton';
 
 export default function AdminChangePasswordPage() {
     const router = useRouter();

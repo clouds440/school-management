@@ -24,19 +24,32 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
     const orgSlug = pathname.split('/')[1] || user?.orgSlug || 'organization';
 
     useEffect(() => {
-        if (token && (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER || user?.role === Role.TEACHER || user?.role === Role.STUDENT)) {
-            api.org.getStats(token)
-                .then(setStats)
-                .catch(err => console.error('Failed to fetch org stats:', err));
+        const fetchStatsAndOrgData = () => {
+            if (token && (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER || user?.role === Role.TEACHER || user?.role === Role.STUDENT)) {
+                api.org.getStats(token)
+                    .then(setStats)
+                    .catch(err => console.error('Failed to fetch org stats:', err));
 
-            api.org.getOrgData(token)
-                .then((data: Organization) => {
-                    setOrgData(data);
-                    const approved = data.status === OrgStatus.APPROVED;
-                    setIsApproved(approved);
-                })
-                .catch((err) => console.error('Failed to fetch org data:', err));
-        }
+                api.org.getOrgData(token)
+                    .then((data: Organization) => {
+                        setOrgData(data);
+                        const approved = data.status === OrgStatus.APPROVED;
+                        setIsApproved(approved);
+                    })
+                    .catch((err) => console.error('Failed to fetch org data:', err));
+            }
+        };
+
+        fetchStatsAndOrgData();
+
+        const refreshStats = () => {
+            if (token) {
+                api.org.getStats(token).then(setStats).catch(console.error);
+            }
+        };
+
+        window.addEventListener('stats-updated', refreshStats);
+        return () => window.removeEventListener('stats-updated', refreshStats);
     }, [token, user?.role, orgSlug]);
 
     // Memoize links to avoid re-calculation on every render
@@ -77,10 +90,11 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             orgLinks.push({ id: 'GRADES', label: 'Grades', href: `/${orgSlug}/grades`, icon: Trophy });
             orgLinks.push({ id: 'PROFILE', label: 'Profile Settings', href: `/${orgSlug}/teachers/${user.userName}/profile`, icon: Settings });
         } else if (user?.role === Role.STUDENT) {
-            orgLinks.push({ id: 'COURSES', label: 'My Courses', href: `/${orgSlug}/students/${user.userName}/courses`, icon: Book });
-            orgLinks.push({ id: 'GRADES', label: 'Grades', href: `/${orgSlug}/students/${user.userName}/grades`, icon: Trophy });
-            orgLinks.push({ id: 'ATTENDANCE', label: 'Attendance', href: `/${orgSlug}/students/${user.userName}/attendance`, icon: CheckCircle });
-            orgLinks.push({ id: 'PROFILE', label: 'Profile Settings', href: `/${orgSlug}/students/${user.userName}/profile`, icon: Settings });
+            orgLinks.push({ id: 'COURSES', label: 'My Courses', href: `/${orgSlug}/students/${user.userName}?tab=courses`, icon: Book, badge: stats?.SECTIONS });
+            orgLinks.push({ id: 'ASSESSMENTS', label: 'Assessments', href: `/${orgSlug}/students/${user.userName}?tab=assessments`, icon: BookOpen, badge: stats?.PENDING_ASSESSMENTS });
+            orgLinks.push({ id: 'GRADES', label: 'Grades', href: `/${orgSlug}/students/${user.userName}?tab=grades`, icon: Trophy });
+            orgLinks.push({ id: 'ATTENDANCE', label: 'Attendance', href: `/${orgSlug}/students/${user.userName}?tab=attendance`, icon: CheckCircle });
+            orgLinks.push({ id: 'PROFILE', label: 'Profile Settings', href: `/${orgSlug}/students/${user.userName}?tab=profile`, icon: Settings });
         }
 
         return orgLinks;

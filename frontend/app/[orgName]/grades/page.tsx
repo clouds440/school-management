@@ -46,8 +46,8 @@ export default function GradesPage() {
         fetchGradesData();
     }, [fetchGradesData]);
 
-    const filteredSections = sections.filter(s => 
-        s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const filteredSections = sections.filter(s =>
+        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (s.course?.name && s.course.name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
@@ -60,7 +60,7 @@ export default function GradesPage() {
     }
 
     return (
-        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up space-y-8">
+        <div className="flex flex-col w-full animate-fade-in-up space-y-8">
             {/* Header */}
             <div className="bg-card text-card-text rounded-sm shadow-xl border border-white/20 p-8 md:p-10 relative overflow-hidden group">
                 <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-700"></div>
@@ -107,7 +107,7 @@ export default function GradesPage() {
                                         <p className="text-4xl font-black italic text-card-text/80">{grade.letterGrade || 'N/A'}</p>
                                     </div>
                                 </div>
-                                <Link 
+                                <Link
                                     href={`/${orgSlug}/sections/${grade.sectionId}`}
                                     className="w-full h-10 mt-2 text-[10px] uppercase font-black italic gap-1.5 flex items-center justify-center bg-white/5 hover:bg-white/10 text-card-text/60 hover:text-card-text border border-white/5 transition-all rounded-sm shadow-sm"
                                 >
@@ -115,15 +115,15 @@ export default function GradesPage() {
                                 </Link>
                             </div>
                         )
-                    ))}
+                        ))}
                 </div>
             ) : (
                 /* Admin/Teacher View - Sections Selection */
                 <div className="space-y-6">
                     <div className="flex items-center justify-between bg-card/50 p-6 rounded-sm border border-white/5 shadow-inner">
                         <div className="flex-1 max-w-md">
-                            <Input 
-                                placeholder="Search sections or courses..." 
+                            <Input
+                                placeholder="Search sections or courses..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 icon={Search}

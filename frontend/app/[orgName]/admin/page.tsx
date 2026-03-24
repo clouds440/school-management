@@ -2,15 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import {
-    Clock, Users, GraduationCap, ShieldOff, Mail,
-    Building, BookOpen, MapPin, Phone, PlusCircle, UserPlus, Settings
+    Clock, Mail,
+    Building, MapPin, Phone, PlusCircle, UserPlus, Settings
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { Organization, OrgStats, Role, OrgStatus } from '@/types';
+import { Organization, OrgStats, Role } from '@/types';
 import { OrgLogoOrIcon } from '@/components/ui/OrgLogoOrIcon';
-import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 export default function AdminPage() {
     const { user: payload, loading, token } = useAuth();
@@ -62,7 +61,6 @@ export default function AdminPage() {
                     />
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <h3 className="text-xs font-black opacity-40 uppercase tracking-widest mb-1">Organization</h3>
                             <p className="text-xl font-black">{orgData.name}</p>
                             <p className="text-sm opacity-70 flex items-center gap-1"><MapPin className="w-3 h-3" /> {orgData.location}</p>
                             <p className="text-sm opacity-70 flex items-center gap-1"><Building className="w-3 h-3" /> {orgData.type}</p>

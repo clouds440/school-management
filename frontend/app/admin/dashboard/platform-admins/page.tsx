@@ -211,7 +211,7 @@ export default function PlatformAdminsPage() {
     }
 
     return (
-        <div className="flex flex-col py-2 md:py-4 w-full animate-fade-in-up">
+        <div className="flex flex-col w-full animate-fade-in-up">
             <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
                 <button
                     onClick={() => handleOpenAdminModal('CREATE')}

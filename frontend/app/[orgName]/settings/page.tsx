@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School, RefreshCw, ShieldOff } from 'lucide-react';
-import { BackButton } from '@/components/ui/BackButton';
 import { api } from '@/lib/api';
 import { Organization } from '@/types';
 import { useToast } from '@/context/ToastContext';
@@ -128,10 +127,9 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="flex flex-1 flex-col p-4 md:p-8 max-w-7xl mx-auto w-full">
-            <div className="mb-6">
-                <BackButton />
-                <div className="mt-6 flex items-center gap-5">
+        <div className="flex flex-1 flex-col max-w-7xl mx-auto w-full">
+            <div className="mb-2">
+                <div className="mt-2 flex items-center gap-5">
                     <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
                         <Settings className="w-10 h-10 text-white" />
                     </div>

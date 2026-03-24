@@ -232,8 +232,8 @@ export default function StudentsPage() {
     }
 
     return (
-        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
-            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
+        <div className="flex flex-col w-full animate-fade-in-up">
+            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                     <Button
                         onClick={() => router.push(`/${orgSlug}/students/add`)}
@@ -246,7 +246,7 @@ export default function StudentsPage() {
             </div>
 
             <div className="bg-card text-card-text rounded-sm md:rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-4 md:p-8 mb-10 overflow-hidden">
-                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
+                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, reg, roll or major..." />
                     </div>

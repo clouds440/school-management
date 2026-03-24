@@ -12,9 +12,20 @@ import { CreateSectionDto } from './dto/create-section.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
+import { CreateAssessmentDto } from './dto/create-assessment.dto';
+import { UpdateAssessmentDto } from './dto/update-assessment.dto';
 import * as bcrypt from 'bcrypt';
 import { FilesService } from '../files/files.service';
 import { getPaginationOptions, formatPaginatedResponse, handleFileUpdate, extractUpdateFields, PaginationOptions } from '../common/utils';
+import { UpdateGradeDto } from './dto/update-grade.dto';
+import { CreateSubmissionDto } from './dto/create-submission.dto';
+
+interface JwtPayload {
+    name: string | null | undefined;
+    id: string;
+    role?: Role | string;
+    email?: string;
+}
 
 @Injectable()
 export class OrgService {
@@ -210,6 +221,7 @@ export class OrgService {
                             phone: true,
                             role: true,
                             avatarUrl: true,
+                            avatarUpdatedAt: true,
                         },
                     },
                     sections: { select: { id: true, name: true } },
@@ -233,6 +245,7 @@ export class OrgService {
                         phone: true,
                         role: true,
                         avatarUrl: true,
+                        avatarUpdatedAt: true,
                     },
                 },
                 sections: { select: { id: true, name: true } },
@@ -323,7 +336,7 @@ export class OrgService {
         if (!teacher) throw new NotFoundException('Teacher not found');
 
         if (userContext.role === Role.ORG_MANAGER) {
-            if (teacher.user.role === Role.ORG_ADMIN || teacher.user.role === Role.ORG_MANAGER) {
+            if (teacher.user.role === Role.ORG_ADMIN || (userContext.id !== teacher.userId && teacher.user.role === Role.ORG_MANAGER)) {
                 throw new ForbiddenException('Managers cannot modify Admin or Manager profiles');
             }
         }
@@ -331,7 +344,7 @@ export class OrgService {
         const userFields = ['name', 'email', 'phone', 'password'];
         const teacherFields = ['salary', 'subject', 'education', 'designation', 'department', 'emergencyContact', 'bloodGroup', 'address', 'status'];
 
-        const { userData, entityData: teacherData } = await extractUpdateFields(data, userFields, teacherFields, teacher.user.email);
+        const { userData, entityData: teacherData } = await extractUpdateFields(data as unknown as Record<string, unknown>, userFields, teacherFields, teacher.user.email);
 
         if (data.isManager !== undefined) {
             userData.role = data.isManager ? Role.ORG_MANAGER : Role.TEACHER;
@@ -366,7 +379,7 @@ export class OrgService {
             return tx.teacher.findUnique({
                 where: { id },
                 include: {
-                    user: { select: { email: true, name: true, phone: true, role: true } },
+                    user: { select: { email: true, name: true, phone: true, role: true, avatarUrl: true, avatarUpdatedAt: true } },
                     sections: { include: { course: true } }
                 }
             });
@@ -506,13 +519,19 @@ export class OrgService {
                 include: {
                     course: true,
                     teachers: { include: { user: { select: { email: true, name: true } } } },
+                    _count: { select: { enrollments: true } }
                 },
                 orderBy
             }),
             this.prisma.section.count({ where })
         ]);
 
-        return formatPaginatedResponse(sections, totalRecords, options.page, options.limit);
+        const formattedSections = sections.map(s => ({
+            ...s,
+            studentsCount: s._count?.enrollments || 0
+        }));
+
+        return formatPaginatedResponse(formattedSections, totalRecords, options.page, options.limit);
     }
 
     async getSection(orgId: string, id: string) {
@@ -524,7 +543,7 @@ export class OrgService {
                 enrollments: {
                     include: {
                         student: {
-                            include: { user: { select: { id: true, name: true, email: true, avatarUrl: true } } }
+                            include: { user: { select: { id: true, name: true, email: true, avatarUrl: true, avatarUpdatedAt: true } } }
                         }
                     }
                 },
@@ -637,6 +656,7 @@ export class OrgService {
                             name: true,
                             phone: true,
                             avatarUrl: true,
+                            avatarUpdatedAt: true,
                         },
                     },
                     enrollments: {
@@ -665,6 +685,7 @@ export class OrgService {
                         name: true,
                         phone: true,
                         avatarUrl: true,
+                        avatarUpdatedAt: true,
                     },
                 },
                 enrollments: {
@@ -780,7 +801,7 @@ export class OrgService {
             'bloodGroup', 'gender', 'feePlan', 'status'
         ];
 
-        const { userData, entityData: studentData } = await extractUpdateFields(data, userFields, studentFields, student.user.email);
+        const { userData, entityData: studentData } = await extractUpdateFields(data as unknown as Record<string, unknown>, userFields, studentFields, student.user.email);
 
         // --- Role-based Field Locking ---
         const isOrgAdmin = userContext.role === Role.ORG_ADMIN;
@@ -849,7 +870,7 @@ export class OrgService {
             return tx.student.findUnique({
                 where: { id },
                 include: {
-                    user: { select: { email: true, name: true, phone: true } },
+                    user: { select: { email: true, name: true, phone: true, avatarUrl: true, avatarUpdatedAt: true } },
                     enrollments: { include: { section: true } }
                 },
             });
@@ -879,12 +900,12 @@ export class OrgService {
         return this.prisma.teacher.findUnique({ where: { userId } });
     }
 
-    async getProfile(orgId: string, user: any) {
+    async getProfile(orgId: string, user: JwtPayload) {
         if (user.role === Role.STUDENT) {
             const student = await this.prisma.student.findUnique({
                 where: { userId: user.id },
                 include: {
-                    user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true } },
+                    user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, avatarUpdatedAt: true } },
                     enrollments: { include: { section: { include: { course: true } } } }
                 }
             });
@@ -896,7 +917,7 @@ export class OrgService {
             const teacher = await this.prisma.teacher.findUnique({
                 where: { userId: user.id },
                 include: {
-                    user: { select: { id: true, email: true, name: true, phone: true, role: true, avatarUrl: true } },
+                    user: { select: { id: true, email: true, name: true, phone: true, role: true, avatarUrl: true, avatarUpdatedAt: true } },
                     sections: { include: { course: true } }
                 }
             });
@@ -907,7 +928,7 @@ export class OrgService {
         throw new ForbiddenException('Profile access not allowed for this role');
     }
 
-    async updateProfile(orgId: string, user: any, data: any) {
+    async updateProfile(orgId: string, user: JwtPayload, data: Partial<UpdateStudentDto | UpdateTeacherDto>) {
         if (user.role === Role.STUDENT) {
             const student = await this.prisma.student.findUnique({ where: { userId: user.id } });
             if (!student) throw new NotFoundException('Student profile not found');
@@ -924,7 +945,7 @@ export class OrgService {
             return this.updateStudent(orgId, student.id, filteredData as any, {
                 role: Role.STUDENT,
                 name: user.name,
-                email: user.email
+                email: user.email!
             });
         }
 
@@ -951,7 +972,7 @@ export class OrgService {
     }
 
     // --- Assessments ---
-    async createAssessment(orgId: string, data: any) {
+    async createAssessment(orgId: string, data: CreateAssessmentDto) {
         // Validate total weightage for the section
         const sectionAssessments = await this.prisma.assessment.findMany({
             where: { sectionId: data.sectionId }
@@ -971,22 +992,50 @@ export class OrgService {
         });
     }
 
-    async getAssessments(orgId: string, filters: { sectionId?: string, courseId?: string }) {
+    async getAssessments(orgId: string, user: { id: string, role: string | Role }, filters: { sectionId?: string, courseId?: string }) {
+        let allowedSectionIds: string[] | undefined = undefined;
+
+        if (user.role === Role.STUDENT) {
+            const enrollments = await this.prisma.enrollment.findMany({
+                where: { student: { userId: user.id } },
+                select: { sectionId: true }
+            });
+            allowedSectionIds = enrollments.map(e => e.sectionId);
+
+            // If a specific section filter was provided, ensure it's within the allowed sections
+            if (filters.sectionId && !allowedSectionIds.includes(filters.sectionId)) {
+                return []; // unauthorized intersection returns empty
+            }
+        }
+
+        const whereClause: import('@prisma/client').Prisma.AssessmentWhereInput = { organizationId: orgId };
+        if (filters.courseId) whereClause.courseId = filters.courseId;
+        
+        if (user.role === Role.STUDENT) {
+            whereClause.sectionId = filters.sectionId ? filters.sectionId : (allowedSectionIds ? { in: allowedSectionIds } : undefined);
+        } else if (filters.sectionId) {
+            whereClause.sectionId = filters.sectionId;
+        }
+
         return this.prisma.assessment.findMany({
-            where: {
-                organizationId: orgId,
-                ...filters
-            },
+            where: whereClause,
             include: {
                 _count: {
                     select: { grades: true, submissions: true }
+                },
+                section: { 
+                    select: { 
+                        id: true, 
+                        name: true,
+                        teachers: { select: { user: { select: { name: true } } } }
+                    } 
                 }
             },
             orderBy: { createdAt: 'desc' }
         });
     }
 
-    async updateAssessment(orgId: string, id: string, data: any) {
+    async updateAssessment(orgId: string, id: string, data: UpdateAssessmentDto) {
         const assessment = await this.prisma.assessment.findUnique({ where: { id } });
         if (!assessment || assessment.organizationId !== orgId) {
             throw new NotFoundException('Assessment not found');
@@ -1022,20 +1071,27 @@ export class OrgService {
     }
 
     // --- Grades ---
-    async getGrades(orgId: string, assessmentId: string) {
+    async getGrades(orgId: string, assessmentId: string, user?: JwtPayload) {
+        let studentFilter = {};
+        if (user && user.role === Role.STUDENT) {
+            const student = await this.getStudentByUserId(user.id);
+            if (student) studentFilter = { studentId: student.id };
+        }
+
         return this.prisma.grade.findMany({
             where: {
-                assessment: { id: assessmentId, organizationId: orgId }
+                assessment: { id: assessmentId, organizationId: orgId },
+                ...studentFilter
             },
             include: {
                 student: {
-                    include: { user: { select: { id: true, name: true, email: true } } }
+                    include: { user: { select: { id: true, name: true, email: true, avatarUrl: true } } }
                 }
             }
         });
     }
 
-    async updateGrade(orgId: string, assessmentId: string, studentId: string, data: any, userId: string, userRole: Role) {
+    async updateGrade(orgId: string, assessmentId: string, studentId: string, data: UpdateGradeDto, userId: string, userRole: Role) {
         const assessment = await this.prisma.assessment.findUnique({ where: { id: assessmentId } });
         if (!assessment || assessment.organizationId !== orgId) {
             throw new NotFoundException('Assessment not found');
@@ -1096,11 +1152,16 @@ export class OrgService {
         });
 
         if (!assessment) throw new NotFoundException('Assessment not found');
-        return assessment;
+
+        const files = await this.prisma.file.findMany({
+            where: { entityType: 'ASSESSMENT', entityId: id }
+        });
+
+        return { ...assessment, files };
     }
 
     // --- Submissions ---
-    async createSubmission(orgId: string, studentId: string, data: any) {
+    async createSubmission(orgId: string, studentId: string, data: CreateSubmissionDto & { assessmentId: string }) {
         const assessment = await this.prisma.assessment.findUnique({ where: { id: data.assessmentId } });
         if (!assessment || assessment.organizationId !== orgId) {
             throw new NotFoundException('Assessment not found');
@@ -1118,15 +1179,31 @@ export class OrgService {
         });
     }
 
-    async getSubmissions(orgId: string, assessmentId: string) {
-        return this.prisma.submission.findMany({
-            where: { assessmentId, assessment: { organizationId: orgId } },
+    async getSubmissions(orgId: string, assessmentId: string, user?: JwtPayload) {
+        let studentFilter = {};
+        if (user && user.role === Role.STUDENT) {
+            const student = await this.getStudentByUserId(user.id);
+            if (student) studentFilter = { studentId: student.id };
+        }
+
+        const submissions = await this.prisma.submission.findMany({
+            where: { assessmentId, assessment: { organizationId: orgId }, ...studentFilter },
             include: {
                 student: {
                     include: { user: { select: { id: true, name: true, email: true } } }
                 }
             }
         });
+
+        const submissionIds = submissions.map(s => s.id);
+        const files = await this.prisma.file.findMany({
+            where: { entityType: 'SUBMISSION', entityId: { in: submissionIds } }
+        });
+
+        return submissions.map(s => ({
+            ...s,
+            files: files.filter(f => f.entityId === s.id)
+        }));
     }
 
     // --- Grade Calculation ---
@@ -1222,18 +1299,37 @@ export class OrgService {
             this.prisma.student.count({ where: { organizationId: orgId, status: { not: StudentStatus.DELETED } } }),
         ]);
 
+        let pendingAssessments = 0;
+        if (user.role === Role.STUDENT) {
+            const student = await this.prisma.student.findUnique({
+                where: { userId: user.id },
+                select: { id: true, enrollments: { select: { sectionId: true } } }
+            });
+
+            if (student) {
+                const sectionIds = student.enrollments.map(e => e.sectionId);
+                pendingAssessments = await this.prisma.assessment.count({
+                    where: {
+                        sectionId: { in: sectionIds },
+                        submissions: { none: { studentId: student.id } }
+                    }
+                });
+            }
+        }
+
         return {
             TEACHERS: teachers,
             COURSES: courses,
             SECTIONS: sections,
             STUDENTS: students,
+            PENDING_ASSESSMENTS: pendingAssessments,
         };
     }
 
     async getStudentFinalGrades(orgId: string, userId: string) {
         const student = await this.getStudentByUserId(userId);
         if (!student) return [];
-        
+
         const results = await this.calculateFinalGrade(student.id);
         return results;
     }

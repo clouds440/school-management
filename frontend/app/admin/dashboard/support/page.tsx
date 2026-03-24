@@ -228,7 +228,7 @@ export default function SupportPage() {
     };
 
     return (
-        <div className="flex flex-col py-2 md:py-4 w-full animate-fade-in-up">
+        <div className="flex flex-col w-full animate-fade-in-up">
             <div className="bg-white/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/50 flex flex-col w-full overflow-hidden">
                 <div className="px-8 pt-8 pb-6 border-b border-gray-100 flex flex-col gap-6 bg-gray-50/50">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

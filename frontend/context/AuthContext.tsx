@@ -34,6 +34,7 @@ interface AuthContextType {
     loading: boolean;
     login: (token: string) => void;
     logout: () => void;
+    updateUser: (data: Partial<JwtPayload>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -238,8 +239,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         processToken(newToken);
     };
 
+    const updateUser = (data: Partial<JwtPayload>) => {
+        setUser(prev => prev ? { ...prev, ...data } : null);
+    };
+
     return (
-        <AuthContext.Provider value={{ token, user, loading, login, logout }}>
+        <AuthContext.Provider value={{ token, user, loading, login, logout, updateUser }}>
             {loading ? (
                 // Block all rendering until auth state is resolved — eliminates
                 // every flash-of-wrong-content, premature 404, and route flicker.

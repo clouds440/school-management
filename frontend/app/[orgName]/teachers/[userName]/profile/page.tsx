@@ -7,7 +7,11 @@ import { Teacher } from '@/types';
 import TeacherForm from '@/components/forms/TeacherForm';
 import { Settings, UserCircle } from 'lucide-react';
 
-export default function TeacherProfilePage({ params }: { params: { orgName: string; userName: string } }) {
+import { useParams } from 'next/navigation';
+
+export default function TeacherProfilePage() {
+    const params = useParams();
+    const orgName = (params?.orgName as string) || '';
     const { token } = useAuth();
     const [teacherData, setTeacherData] = useState<Teacher | null>(null);
     const [loading, setLoading] = useState(true);
@@ -21,7 +25,7 @@ export default function TeacherProfilePage({ params }: { params: { orgName: stri
     }, [token]);
 
     return (
-        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
+        <div className="flex flex-col w-full animate-fade-in-up">
             <div className="bg-card rounded-sm border border-white/40 shadow-xl overflow-hidden">
                 <div className="p-8 border-b border-primary/10 bg-primary/5 flex items-center gap-4">
                     <div className="p-4 bg-primary/10 rounded-sm shadow-inner group">
@@ -41,10 +45,10 @@ export default function TeacherProfilePage({ params }: { params: { orgName: stri
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
                         </div>
                     ) : teacherData ? (
-                        <TeacherForm 
-                            orgSlug={params.orgName} 
-                            initialData={teacherData} 
-                            isProfile={true} 
+                        <TeacherForm
+                            orgSlug={orgName}
+                            initialData={teacherData}
+                            isProfile={true}
                         />
                     ) : (
                         <div className="py-20 text-center text-card-text/60 font-bold uppercase tracking-widest bg-red-50/50 rounded-sm border border-red-100 italic">

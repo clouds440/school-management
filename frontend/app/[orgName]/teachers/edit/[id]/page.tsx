@@ -74,7 +74,7 @@ export default function EditTeacherPage() {
 
     return (
         <>
-            <div className="mb-6 px-2">
+            <div className="mb-6">
                 <div className="flex items-center gap-5">
                     <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm md:rounded-sm border border-white/30 shadow-xl shrink-0">
                         <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-white" />

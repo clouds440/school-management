@@ -59,6 +59,7 @@ export default function CreateSectionPage() {
             if (!token) return;
             await api.org.createSection(formData, token);
 
+            window.dispatchEvent(new Event('stats-updated'));
             showToast('Section created successfully', 'success');
             router.push(`/${orgSlug}/sections`);
         } catch (error: unknown) {

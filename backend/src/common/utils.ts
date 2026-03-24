@@ -76,14 +76,14 @@ export const handleFileUpdate = async (
     return `/${relativePath}`;
 };
 
-export const extractUpdateFields = async <T extends Record<string, any>>(
+export const extractUpdateFields = async <T extends Record<string, unknown>>(
     data: T,
     userFields: string[],
     entityFields: string[],
     existingUserEmail?: string
 ) => {
-    const userData: Prisma.UserUpdateInput = {};
-    const entityData: Record<string, any> = {};
+    const userData: Record<string, unknown> = {};
+    const entityData: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(data)) {
         if (value === undefined) continue;
@@ -96,19 +96,19 @@ export const extractUpdateFields = async <T extends Record<string, any>>(
                     userData.email = value;
                 }
             } else {
-                (userData as any)[key] = value;
+                userData[key] = value;
             }
         } else if (entityFields.includes(key)) {
             entityData[key] = value;
         }
     }
 
-    return { userData, entityData };
+    return { userData: userData as Prisma.UserUpdateInput, entityData };
 };
 
 export const mapStatusCounts = <T extends string>(
-    statusCounts: any[],
-    allowedStatuses: Record<T, any>
+    statusCounts: { status: string; _count: { _all?: number; id?: number } }[],
+    allowedStatuses: Record<T, unknown>
 ): Record<T, number> => {
     const countsMap = {} as Record<T, number>;
     for (const status of Object.keys(allowedStatuses)) {

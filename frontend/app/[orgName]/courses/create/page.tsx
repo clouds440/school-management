@@ -60,6 +60,7 @@ export default function CreateCoursePage() {
                 throw new Error(errData.message || 'Failed to create course');
             }
 
+            window.dispatchEvent(new Event('stats-updated'));
             showToast('Course created successfully', 'success');
             router.push(`/${orgSlug}/courses`);
         } catch (error: unknown) {

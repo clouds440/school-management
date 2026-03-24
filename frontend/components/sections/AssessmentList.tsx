@@ -11,12 +11,14 @@ import {
     Trash2,
     Edit,
     Send,
+    CheckCircle,
     X
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Assessment, Section, Role, AssessmentType } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import AssessmentForm from '@/components/forms/AssessmentForm';
 import SubmissionForm from '@/components/forms/SubmissionForm';
@@ -92,8 +94,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                     Assessments & Grading
                 </h3>
                 {isTeacherOrAdmin && (
-                    <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2 h-10 px-6">
-                        <Plus className="w-4 h-4" />
+                    <Button onClick={() => setIsCreateModalOpen(true)} icon={Plus}>
                         Add Assessment
                     </Button>
                 )}
@@ -150,26 +151,46 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                                     <span className="text-primary font-black ml-1">{assessment.weightage}%</span>
                                 </div>
 
-                                {isTeacherOrAdmin && (
-                                    <Link
-                                        href={`/${orgSlug}/sections/${section.id}/assessments/${assessment.id}`}
-                                        className="h-8 px-4 text-[10px] uppercase font-black italic gap-1.5 flex items-center justify-center bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/20 transition-all rounded-sm shadow-sm"
-                                    >
-                                        <Users className="w-3.5 h-3.5" />
-                                        Grades
-                                    </Link>
-                                )}
+                                <Link
+                                    href={`/${orgSlug}/sections/${section.id}/assessments/${assessment.id}`}
+                                    className="h-8 px-4 text-[10px] uppercase font-black italic gap-1.5 flex items-center justify-center bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/20 transition-all rounded-sm shadow-sm"
+                                >
+                                    {isTeacherOrAdmin ? (
+                                        <><Users className="w-3.5 h-3.5" /> Grades</>
+                                    ) : (
+                                        <><FileText className="w-3.5 h-3.5" /> Details</>
+                                    )}
+                                </Link>
 
                                 {role === Role.STUDENT && (
-                                    <Button
-                                        variant="primary"
-                                        className="h-8 text-[10px] uppercase font-black italic gap-1.5"
-                                        disabled={!!(assessment.dueDate && new Date(assessment.dueDate) < new Date())}
-                                        onClick={() => setSubmittingAssessment(assessment)}
-                                    >
-                                        <Send className="w-3.5 h-3.5" />
-                                        Submit
-                                    </Button>
+                                    assessment.allowSubmissions ? (
+                                        <Button
+                                            variant="primary"
+                                            className="h-8 text-[10px] uppercase font-black italic gap-1.5"
+                                            disabled={!!(assessment.dueDate && new Date(assessment.dueDate) < new Date())}
+                                            onClick={() => setSubmittingAssessment(assessment)}
+                                        >
+                                            <Send className="w-3.5 h-3.5" />
+                                            Submit Work
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            variant="secondary"
+                                            className="h-8 text-[10px] uppercase font-black italic gap-1.5"
+                                            disabled={!!(assessment.dueDate && new Date(assessment.dueDate) < new Date())}
+                                            onClick={async () => {
+                                                try {
+                                                    await api.org.createSubmission(assessment.id, { assessmentId: assessment.id }, token!);
+                                                    showToast('Marked as done', 'success');
+                                                } catch (e) {
+                                                    showToast('Failed to mark as done', 'error');
+                                                }
+                                            }}
+                                        >
+                                            <CheckCircle className="w-3.5 h-3.5" />
+                                            Mark as Done
+                                        </Button>
+                                    )
                                 )}
                             </div>
                         </div>
@@ -178,80 +199,63 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
             )}
 
             {/* Create Modal */}
-            {isCreateModalOpen && (
-                <div className="fixed inset-0 z-60 flex items-center justify-center bg-gray-950/80 backdrop-blur-xl transition-all duration-300 p-4">
-                    <div className="bg-card p-10 rounded-sm border border-white/10 w-full max-w-2xl transform animate-scale-in shadow-2xl">
-                        <div className="flex justify-between items-center mb-10">
-                            <div>
-                                <h2 className="text-4xl font-black italic tracking-tighter uppercase text-card-text leading-none">New Assessment</h2>
-                                <p className="text-xs font-bold text-card-text/40 mt-2 uppercase tracking-widest">{section.name} • {section.course?.name}</p>
-                            </div>
-                            <button onClick={() => setIsCreateModalOpen(false)} className="text-card-text/20 hover:text-red-500 transition-colors bg-white/5 p-2 rounded-sm active:scale-95">
-                                <XIcon className="w-10 h-10" />
-                            </button>
-                        </div>
-                        <AssessmentForm
-                            sectionId={section.id}
-                            courseId={section.courseId!}
-                            onSuccess={(a) => {
-                                setAssessments(prev => [...prev, a]);
-                                setIsCreateModalOpen(false);
-                            }}
-                            onCancel={() => setIsCreateModalOpen(false)}
-                        />
-                    </div>
-                </div>
-            )}
+            <Modal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                title="New Assessment"
+                subtitle={`${section.name} • ${section.course?.name}`}
+                maxWidth="max-w-2xl"
+            >
+                <AssessmentForm
+                    sectionId={section.id}
+                    courseId={section.courseId!}
+                    onSuccess={(a) => {
+                        setAssessments(prev => [...prev, a]);
+                        setIsCreateModalOpen(false);
+                    }}
+                    onCancel={() => setIsCreateModalOpen(false)}
+                />
+            </Modal>
 
             {/* Edit Modal */}
-            {editingAssessment && (
-                <div className="fixed inset-0 z-60 flex items-center justify-center bg-gray-950/80 backdrop-blur-xl transition-all duration-300 p-4">
-                    <div className="bg-card p-10 rounded-sm border border-white/10 w-full max-w-2xl transform animate-scale-in shadow-2xl">
-                        <div className="flex justify-between items-center mb-10">
-                            <div>
-                                <h2 className="text-4xl font-black italic tracking-tighter uppercase text-card-text leading-none">Edit Assessment</h2>
-                                <p className="text-xs font-bold text-card-text/40 mt-2 uppercase tracking-widest">Updating: {editingAssessment.title}</p>
-                            </div>
-                            <button onClick={() => setEditingAssessment(null)} className="text-card-text/20 hover:text-red-500 transition-colors bg-white/5 p-2 rounded-sm active:scale-95">
-                                <XIcon className="w-10 h-10" />
-                            </button>
-                        </div>
-                        <AssessmentForm
-                            sectionId={section.id}
-                            courseId={section.courseId!}
-                            assessmentId={editingAssessment.id}
-                            initialData={editingAssessment}
-                            onSuccess={(a) => {
-                                setAssessments(prev => prev.map(item => item.id === a.id ? a : item));
-                                setEditingAssessment(null);
-                            }}
-                            onCancel={() => setEditingAssessment(null)}
-                        />
-                    </div>
-                </div>
-            )}
+            <Modal
+                isOpen={!!editingAssessment}
+                onClose={() => setEditingAssessment(null)}
+                title="Edit Assessment"
+                subtitle={editingAssessment ? `Updating: ${editingAssessment.title}` : ''}
+                maxWidth="max-w-2xl"
+            >
+                {editingAssessment && (
+                    <AssessmentForm
+                        sectionId={section.id}
+                        courseId={section.courseId!}
+                        assessmentId={editingAssessment.id}
+                        initialData={editingAssessment}
+                        onSuccess={(a) => {
+                            setAssessments(prev => prev.map(item => item.id === a.id ? a : item));
+                            setEditingAssessment(null);
+                        }}
+                        onCancel={() => setEditingAssessment(null)}
+                    />
+                )}
+            </Modal>
 
             {/* Submission Modal */}
-            {submittingAssessment && (
-                <div className="fixed inset-0 z-60 flex items-center justify-center bg-gray-950/80 backdrop-blur-xl transition-all duration-300 p-4">
-                    <div className="bg-card p-10 rounded-sm border border-white/10 w-full max-w-2xl transform animate-scale-in shadow-2xl">
-                        <div className="flex justify-between items-center mb-10">
-                            <div>
-                                <h2 className="text-4xl font-black italic tracking-tighter uppercase text-card-text leading-none">Submit Work</h2>
-                                <p className="text-xs font-bold text-card-text/40 mt-2 uppercase tracking-widest">{submittingAssessment.title}</p>
-                            </div>
-                            <button onClick={() => setSubmittingAssessment(null)} className="text-card-text/20 hover:text-red-500 transition-colors bg-white/5 p-2 rounded-sm active:scale-95">
-                                <XIcon className="w-10 h-10" />
-                            </button>
-                        </div>
-                        <SubmissionForm
-                            assessmentId={submittingAssessment.id}
-                            onSuccess={() => setSubmittingAssessment(null)}
-                            onCancel={() => setSubmittingAssessment(null)}
-                        />
-                    </div>
-                </div>
-            )}
+            <Modal
+                isOpen={!!submittingAssessment}
+                onClose={() => setSubmittingAssessment(null)}
+                title="Submit Work"
+                subtitle={submittingAssessment ? submittingAssessment.title : ''}
+                maxWidth="max-w-2xl"
+            >
+                {submittingAssessment && (
+                    <SubmissionForm
+                        assessmentId={submittingAssessment.id}
+                        onSuccess={() => setSubmittingAssessment(null)}
+                        onCancel={() => setSubmittingAssessment(null)}
+                    />
+                )}
+            </Modal>
 
             <ConfirmDialog
                 isOpen={!!deletingAssessment}
@@ -266,11 +270,4 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
     );
 }
 
-// Simple XIcon for modals (using local component to avoid confusion with Lucide)
-function XIcon({ className }: { className?: string }) {
-    return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-    )
-}
+

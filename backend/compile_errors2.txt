@@ -1,5 +1,0 @@
-src/auth/auth.service.ts(8,16): error TS2554: Expected 1 arguments, but got 0.
-src/auth/jwt.strategy.ts(6,16): error TS2554: Expected 1 arguments, but got 0.
-src/auth/jwt.strategy.ts(11,15): error TS2345: Argument of type '{ jwtFromRequest: JwtFromRequestFunction<any>; ignoreExpiration: false; secretOrKey: string; }' is not assignable to parameter of type 'StrategyOptionsWithRequest'.
-  Type '{ jwtFromRequest: JwtFromRequestFunction<any>; ignoreExpiration: false; secretOrKey: string; }' is not assignable to type 'Omit<WithSecretOrKey, "secretOrKeyProvider"> & { passReqToCallback: true; }'.
-    Property 'passReqToCallback' is missing in type '{ jwtFromRequest: JwtFromRequestFunction<any>; ignoreExpiration: false; secretOrKey: string; }' but required in type '{ passReqToCallback: true; }'.

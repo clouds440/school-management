@@ -3,8 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, LogOut, X, Key, LifeBuoy } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { ChevronLeft, ChevronRight, LogOut, X, Key, LifeBuoy, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { Role } from '@/types';
@@ -32,19 +32,39 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
     const { logout, user } = useAuth();
     const { isExpanded, isMobileOpen, toggleSidebar, setIsMobileOpen, modalConfig, closeViewModal } = useUI();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const router = useRouter();
+
     const activeLink = React.useMemo(() => {
         const allLinks = [...links, ...bottomLinks];
+        const query = searchParams.toString();
+        const fullPath = query ? `${pathname}?${query}` : pathname;
+
         // 1. Try exact match first
-        const exactMatch = allLinks.find(l => pathname === l.href);
+        const exactMatch = allLinks.find(l => l.href === fullPath);
         if (exactMatch) return exactMatch;
 
-        // 2. Try sub-path matches (longest first to avoid partial matches on shorter bases)
+        // 2. Intelligent Tab/Query Match (ignores extra params like sectionId)
+        const currentTab = searchParams.get('tab') || 'overview';
+        const tabMatch = allLinks.find(l => {
+            const isTabLink = l.href.includes('tab=');
+            if (isTabLink) {
+                const linkUrlPart = l.href.split('?')[1] || '';
+                const linkTab = new URLSearchParams(linkUrlPart).get('tab');
+                return linkTab === currentTab && l.href.split('?')[0] === pathname;
+            }
+            return currentTab === 'overview' && l.href === pathname;
+        });
+
+        if (tabMatch) return tabMatch;
+
+        // 4. Try sub-path matches
+        // Exclude query-based links here to avoid false positive subpath matches
         return allLinks
-            .filter(l => !l.href.endsWith('/dashboard') && !l.href.endsWith('/admin'))
+            .filter(l => !l.href.endsWith('/dashboard') && !l.href.endsWith('/admin') && !l.href.includes('?'))
             .sort((a, b) => (b.href?.length || 0) - (a.href?.length || 0))
             .find(l => pathname.startsWith(`${l.href}/`));
-    }, [pathname, links, bottomLinks]);
+    }, [pathname, searchParams, links, bottomLinks]);
 
     const handleLogout = () => {
         logout();
@@ -152,17 +172,17 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                 <div className="p-4 border-t border-sidebar-text/10 bg-sidebar-text/5 shrink-0">
                     {user && (
                         <div className={`flex items-center ${!isExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
-                            <div className={`w-9 h-9 rounded-sm ${user.avatarUrl || user.orgLogoUrl ? 'bg-transparent' : 'bg-primary'} flex items-center justify-center text-sidebar-active-text font-bold shrink-0 shadow-inner overflow-hidden relative`}>
-                                {user.avatarUrl || user.orgLogoUrl ? (
+                            <div className={`w-9 h-9 rounded-sm ${user.avatarUrl ? 'bg-transparent' : 'bg-primary'} flex items-center justify-center text-sidebar-active-text font-bold shrink-0 shadow-inner overflow-hidden relative`}>
+                                {user.avatarUrl ? (
                                     <Image
-                                        src={getPublicUrl(user.avatarUrl || user.orgLogoUrl, user.avatarUpdatedAt)}
+                                        src={getPublicUrl(user.avatarUrl, user.avatarUpdatedAt)}
                                         alt="Avatar"
                                         fill
                                         className="object-cover rounded-full"
                                         unoptimized
                                     />
                                 ) : (
-                                    user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()
+                                    <UserIcon className="w-5 h-5" />
                                 )}
                             </div>
                             <div className={`overflow-hidden transition-all ${!isExpanded ? 'lg:hidden lg:w-0' : 'w-auto'}`}>
@@ -226,9 +246,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
 
                         <div className="flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-300">
                             {pathname !== '/admin/dashboard' &&
-                                !pathname.endsWith('/admin') &&
-                                pathname !== `/${user?.orgSlug}/teachers/${user?.userName}` &&
-                                pathname !== `/${user?.orgSlug}/students/${user?.userName}` && (
+                                !pathname.endsWith('/admin') && (
                                     <BackButton />
                                 )}
                             <div className="flex items-center gap-3">
@@ -238,7 +256,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                                     </div>
                                 )}
                                 <h2 className="text-xl font-black tracking-tight uppercase truncate max-w-[200px] md:max-w-none">
-                                    {activeLink?.label || title}
+                                    {activeLink?.label}
                                 </h2>
                             </div>
                         </div>
@@ -246,7 +264,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                 </header>
 
                 {/* Universal Content Wrapper - This is the ONLY scrollable area */}
-                <div className="flex-1 w-full px-[3px] md:px-3 py-4 md:py-8 overflow-y-auto animate-fade-in-up scrollbar-thin overflow-x-hidden">
+                <div className="flex-1 w-full px-[3px] md:px-2 py-2 md:py-4 overflow-y-auto animate-fade-in-up scrollbar-thin overflow-x-hidden">
                     {children}
                 </div>
             </main>

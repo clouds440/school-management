@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsEnum, IsNumber, IsOptional, IsDateString, Min, Max } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum, IsNumber, IsOptional, IsDateString, Min, Max, IsBoolean } from 'class-validator';
 import { AssessmentType } from '@prisma/client';
 
 export class CreateAssessmentDto {
@@ -30,4 +30,16 @@ export class CreateAssessmentDto {
     @IsDateString()
     @IsOptional()
     dueDate?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    allowSubmissions?: boolean;
+
+    @IsString()
+    @IsOptional()
+    externalLink?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    isVideoLink?: boolean;
 }

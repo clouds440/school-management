@@ -81,13 +81,26 @@ export interface Student {
     graduationDate?: string;
     emergencyContact?: string;
     bloodGroup?: string;
-    gender?: string;
-    feePlan?: string;
+    gender?: string | null;
+    feePlan?: string | null;
     status?: StudentStatus;
     user: User;
     enrollments?: { section: Section }[];
     updatedBy?: string;
     updatedAt?: string;
+}
+
+export interface Attachment {
+    id: string;
+    orgId: string;
+    entityType: string;
+    entityId: string;
+    path: string;
+    filename: string;
+    mimeType: string;
+    size: number;
+    uploadedBy: string;
+    createdAt: string;
 }
 
 export interface StatusHistoryEntry {
@@ -171,6 +184,7 @@ export interface OrgStats {
     COURSES: number;
     SECTIONS: number;
     STUDENTS: number;
+    PENDING_ASSESSMENTS?: number;
 }
 
 export interface SupportTicket {
@@ -252,6 +266,7 @@ export interface Assessment {
     id: string;
     sectionId: string;
     courseId: string;
+    organizationId: string;
     title: string;
     type: AssessmentType;
     totalMarks: number;
@@ -259,10 +274,15 @@ export interface Assessment {
     dueDate?: string;
     createdAt: string;
     updatedAt: string;
+    allowSubmissions: boolean;
+    externalLink?: string;
+    isVideoLink?: boolean;
+    files?: Attachment[];
     _count?: {
         grades: number;
         submissions: number;
     };
+    section?: Section;
 }
 
 export interface Grade {
@@ -285,6 +305,7 @@ export interface Submission {
     fileUrl?: string;
     submittedAt: string;
     student?: Student;
+    files?: Attachment[];
 }
 
 export interface CreateAssessmentRequest {
@@ -295,6 +316,9 @@ export interface CreateAssessmentRequest {
     totalMarks: number;
     weightage: number;
     dueDate?: string;
+    allowSubmissions?: boolean;
+    externalLink?: string;
+    isVideoLink?: boolean;
 }
 
 export type UpdateAssessmentRequest = Partial<CreateAssessmentRequest>;
