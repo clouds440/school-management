@@ -54,7 +54,8 @@ export default function SectionsPage() {
     } = usePaginatedData<Section, SectionParams>(
         (p) => api.org.getSections(token!, p),
         sectionParams,
-        `sections-${user?.orgSlug || pathname.split('/')[1]}`
+        `sections-${user?.orgSlug || pathname.split('/')[1]}`,
+        { enabled: !!token }
     );
 
     useEffect(() => {
@@ -183,7 +184,7 @@ export default function SectionsPage() {
 
                 return (
                     <TableActions
-                        onEdit={(isAdmin || isAssignedTeacher) ? () => {
+                        onEdit={isAdmin ? () => {
                             setEditingSection(row);
                             setEditFormData({
                                 name: row.name,
@@ -194,6 +195,17 @@ export default function SectionsPage() {
                             });
                             setEditModalOpen(true);
                         } : undefined}
+                        onView={() => {
+                            setEditingSection(row);
+                            setEditFormData({
+                                name: row.name,
+                                semester: row.semester || '',
+                                year: row.year || '',
+                                room: row.room || '',
+                                courseId: row.courseId || ''
+                            });
+                            setEditModalOpen(true);
+                        }}
                         onDelete={isAdmin ? () => {
                             setDeletingSection(row);
                             setDeleteDialogOpen(true);
@@ -201,7 +213,7 @@ export default function SectionsPage() {
                         editTitle="Edit Section"
                         deleteTitle="Delete Section"
                         variant="default"
-                        isViewAndEdit={true}
+                        isViewAndEdit={isAdmin}
                     />
                 );
             }
@@ -282,6 +294,7 @@ export default function SectionsPage() {
                 onSubmit={handleEditSubmit}
                 isSubmitting={isSaving}
                 submitText="Save Changes"
+                showSubmit={user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER}
             >
                 <div className="space-y-8 py-2">
                     <div className="space-y-2">
@@ -294,9 +307,11 @@ export default function SectionsPage() {
                             onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
                             placeholder="e.g. Section A"
                             icon={BookOpen}
+                            readOnly={user?.role === Role.TEACHER}
+                            disabled={user?.role === Role.TEACHER}
                         />
                     </div>
-                    {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
+                    {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) ? (
                         <div className="space-y-2">
                             <Label>Course</Label>
                             <CustomSelect
@@ -305,6 +320,17 @@ export default function SectionsPage() {
                                 onChange={(val) => setEditFormData({ ...editFormData, courseId: val })}
                                 placeholder="Select Course"
                                 required
+                                searchable
+                            />
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <Label>Course</Label>
+                            <Input
+                                value={courses.find(c => c.id === editFormData.courseId)?.name || 'N/A'}
+                                readOnly
+                                disabled
+                                icon={BookOpen}
                             />
                         </div>
                     )}
@@ -317,6 +343,8 @@ export default function SectionsPage() {
                                 value={editFormData.semester}
                                 onChange={(e) => setEditFormData({ ...editFormData, semester: e.target.value })}
                                 placeholder="E.g., Fall"
+                                readOnly={user?.role === Role.TEACHER}
+                                disabled={user?.role === Role.TEACHER}
                             />
                         </div>
                         <div className="space-y-2">
@@ -327,6 +355,8 @@ export default function SectionsPage() {
                                 value={editFormData.year}
                                 onChange={(e) => setEditFormData({ ...editFormData, year: e.target.value })}
                                 placeholder="E.g., 2026"
+                                readOnly={user?.role === Role.TEACHER}
+                                disabled={user?.role === Role.TEACHER}
                             />
                         </div>
                     </div>
@@ -338,6 +368,8 @@ export default function SectionsPage() {
                             value={editFormData.room}
                             onChange={(e) => setEditFormData({ ...editFormData, room: e.target.value })}
                             placeholder="E.g., 101-B"
+                            readOnly={user?.role === Role.TEACHER}
+                            disabled={user?.role === Role.TEACHER}
                         />
                     </div>
                 </div>

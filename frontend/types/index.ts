@@ -283,6 +283,7 @@ export interface Assessment {
         submissions: number;
     };
     section?: Section;
+    grades?: Grade[];
 }
 
 export interface Grade {

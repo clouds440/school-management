@@ -191,17 +191,11 @@ export default function AssessmentDetailPage() {
                                                     <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-black text-xs border border-primary/20 overflow-hidden relative">
                                                         {student.user.avatarUrl ? (
                                                             <Image
-                                                                 src={getPublicUrl(student.user.avatarUrl, student.user.avatarUpdatedAt)}
+                                                                src={getPublicUrl(student.user.avatarUrl, student.user.avatarUpdatedAt)}
                                                                 alt={student.user.name}
                                                                 fill
-                                                                className="object-cover"
-                                                                onError={(e) => {
-                                                                    const target = e.currentTarget as HTMLImageElement;
-                                                                    target.style.display = 'none';
-                                                                    if (target.parentElement) {
-                                                                        target.parentElement.innerText = student.user.name.charAt(0).toUpperCase();
-                                                                    }
-                                                                }}
+                                                                className="object-cover rounded-full"
+                                                                unoptimized
                                                             />
                                                         ) : (
                                                             student.user.name.charAt(0).toUpperCase()
@@ -221,6 +215,7 @@ export default function AssessmentDetailPage() {
                                                 ) : (
                                                     <span className="flex items-center gap-1.5 text-orange-500">
                                                         <Calendar className="w-3.5 h-3.5" /> Pending
+
                                                     </span>
                                                 )}
                                             </td>

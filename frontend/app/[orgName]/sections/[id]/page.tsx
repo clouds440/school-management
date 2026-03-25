@@ -59,22 +59,21 @@ export default function SectionDetailPage() {
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                     <div className="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
                         <div className="p-6 bg-primary/10 rounded-sm shadow-inner border border-primary/20 transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                            <BookOpen className="w-16 h-16 text-primary" />
+                            <BookOpen className="w-8 h-8 text-primary" />
                         </div>
                         <div>
                             <div className="flex items-center gap-3 justify-center md:justify-start mb-2">
                                 <span className="px-3 py-1 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] italic rounded-sm shadow-lg shadow-primary/20">
                                     SECTION ID: {section.id.substring(0, 8).toUpperCase()}
                                 </span>
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                             </div>
-                            <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter uppercase leading-none mb-4 text-transparent bg-clip-text bg-linear-to-r from-card-text to-card-text/60">
+                            <h1 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase leading-none mb-4 text-transparent bg-clip-text bg-linear-to-r from-card-text to-card-text/60">
                                 {section.name}
                             </h1>
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-[11px] font-black uppercase tracking-widest text-card-text/40">
                                 <span className="flex items-center gap-2 group/item">
                                     <GraduationCap className="w-4 h-4 text-primary group-hover/item:scale-110 transition-transform" />
-                                    {section.course?.name || 'GENERIC COURSE'}
+                                    {section.course?.name || 'COURSE'}
                                 </span>
                                 <span className="flex items-center gap-2 group/item">
                                     <Users className="w-4 h-4 text-primary group-hover/item:scale-110 transition-transform" />
@@ -87,7 +86,7 @@ export default function SectionDetailPage() {
                                 {section.room && (
                                     <span className="flex items-center gap-2 group/item">
                                         <MapPin className="w-4 h-4 text-primary group-hover/item:scale-110 transition-transform" />
-                                        ROOM: {section.room}
+                                        VENUE: {section.room}
                                     </span>
                                 )}
                             </div>

@@ -44,10 +44,6 @@ export default function AdminPage() {
 
     if (!payload || !orgData) return null;
 
-    if (payload.role !== Role.ORG_ADMIN && payload.role !== Role.ORG_MANAGER) {
-        return <div>Access Denied</div>;
-    }
-
     return (
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
             <div className="space-y-8">

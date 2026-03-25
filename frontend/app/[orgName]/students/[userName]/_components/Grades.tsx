@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Trophy, Calendar, Search, Award, TrendingUp } from 'lucide-react';
-import { Input } from '@/components/ui/Input';
+import { Trophy, Calendar, Award, TrendingUp } from 'lucide-react';
 import { FinalGradeResponse } from '@/types';
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
+import { SearchBar } from '@/components/ui/SearchBar';
 
 export default function Grades({ grades }: { grades: FinalGradeResponse[] }) {
     const [search, setSearch] = useState('');
@@ -18,105 +19,129 @@ export default function Grades({ grades }: { grades: FinalGradeResponse[] }) {
         : '0.0';
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 pb-10 px-4 sm:px-6">
-            
-            {/* Header Section with Achievement Stats */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto space-y-10 pb-16 px-4 sm:px-6">
+
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4 mb-10">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Academic Achievement</h1>
-                    <p className="text-slate-500 mt-1">A definitive record of your semester progress and results.</p>
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
+                        Academic Transcript
+                    </h1>
+                    <p className="text-slate-500 mt-3 font-bold max-w-md tracking-tight">Your verified semester performance and official grade audit.</p>
                 </div>
+
+                <div className="w-full md:w-80">
+                    <SearchBar
+                        placeholder="Search records..."
+                        value={search}
+                        onChange={setSearch}
+                    />
+                </div>
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 
-                <div className="flex items-center gap-4">
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center gap-4">
-                        <div className="p-2.5 bg-indigo-50 rounded-lg text-indigo-600">
-                            <TrendingUp className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Semester Average</p>
-                            <p className="text-xl font-bold text-slate-900">{averageGrade}%</p>
-                        </div>
-                    </div>
-                    <div className="w-full md:w-64">
-                        <Input
-                            icon={Search}
-                            placeholder="Filter results..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="bg-white border-slate-200 shadow-sm"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredGrades.map(grade => (
-                    <div key={grade.sectionId} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full border-t-4 border-t-indigo-500">
-                        <div className="flex justify-between items-start mb-6">
-                            <div className="text-left">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{grade.courseName}</p>
-                                <h3 className="text-lg font-bold text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors">{grade.sectionName}</h3>
+                {/* Achievement Sidebar */}
+                <div className="lg:col-span-1 space-y-6">
+                    <Card padding="lg" accentColor="bg-indigo-600" className="bg-slate-900 border-0 shadow-2xl relative overflow-hidden group" delay={0}>
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                        <div className="relative z-10 text-left">
+                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Cumulative Average</p>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-5xl font-black text-white italic leading-none">{averageGrade}</span>
+                                <span className="text-xl font-black text-indigo-400 italic">%</span>
                             </div>
-                            <div className="w-10 h-10 rounded-xl border border-slate-100 bg-slate-50 flex items-center justify-center font-bold text-slate-700 shadow-sm">
-                                {grade.letterGrade || 'A'}
+                            <div className="mt-8 pt-6 border-t border-white/10">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 font-sans not-italic">Institutional Rank</p>
+                                <p className="text-sm font-black text-slate-100 italic flex items-center gap-2">
+                                    <Trophy className="w-4 h-4 text-amber-500" />
+                                    Dean's Distinction List
+                                </p>
                             </div>
                         </div>
+                    </Card>
 
-                        <div className="space-y-6 mt-auto">
-                            <div className="flex items-end justify-between">
-                                <div className="text-left">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Final Score</p>
-                                    <p className="text-3xl font-bold text-slate-900 tracking-tight">{grade.finalPercentage}%</p>
-                                </div>
-                                <Award className="w-8 h-8 text-amber-500/20 group-hover:text-amber-500 transition-colors" />
+                    <Card padding="md" className="border-slate-100 bg-emerald-50/30" delay={100}>
+                        <div className="flex items-center gap-4 text-left">
+                            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center border border-emerald-200">
+                                <Award className="w-6 h-6 text-emerald-600" />
                             </div>
-
-                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-indigo-500 rounded-full transition-all duration-1000"
-                                    style={{ width: `${grade.finalPercentage}%` }}
-                                ></div>
-                            </div>
-
-                            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                    <Calendar className="w-3 h-3" />
-                                    Record Verified
-                                </div>
-                                <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg font-bold uppercase">Official</span>
+                            <div>
+                                <h3 className="text-sm font-black text-slate-900 italic uppercase">Honor Roll</h3>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Verified Status</p>
                             </div>
                         </div>
-                    </div>
-                ))}
-                {filteredGrades.length === 0 && (
-                    <div className="col-span-full text-center py-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                        <Trophy className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                        <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">No grade records found</p>
-                    </div>
-                )}
-            </div>
+                    </Card>
 
-            {/* Performance Context Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-8 bg-slate-900 rounded-2xl text-white shadow-xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
-                    <div className="relative z-10 text-left">
-                        <h3 className="text-xl font-bold tracking-tight mb-3">Academic Certification</h3>
-                        <p className="text-slate-400 text-sm mb-6 leading-relaxed">Your semester results are complete. You can now download an official digital transcript for your records or applications.</p>
-                        <button className="px-6 py-3 bg-white text-slate-900 font-bold text-xs rounded-xl shadow-lg hover:bg-slate-50 transition-colors">
-                            Download Transcript (PDF)
-                        </button>
-                    </div>
+                    <button className="w-full py-4 bg-white border border-slate-200 text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-50 hover:border-indigo-300 transition-all shadow-sm active:scale-95 group flex items-center justify-center gap-2">
+                        Download Report
+                        <span className="text-slate-300 group-hover:text-indigo-500 transition-colors">↓</span>
+                    </button>
                 </div>
 
-                <div className="bg-white border border-slate-200 p-8 rounded-2xl shadow-sm flex items-center gap-6">
-                    <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center border border-emerald-100">
-                        <Trophy className="w-8 h-8" />
+                {/* Grade List Area */}
+                <div className="lg:col-span-3 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {filteredGrades.map((grade, index) => (
+                            <Card
+                                key={grade.sectionId}
+                                accentColor="bg-primary"
+                                padding="md"
+                                className="group hover:border-indigo-200 transition-all duration-300 h-auto"
+                                delay={200 + (index * 50)}
+                            >
+                                <div className="flex items-center justify-between gap-6">
+                                    <div className="flex items-center gap-4 flex-1 text-left">
+                                        <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center font-black text-slate-900 italic text-xl shadow-xs group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-all">
+                                            {grade.letterGrade || 'A'}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{grade.courseName}</p>
+                                            <h3 className="text-lg font-black text-slate-900 italic tracking-tight leading-tight group-hover:text-indigo-600 transition-colors line-clamp-1">{grade.sectionName}</h3>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="flex items-baseline gap-1 justify-end">
+                                            <span className="text-2xl font-black text-slate-900 italic leading-none">{grade.finalPercentage}</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase italic">%</span>
+                                        </div>
+                                        <div className="w-16 h-1 bg-slate-100 rounded-full mt-2 overflow-hidden ml-auto">
+                                            <div className="h-full bg-indigo-500" style={{ width: `${grade.finalPercentage}%` }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
                     </div>
-                    <div className="text-left">
-                        <h3 className="font-bold text-slate-900 text-lg">Dean's List Status</h3>
-                        <p className="text-slate-500 text-sm mt-1 leading-relaxed">With a weighted average of {averageGrade}%, you are currently eligible for semester honors.</p>
-                    </div>
+
+                    {filteredGrades.length === 0 && (
+                        <div className="p-20 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200 text-center">
+                            <TrendingUp className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No matching records found</p>
+                        </div>
+                    )}
+
+                    {/* Footer Info Card */}
+                    <Card padding="lg" className="bg-indigo-50/30 border-indigo-100/50" delay={400}>
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-left">
+                            <div className="flex items-start gap-4">
+                                <div className="p-3 bg-white rounded-xl border border-indigo-100 shadow-sm text-indigo-500">
+                                    <TrendingUp className="w-5 h-5" />
+                                </div>
+                                <div className="max-w-md">
+                                    <h4 className="text-sm font-black text-slate-900 uppercase italic tracking-tight">Performance Summary</h4>
+                                    <p className="text-xs text-slate-500 font-medium leading-relaxed mt-2 italic">
+                                        Your academic trajectory is currently <span className="text-indigo-600 font-bold uppercase tracking-widest">Positive</span>. Maintain consistent presence in all sections to secure final honors.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <Calendar className="w-4 h-4 text-indigo-400" />
+                                Authentic Transcript v2.0
+                            </div>
+                        </div>
+                    </Card>
                 </div>
             </div>
         </div>

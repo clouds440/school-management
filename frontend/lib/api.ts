@@ -56,7 +56,6 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
                 if (text && text.length < 200) message = text;
             }
         } catch (error) {
-            // Ignore parsing errors for the error message itself
             console.error('Error parsing error response:', error);
         }
         throw new Error(message);
@@ -208,7 +207,7 @@ export const api = {
             formData.append('entityType', entityType);
             formData.append('entityId', entityId);
             formData.append('file', file);
-            
+
             const response = await fetch(`${API_BASE_URL}/files`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },

@@ -52,7 +52,8 @@ export default function TeachersPage() {
     } = usePaginatedData<Teacher, TeacherParams>(
         (p) => api.org.getTeachers(token!, p),
         teacherParams,
-        `teachers-${user?.orgSlug || pathname.split('/')[1]}`
+        `teachers-${user?.orgSlug || pathname.split('/')[1]}`,
+        { enabled: !!token }
     );
 
     useEffect(() => {
@@ -109,7 +110,7 @@ export default function TeachersPage() {
                 <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 ${row.user.avatarUrl ? 'bg-transparent' : 'bg-indigo-50'} rounded-sm flex items-center justify-center text-indigo-600 shrink-0 relative`}>
                         {row.user.avatarUrl ? (
-                            <Image src={getPublicUrl(row.user.avatarUrl)} alt="Teacher photo" width={40} height={40} className="w-10 h-10 bg-transparent rounded-full object-cover" unoptimized />
+                            <Image src={getPublicUrl(row.user.avatarUrl)} alt={`${row.user.name} photo`} width={40} height={40} className="w-10 h-10 bg-transparent rounded-full object-cover" unoptimized />
                         ) : (
                             row.user.name.charAt(0).toUpperCase()
                         )}

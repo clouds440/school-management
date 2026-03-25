@@ -1,10 +1,10 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams, useParams } from 'next/navigation';
+import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { Section, FinalGradeResponse, Student, ApiError } from '@/types';
+import { Section, FinalGradeResponse, Student, ApiError, Role } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { ShieldOff, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
@@ -18,6 +18,7 @@ import Assessments from './_components/Assessments';
 
 function StudentPortalContent() {
     const params = useParams();
+    const router = useRouter();
     const searchParams = useSearchParams();
     const tab = searchParams.get('tab') || 'overview';
     const { user, token } = useAuth();
@@ -32,7 +33,25 @@ function StudentPortalContent() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!token) return;
+        if (!token || !user) return;
+
+        // Role Guard: Only Student self-view, ORG_ADMIN, or ORG_MANAGER
+        // We can add TEACHER check later if needed, but for now strict access.
+        const isAuthorized = 
+            user.role === Role.ORG_ADMIN || 
+            user.role === Role.ORG_MANAGER || 
+            (user.role === Role.STUDENT && user.userName === params.userName);
+
+        if (!isAuthorized) {
+            showToast('Access Denied. You are not authorized to view this portal.', 'error');
+            const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
+            const redirectPath = user.role === Role.STUDENT 
+                ? `/${orgName}/students/${user.userName}`
+                : `/${orgName}/${user.role === Role.ORG_ADMIN ? 'admin' : `teachers/${nameSlug}`}`;
+            
+            router.replace(redirectPath);
+            return;
+        }
 
         const fetchData = async () => {
             setLoading(true);
@@ -59,8 +78,9 @@ function StudentPortalContent() {
                 setSections(sectionsRes.data || []);
                 setGrades(gradesRes || []);
                 setAssessments(Array.isArray(assessmentsRes) ? assessmentsRes : []);
-            } catch (error) {
-                console.error('Failed to fetch other student data:', error);
+            } catch (err: any) {
+                if (err.isSilent) return;
+                console.error('Failed to fetch other student data:', err);
                 showToast('Failed to load some data. Please try again.', 'error');
             } finally {
                 setLoading(false);
@@ -92,14 +112,14 @@ function StudentPortalContent() {
 
     if (loading) {
         return (
-            <div className="flex flex-1 items-center justify-center h-[60vh]">
+            <div className="flex flex-1 items-center justify-center h-full">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up">
+        <div className="flex flex-col w-full h-full">
             {user.status === 'ALUMNI' && (
                 <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] border border-blue-200 text-center max-w-2xl mx-auto mb-10 hover:shadow-2xl transition-all duration-500">
                     <div className="p-6 bg-blue-50 rounded-full mb-6">
@@ -127,7 +147,7 @@ function StudentPortalContent() {
 export default function StudentOverviewPage() {
     return (
         <Suspense fallback={
-            <div className="flex flex-1 items-center justify-center h-[60vh]">
+            <div className="flex flex-1 items-center justify-center h-full">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
         }>

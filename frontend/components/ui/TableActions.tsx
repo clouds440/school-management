@@ -13,6 +13,7 @@ export interface AdminAction {
 
 interface TableActionsProps {
     onEdit?: () => void;
+    onView?: () => void;
     onDelete?: () => void;
     editTitle?: string;
     deleteTitle?: string;
@@ -36,6 +37,7 @@ const adminActionConfig: Record<AdminActionVariant, { icon: React.ElementType, c
 
 export const TableActions: React.FC<TableActionsProps> = ({
     onEdit,
+    onView,
     onDelete,
     editTitle = "View / Edit",
     deleteTitle = "Delete",
@@ -51,6 +53,20 @@ export const TableActions: React.FC<TableActionsProps> = ({
 
     return (
         <div className={`flex gap-3 items-center ${className}`}>
+            {onView && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onView();
+                    }}
+                    className="text-primary hover:text-white px-3 py-2.5 hover:bg-primary border border-primary/10 rounded-sm transition-all shadow-sm active:scale-95 group relative flex items-center gap-2"
+                    title="View"
+                >
+                    <Eye className="w-4 h-4" />
+                    {showLabels && <span className="text-[10px] font-black uppercase tracking-wider text-inherit">View</span>}
+                </button>
+            )}
+
             {onEdit && (
                 <button
                     onClick={(e) => {

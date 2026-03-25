@@ -27,6 +27,9 @@ model Organization {
   teachers        Teacher[]
   users           User[]
   assessments     Assessment[]
+  parentOrgId     String?
+  parentOrg       Organization?   @relation("ParentChildOrg", fields: [parentOrgId], references: [id])
+  subOrgs         Organization[]  @relation("ParentChildOrg")
 }
 
 model SupportTicket {
@@ -88,6 +91,7 @@ model Course {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  updatedBy      String?
   sections       Section[]
   assessments    Assessment[]
 }

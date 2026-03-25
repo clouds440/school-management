@@ -104,7 +104,7 @@ export default function TeacherLandingPage() {
                         <div>
                             <div className="flex flex-col md:flex-row md:items-center gap-3 mb-1">
                                 <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase leading-none text-gray-950">
-                                    Welcome back, {displayName?.split(' ')[0] || 'Teacher'}!
+                                    Welcome back, {displayName?.split(' ')[0] + ' ' + displayName?.split(' ')[1] || 'Teacher'}!
                                 </h1>
                             </div>
                             <p className="text-xs font-bold uppercase tracking-widest flex items-center justify-center md:justify-start gap-2 text-gray-800">

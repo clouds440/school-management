@@ -691,7 +691,10 @@ export class OrgService {
                 enrollments: {
                     include: {
                         section: {
-                            include: { course: true },
+                            include: { 
+                                course: true,
+                                teachers: { include: { user: true } }
+                            },
                         },
                     },
                 },
@@ -972,7 +975,20 @@ export class OrgService {
     }
 
     // --- Assessments ---
-    async createAssessment(orgId: string, data: CreateAssessmentDto) {
+    async createAssessment(orgId: string, data: CreateAssessmentDto, user: JwtPayload) {
+        // Permission check: Manager/Teacher must be assigned to the section
+        if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) {
+            const assignment = await this.prisma.section.findFirst({
+                where: { 
+                    id: data.sectionId,
+                    teachers: { some: { userId: user.id } }
+                }
+            });
+            if (!assignment) {
+                throw new ForbiddenException('You are not assigned to this section and cannot create assessments for it.');
+            }
+        }
+
         // Validate total weightage for the section
         const sectionAssessments = await this.prisma.assessment.findMany({
             where: { sectionId: data.sectionId }
@@ -1013,6 +1029,22 @@ export class OrgService {
         
         if (user.role === Role.STUDENT) {
             whereClause.sectionId = filters.sectionId ? filters.sectionId : (allowedSectionIds ? { in: allowedSectionIds } : undefined);
+        } else if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) {
+            // Restriction for Managers/Teachers: only assigned sections
+            const assignedSections = await this.prisma.section.findMany({
+                where: { teachers: { some: { userId: user.id } } },
+                select: { id: true }
+            });
+            const assignedIds = assignedSections.map(s => s.id);
+            
+            if (filters.sectionId) {
+                if (!assignedIds.includes(filters.sectionId)) {
+                    throw new ForbiddenException('You are not authorized to view assessments for this section.');
+                }
+                whereClause.sectionId = filters.sectionId;
+            } else {
+                whereClause.sectionId = { in: assignedIds };
+            }
         } else if (filters.sectionId) {
             whereClause.sectionId = filters.sectionId;
         }
@@ -1029,16 +1061,34 @@ export class OrgService {
                         name: true,
                         teachers: { select: { user: { select: { name: true } } } }
                     } 
-                }
+                },
+                ...(user.role === Role.STUDENT ? {
+                    grades: {
+                        where: { student: { userId: user.id } }
+                    }
+                } : {})
             },
             orderBy: { createdAt: 'desc' }
         });
     }
 
-    async updateAssessment(orgId: string, id: string, data: UpdateAssessmentDto) {
+    async updateAssessment(orgId: string, id: string, data: UpdateAssessmentDto, user: JwtPayload) {
         const assessment = await this.prisma.assessment.findUnique({ where: { id } });
         if (!assessment || assessment.organizationId !== orgId) {
             throw new NotFoundException('Assessment not found');
+        }
+
+        // Permission check: Manager/Teacher must be assigned to the section
+        if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) {
+            const assignment = await this.prisma.section.findFirst({
+                where: { 
+                    id: assessment.sectionId,
+                    teachers: { some: { userId: user.id } }
+                }
+            });
+            if (!assignment) {
+                throw new ForbiddenException('You are not authorized to modify this assessment.');
+            }
         }
 
         if (data.weightage !== undefined) {
@@ -1061,10 +1111,23 @@ export class OrgService {
         });
     }
 
-    async deleteAssessment(orgId: string, id: string) {
+    async deleteAssessment(orgId: string, id: string, user: JwtPayload) {
         const assessment = await this.prisma.assessment.findUnique({ where: { id } });
         if (!assessment || assessment.organizationId !== orgId) {
             throw new NotFoundException('Assessment not found');
+        }
+
+        // Permission check: Manager/Teacher must be assigned to the section
+        if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) {
+            const assignment = await this.prisma.section.findFirst({
+                where: { 
+                    id: assessment.sectionId,
+                    teachers: { some: { userId: user.id } }
+                }
+            });
+            if (!assignment) {
+                throw new ForbiddenException('You are not authorized to delete this assessment.');
+            }
         }
 
         return this.prisma.assessment.delete({ where: { id } });
@@ -1292,11 +1355,34 @@ export class OrgService {
     }
 
     async getStats(orgId: string, user: { id: string; role: string }) {
+        const isTeacher = user.role === Role.TEACHER;
+        const teacherSectionFilter: Prisma.SectionWhereInput = isTeacher
+            ? { teachers: { some: { userId: user.id } } }
+            : {};
+
         const [teachers, courses, sections, students] = await Promise.all([
-            this.prisma.teacher.count({ where: { organizationId: orgId, status: { not: TeacherStatus.DELETED } } }),
-            this.prisma.course.count({ where: { organizationId: orgId } }),
-            this.prisma.section.count({ where: { course: { organizationId: orgId } } }),
-            this.prisma.student.count({ where: { organizationId: orgId, status: { not: StudentStatus.DELETED } } }),
+            isTeacher
+                ? 1 // Non-manager teacher only counts themselves
+                : this.prisma.teacher.count({ where: { organizationId: orgId, status: { not: TeacherStatus.DELETED } } }),
+            this.prisma.course.count({
+                where: {
+                    organizationId: orgId,
+                    ...(isTeacher ? { sections: { some: teacherSectionFilter } } : {})
+                }
+            }),
+            this.prisma.section.count({
+                where: {
+                    course: { organizationId: orgId },
+                    ...teacherSectionFilter
+                }
+            }),
+            this.prisma.student.count({
+                where: {
+                    organizationId: orgId,
+                    status: { not: StudentStatus.DELETED },
+                    ...(isTeacher ? { enrollments: { some: { section: teacherSectionFilter } } } : {})
+                }
+            }),
         ]);
 
         let pendingAssessments = 0;

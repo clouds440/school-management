@@ -17,6 +17,8 @@ interface PhotoUploadPickerProps {
   type?: 'user' | 'org';
   /** Sizes for the container (default is w-24 h-24) */
   sizeClassName?: string;
+  /** Whether the picker is disabled */
+  disabled?: boolean;
 }
 
 /**
@@ -29,6 +31,7 @@ export function PhotoUploadPicker({
   hint = 'Recommended: square image, at least 256×256px',
   type = 'user',
   sizeClassName = 'w-24 h-24',
+  disabled = false,
 }: PhotoUploadPickerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rawDataUrl, setRawDataUrl] = useState<string | null>(null);   // for cropper
@@ -81,9 +84,10 @@ export function PhotoUploadPicker({
         {/* Avatar */}
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className={`group relative ${sizeClassName} rounded-full border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/60 hover:bg-indigo-50 transition-all duration-200 flex items-center justify-center overflow-hidden shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+          onClick={() => !disabled && fileInputRef.current?.click()}
+          className={`group relative ${sizeClassName} rounded-full border-2 border-dashed ${disabled ? 'border-gray-200 bg-gray-50/10 cursor-not-allowed opacity-60' : 'border-indigo-200 hover:border-indigo-400 bg-indigo-50/60 hover:bg-indigo-50 cursor-pointer'} transition-all duration-200 flex items-center justify-center overflow-hidden shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
           aria-label={`Upload ${type === 'user' ? 'profile picture' : 'organisation logo'}`}
+          disabled={disabled}
         >
           {resolvedSrc ? (
             resolvedSrc.startsWith('blob:') || resolvedSrc.startsWith('data:') ? (
@@ -113,9 +117,11 @@ export function PhotoUploadPicker({
           )}
 
           {/* Hover overlay */}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
-            <Camera className="w-6 h-6 text-white" />
-          </div>
+          {!disabled && (
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
+              <Camera className="w-6 h-6 text-white" />
+            </div>
+          )}
         </button>
 
         {hint && <p className="text-[10px] text-gray-400 text-center max-w-[180px] leading-tight">{hint}</p>}

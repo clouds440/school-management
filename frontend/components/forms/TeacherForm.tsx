@@ -124,7 +124,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
         } catch (error: unknown) {
             const apiError = error as ApiError;
             const message = apiError?.response?.data?.message || 'Failed to save teacher';
-            
+
             if (Array.isArray(message)) {
                 message.forEach((m: string) => showToast(m, 'error'));
             } else {
@@ -339,7 +339,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                     </div>
                 </div>
 
-                <div className="mt-8 p-5 bg-primary/5 rounded-sm border border-primary/10 flex items-center justify-between group hover:bg-primary/10 transition-all">
+                <div className={`mt-8 p-5 bg-primary/5 rounded-sm border border-primary/10 flex items-center justify-between group transition-all select-none ${currentUser?.role !== Role.ORG_ADMIN ? 'cursor-not-allowed' : 'hover:bg-primary/10'}`}>
                     <div className={`flex items-center gap-4 ${currentUser?.role !== Role.ORG_ADMIN ? 'pointer-events-none opacity-70' : ''}`}>
                         <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 cursor-pointer ${formData.isManager ? 'bg-primary' : 'bg-gray-200'}`}
                             onClick={() => {

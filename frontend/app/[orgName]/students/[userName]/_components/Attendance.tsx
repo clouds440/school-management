@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle, XCircle, Clock, AlertCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, AlertCircle, Calendar as CalendarIcon, Search } from 'lucide-react';
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
+import { SearchBar } from '@/components/ui/SearchBar';
 
 export default function Attendance() {
+    const [search, setSearch] = useState('');
     const [attendanceData] = useState([
         { date: '2026-03-14', course: 'Mathematics 101', status: 'present' },
         { date: '2026-03-13', course: 'Physics 201', status: 'present' },
@@ -12,116 +15,142 @@ export default function Attendance() {
         { date: '2026-03-10', course: 'Physics 201', status: 'present' },
     ]);
 
+    const filteredAttendance = attendanceData.filter(log =>
+        log.course.toLowerCase().includes(search.toLowerCase())
+    );
+
     return (
-        <div className="max-w-7xl mx-auto space-y-8 pb-10 px-4 sm:px-6">
-            
-            {/* Header Stats Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto space-y-12 pb-16 px-4 sm:px-6">
+
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4 mb-10">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Attendance Record</h1>
-                    <p className="text-slate-500 mt-1">Status summary for Spring Semester 2026.</p>
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">Presence Audit</h1>
+                    <p className="text-slate-500 mt-3 font-bold max-w-md tracking-tight">Systematic presence summary for the current academic session.</p>
                 </div>
-                
-                <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Present</p>
-                        <p className="text-xl font-bold text-emerald-600 italic">94%</p>
+
+                <div className="flex flex-col md:flex-row items-end gap-6">
+                    <div className="grid grid-cols-3 gap-6 w-full md:w-auto">
+                        <Card padding="md" className="flex flex-col items-center text-center shadow-xl shadow-slate-100/50" delay={0}>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Present</p>
+                            <p className="text-2xl font-black text-emerald-600 italic">94%</p>
+                        </Card>
+                        <Card padding="md" className="flex flex-col items-center text-center shadow-xl shadow-slate-100/50" delay={100}>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Delayed</p>
+                            <p className="text-2xl font-black text-amber-500 italic">2</p>
+                        </Card>
+                        <Card padding="md" className="flex flex-col items-center text-center shadow-xl shadow-slate-100/50" delay={200}>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Absent</p>
+                            <p className="text-2xl font-black text-red-500 italic">1</p>
+                        </Card>
                     </div>
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Late</p>
-                        <p className="text-xl font-bold text-amber-500 italic">2</p>
-                    </div>
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Absent</p>
-                        <p className="text-xl font-bold text-red-500 italic">1</p>
+
+                    <div className="w-full md:w-64">
+                        <SearchBar
+                            placeholder="Filter ledger..."
+                            value={search}
+                            onChange={setSearch}
+                        />
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 {/* Main Log Section */}
-                <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm border-t-4 border-t-indigo-500">
-                    <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-slate-900">Recent Attendance Logs</h3>
-                        <button className="text-xs font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-tight">View Full History</button>
-                    </div>
-                    <div className="divide-y divide-slate-50">
-                        {attendanceData.map((log, idx) => (
-                            <div key={idx} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors group">
-                                <div className="flex items-center gap-6">
-                                    <div className="flex flex-col items-center justify-center bg-slate-50 w-14 h-14 rounded-xl border border-slate-100 shadow-sm group-hover:scale-105 transition-transform">
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{new Date(log.date).toLocaleDateString('en-US', { month: 'short' })}</span>
-                                        <span className="text-xl font-bold text-slate-900 leading-none">{new Date(log.date).getDate()}</span>
+                <Card accentColor="bg-indigo-500" padding="none" className="lg:col-span-2 overflow-hidden shadow-2xl border-0" delay={300}>
+                    <CardHeader className="p-8 border-b border-slate-100/50 flex items-center justify-between mb-0">
+                        <h3 className="text-xl font-black text-slate-900 italic uppercase tracking-tight">Attendance Ledger</h3>
+                        <button className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-[0.2em] bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100 transition-all active:scale-95 shadow-xs">Full History</button>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <div className="divide-y divide-slate-100/50 text-left">
+                            {filteredAttendance.map((log, idx) => (
+                                <div key={idx} className="p-8 flex items-center justify-between hover:bg-slate-50/50 transition-colors group cursor-default">
+                                    <div className="flex items-center gap-8">
+                                        <div className="flex flex-col items-center justify-center bg-white w-16 h-16 rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/20 group-hover:scale-105 group-hover:shadow-indigo-500/10 transition-all duration-500 text-center">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">{new Date(log.date).toLocaleDateString('en-US', { month: 'short' })}</span>
+                                            <span className="text-2xl font-black text-slate-900 leading-none italic">{new Date(log.date).getDate()}</span>
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-slate-900 text-lg group-hover:text-indigo-600 transition-colors italic leading-tight mb-1">{log.course}</p>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(log.date).toLocaleDateString('en-US', { weekday: 'long' })}</p>
+                                        </div>
                                     </div>
-                                    <div className="text-left">
-                                        <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{log.course}</p>
-                                        <p className="text-xs text-slate-400 mt-0.5">{new Date(log.date).toLocaleDateString('en-US', { weekday: 'long' })}</p>
+                                    <div>
+                                        {log.status === 'present' && (
+                                            <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl border border-emerald-100 shadow-xs">
+                                                <CheckCircle className="w-4 h-4" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Present</span>
+                                            </div>
+                                        )}
+                                        {log.status === 'absent' && (
+                                            <div className="flex items-center gap-2 bg-red-50 text-red-700 px-4 py-2 rounded-xl border border-red-100 shadow-xs">
+                                                <XCircle className="w-4 h-4" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Absent</span>
+                                            </div>
+                                        )}
+                                        {log.status === 'late' && (
+                                            <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-xl border border-amber-100 shadow-xs">
+                                                <Clock className="w-4 h-4" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Delayed</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    {log.status === 'present' && (
-                                        <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg">
-                                            <CheckCircle className="w-3.5 h-3.5" />
-                                            <span className="text-[10px] font-bold uppercase tracking-tight">Present</span>
-                                        </div>
-                                    )}
-                                    {log.status === 'absent' && (
-                                        <div className="flex items-center gap-1.5 bg-red-50 text-red-600 px-3 py-1.5 rounded-lg">
-                                            <XCircle className="w-3.5 h-3.5" />
-                                            <span className="text-[10px] font-bold uppercase tracking-tight">Absent</span>
-                                        </div>
-                                    )}
-                                    {log.status === 'late' && (
-                                        <div className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-lg">
-                                            <Clock className="w-3.5 h-3.5" />
-                                            <span className="text-[10px] font-bold uppercase tracking-tight">Late</span>
-                                        </div>
-                                    )}
+                            ))}
+                            {filteredAttendance.length === 0 && (
+                                <div className="p-20 text-center">
+                                    <Search className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No matching records found</p>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
 
                 {/* Sidebar Area */}
-                <div className="space-y-8">
+                <div className="space-y-10">
                     {/* Attendance Alerts */}
-                    <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm border-l-4 border-l-red-500">
-                        <h4 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-6">Attendance Alerts</h4>
+                    <Card padding="lg" className="border-0 shadow-2xl bg-white/50 backdrop-blur-md" accentColor="bg-red-500" delay={400}>
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em] mb-8 italic flex items-center gap-3">
+                            <AlertCircle className="w-4 h-4 text-red-500" />
+                            Critical Alerts
+                        </h4>
                         <div className="space-y-4">
-                            <div className="p-4 bg-red-50/50 rounded-xl border border-red-100 flex items-start gap-4 text-left">
-                                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                            <div className="p-5 bg-red-50/50 rounded-2xl border border-red-100 flex items-start gap-5 text-left group/alert hover:bg-red-50 transition-colors">
+                                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-1 group-hover:animate-pulse" />
                                 <div>
-                                    <p className="text-[11px] font-bold text-red-900 uppercase tracking-tight">Unexcused Absence</p>
-                                    <p className="text-xs text-red-700/80 leading-relaxed mt-1 font-medium">English Literature (Mar 12). Please submit justification.</p>
+                                    <p className="text-[10px] font-black text-red-900 uppercase tracking-widest leading-none mb-2">Unexcused Record</p>
+                                    <p className="text-xs text-slate-600 leading-relaxed font-medium">English Literature (Mar 12). Institutional justification required by EOD.</p>
                                 </div>
                             </div>
-                            <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-100 flex items-start gap-4 text-left">
-                                <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                            <div className="p-5 bg-amber-50/50 rounded-2xl border border-amber-100 flex items-start gap-5 text-left group/alert hover:bg-amber-50 transition-colors">
+                                <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-1 group-hover:rotate-12 transition-transform" />
                                 <div>
-                                    <p className="text-[11px] font-bold text-amber-900 uppercase tracking-tight">Performance Advisory</p>
-                                    <p className="text-xs text-amber-700/80 leading-relaxed mt-1 font-medium">Aggregate attendance is near the 85% requirement.</p>
+                                    <p className="text-[10px] font-black text-amber-900 uppercase tracking-widest leading-none mb-2">Performance Risk</p>
+                                    <p className="text-xs text-slate-600 leading-relaxed font-medium">Aggregate attendance is near the 85% mandatory threshold.</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Policy Sidebar */}
-                    <div className="bg-slate-900 p-8 rounded-2xl text-white shadow-xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-3xl -mr-24 -mt-24"></div>
+                    <Card className="bg-slate-900 border-0 shadow-2xl overflow-hidden relative group p-10" padding="none" delay={500}>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] -mr-32 -mt-32 group-hover:bg-indigo-500/20 transition-all duration-1000"></div>
                         <div className="relative z-10 text-left">
-                            <div className="flex items-center gap-3 mb-4">
-                                <CalendarIcon className="w-5 h-5 text-indigo-400" />
-                                <h4 className="text-base font-bold tracking-tight">Attendance Policy</h4>
+                            <div className="flex items-center gap-4 mb-6">
+                                <CalendarIcon className="w-6 h-6 text-indigo-400" />
+                                <h4 className="text-xl font-black tracking-tight text-white uppercase italic">Compliance</h4>
                             </div>
-                            <p className="text-slate-400 text-sm leading-relaxed font-medium">
-                                A minimum of 85% attendance is required per subject for exam eligibility and academic progression.
+                            <p className="text-slate-400 text-sm leading-relaxed font-medium mb-10">
+                                A rigid minimum of 85% attendance is required per subject for exam qualification and academic progression.
                             </p>
-                            <button className="mt-6 text-[11px] font-bold text-indigo-400 uppercase tracking-widest hover:text-indigo-300 transition-colors">
-                                View Handbook →
+                            <button className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] group-hover:text-indigo-300 transition-all flex items-center gap-2">
+                                Institutional Handbook
+                                <span className="group-hover:translate-x-1 transition-transform">→</span>
                             </button>
                         </div>
-                    </div>
+                    </Card>
                 </div>
             </div>
         </div>

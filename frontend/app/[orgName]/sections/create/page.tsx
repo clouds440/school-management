@@ -107,6 +107,7 @@ export default function CreateSectionPage() {
                                 options={courses.map(c => ({ value: c.id, label: c.name }))}
                                 placeholder="Select a course..."
                                 required
+                                searchable
                             />
                         </div>
 

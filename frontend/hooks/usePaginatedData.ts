@@ -21,8 +21,10 @@ export interface BasePaginationParams {
 export function usePaginatedData<T, P extends BasePaginationParams = BasePaginationParams>(
     fetcher: (params: P) => Promise<PaginatedResponse<T>>,
     initialParams: P,
-    cacheKeyPrefix: string
+    cacheKeyPrefix: string,
+    options: { enabled?: boolean } = {}
 ) {
+    const { enabled = true } = options;
     const [data, setData] = useState<PaginatedResponse<T> | null>(null);
     const [loading, setLoading] = useState(true);
     const [fetching, setFetching] = useState(false);
@@ -63,6 +65,7 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
     }, []);
 
     const fetchData = useCallback(async (currentParams: P, useCache = true) => {
+        if (!enabled) return;
         const cacheKey = `${cacheKeyPrefixRef.current}-${JSON.stringify(currentParams)}`;
         const canCache = isCacheable(currentParams);
 
@@ -97,7 +100,7 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
             setLoading(false);
             setFetching(false);
         }
-    }, [isCacheable]);
+    }, [enabled, isCacheable]);
 
     // Re-fetch when params change. 
     // Serialized version ensures we don't re-run if object reference changes but content is same.

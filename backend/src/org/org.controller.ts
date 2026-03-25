@@ -176,13 +176,15 @@ export class OrgController {
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Post('courses')
-    createCourse(@OrgId() orgId: string, @Body() createCourseDto: CreateCourseDto) {
+    createCourse(@OrgId() orgId: string, @Body() createCourseDto: CreateCourseDto, @Request() req: AuthenticatedRequest) {
+        createCourseDto.updatedBy = req.user.name || req.user.email;
         return this.orgService.createCourse(orgId, createCourseDto);
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Patch('courses/:id')
-    updateCourse(@OrgId() orgId: string, @Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
+    updateCourse(@OrgId() orgId: string, @Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto, @Request() req: AuthenticatedRequest) {
+        updateCourseDto.updatedBy = req.user.name || req.user.email;
         return this.orgService.updateCourse(orgId, id, updateCourseDto);
     }
 
@@ -227,7 +229,7 @@ export class OrgController {
         return this.orgService.createSection(orgId, createSectionDto);
     }
 
-    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Patch('sections/:id')
     updateSection(@OrgId() orgId: string, @Param('id') id: string, @Body() updateSectionDto: UpdateSectionDto) {
         return this.orgService.updateSection(orgId, id, updateSectionDto);
@@ -270,7 +272,7 @@ export class OrgController {
         return this.orgService.getStudent(orgId, id);
     }
 
-    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Post('students')
     createStudent(@OrgId() orgId: string, @Body() createStudentDto: CreateStudentDto, @Request() req: AuthenticatedRequest) {
         return this.orgService.createStudent(orgId, createStudentDto, {
@@ -279,7 +281,7 @@ export class OrgController {
         });
     }
 
-    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Patch('students/:id')
     updateStudent(@OrgId() orgId: string, @Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto, @Request() req: AuthenticatedRequest) {
         return this.orgService.updateStudent(orgId, id, updateStudentDto, {
@@ -348,10 +350,10 @@ export class OrgController {
     }
 
     // --- Assessments ---
-    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+    @Roles(Role.ORG_MANAGER, Role.TEACHER)
     @Post('assessments')
-    createAssessment(@OrgId() orgId: string, @Body() dto: CreateAssessmentDto) {
-        return this.orgService.createAssessment(orgId, dto);
+    createAssessment(@OrgId() orgId: string, @Body() dto: CreateAssessmentDto, @Request() req: AuthenticatedRequest) {
+        return this.orgService.createAssessment(orgId, dto, req.user);
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
@@ -367,8 +369,8 @@ export class OrgController {
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
     @Patch('assessments/:id')
-    updateAssessment(@OrgId() orgId: string, @Param('id') id: string, @Body() dto: UpdateAssessmentDto) {
-        return this.orgService.updateAssessment(orgId, id, dto);
+    updateAssessment(@OrgId() orgId: string, @Param('id') id: string, @Body() dto: UpdateAssessmentDto, @Request() req: AuthenticatedRequest) {
+        return this.orgService.updateAssessment(orgId, id, dto, req.user);
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
@@ -379,8 +381,8 @@ export class OrgController {
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
     @Delete('assessments/:id')
-    deleteAssessment(@OrgId() orgId: string, @Param('id') id: string) {
-        return this.orgService.deleteAssessment(orgId, id);
+    deleteAssessment(@OrgId() orgId: string, @Param('id') id: string, @Request() req: AuthenticatedRequest) {
+        return this.orgService.deleteAssessment(orgId, id, req.user);
     }
 
     @Get('grades/final')

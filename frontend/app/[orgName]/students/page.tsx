@@ -60,7 +60,8 @@ export default function StudentsPage() {
     } = usePaginatedData<Student, StudentParams>(
         (p) => api.org.getStudents(token!, p),
         studentParams,
-        `students-${orgSlug}`
+        `students-${orgSlug}`,
+        { enabled: !!token }
     );
 
     useEffect(() => {
@@ -148,13 +149,24 @@ export default function StudentsPage() {
             sortable: false,
             accessor: (row: Student) => {
                 const sectionsList = row.enrollments?.map(e => e.section) || [];
-                return sectionsList.length > 0 ? (
+                return sectionsList.length > 0 && sectionsList.length < 2 ? (
                     <div className="flex flex-wrap gap-1 max-w-[200px]">
                         {sectionsList.map(sec => (
                             <span key={sec?.id || Math.random()} className="bg-primary/5 text-primary px-2 py-1 rounded-sm text-xs font-medium border border-primary/10 truncate max-w-[150px]" title={sec?.name}>
                                 {sec?.name || 'Unknown'}
                             </span>
                         ))}
+                    </div>
+                ) : sectionsList.length >= 2 ? (
+                    <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {sectionsList.slice(0, 1).map(sec => (
+                            <span key={sec?.id || Math.random()} className="bg-primary/5 text-primary px-2 py-1 rounded-sm text-xs font-medium border border-primary/10 truncate max-w-[150px]" title={sec?.name}>
+                                {sec?.name || 'Unknown'}
+                            </span>
+                        ))}
+                        <span className="bg-primary/5 text-primary px-2 py-1 rounded-sm text-xs font-medium border border-primary/10 truncate max-w-[150px]" title='Click to view all sections'>
+                            +{sectionsList.length - 1} more
+                        </span>
                     </div>
                 ) : <span className="text-card-text/30 italic">Unassigned</span>;
             }
@@ -187,16 +199,10 @@ export default function StudentsPage() {
                 return (
                     <TableActions
                         onEdit={isManagerOrAdmin ? () => router.push(`/${orgSlug}/students/edit/${row.id}`) : undefined}
+                        onView={user?.role === Role.TEACHER ? () => router.push(`/${orgSlug}/students/edit/${row.id}`) : undefined}
                         onDelete={isManagerOrAdmin ? () => handleDeleteClick(row.id) : undefined}
                         variant="user"
                         isViewAndEdit={isManagerOrAdmin}
-                        extraActions={[
-                            {
-                                variant: 'unsuspend',
-                                onClick: () => router.push(`/${orgSlug}/students/${row.user.userName}`),
-                                title: 'View Portal'
-                            }
-                        ]}
                     />
                 );
             }
@@ -232,7 +238,7 @@ export default function StudentsPage() {
     }
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up">
+        <div className="flex flex-col w-full">
             <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                     <Button
@@ -293,9 +299,7 @@ export default function StudentsPage() {
                         keyExtractor={(row) => row.id}
                         isLoading={isFetching}
                         onRowClick={(row) => {
-                            if (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) {
-                                router.push(`/${orgSlug}/students/edit/${row.id}`);
-                            }
+                            router.push(`/${orgSlug}/students/edit/${row.id}`);
                         }}
                         currentPage={page}
                         totalPages={paginatedData?.totalPages || 1}

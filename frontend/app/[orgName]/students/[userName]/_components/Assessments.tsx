@@ -2,16 +2,57 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { Section, Assessment, Attachment, ApiError } from '@/types';
-import { BookOpen, Calendar, Search, PlayCircle, FileText, UploadCloud, Check, X } from 'lucide-react';
+import { Section, Assessment, Attachment, ApiError, GradeStatus } from '@/types';
+import { BookOpen, Calendar, PlayCircle, FileText, UploadCloud, Check, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { Input } from '@/components/ui/Input';
+import { SearchBar } from '@/components/ui/SearchBar';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { useToast } from '@/context/ToastContext';
 import { Modal } from '@/components/ui/Modal';
 import { getPublicUrl } from '@/lib/utils';
-import Link from 'next/link';
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
+
+const getGradeColors = (marks: number, total: number) => {
+    const percentage = (marks / total) * 100;
+    if (percentage < 40) {
+        return {
+            bg: 'bg-red-50',
+            border: 'border-red-100',
+            text: 'text-red-700',
+            accent: 'text-red-600',
+            light: 'text-red-400',
+            muted: 'text-red-600/60',
+            fill: 'text-red-500',
+            dark: 'text-red-900',
+            borderDark: 'border-red-200'
+        };
+    }
+    if (percentage < 60) {
+        return {
+            bg: 'bg-orange-50',
+            border: 'border-orange-100',
+            text: 'text-orange-700',
+            accent: 'text-orange-600',
+            light: 'text-orange-400',
+            muted: 'text-orange-600/60',
+            fill: 'text-orange-500',
+            dark: 'text-orange-900',
+            borderDark: 'border-orange-200'
+        };
+    }
+    return {
+        bg: 'bg-emerald-50',
+        border: 'border-emerald-100',
+        text: 'text-emerald-700',
+        accent: 'text-emerald-600',
+        light: 'text-emerald-400',
+        muted: 'text-emerald-600/60',
+        fill: 'text-emerald-500',
+        dark: 'text-emerald-900',
+        borderDark: 'border-emerald-200'
+    };
+};
 
 export default function Assessments({ sections, assessments }: { sections: Section[], assessments: Assessment[] }) {
     const { token, user } = useAuth();
@@ -113,66 +154,79 @@ export default function Assessments({ sections, assessments }: { sections: Secti
 
     return (
         <div className="max-w-7xl mx-auto space-y-8 pb-10 px-4 sm:px-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
-                            {selectedSectionId ? sections.find(s => s.id === selectedSectionId)?.course?.name || sections.find(s => s.id === selectedSectionId)?.name : 'Assessments'}
-                        </h1>
-                        <p className="text-slate-500 mt-1">
-                            {selectedSectionId ? 'Viewing all assessments for this course.' : 'View your coursework, quizzes, and project assignments.'}
-                        </p>
-                    </div>
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4 mb-10">
+                <div>
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
+                        {selectedSectionId ? sections.find(s => s.id === selectedSectionId)?.course?.name || sections.find(s => s.id === selectedSectionId)?.name : 'Assessments'}
+                    </h1>
+                    <p className="text-slate-500 mt-3 font-bold max-w-md tracking-tight">
+                        {selectedSectionId ? 'Viewing all assessments for this course.' : 'View your coursework, quizzes, and project assignments.'}
+                    </p>
                 </div>
                 <div className="w-full md:w-80">
-                    <Input
-                        icon={Search}
+                    <SearchBar
                         placeholder="Search assessments..."
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="bg-white border-slate-200 shadow-sm"
+                        onChange={setSearch}
                     />
                 </div>
             </div>
 
             {!selectedSectionId ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {sections.map(sec => {
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {sections.map((sec, index) => {
                         const courseAssessments = assessments.filter(a => a.sectionId === sec.id);
                         if (courseAssessments.length === 0) return null;
 
                         const doneCount = courseAssessments.filter(a => (a._count?.submissions || 0) > 0).length;
                         const quizzesCount = courseAssessments.filter(a => a.type === 'QUIZ').length;
                         const assignmentsCount = courseAssessments.filter(a => a.type === 'ASSIGNMENT').length;
-                        const teacherName = sec.teachers?.[0]?.user?.name || 'Assigned Teacher';
+                        const teacherName = sec.teachers?.[0]?.user?.name || 'Assigned Professor';
 
                         return (
-                            <div key={sec.id} onClick={() => handleSelectSection(sec.id)} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col h-full border-t-4 border-t-indigo-500">
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="text-xs font-bold uppercase text-indigo-600 bg-indigo-50 px-3 py-1 rounded-sm tracking-wider">
-                                        {courseAssessments.length} Total
+                            <Card
+                                key={sec.id}
+                                onClick={() => handleSelectSection(sec.id)}
+                                accentColor="bg-indigo-500"
+                                padding="lg"
+                                delay={index * 100}
+                            >
+                                <CardHeader>
+                                    <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100 shadow-xs tracking-[0.15em]">
+                                        {courseAssessments.length} Modules
                                     </span>
-                                    <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                                    <div className="p-2.5 bg-indigo-50 rounded-xl group-hover:bg-indigo-100 transition-colors border border-indigo-100/50 shadow-xs">
                                         <BookOpen className="w-5 h-5 text-indigo-600" />
                                     </div>
-                                </div>
-                                <div className="flex-1 space-y-2 mb-6">
-                                    <h3 className="text-lg font-bold text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2">
+                                </CardHeader>
+                                <CardContent>
+                                    <h3 className="text-xl font-black text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2 tracking-tight italic">
                                         {sec.course?.name || sec.name}
                                     </h3>
-                                    <p className="text-sm font-semibold text-slate-500">{teacherName}</p>
-                                </div>
-                                <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-slate-500 font-medium">Progress</span>
-                                        <span className="font-bold text-emerald-600">{doneCount} / {courseAssessments.length} Done</span>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mt-2">{teacherName}</p>
+                                </CardContent>
+                                <CardFooter className="flex-col gap-4 items-stretch border-slate-100/50">
+                                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                        <span className="text-slate-400">Total Progress</span>
+                                        <span className="text-emerald-600 px-2 py-0.5 bg-emerald-50 rounded border border-emerald-100 uppercase tracking-tighter">
+                                            {doneCount} / {courseAssessments.length} Done
+                                        </span>
                                     </div>
-                                    <div className="flex items-center gap-3 text-xs font-bold uppercase border-t border-slate-50 pt-3">
-                                        {quizzesCount > 0 && <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-sm">{quizzesCount} Quizzes</span>}
-                                        {assignmentsCount > 0 && <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-sm">{assignmentsCount} Assignments</span>}
+                                    <div className="flex items-center gap-2 pt-1 overflow-x-auto pb-1 no-scrollbar">
+                                        {quizzesCount > 0 && (
+                                            <span className="whitespace-nowrap px-2 py-1 bg-slate-50 text-slate-500 text-[9px] font-black uppercase rounded-lg border border-slate-100 tracking-wider transition-all group-hover:border-indigo-100 group-hover:text-indigo-600 shadow-xs">
+                                                {quizzesCount} Quizzes
+                                            </span>
+                                        )}
+                                        {assignmentsCount > 0 && (
+                                            <span className="whitespace-nowrap px-2 py-1 bg-slate-50 text-slate-500 text-[9px] font-black uppercase rounded-lg border border-slate-100 tracking-wider transition-all group-hover:border-indigo-100 group-hover:text-indigo-600 shadow-xs">
+                                                {assignmentsCount} Labs
+                                            </span>
+                                        )}
                                     </div>
-                                </div>
-                            </div>
+                                </CardFooter>
+                            </Card>
                         );
                     })}
                     {sections.filter(sec => assessments.some(a => a.sectionId === sec.id)).length === 0 && (
@@ -186,43 +240,62 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                     )}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">
-                    {filteredAssessments.map(ann => {
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-1 animate-fade-in-up">
+                    {filteredAssessments.map((ann, index) => {
                         const isDone = (ann._count?.submissions || 0) > 0;
                         return (
-                            <div key={ann.id} onClick={() => {
-                                setSelectedAssessment(ann);
-                                const params = new URLSearchParams(searchParams.toString());
-                                params.set('assessmentId', ann.id);
-                                router.push(`${pathname}?${params.toString()}`, { scroll: false });
-                            }} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col h-full border-t-4 border-t-indigo-500">
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className={`text-xs font-bold uppercase px-3 py-1 rounded-sm tracking-wider ${isDone ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                            <Card
+                                key={ann.id}
+                                onClick={() => {
+                                    setSelectedAssessment(ann);
+                                    const params = new URLSearchParams(searchParams.toString());
+                                    params.set('assessmentId', ann.id);
+                                    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+                                }}
+                                accentColor="bg-indigo-500"
+                                padding="lg"
+                                delay={index * 50}
+                            >
+                                <CardHeader>
+                                    <span className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-lg tracking-widest border-2 ${isDone ? 'bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm' : 'bg-amber-50 text-amber-700 border-amber-100 shadow-sm'}`}>
                                         {isDone ? 'Completed' : 'Pending'}
                                     </span>
-                                    <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                                    <div className="p-2.5 bg-indigo-50 rounded-xl group-hover:bg-indigo-100 transition-colors border border-indigo-100/50 shadow-xs">
                                         <BookOpen className="w-5 h-5 text-indigo-600" />
                                     </div>
-                                </div>
+                                </CardHeader>
 
-                                <div className="flex-1 space-y-2 mb-6">
-                                    <h3 className="text-lg font-bold text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2">
+                                <CardContent>
+                                    <h3 className="text-xl font-black text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2 tracking-tight">
                                         {ann.title}
                                     </h3>
-                                    <p className="text-sm font-semibold text-slate-500">{ann.section?.name}</p>
-                                </div>
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{ann.section?.name}</p>
+                                </CardContent>
 
-                                <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-slate-500 font-medium">Type</span>
-                                        <span className="font-bold text-slate-900 uppercase">{ann.type}</span>
+                                <CardFooter className="flex-col gap-4 items-stretch">
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                            <span className="text-slate-400">Type</span>
+                                            <span className="text-slate-900 px-2 py-0.5 bg-slate-50 rounded border border-slate-100">{ann.type}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                            <span className="text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-primary/50" /> Due Date</span>
+                                            <span className={`px-2 py-0.5 rounded border ${!ann.dueDate ? 'text-slate-400 bg-slate-50 border-slate-100' : 'text-slate-900 bg-slate-50 border-slate-100'}`}>
+                                                {ann.dueDate ? new Date(ann.dueDate).toLocaleDateString() : 'None'}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-slate-500 font-medium flex items-center gap-1.5"><Calendar className="w-4 h-4" /> Due Date</span>
-                                        <span className={`font-bold ${!ann.dueDate ? 'text-slate-400' : 'text-slate-900'}`}>{ann.dueDate ? new Date(ann.dueDate).toLocaleDateString() : 'None'}</span>
-                                    </div>
-                                </div>
-                            </div>
+                                    {(ann.grades && ann.grades.length > 0 && (ann.grades[0].status === GradeStatus.PUBLISHED || ann.grades[0].status === GradeStatus.FINALIZED)) && (() => {
+                                        const colors = getGradeColors(ann.grades[0].marksObtained, ann.totalMarks);
+                                        return (
+                                            <div className={`flex items-center justify-between text-[10px] mt-1 p-3 ${colors.bg} rounded-xl border-2 ${colors.border} shadow-sm italic`}>
+                                                <span className={`${colors.text} font-black uppercase tracking-widest`}>Your Score</span>
+                                                <span className={`text-sm font-black ${colors.accent}`}>{ann.grades[0].marksObtained} <span className="text-[10px] opacity-60">/ {ann.totalMarks}</span></span>
+                                            </div>
+                                        );
+                                    })()}
+                                </CardFooter>
+                            </Card>
                         );
                     })}
                     {filteredAssessments.length === 0 && (
@@ -268,6 +341,34 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                 <p className="text-sm font-bold text-slate-900">{selectedAssessment.dueDate ? new Date(selectedAssessment.dueDate).toLocaleDateString() : 'None'}</p>
                             </div>
                         </div>
+
+                        {(selectedAssessment.grades && selectedAssessment.grades.length > 0 && (selectedAssessment.grades[0].status === GradeStatus.PUBLISHED || selectedAssessment.grades[0].status === GradeStatus.FINALIZED)) && (() => {
+                            const colors = getGradeColors(selectedAssessment.grades[0].marksObtained, selectedAssessment.totalMarks);
+                            return (
+                                <div className={`space-y-4 p-6 ${colors.bg}/50 rounded-2xl border-2 ${colors.border} shadow-inner animate-fade-in-up`}>
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <h3 className={`text-lg font-black ${colors.dark} tracking-tight uppercase italic flex items-center gap-2`}>
+                                            <Check className={`w-6 h-6 ${colors.fill}`} />
+                                            Your Result
+                                        </h3>
+                                        <div className="flex items-center gap-3">
+                                            <div className="text-right">
+                                                <p className={`text-[10px] font-black ${colors.muted} uppercase tracking-widest mb-0.5`}>Obtained Marks</p>
+                                                <p className={`text-3xl font-black ${colors.accent} italic leading-none`}>{selectedAssessment.grades[0].marksObtained} <span className={`text-sm ${colors.light}`}>/ {selectedAssessment.totalMarks}</span></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {selectedAssessment.grades[0].feedback && (
+                                        <div className={`pt-4 border-t ${colors.border} italic`}>
+                                            <p className={`text-[10px] font-bold ${colors.muted} uppercase tracking-widest mb-2`}>Teacher Remarks</p>
+                                            <p className="text-slate-700 font-medium leading-relaxed bg-white/60 p-4 rounded-xl shadow-xs">
+                                                "{selectedAssessment.grades[0].feedback}"
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
 
                         {(selectedAssessment.files && selectedAssessment.files.length > 0) && (
                             <div className="space-y-3">

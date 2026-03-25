@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { School, MapPin, Building, Mail, Lock, UserPlus, Phone } from 'lucide-react';
+import { School, MapPin, Building, Mail, Lock, UserPlus, Phone, BookOpen, GraduationCap, Library, MonitorPlay, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { RegisterRequest, OrganizationType, ApiError } from '@/types';
 import { Input } from '@/components/ui/Input';
@@ -152,9 +152,19 @@ export default function RegisterPage() {
                                 <Label htmlFor="type">Organization Type</Label>
                                 <CustomSelect
                                     options={[
-                                        { value: OrganizationType.HIGH_SCHOOL, label: 'High School', icon: Building },
-                                        { value: OrganizationType.PRIMARY_SCHOOL, label: 'Primary School', icon: Building },
-                                        { value: OrganizationType.UNIVERSITY, label: 'University', icon: Building },
+                                        { value: OrganizationType.KINDERGARTEN, label: 'Kindergarten', icon: Pencil },
+                                        { value: OrganizationType.PRE_SCHOOL, label: 'Pre-School', icon: Pencil },
+                                        { value: OrganizationType.PRIMARY_SCHOOL, label: 'Primary School', icon: BookOpen },
+                                        { value: OrganizationType.MIDDLE_SCHOOL, label: 'Middle School', icon: BookOpen },
+                                        { value: OrganizationType.HIGH_SCHOOL, label: 'High School', icon: School },
+                                        { value: OrganizationType.COLLEGE, label: 'College', icon: Library },
+                                        { value: OrganizationType.UNIVERSITY, label: 'University', icon: GraduationCap },
+                                        { value: OrganizationType.VOCATIONAL_SCHOOL, label: 'Vocational School', icon: Building },
+                                        { value: OrganizationType.INSTITUTE, label: 'Institute', icon: Building },
+                                        { value: OrganizationType.ACADEMY, label: 'Academy', icon: Building },
+                                        { value: OrganizationType.TUTORING_CENTER, label: 'Tutoring Center', icon: BookOpen },
+                                        { value: OrganizationType.ONLINE_SCHOOL, label: 'Online School', icon: MonitorPlay },
+                                        { value: OrganizationType.OTHER, label: 'Other', icon: Building },
                                     ]}
                                     value={formData.type}
                                     onChange={(val) => {

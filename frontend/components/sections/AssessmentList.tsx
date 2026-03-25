@@ -23,8 +23,8 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import AssessmentForm from '@/components/forms/AssessmentForm';
 import SubmissionForm from '@/components/forms/SubmissionForm';
 import { formatDate } from '@/lib/utils';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 
 interface AssessmentListProps {
     section: Section;
@@ -35,6 +35,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
     const { token } = useAuth();
     const { showToast } = useToast();
     const params = useParams();
+    const router = useRouter();
     const orgSlug = params.orgName as string;
 
     const [assessments, setAssessments] = useState<Assessment[]>([]);
@@ -89,10 +90,6 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center bg-card/30 p-4 rounded-sm border border-white/5 shadow-inner">
-                <h3 className="text-lg font-black uppercase tracking-widest text-card-text flex items-center gap-2 italic">
-                    <Trophy className="w-5 h-5 text-primary" />
-                    Assessments & Grading
-                </h3>
                 {isTeacherOrAdmin && (
                     <Button onClick={() => setIsCreateModalOpen(true)} icon={Plus}>
                         Add Assessment
@@ -106,95 +103,120 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                     <p className="text-card-text/40 font-bold italic uppercase tracking-widest text-xs">No assessments created for this section yet.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {assessments.map(assessment => (
-                        <div key={assessment.id} className="bg-card border border-white/5 rounded-sm p-6 space-y-4 hover:border-primary/40 transition-all group shadow-sm relative overflow-hidden">
-                            {/* Accent line */}
-                            <div className="absolute top-0 left-0 w-full h-[2px] bg-primary/20 group-hover:bg-primary transition-colors"></div>
-
-                            <div className="flex justify-between items-start">
-                                <div className={`px-2.5 py-1 rounded-[2px] text-[10px] font-black uppercase tracking-widest italic border ${assessment.type === AssessmentType.FINAL ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/20' :
-                                    assessment.type === AssessmentType.MIDTERM ? 'bg-orange-500/20 text-orange-400 border-orange-500/20' :
-                                        'bg-primary/20 text-primary border-primary/20'
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                    {assessments.map(assessment => {
+                        const targetUrl = `/${orgSlug}/sections/${section.id}/assessments/${assessment.id}`;
+                        
+                        return (
+                            <Card 
+                                key={assessment.id} 
+                                onClick={() => router.push(targetUrl)}
+                                accentColor={assessment.type === AssessmentType.FINAL ? 'bg-indigo-500' : assessment.type === AssessmentType.MIDTERM ? 'bg-orange-500' : 'bg-primary'}
+                                padding="lg"
+                            >
+                                <CardHeader>
+                                    <div className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] border-2 shadow-sm ${
+                                        assessment.type === AssessmentType.FINAL ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                                        assessment.type === AssessmentType.MIDTERM ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                                        'bg-primary/5 text-primary border-primary/10'
                                     }`}>
-                                    {assessment.type}
-                                </div>
-                                {isTeacherOrAdmin && (
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => setEditingAssessment(assessment)} className="p-2 text-card-text/40 hover:text-primary transition-colors hover:bg-primary/10 rounded-sm">
-                                            <Edit className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => setDeletingAssessment(assessment)} className="p-2 text-card-text/40 hover:text-red-500 transition-colors hover:bg-red-500/10 rounded-sm">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        {assessment.type}
                                     </div>
-                                )}
-                            </div>
-
-                            <div className="space-y-2">
-                                <h4 className="text-lg font-black italic uppercase tracking-tight text-card-text leading-tight">{assessment.title}</h4>
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-card-text/50 font-black uppercase tracking-wider">
-                                    <div className="flex items-center gap-1.5">
-                                        <Trophy className="w-3.5 h-3.5 text-primary/60" />
-                                        {assessment.totalMarks} Marks
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <Calendar className="w-3.5 h-3.5 text-primary/60" />
-                                        {assessment.dueDate ? formatDate(assessment.dueDate) : 'No due date'}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-                                <div className="text-[10px] font-black italic uppercase tracking-widest bg-white/5 px-2 py-1 rounded-sm border border-white/5">
-                                    <span className="text-card-text/30">Weightage: </span>
-                                    <span className="text-primary font-black ml-1">{assessment.weightage}%</span>
-                                </div>
-
-                                <Link
-                                    href={`/${orgSlug}/sections/${section.id}/assessments/${assessment.id}`}
-                                    className="h-8 px-4 text-[10px] uppercase font-black italic gap-1.5 flex items-center justify-center bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/20 transition-all rounded-sm shadow-sm"
-                                >
-                                    {isTeacherOrAdmin ? (
-                                        <><Users className="w-3.5 h-3.5" /> Grades</>
-                                    ) : (
-                                        <><FileText className="w-3.5 h-3.5" /> Details</>
+                                    {isTeacherOrAdmin && (
+                                        <div className="flex gap-2 opacity-40 group-hover:opacity-100 transition-all duration-300">
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditingAssessment(assessment);
+                                                }} 
+                                                className="p-2.5 text-slate-400 hover:text-primary transition-all hover:bg-primary/10 rounded-xl border border-transparent hover:border-primary/20 bg-slate-50 shadow-xs"
+                                                title="Edit"
+                                            >
+                                                <Edit className="w-4 h-4" />
+                                            </button>
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDeletingAssessment(assessment);
+                                                }} 
+                                                className="p-2.5 text-slate-400 hover:text-red-500 transition-all hover:bg-red-50/50 rounded-xl border border-transparent hover:border-red-100 bg-slate-50 shadow-xs"
+                                                title="Delete"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     )}
-                                </Link>
+                                </CardHeader>
 
-                                {role === Role.STUDENT && (
-                                    assessment.allowSubmissions ? (
-                                        <Button
-                                            variant="primary"
-                                            className="h-8 text-[10px] uppercase font-black italic gap-1.5"
-                                            disabled={!!(assessment.dueDate && new Date(assessment.dueDate) < new Date())}
-                                            onClick={() => setSubmittingAssessment(assessment)}
-                                        >
-                                            <Send className="w-3.5 h-3.5" />
-                                            Submit Work
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            variant="secondary"
-                                            className="h-8 text-[10px] uppercase font-black italic gap-1.5"
-                                            disabled={!!(assessment.dueDate && new Date(assessment.dueDate) < new Date())}
-                                            onClick={async () => {
-                                                try {
-                                                    await api.org.createSubmission(assessment.id, { assessmentId: assessment.id }, token!);
-                                                    showToast('Marked as done', 'success');
-                                                } catch (e) {
-                                                    showToast('Failed to mark as done', 'error');
-                                                }
-                                            }}
-                                        >
-                                            <CheckCircle className="w-3.5 h-3.5" />
-                                            Mark as Done
-                                        </Button>
-                                    )
-                                )}
-                            </div>
-                        </div>
-                    ))}
+                                <CardContent>
+                                    <h4 className="text-xl font-black text-slate-900 leading-tight tracking-tight group-hover:text-primary transition-colors duration-300">{assessment.title}</h4>
+                                    
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-500 font-bold uppercase tracking-widest pt-2">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100">
+                                            <Trophy className="w-4 h-4 text-primary/70" />
+                                            <span>{assessment.totalMarks} Marks</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100">
+                                            <Calendar className="w-4 h-4 text-primary/70" />
+                                            <span>{assessment.dueDate ? formatDate(assessment.dueDate) : 'No due date'}</span>
+                                        </div>
+                                    </div>
+                                </CardContent>
+
+                                <CardFooter>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Weightage</span>
+                                        <span className="text-xl font-black text-primary italic leading-none">{assessment.weightage}%</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-10 px-6 text-[11px] uppercase font-black tracking-widest gap-2 flex items-center justify-center bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200 group-hover:bg-primary group-hover:shadow-primary/20 transition-all duration-300">
+                                            {isTeacherOrAdmin ? (
+                                                <><Users className="w-4 h-4" /> View Grades</>
+                                            ) : (
+                                                <><FileText className="w-4 h-4" /> View Details</>
+                                            )}
+                                        </div>
+
+                                        {role === Role.STUDENT && (
+                                            assessment.allowSubmissions ? (
+                                                <Button
+                                                    variant="primary"
+                                                    className="h-10 px-6 text-[11px] uppercase font-black gap-2 rounded-xl shadow-lg"
+                                                    disabled={!!(assessment.dueDate && new Date(assessment.dueDate) < new Date())}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSubmittingAssessment(assessment);
+                                                    }}
+                                                >
+                                                    <Send className="w-4 h-4" />
+                                                    Submit
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    variant="secondary"
+                                                    className="h-10 px-6 text-[11px] uppercase font-black gap-2 rounded-xl shadow-md"
+                                                    disabled={!!(assessment.dueDate && new Date(assessment.dueDate) < new Date())}
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        try {
+                                                            await api.org.createSubmission(assessment.id, { assessmentId: assessment.id }, token!);
+                                                            showToast('Marked as done', 'success');
+                                                        } catch (e) {
+                                                            showToast('Failed to mark as done', 'error');
+                                                        }
+                                                    }}
+                                                >
+                                                    <CheckCircle className="w-4 h-4" />
+                                                    Done
+                                                </Button>
+                                            )
+                                        )}
+                                    </div>
+                                </CardFooter>
+                            </Card>
+                        );
+                    })}
                 </div>
             )}
 

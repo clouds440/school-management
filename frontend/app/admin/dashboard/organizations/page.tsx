@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldOff, ShieldAlert, ShieldCheck, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone, Info, Hash, Clock, GraduationCap, BookOpen } from 'lucide-react';
+import { ShieldOff, ShieldAlert, ShieldCheck, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone, Info, Hash, Clock, GraduationCap, BookOpen, School, Library, MonitorPlay, Pencil } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Organization, AdminStats, OrgStatus, PaginatedResponse } from '@/types';
 import { getPublicUrl } from '@/lib/utils';
@@ -58,7 +58,8 @@ export default function OrganizationsPage() {
     } = usePaginatedData<Organization, AdminOrgParams>(
         (p) => api.admin.getOrganizations(token!, p),
         orgParams,
-        'admin-organizations'
+        'admin-organizations',
+        { enabled: !!token }
     );
 
     const activeStatusTab = orgParams.status;
@@ -386,9 +387,18 @@ export default function OrganizationsPage() {
                             onChange={(val) => updateQueryParams({ type: val, page: 1 })}
                             options={[
                                 { value: 'ALL', label: 'All Org Types' },
-                                { value: 'HIGH_SCHOOL', label: 'High School', icon: Building2 },
-                                { value: 'UNIVERSITY', label: 'University', icon: GraduationCap },
+                                { value: 'KINDERGARTEN', label: 'Kindergarten', icon: Pencil },
+                                { value: 'PRE_SCHOOL', label: 'Pre-School', icon: Pencil },
                                 { value: 'PRIMARY_SCHOOL', label: 'Primary School', icon: BookOpen },
+                                { value: 'MIDDLE_SCHOOL', label: 'Middle School', icon: BookOpen },
+                                { value: 'HIGH_SCHOOL', label: 'High School', icon: School },
+                                { value: 'COLLEGE', label: 'College', icon: Library },
+                                { value: 'UNIVERSITY', label: 'University', icon: GraduationCap },
+                                { value: 'VOCATIONAL_SCHOOL', label: 'Vocational School', icon: Building2 },
+                                { value: 'INSTITUTE', label: 'Institute', icon: Building2 },
+                                { value: 'ACADEMY', label: 'Academy', icon: Building2 },
+                                { value: 'TUTORING_CENTER', label: 'Tutoring Center', icon: BookOpen },
+                                { value: 'ONLINE_SCHOOL', label: 'Online School', icon: MonitorPlay },
                                 { value: 'OTHER', label: 'Other', icon: Info },
                             ]}
                             className="w-full sm:w-[200px] px-3"

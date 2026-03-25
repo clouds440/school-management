@@ -52,7 +52,8 @@ export default function CoursesPage() {
     } = usePaginatedData<Course, CourseParams>(
         (p) => api.org.getCourses(token!, p),
         courseParams,
-        `courses-${user?.orgSlug || pathname.split('/')[1]}`
+        `courses-${user?.orgSlug || pathname.split('/')[1]}`,
+        { enabled: !!token }
     );
 
     useEffect(() => {
@@ -141,12 +142,16 @@ export default function CoursesPage() {
             header: 'Last Updated',
             sortable: true,
             sortKey: 'updatedAt',
-            accessor: (row: Course) => row.updatedBy ? (
+            accessor: (row: Course) => (
                 <div className="flex flex-col">
-                    <span className="font-medium text-card-text/80">{row.updatedBy}</span>
-                    <span className="text-xs text-card-text/40">{new Date(row.updatedAt || '').toLocaleDateString()}</span>
+                    <span className="font-medium text-card-text/80">
+                        {row.updatedBy || 'System'}
+                    </span>
+                    <span className="text-xs text-card-text/40">
+                        {row.updatedAt ? new Date(row.updatedAt).toLocaleString() : 'Never'}
+                    </span>
                 </div>
-            ) : <span className="text-card-text/30 italic text-sm text-center">Never</span>
+            )
         },
         {
             header: 'Actions',
@@ -156,7 +161,15 @@ export default function CoursesPage() {
 
                 return (
                     <TableActions
-                        onEdit={(isAdmin || isTeacher) ? () => {
+                        onEdit={isAdmin ? () => {
+                            setEditingCourse(row);
+                            setEditFormData({
+                                name: row.name,
+                                description: row.description || ''
+                            });
+                            setEditModalOpen(true);
+                        } : undefined}
+                        onView={isTeacher ? () => {
                             setEditingCourse(row);
                             setEditFormData({
                                 name: row.name,
@@ -171,7 +184,7 @@ export default function CoursesPage() {
                         editTitle="Edit Course"
                         deleteTitle="Delete Course"
                         variant="default"
-                        isViewAndEdit={true}
+                        isViewAndEdit={isAdmin}
                     />
                 );
             }
@@ -234,16 +247,12 @@ export default function CoursesPage() {
                         keyExtractor={(row) => row.id}
                         isLoading={isFetching}
                         onRowClick={(row) => {
-                            const isAdmin = user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER;
-                            const isTeacher = user?.role === Role.TEACHER;
-                            if (isAdmin || isTeacher) {
-                                setEditingCourse(row);
-                                setEditFormData({
-                                    name: row.name,
-                                    description: row.description || ''
-                                });
-                                setEditModalOpen(true);
-                            }
+                            setEditingCourse(row);
+                            setEditFormData({
+                                name: row.name,
+                                description: row.description || ''
+                            });
+                            setEditModalOpen(true);
                         }}
                         currentPage={page}
                         totalPages={paginatedData?.totalPages || 1}
@@ -263,6 +272,7 @@ export default function CoursesPage() {
                 onSubmit={handleEditSubmit}
                 isSubmitting={isSaving}
                 submitText="Save Changes"
+                showSubmit={user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER}
             >
                 <div className="space-y-8 py-2">
                     <div className="space-y-2">

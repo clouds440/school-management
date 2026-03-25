@@ -68,11 +68,10 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
 
     const handleLogout = () => {
         logout();
-        router.push('/login');
     };
 
     return (
-        <div className="flex w-full bg-theme-bg h-full overflow-hidden relative">
+        <div className="flex w-full bg-theme-bg h-full overflow-hidden relative select-none">
             {/* Global View Modal */}
             <DataViewModal
                 isOpen={modalConfig.isOpen}
@@ -172,11 +171,11 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                 <div className="p-4 border-t border-sidebar-text/10 bg-sidebar-text/5 shrink-0">
                     {user && (
                         <div className={`flex items-center ${!isExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
-                            <div className={`w-9 h-9 rounded-sm ${user.avatarUrl ? 'bg-transparent' : 'bg-primary'} flex items-center justify-center text-sidebar-active-text font-bold shrink-0 shadow-inner overflow-hidden relative`}>
-                                {user.avatarUrl ? (
+                            <div className={`w-9 h-9 rounded-sm ${user.avatarUrl || user.orgLogoUrl ? 'bg-transparent' : 'bg-primary'} flex items-center justify-center text-sidebar-active-text font-bold shrink-0 shadow-inner overflow-hidden relative`}>
+                                {user.avatarUrl || user.orgLogoUrl ? (
                                     <Image
-                                        src={getPublicUrl(user.avatarUrl, user.avatarUpdatedAt)}
-                                        alt="Avatar"
+                                        src={getPublicUrl(user.avatarUrl || user.orgLogoUrl, user.avatarUpdatedAt)}
+                                        alt={user.name!}
                                         fill
                                         className="object-cover rounded-full"
                                         unoptimized
@@ -187,7 +186,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                             </div>
                             <div className={`overflow-hidden transition-all ${!isExpanded ? 'lg:hidden lg:w-0' : 'w-auto'}`}>
                                 <div className="text-xs font-black text-sidebar-text truncate max-w-[120px]">{user.name || user.email}</div>
-                                <div className="text-[9px] font-bold text-sidebar-text/60 uppercase tracking-tighter leading-none mt-0.5">{user.role?.replace('_', ' ')}</div>
+                                <div className="text-[9px] font-bold text-sidebar-text/60 uppercase tracking-tighter leading-none mt-0.5">{user.designation || user.role?.replace('_', ' ')}</div>
                             </div>
                         </div>
                     )}
@@ -264,7 +263,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                 </header>
 
                 {/* Universal Content Wrapper - This is the ONLY scrollable area */}
-                <div className="flex-1 w-full px-[3px] md:px-2 py-2 md:py-4 overflow-y-auto animate-fade-in-up scrollbar-thin overflow-x-hidden">
+                <div className="flex-1 w-full px-[3px] md:px-2 py-2 md:py-4 overflow-y-auto bg-slate-300">
                     {children}
                 </div>
             </main>

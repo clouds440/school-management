@@ -24,13 +24,11 @@ export default function EditStudentPage() {
     useEffect(() => {
         let isMounted = true;
 
-        // Wait for auth to finish loading before doing anything
         if (authLoading) return;
 
         const fetchStudent = async () => {
             if (!user || !token) return;
 
-            // Role guard
             if (user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER && user.role !== Role.TEACHER) {
                 if (isMounted) router.replace(`/${orgSlug}`);
                 return;
@@ -39,13 +37,12 @@ export default function EditStudentPage() {
             try {
                 const data = await api.org.getStudent(studentId, token);
                 
-                // Ownership check for teachers
                 if (user.role === Role.TEACHER) {
                     const isMyStudent = data.enrollments?.some(e => 
                         e.section?.teachers?.some(t => t.userId === user.id)
                     );
                     if (!isMyStudent) {
-                        showToast('You do not have permission to edit this student.', 'error');
+                        showToast('You do not have permission to view this student record.', 'error');
                         router.replace(`/${orgSlug}/students`);
                         return;
                     }
@@ -71,7 +68,6 @@ export default function EditStudentPage() {
         };
     }, [authLoading, user, token, studentId, orgSlug, router, showToast]);
 
-    // Show a spinner while auth is loading or data is being fetched
     if (authLoading || dataLoading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -85,6 +81,8 @@ export default function EditStudentPage() {
 
     if (!studentData) return null;
 
+    const isWatchMode = user?.role === Role.TEACHER;
+
     return (
         <>
             <div className="mb-6">
@@ -93,8 +91,12 @@ export default function EditStudentPage() {
                         <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-lg">Edit Student</h1>
-                        <p className="text-white/80 font-bold opacity-80 mt-1 text-sm md:text-base uppercase tracking-widest text-[10px]">UPDATE LEARNER RECORDS</p>
+                        <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-lg">
+                            {isWatchMode ? 'View Student' : 'Edit Student'}
+                        </h1>
+                        <p className="text-white/80 font-bold opacity-80 mt-1 text-sm md:text-base uppercase tracking-widest text-[10px]">
+                            {isWatchMode ? 'READ-ONLY LEARNER RECORDS' : 'UPDATE LEARNER RECORDS'}
+                        </p>
                     </div>
                 </div>
             </div>

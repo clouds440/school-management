@@ -46,7 +46,8 @@ export default function PlatformAdminsPage() {
     } = usePaginatedData<PlatformAdmin, PlatformAdminParams>(
         (p) => api.admin.getPlatformAdmins(token!, p),
         adminParams,
-        'platform-admins'
+        'platform-admins',
+        { enabled: !!token }
     );
 
     const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);

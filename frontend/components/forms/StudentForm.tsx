@@ -154,6 +154,8 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
         setPendingPhoto(file);
     }, []);
 
+    const isWatchMode = !isProfile && currentUser?.role === Role.TEACHER;
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-12" noValidate>
             {/* Enrollment Details */}
@@ -164,10 +166,13 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             onFileReady={handlePhotoReady}
                             type="user"
                             currentImageUrl={initialData?.user?.avatarUrl}
+                            disabled={isWatchMode}
                         />
-                        <p className="mt-3 text-[10px] text-center font-black uppercase tracking-widest text-card-text/40 group-hover:text-primary transition-colors">
-                            {studentId ? 'Update Photo' : 'Upload Photo'}
-                        </p>
+                        {!isWatchMode && (
+                            <p className="mt-3 text-[10px] text-center font-black uppercase tracking-widest text-card-text/40 group-hover:text-primary transition-colors">
+                                {studentId ? 'Update Photo' : 'Upload Photo'}
+                            </p>
+                        )}
                     </div>
 
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
@@ -176,14 +181,14 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             <Input
                                 type="text"
                                 {...register('name')}
-                                onChange={isProfile ? undefined : register('name').onChange}
-                                readOnly={isProfile}
+                                onChange={(isProfile || isWatchMode) ? undefined : register('name').onChange}
+                                readOnly={isProfile || isWatchMode}
                                 value={watch('name') || ''}
                                 error={!!errors.name}
-                                disabled={isProfile}
+                                disabled={isProfile || isWatchMode}
                                 icon={User}
                                 placeholder="Alex Johnson"
-                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{errors.name.message}</p>}
                         </div>
@@ -193,14 +198,14 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             <Input
                                 type="email"
                                 {...register('email')}
-                                onChange={(!!studentId || isProfile) ? undefined : register('email').onChange}
-                                readOnly={!!studentId || isProfile}
+                                onChange={(!!studentId || isProfile || isWatchMode) ? undefined : register('email').onChange}
+                                readOnly={!!studentId || isProfile || isWatchMode}
                                 value={watch('email') || ''}
                                 error={!!errors.email}
-                                disabled={!!studentId || isProfile}
+                                disabled={!!studentId || isProfile || isWatchMode}
                                 icon={Mail}
                                 placeholder="alex.j@example.com"
-                                className={studentId || isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={studentId || isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.email && <p className="mt-1 text-xs text-red-500 font-bold">{errors.email.message}</p>}
                         </div>
@@ -211,6 +216,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                                 type="password"
                                 {...register('password')}
                                 error={!!errors.password}
+                                disabled={isWatchMode}
                                 icon={Lock}
                                 placeholder={studentId ? "Leave blank to keep current" : "Min 8 chars, 1 upper, 1 lower, 1 num"}
                             />
@@ -222,14 +228,14 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             <Input
                                 type="text"
                                 {...register('registrationNumber')}
-                                onChange={(isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)) ? undefined : register('registrationNumber').onChange}
-                                readOnly={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
+                                onChange={(isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)) ? undefined : register('registrationNumber').onChange}
+                                readOnly={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
                                 value={watch('registrationNumber') || ''}
                                 error={!!errors.registrationNumber}
-                                disabled={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
+                                disabled={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
                                 icon={Hash}
                                 placeholder="ST-2026-001"
-                                className={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.registrationNumber && <p className="mt-1 text-xs text-red-500 font-bold">{errors.registrationNumber.message}</p>}
                         </div>
@@ -239,14 +245,14 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             <Input
                                 type="text"
                                 {...register('rollNumber')}
-                                onChange={(isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)) ? undefined : register('rollNumber').onChange}
-                                readOnly={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
+                                onChange={(isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)) ? undefined : register('rollNumber').onChange}
+                                readOnly={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
                                 value={watch('rollNumber') || ''}
                                 error={!!errors.rollNumber}
-                                disabled={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
+                                disabled={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
                                 icon={Hash}
                                 placeholder="2026-001"
-                                className={isProfile || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.rollNumber && <p className="mt-1 text-xs text-red-500 font-bold">{errors.rollNumber.message}</p>}
                         </div>
@@ -256,12 +262,12 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             <Input
                                 type="date"
                                 {...register('admissionDate')}
-                                onChange={isProfile ? undefined : register('admissionDate').onChange}
-                                readOnly={isProfile}
+                                onChange={(isProfile || isWatchMode) ? undefined : register('admissionDate').onChange}
+                                readOnly={isProfile || isWatchMode}
                                 value={watch('admissionDate') || ''}
                                 error={!!errors.admissionDate}
-                                disabled={isProfile}
-                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                disabled={isProfile || isWatchMode}
+                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                             />
                             {errors.admissionDate && <p className="mt-1 text-xs text-red-500 font-bold">{errors.admissionDate.message}</p>}
                         </div>
@@ -276,12 +282,12 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                                 ]}
                                 value={formData.status}
                                 onChange={(val) => {
-                                    if (isProfile) return;
+                                    if (isProfile || isWatchMode) return;
                                     setValue('status', val as StudentStatus);
                                     trigger('status');
                                 }}
                                 error={!!errors.status}
-                                disabled={isProfile}
+                                disabled={isProfile || isWatchMode}
                                 icon={
                                     formData.status === StudentStatus.ACTIVE ? ShieldCheck :
                                         formData.status === StudentStatus.SUSPENDED ? UserX : GraduationCap
@@ -298,14 +304,14 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                         <Input
                             type="text"
                             {...register('major')}
-                            onChange={isProfile ? undefined : register('major').onChange}
-                            readOnly={isProfile}
+                            onChange={(isProfile || isWatchMode) ? undefined : register('major').onChange}
+                            readOnly={isProfile || isWatchMode}
                             value={watch('major') || ''}
                             error={!!errors.major}
-                            disabled={isProfile}
+                            disabled={isProfile || isWatchMode}
                             icon={GraduationCap}
                             placeholder="Computer Science"
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.major && <p className="mt-1 text-xs text-red-500 font-bold">{errors.major.message}</p>}
                     </div>
@@ -314,14 +320,14 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                         <Input
                             type="text"
                             {...register('department')}
-                            onChange={isProfile ? undefined : register('department').onChange}
-                            readOnly={isProfile}
+                            onChange={(isProfile || isWatchMode) ? undefined : register('department').onChange}
+                            readOnly={isProfile || isWatchMode}
                             value={watch('department') || ''}
                             error={!!errors.department}
-                            disabled={isProfile}
+                            disabled={isProfile || isWatchMode}
                             icon={BookOpen}
                             placeholder="Engineering & Tech"
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.department && <p className="mt-1 text-xs text-red-500 font-bold">{errors.department.message}</p>}
                     </div>
@@ -346,13 +352,13 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                         }))}
                         values={formData.sectionIds || []}
                         onChange={(vals) => {
-                            if (isProfile) return;
+                            if (isProfile || isWatchMode) return;
                             setValue('sectionIds', vals);
                             trigger('sectionIds');
                         }}
                         placeholder="Select one or more sections..."
                         error={!!errors.sectionIds}
-                        disabled={isProfile}
+                        disabled={isProfile || isWatchMode}
                     />
                     {errors.sectionIds && <p className="mt-1 text-xs text-red-500 font-bold">{errors.sectionIds.message}</p>}
                 </div>
@@ -373,14 +379,14 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                         <Input
                             type="number"
                             {...register('fee')}
-                            onChange={isProfile ? undefined : register('fee').onChange}
-                            readOnly={isProfile}
+                            onChange={(isProfile || isWatchMode) ? undefined : register('fee').onChange}
+                            readOnly={isProfile || isWatchMode}
                             value={watch('fee') || ''}
                             error={!!errors.fee}
-                            disabled={isProfile}
+                            disabled={isProfile || isWatchMode}
                             icon={DollarSign}
                             placeholder="12000"
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.fee && <p className="mt-1 text-xs text-red-500 font-bold">{errors.fee.message}</p>}
                     </div>
@@ -389,14 +395,14 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                         <Input
                             type="text"
                             {...register('feePlan')}
-                            onChange={isProfile ? undefined : register('feePlan').onChange}
-                            readOnly={isProfile}
+                            onChange={(isProfile || isWatchMode) ? undefined : register('feePlan').onChange}
+                            readOnly={isProfile || isWatchMode}
                             value={watch('feePlan') || ''}
                             error={!!errors.feePlan}
-                            disabled={isProfile}
+                            disabled={isProfile || isWatchMode}
                             icon={BookOpen}
                             placeholder="Standard / Installments"
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.feePlan && <p className="mt-1 text-xs text-red-500 font-bold">{errors.feePlan.message}</p>}
                     </div>
@@ -405,12 +411,12 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                         <Input
                             type="date"
                             {...register('graduationDate')}
-                            onChange={isProfile ? undefined : register('graduationDate').onChange}
-                            readOnly={isProfile}
+                            onChange={(isProfile || isWatchMode) ? undefined : register('graduationDate').onChange}
+                            readOnly={isProfile || isWatchMode}
                             value={watch('graduationDate') || ''}
                             error={!!errors.graduationDate}
-                            disabled={isProfile}
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            disabled={isProfile || isWatchMode}
+                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
                         />
                         {errors.graduationDate && <p className="mt-1 text-xs text-red-500 font-bold">{errors.graduationDate.message}</p>}
                     </div>
@@ -433,6 +439,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             type="text"
                             {...register('fatherName')}
                             error={!!errors.fatherName}
+                            disabled={isWatchMode}
                             icon={User}
                             placeholder="Michael Johnson"
                         />
@@ -444,6 +451,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             type="number"
                             {...register('age')}
                             error={!!errors.age}
+                            disabled={isWatchMode}
                             icon={User}
                             placeholder="16"
                         />
@@ -459,12 +467,12 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             ]}
                             value={formData.gender || ''}
                             onChange={(val) => {
-                                if (isProfile) return;
+                                if (isProfile || isWatchMode) return;
                                 setValue('gender', val);
                                 trigger('gender');
                             }}
                             error={!!errors.gender}
-                            disabled={isProfile}
+                            disabled={isProfile || isWatchMode}
                             icon={Users}
                             placeholder="Gender"
                         />
@@ -480,6 +488,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                                 type="text"
                                 {...register('phone')}
                                 error={!!errors.phone}
+                                disabled={isWatchMode}
                                 icon={Phone}
                                 placeholder="+1 555-0100"
                             />
@@ -491,6 +500,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                                 type="text"
                                 {...register('emergencyContact')}
                                 error={!!errors.emergencyContact}
+                                disabled={isWatchMode}
                                 icon={Phone}
                                 placeholder="Relationship - Phone"
                             />
@@ -502,6 +512,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                                 type="text"
                                 {...register('bloodGroup')}
                                 error={!!errors.bloodGroup}
+                                disabled={isWatchMode}
                                 icon={Plus}
                                 placeholder="A+, B-, etc."
                             />
@@ -517,6 +528,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             </div>
                             <textarea
                                 {...register('address')}
+                                disabled={isWatchMode}
                                 className={`w-full pl-11 pr-4 py-3 rounded-sm border ${errors.address ? 'border-red-500 ring-4 ring-red-500/10' : 'border-white/10 ring-primary/10'} bg-primary/5 text-card-text placeholder:text-card-text/40 focus:bg-card focus:border-primary focus:ring-4 sm:text-sm transition-all duration-200 shadow-sm min-h-[160px] outline-none font-bold`}
                                 placeholder="123 Education Lane, Learning City"
                             />
@@ -528,20 +540,22 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
 
             <div className="flex items-center justify-end gap-4 pb-12">
                 <Button type="button" variant="secondary" className="w-32" onClick={() => router.back()}>
-                    Cancel
+                    {isWatchMode ? 'Go Back' : 'Cancel'}
                 </Button>
-                <Button type="submit" className="w-64 h-12" disabled={isSaving}>
-                    {isSaving ? (
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            <span className="font-black uppercase tracking-widest text-[10px]">Processing...</span>
-                        </div>
-                    ) : (
-                        <span className="font-black uppercase tracking-widest text-[10px] italic">
-                            {isProfile ? 'Update Profile' : (studentId ? 'Update Student Record' : 'Register Student')}
-                        </span>
-                    )}
-                </Button>
+                {!isWatchMode && (
+                    <Button type="submit" className="w-64 h-12" disabled={isSaving}>
+                        {isSaving ? (
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <span className="font-black uppercase tracking-widest text-[10px]">Processing...</span>
+                            </div>
+                        ) : (
+                            <span className="font-black uppercase tracking-widest text-[10px] italic">
+                                {isProfile ? 'Update Profile' : (studentId ? 'Update Student Record' : 'Register Student')}
+                            </span>
+                        )}
+                    </Button>
+                )}
             </div>
         </form>
     );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { LucideIcon, ChevronDown } from "lucide-react";
 
 export interface DropdownOption<T extends string = string> {
@@ -19,6 +19,7 @@ export interface CustomSelectProps<T extends string = string> {
     disabled?: boolean;
     required?: boolean;
     error?: boolean;
+    searchable?: boolean;
 }
 
 export function CustomSelect<T extends string = string>({
@@ -30,12 +31,18 @@ export function CustomSelect<T extends string = string>({
     className = "",
     disabled = false,
     required = false,
-    error = false
+    error = false,
+    searchable = false
 }: CustomSelectProps<T>) {
     const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
     const containerRef = useRef<HTMLDivElement>(null);
 
     const selectedOption = options.find(opt => opt.value === value);
+
+    useEffect(() => {
+        if (!isOpen) setSearchTerm("");
+    }, [isOpen]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -46,6 +53,13 @@ export function CustomSelect<T extends string = string>({
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    const filteredOptions = useMemo(() => {
+        if (!searchable) return options;
+        return options.filter(opt =>
+            opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [options, searchTerm, searchable]);
 
     const handleSelect = (val: T) => {
         onChange(val);
@@ -97,11 +111,33 @@ export function CustomSelect<T extends string = string>({
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 w-full mt-2 py-2 bg-card border border-white/10 rounded-sm shadow-2xl max-h-64 overflow-y-auto animate-in fade-in zoom-in duration-100">
-                    {options.length === 0 ? (
-                        <div className="px-4 py-3 text-sm text-card-text/40 italic">No options available</div>
-                    ) : (
-                        options.map((option) => (
+                <div className="absolute z-50 w-full mt-2 py-2 bg-card border border-white/10 rounded-sm shadow-2xl max-h-80 flex flex-col animate-in fade-in zoom-in duration-100">
+                    {searchable && (
+                        <div className="px-3 pb-2 border-b border-white/5">
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg className="h-4 w-4 text-card-text/40" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    className="block w-full pl-9 pr-3 py-2 border border-white/10 rounded-sm text-xs bg-primary/5 text-card-text placeholder-card-text/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                    placeholder="Search..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="overflow-y-auto flex-1">
+                        {filteredOptions.length === 0 ? (
+                            <div className="px-4 py-3 text-sm text-card-text/40 italic text-center text-balance">{searchable ? `No results found for "${searchTerm}"` : 'No options available'}</div>
+                        ) : (
+                            filteredOptions.map((option) => (
                             <button
                                 key={option.value}
                                 type="button"
@@ -120,6 +156,7 @@ export function CustomSelect<T extends string = string>({
                             </button>
                         ))
                     )}
+                    </div>
                 </div>
             )}
         </div>

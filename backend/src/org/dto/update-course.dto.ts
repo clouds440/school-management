@@ -8,4 +8,8 @@ export class UpdateCourseDto {
     @IsString()
     @IsOptional()
     description?: string;
+
+    @IsString()
+    @IsOptional()
+    updatedBy?: string;
 }

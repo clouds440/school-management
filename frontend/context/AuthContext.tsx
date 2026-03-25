@@ -49,17 +49,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
     const logout = React.useCallback(async () => {
-        if (token) {
-            try {
-                await api.auth.logout(token);
-            } catch (error) {
-                console.error("Backend logout failed", error);
-            }
-        }
+        const currentToken = token;
+        
+        // 1. Clear local storage first
+        localStorage.removeItem('token');
+        
+        // 2. Clear state immediately to signal logout to components
         setToken(null);
         setUser(null);
-        localStorage.removeItem('token');
-        router.push('/');
+        
+        // 3. Initiate redirect
+        router.replace('/login');
+        
+        // 4. Background cleanup
+        if (currentToken) {
+            api.auth.logout(currentToken).catch(() => {});
+        }
     }, [token, router]);
 
     const processToken = React.useCallback((t: string) => {
@@ -83,6 +88,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (decoded.name) {
                 decoded.userName = decoded.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+            }
+
+            // Map sub to id for consistent usage
+            if (decoded.sub && !decoded.id) {
+                decoded.id = decoded.sub;
             }
 
             setToken(t);
@@ -160,41 +170,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 // Verify organization slug matches the URL for Org roles
                 if (isUserPath && user.orgSlug) {
-                    const firstSegment = pathname.split('/')[1];
+                    const pathSegments = pathname.split('/');
+                    const firstSegment = pathSegments[1];
 
-                    // Check if student is on their personalized page (redirect to personalized if on generic path)
-                    if (user.role === Role.STUDENT) {
-                        const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : '';
-
-                        if (firstSegment !== user.orgSlug) {
+                    if (firstSegment !== user.orgSlug) {
+                        const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
+                        if (user.role === Role.STUDENT) {
                             router.replace(`/${user.orgSlug}/students/${nameSlug || 'dashboard'}`);
-                            return;
-                        }
-
-                        // If student hits generic org path, redirect to personalized name route or fallback
-                        if (pathname === `/${user.orgSlug}` || pathname === `/${user.orgSlug}/dashboard`) {
-                            if (nameSlug) {
-                                router.replace(`/${user.orgSlug}/students/${nameSlug}`);
-                                return;
-                            }
-                        }
-                    } else if (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER || user.role === Role.TEACHER) {
-                        if (firstSegment !== user.orgSlug) {
-                            const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
+                        } else {
                             router.replace(`/${user.orgSlug}/${user.role === Role.ORG_ADMIN ? 'admin' : `teachers/${nameSlug}`}`);
+                        }
+                        return;
+                    }
+
+                    // Strict role-based page restriction
+                    if (user.role === Role.STUDENT) {
+                        const isStudentPortal = pathSegments[2] === 'students' && pathSegments[3] === user.userName;
+                        const isSupportInOrg = pathSegments[2] === 'support';
+                        
+                        // All other pages are blocked for students
+                        if (!isStudentPortal && !isSupportInOrg) {
+                            showToast('Access Denied. Unauthorized page access may lead to account suspension.', 'error');
+                            router.replace(`/${user.orgSlug}/students/${user.userName}`);
                             return;
                         }
-
+                    } else if (user.role === Role.TEACHER) {
                         // Restrict TEACHER from accessing settings and teachers management (list) pages
-                        if (user.role === Role.TEACHER) {
-                            const pathSegments = pathname.split('/');
-                            // Check for /teachers (list) but NOT /teachers/[name]
-                            const isTeacherList = pathSegments[2] === 'teachers' && !pathSegments[3];
-                            if (pathSegments.includes('settings') || isTeacherList) {
-                                const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
-                                router.replace(`/${user.orgSlug}/teachers/${nameSlug}`);
-                                return;
-                            }
+                        const isTeacherList = pathSegments[2] === 'teachers' && !pathSegments[3];
+                        if (pathSegments.includes('settings') || isTeacherList) {
+                            showToast('Access Denied. You do not have permission to view this page.', 'error');
+                            const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
+                            router.replace(`/${user.orgSlug}/teachers/${nameSlug}`);
+                            return;
                         }
                     }
                 }
