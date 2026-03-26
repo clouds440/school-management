@@ -1,6 +1,6 @@
 import { UnauthorizedException, NotFoundException, Injectable } from '@nestjs/common';
 import { Prisma, User as UserEntity } from '@prisma/client';
-import { OrgStatus, Role, SupportTopic } from '../common/enums';
+import { OrgStatus, Role, RequestStatus } from '../common/enums';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -105,18 +105,12 @@ export class AdminService {
             createdAt: new Date()
         };
 
-        await this.prisma.organization.update({
+        return this.prisma.organization.update({
             where: { id },
             data: {
                 status: OrgStatus.APPROVED,
                 statusHistory: [...history, newEntry] as Prisma.InputJsonValue
             }
-        });
-
-        // Resolve pending "Account status" tickets for this organization
-        return this.prisma.supportTicket.updateMany({
-            where: { organizationId: id, isResolved: false, topic: SupportTopic.ACCOUNT_STATUS },
-            data: { isResolved: true }
         });
     }
 
@@ -137,18 +131,12 @@ export class AdminService {
             createdAt: new Date()
         };
 
-        await this.prisma.organization.update({
+        return this.prisma.organization.update({
             where: { id },
             data: {
                 status: OrgStatus.REJECTED,
                 statusHistory: [...history, newEntry] as Prisma.InputJsonValue
             }
-        });
-
-        // Resolve pending "Account status" tickets for this organization
-        return this.prisma.supportTicket.updateMany({
-            where: { organizationId: id, isResolved: false, topic: SupportTopic.ACCOUNT_STATUS },
-            data: { isResolved: true }
         });
     }
 
@@ -168,57 +156,25 @@ export class AdminService {
             createdAt: new Date()
         };
 
-        await this.prisma.organization.update({
+        return this.prisma.organization.update({
             where: { id },
             data: {
                 status: OrgStatus.SUSPENDED,
                 statusHistory: [...history, newEntry] as Prisma.InputJsonValue,
             },
         });
-
-        // Resolve pending "Account status" tickets for this organization
-        return this.prisma.supportTicket.updateMany({
-            where: { organizationId: id, isResolved: false, topic: SupportTopic.ACCOUNT_STATUS },
-            data: { isResolved: true }
-        });
     }
 
-
-    async getSupportTickets(options: PaginationOptions) {
-        const { skip, take, search } = getPaginationOptions(options);
-
-        const where: Prisma.SupportTicketWhereInput = search ? {
-            OR: [
-                { message: { contains: search, mode: 'insensitive' } },
-                { organization: { name: { contains: search, mode: 'insensitive' } } }
-            ]
-        } : {};
-
-        const [tickets, totalRecords] = await Promise.all([
-            this.prisma.supportTicket.findMany({
-                where,
-                skip,
-                take,
-                include: {
-                    organization: {
-                        select: { name: true, status: true, contactEmail: true }
-                    }
-                },
-                orderBy: { createdAt: 'desc' }
-            }),
-            this.prisma.supportTicket.count({ where })
-        ]);
-
-        return formatPaginatedResponse(tickets, totalRecords, options.page, options.limit);
-    }
 
     async getAdminStats() {
-        const [orgStatusCounts, tickets, platformAdmins] = await Promise.all([
+        const [orgStatusCounts, openRequests, platformAdmins] = await Promise.all([
             this.prisma.organization.groupBy({
                 by: ['status'],
                 _count: { _all: true }
             }),
-            this.prisma.supportTicket.count({ where: { isResolved: false } }),
+            this.prisma.request.count({
+                where: { status: { notIn: [RequestStatus.RESOLVED, RequestStatus.CLOSED] } }
+            }),
             this.prisma.user.count({ where: { role: Role.PLATFORM_ADMIN } }),
         ]);
 
@@ -226,17 +182,9 @@ export class AdminService {
 
         return {
             ...orgCounts,
-            SUPPORT: tickets,
+            OPEN_REQUESTS: openRequests,
             PLATFORM_ADMINS: platformAdmins
         };
-    }
-
-
-    async resolveSupportTicket(id: string) {
-        return this.prisma.supportTicket.update({
-            where: { id },
-            data: { isResolved: true }
-        });
     }
 
     // --- Platform Admins ---

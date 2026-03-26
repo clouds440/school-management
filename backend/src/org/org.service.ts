@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { Role, OrgStatus, SupportTopic, TeacherStatus, StudentStatus } from '../common/enums';
+import { Role, OrgStatus, TeacherStatus, StudentStatus } from '../common/enums';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { UpdateSettingsDto } from './dto/update-settings.dto';
@@ -149,29 +149,6 @@ export class OrgService {
                 avatarUrl: true,
                 avatarUpdatedAt: true,
             },
-        });
-    }
-
-    async submitSupportTicket(orgId: string, topic: SupportTopic, message: string) {
-        // Check for existing unresolved tickets
-        const existingTicket = await this.prisma.supportTicket.findFirst({
-            where: {
-                organizationId: orgId,
-                topic,
-                isResolved: false
-            }
-        });
-
-        if (existingTicket) {
-            throw new ConflictException(`You already have a pending ticket for ${topic.replace('_', ' ').toLowerCase()}. Please wait for it to be resolved.`);
-        }
-
-        return this.prisma.supportTicket.create({
-            data: {
-                organizationId: orgId,
-                topic,
-                message
-            }
         });
     }
 

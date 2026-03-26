@@ -64,26 +64,6 @@ export class AdminController {
         return this.adminService.suspendOrganization(id, reason, admin);
     }
 
-    @Roles(Role.SUPER_ADMIN, Role.PLATFORM_ADMIN)
-    @Get('support')
-    async getSupportTickets(
-        @Query('page') page?: string,
-        @Query('limit') limit?: string,
-        @Query('search') search?: string,
-    ) {
-        return this.adminService.getSupportTickets({
-            page: page ? parseInt(page, 10) : 1,
-            limit: limit ? parseInt(limit, 10) : 10,
-            search,
-        });
-    }
-
-    @Roles(Role.SUPER_ADMIN, Role.PLATFORM_ADMIN)
-    @Patch('support/:id/resolve')
-    resolveSupportTicket(@Param('id') id: string) {
-        return this.adminService.resolveSupportTicket(id);
-    }
-
     // --- Platform Admins ---
     @Roles(Role.SUPER_ADMIN)
     @Get('platform-admins')

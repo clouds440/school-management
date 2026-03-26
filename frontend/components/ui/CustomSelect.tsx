@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { LucideIcon, ChevronDown } from "lucide-react";
 
 export interface DropdownOption<T extends string = string> {
@@ -36,7 +37,9 @@ export function CustomSelect<T extends string = string>({
 }: CustomSelectProps<T>) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     const selectedOption = options.find(opt => opt.value === value);
 
@@ -44,9 +47,37 @@ export function CustomSelect<T extends string = string>({
         if (!isOpen) setSearchTerm("");
     }, [isOpen]);
 
+    const updateCoords = () => {
+        if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            // We want to position it relative to the viewport because we portal to body
+            setCoords({
+                top: rect.bottom + window.scrollY,
+                left: rect.left + window.scrollX,
+                width: rect.width
+            });
+        }
+    };
+
+    useLayoutEffect(() => {
+        if (isOpen) {
+            updateCoords();
+            // Listen to scroll and resize to keep anchored
+            window.addEventListener('scroll', updateCoords, true);
+            window.addEventListener('resize', updateCoords);
+        }
+        return () => {
+            window.removeEventListener('scroll', updateCoords, true);
+            window.removeEventListener('resize', updateCoords);
+        };
+    }, [isOpen]);
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+            if (
+                containerRef.current && !containerRef.current.contains(event.target as Node) &&
+                dropdownRef.current && !dropdownRef.current.contains(event.target as Node)
+            ) {
                 setIsOpen(false);
             }
         };
@@ -68,7 +99,6 @@ export function CustomSelect<T extends string = string>({
 
     return (
         <div className={`relative group ${className}`} ref={containerRef}>
-            {/* Hidden native select for form accessibility/validation if needed */}
             <select
                 required={required}
                 value={value}
@@ -110,8 +140,18 @@ export function CustomSelect<T extends string = string>({
                 <ChevronDown className={`h-4 w-4 ml-2 transition-transform duration-200 text-card-text/40 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {isOpen && (
-                <div className="absolute z-50 w-full mt-2 py-2 bg-card border border-white/10 rounded-sm shadow-2xl max-h-80 flex flex-col animate-in fade-in zoom-in duration-100">
+            {isOpen && coords && createPortal(
+                <div
+                    ref={dropdownRef}
+                    style={{
+                        position: 'absolute',
+                        top: coords.top + 8,
+                        left: coords.left,
+                        width: coords.width,
+                        zIndex: 9999
+                    }}
+                    className="py-2 bg-card border border-white/10 rounded-sm shadow-2xl max-h-80 flex flex-col animate-in fade-in zoom-in duration-100"
+                >
                     {searchable && (
                         <div className="px-3 pb-2 border-b border-white/5">
                             <div className="relative">
@@ -133,31 +173,32 @@ export function CustomSelect<T extends string = string>({
                         </div>
                     )}
 
-                    <div className="overflow-y-auto flex-1">
+                    <div className="overflow-y-auto flex-1 custom-scrollbar">
                         {filteredOptions.length === 0 ? (
                             <div className="px-4 py-3 text-sm text-card-text/40 italic text-center text-balance">{searchable ? `No results found for "${searchTerm}"` : 'No options available'}</div>
                         ) : (
                             filteredOptions.map((option) => (
-                            <button
-                                key={option.value}
-                                type="button"
-                                onClick={() => handleSelect(option.value)}
-                                className={`
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => handleSelect(option.value)}
+                                    className={`
                                     flex items-center w-full px-4 py-3 text-sm font-bold transition-all
                                     ${option.value === value
-                                        ? 'bg-primary text-white'
-                                        : 'text-card-text hover:bg-primary/10'
-                                    }
+                                            ? 'bg-primary text-white'
+                                            : 'text-card-text hover:bg-primary/10'
+                                        }
                                     text-left
                                 `}
-                            >
-                                {option.icon && <option.icon className="h-4 w-4 mr-2" />}
-                                {option.label}
-                            </button>
-                        ))
-                    )}
+                                >
+                                    {option.icon && <option.icon className="h-4 w-4 mr-2" />}
+                                    {option.label}
+                                </button>
+                            ))
+                        )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

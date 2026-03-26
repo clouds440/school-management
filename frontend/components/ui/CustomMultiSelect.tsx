@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from "react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { LucideIcon, ChevronDown, X, Check } from "lucide-react";
 
 export interface MultiSelectOption {
@@ -32,7 +33,9 @@ export function CustomMultiSelect({
 }: CustomMultiSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Derived state for selected options
     const selectedOptions = options.filter(opt => values.includes(opt.value));
@@ -44,14 +47,39 @@ export function CustomMultiSelect({
         );
     }, [options, searchTerm]);
 
+    const updateCoords = () => {
+        if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            setCoords({
+                top: rect.bottom + window.scrollY,
+                left: rect.left + window.scrollX,
+                width: rect.width
+            });
+        }
+    };
+
+    useLayoutEffect(() => {
+        if (isOpen) {
+            updateCoords();
+            window.addEventListener('scroll', updateCoords, true);
+            window.addEventListener('resize', updateCoords);
+        }
+        return () => {
+            window.removeEventListener('scroll', updateCoords, true);
+            window.removeEventListener('resize', updateCoords);
+        };
+    }, [isOpen]);
+
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (!isOpen) setSearchTerm("");
     }, [isOpen]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+            if (
+                containerRef.current && !containerRef.current.contains(event.target as Node) &&
+                dropdownRef.current && !dropdownRef.current.contains(event.target as Node)
+            ) {
                 setIsOpen(false);
             }
         };
@@ -126,8 +154,18 @@ export function CustomMultiSelect({
                 </div>
             </div>
 
-            {isOpen && (
-                <div className="absolute z-50 w-full mt-2 py-2 bg-card border border-white/10 rounded-sm shadow-2xl max-h-80 flex flex-col animate-in fade-in zoom-in duration-100">
+            {isOpen && coords && createPortal(
+                <div 
+                    ref={dropdownRef}
+                    style={{
+                        position: 'absolute',
+                        top: coords.top + 8,
+                        left: coords.left,
+                        width: coords.width,
+                        zIndex: 9999
+                    }}
+                    className="py-2 bg-card border border-white/10 rounded-sm shadow-2xl max-h-80 flex flex-col animate-in fade-in zoom-in duration-100"
+                >
                     <div className="px-3 pb-2 border-b border-white/5">
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -147,7 +185,7 @@ export function CustomMultiSelect({
                         </div>
                     </div>
 
-                    <div className="overflow-y-auto flex-1">
+                    <div className="overflow-y-auto flex-1 custom-scrollbar">
                         {filteredOptions.length === 0 ? (
                             <div className="px-4 py-3 text-sm text-card-text/40 italic text-center">No options found</div>
                         ) : (
@@ -177,7 +215,8 @@ export function CustomMultiSelect({
                             })
                         )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

@@ -1,5 +1,5 @@
 import { Controller, Get, Patch, Post, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, BadRequestException, Query, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Role, SupportTopic } from '../common/enums';
+import { Role } from '../common/enums';
 
 import { OrgService } from './org.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -89,15 +89,6 @@ export class OrgController {
         }
 
         return this.orgService.updateLogo(orgId, file, req.user.id);
-    }
-
-
-    @Post('support')
-    submitSupportTicket(
-        @OrgId() orgId: string,
-        @Body() body: { topic: SupportTopic, message: string }
-    ) {
-        return this.orgService.submitSupportTicket(orgId, body.topic as SupportTopic, body.message);
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)

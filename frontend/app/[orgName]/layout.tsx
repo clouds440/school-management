@@ -101,7 +101,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
     }, [isApproved, orgSlug, user?.role, stats, user?.userName]);
 
     const bottomLinks: SidebarLink[] = [
-        { id: 'SUPPORT', label: 'Support', href: `/${orgSlug}/support`, icon: MessageSquare }
+        { id: 'MAIL', label: 'Mail', href: `/${orgSlug}/mail`, icon: MessageSquare }
     ];
 
     // Status Message Components
@@ -179,11 +179,11 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
                         />
                     </div>
                     <Link
-                        href={`/${orgSlug}/support`}
+                        href={`/${orgSlug}/mail`}
                         className="inline-flex items-center gap-3 bg-gray-900 hover:bg-black text-white px-10 py-5 rounded-sm font-black text-xl shadow-2xl transition-all hover:-translate-y-1"
                     >
                         <Mail className="w-6 h-6" />
-                        CONTACT SUPPORT
+                        CONTACT MAIL
                     </Link>
                 </div>
             );

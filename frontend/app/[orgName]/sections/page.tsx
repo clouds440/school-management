@@ -112,7 +112,7 @@ export default function SectionsPage() {
             setEditModalOpen(false);
             showToast('Section updated successfully', 'success');
             refresh();
-        } catch (err: any) {
+        } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Error updating section';
             showToast(message, 'error');
         } finally {
@@ -127,7 +127,7 @@ export default function SectionsPage() {
             showToast('Section deleted successfully', 'success');
             setDeleteDialogOpen(false);
             refresh();
-        } catch (err: any) {
+        } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Error deleting section';
             showToast(message, 'error');
         }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { DashboardLayout, SidebarLink } from '@/components/ui/DashboardLayout';
-import { Building, MessageSquare, Users } from 'lucide-react';
+import { Building, Mail, Users } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { AdminStats, Role } from '@/types';
@@ -25,7 +25,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
             {
                 id: 'ORGANIZATIONS',
                 label: 'Organizations',
-                href: '/admin/dashboard/organizations',
+                href: '/admin/organizations',
                 icon: Building,
                 badge: stats ? (stats.PENDING + stats.APPROVED + stats.REJECTED + stats.SUSPENDED) : undefined
             },
@@ -36,19 +36,19 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
             adminLinks.push({
                 id: 'PLATFORM_ADMINS',
                 label: 'Platform Admins',
-                href: '/admin/dashboard/platform-admins',
+                href: '/admin/platform-admins',
                 icon: Users,
                 badge: stats?.PLATFORM_ADMINS
             });
         }
 
-        // Add Support Mails link to main navigation
+        // Add Requests link to main navigation
         adminLinks.push({
-            id: 'SUPPORT',
-            label: 'Support Mails',
-            href: '/admin/dashboard/support',
-            icon: MessageSquare,
-            badge: stats?.SUPPORT
+            id: 'MAIL',
+            label: 'Mail',
+            href: '/admin/mail',
+            icon: Mail,
+            badge: stats?.OPEN_REQUESTS
         });
 
         return adminLinks;

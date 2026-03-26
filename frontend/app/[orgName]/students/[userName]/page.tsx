@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { Section, FinalGradeResponse, Student, ApiError, Role } from '@/types';
+import { Section, FinalGradeResponse, Student, ApiError, Role, Assessment } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { ShieldOff, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
@@ -29,7 +29,7 @@ function StudentPortalContent() {
     const [sections, setSections] = useState<Section[]>([]);
     const [grades, setGrades] = useState<FinalGradeResponse[]>([]);
     const [profile, setProfile] = useState<Student | null>(null);
-    const [assessments, setAssessments] = useState<any[]>([]);
+    const [assessments, setAssessments] = useState<Assessment[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -78,8 +78,9 @@ function StudentPortalContent() {
                 setSections(sectionsRes.data || []);
                 setGrades(gradesRes || []);
                 setAssessments(Array.isArray(assessmentsRes) ? assessmentsRes : []);
-            } catch (err: any) {
-                if (err.isSilent) return;
+            } catch (err: unknown) {
+                const apiError = err as ApiError;
+                if (apiError?.response?.data?.message === 'Silent') return; // Custom check if needed
                 console.error('Failed to fetch other student data:', err);
                 showToast('Failed to load some data. Please try again.', 'error');
             } finally {
@@ -101,7 +102,7 @@ function StudentPortalContent() {
                     Your account has been temporarily suspended by the administration. Please contact the office for details.
                 </p>
                 <Link
-                    href={`/support`}
+                    href={`/${orgName}/mail`}
                     className="bg-gray-900 text-white px-8 py-4 rounded-sm font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all"
                 >
                     Contact Support

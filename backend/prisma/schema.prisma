@@ -23,43 +23,40 @@ model Organization {
   accentColor     Json?
   courses         Course[]
   students        Student[]
-  supportTickets  SupportTicket[]
   teachers        Teacher[]
   users           User[]
   assessments     Assessment[]
+  requests        Request[]
   parentOrgId     String?
   parentOrg       Organization?   @relation("ParentChildOrg", fields: [parentOrgId], references: [id])
   subOrgs         Organization[]  @relation("ParentChildOrg")
 }
 
-model SupportTicket {
-  id             String       @id @default(uuid())
-  organizationId String
-  topic          SupportTopic
-  message        String
-  isResolved     Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-}
+
 
 model User {
-  id             String        @id @default(uuid())
-  email          String        @unique
-  password       String
-  role           Role          @default(SUPER_ADMIN)
-  isFirstLogin   Boolean       @default(true)
-  organizationId String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  name           String?
-  phone          String?
-  tokenVersion   Int           @default(0)
-  avatarUrl      String?
-  avatarUpdatedAt DateTime?
-  studentProfile Student?
-  teacherProfile Teacher?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  id               String             @id @default(uuid())
+  email            String             @unique
+  password         String
+  role             Role               @default(SUPER_ADMIN)
+  isFirstLogin     Boolean            @default(true)
+  organizationId   String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  name             String?
+  phone            String?
+  tokenVersion     Int                @default(0)
+  avatarUrl        String?
+  avatarUpdatedAt  DateTime?
+  studentProfile   Student?
+  teacherProfile   Teacher?
+  organization     Organization?      @relation(fields: [organizationId], references: [id])
+  createdRequests  Request[]          @relation("CreatedRequests")
+  assignedRequests Request[]          @relation("AssignedRequests")
+  participatingRequests Request[]     @relation("RequestParticipants")
+  sentMessages     RequestMessage[]   @relation("SentMessages")
+  performedActions RequestActionLog[] @relation("PerformedActions")
+  viewedRequests   RequestUserView[]
 }
 
 model Teacher {
@@ -200,6 +197,93 @@ model Submission {
   student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
+// ─── Request System ────────────────────────────────────────────────────────────
+
+model Request {
+  id              String          @id @default(uuid())
+  subject         String
+  category        String          // flexible string, not rigid enum
+  priority        String          @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  status          RequestStatus   @default(OPEN)
+
+  // Creator context
+  creatorId       String
+  creatorRole     String
+  creator         User            @relation("CreatedRequests", fields: [creatorId], references: [id])
+
+  // Organization context (nullable for platform-level requests)
+  organizationId  String?
+  organization    Organization?   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Targeting (who should handle it)
+  targetRole      String?         // e.g. "SUPER_ADMIN", "PLATFORM_ADMIN"
+  assigneeId      String?
+  assignee        User?           @relation("AssignedRequests", fields: [assigneeId], references: [id])
+  assignees       User[]          @relation("RequestParticipants")
+
+  // Extensibility
+  metadata        Json?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  messages        RequestMessage[]
+  actionLogs      RequestActionLog[]
+  userViews       RequestUserView[]
+
+  @@index([creatorId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([assigneeId])
+}
+
+model RequestUserView {
+  userId        String
+  requestId     String
+  lastViewedAt  DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request       Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@id([userId, requestId])
+}
+
+model RequestMessage {
+  id          String   @id @default(uuid())
+  requestId   String
+  senderId    String
+  content     String   // markdown supported
+
+  request     Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Files linked via existing File model (entityType: "REQUEST_MESSAGE", entityId: message.id)
+
+  @@index([requestId])
+  @@index([senderId])
+}
+
+model RequestActionLog {
+  id          String   @id @default(uuid())
+  requestId   String
+  performedBy String
+  action      String   // "CREATED", "STATUS_CHANGED", "ASSIGNED", "MESSAGE_SENT", etc.
+  details     Json?    // e.g. { from: "OPEN", to: "IN_PROGRESS" }
+  note        String?
+
+  request     Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  performer   User     @relation("PerformedActions", fields: [performedBy], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  @@index([requestId])
+}
+
+// ────────────────────────────────────────────────────────────────────────────────
+
 model File {
   id         String   @id @default(uuid())
   orgId      String
@@ -229,11 +313,14 @@ enum OrgStatus {
   SUSPENDED
 }
 
-enum SupportTopic {
-  ACCOUNT_STATUS
-  GENERAL_SUPPORT
-  BUG_ISSUE
-  SUGGESTION
+
+
+enum RequestStatus {
+  OPEN
+  IN_PROGRESS
+  AWAITING_RESPONSE
+  RESOLVED
+  CLOSED
 }
 
 enum TeacherStatus {

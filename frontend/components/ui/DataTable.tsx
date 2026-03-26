@@ -25,6 +25,7 @@ interface DataTableProps<T> {
     onPageChange: (page: number) => void;
     sortConfig?: { key: string; direction: 'asc' | 'desc' } | null;
     onSort?: (key: string, direction: 'asc' | 'desc') => void;
+    getRowClassName?: (row: T) => string;
 }
 
 export function DataTable<T>({ 
@@ -39,7 +40,8 @@ export function DataTable<T>({
     pageSize,
     onPageChange,
     sortConfig,
-    onSort
+    onSort,
+    getRowClassName
 }: DataTableProps<T>) {
     const [columnWidths, setColumnWidths] = useState<number[]>(columns.map(c => c.width || 200));
     const [resizingIndex, setResizingIndex] = useState<number | null>(null);
@@ -166,6 +168,7 @@ export function DataTable<T>({
                                         transition-colors duration-200 group relative h-20 border-b border-b-gray-300
                                         ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-200/80'}
                                         ${onRowClick ? 'cursor-pointer hover:bg-primary/5' : ''}
+                                        ${getRowClassName ? getRowClassName(row) : ''}
                                     `}
                                 >
                                     {columns.map((col, index) => {

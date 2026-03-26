@@ -77,15 +77,16 @@ export default function RegisterPage() {
 
             showToast('Registration successful! Please wait for approval.', 'success');
             router.push('/login');
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const apiError = error as ApiError;
             const message = error instanceof Error 
                 ? error.message 
-                : (error?.response?.data?.message || 'Registration failed');
+                : (apiError?.response?.data?.message || 'Registration failed');
             
             if (Array.isArray(message)) {
                 message.forEach((m: string) => showToast(m, 'error'));
             } else {
-                showToast(message, 'error');
+                showToast(message as string, 'error');
             }
         } finally {
             setIsSaving(false);

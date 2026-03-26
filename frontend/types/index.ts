@@ -1,5 +1,5 @@
-import { Role, TeacherStatus, StudentStatus, SupportTopic, OrganizationType, OrgStatus, AssessmentType, GradeStatus } from './enums';
-export { Role, TeacherStatus, StudentStatus, SupportTopic, OrganizationType, OrgStatus, AssessmentType, GradeStatus } from './enums';
+import { Role, TeacherStatus, StudentStatus, RequestStatus, OrganizationType, OrgStatus, AssessmentType, GradeStatus, RequestCategory } from './enums';
+export { Role, TeacherStatus, StudentStatus, RequestStatus, OrganizationType, OrgStatus, AssessmentType, GradeStatus, RequestCategory } from './enums';
 
 export interface PaginatedResponse<T> {
     data: T[];
@@ -175,7 +175,7 @@ export interface AdminStats {
     APPROVED: number;
     REJECTED: number;
     SUSPENDED: number;
-    SUPPORT: number;
+    OPEN_REQUESTS: number;
     PLATFORM_ADMINS: number;
 }
 
@@ -187,14 +187,103 @@ export interface OrgStats {
     PENDING_ASSESSMENTS?: number;
 }
 
-export interface SupportTicket {
+// ─── Request System Types ────────────────────────────────────────────────────
+
+export interface RequestUser {
     id: string;
-    organizationId: string;
-    organization?: Organization;
-    topic: SupportTopic;
-    message: string;
-    isResolved: boolean;
+    name: string | null;
+    email: string;
+    role: string;
+    avatarUrl?: string | null;
+}
+
+export interface RequestOrg {
+    id: string;
+    name: string;
+    logoUrl?: string | null;
+}
+
+export interface RequestMessage {
+    id: string;
+    requestId: string;
+    senderId: string;
+    content: string;
     createdAt: string;
+    updatedAt: string;
+    sender: RequestUser;
+    files?: Attachment[];
+}
+
+export interface RequestActionLog {
+    id: string;
+    requestId: string;
+    performedBy: string;
+    action: string;
+    details?: Record<string, unknown> | null;
+    note?: string | null;
+    createdAt: string;
+    performer: { id: string; name: string | null; role: string };
+}
+
+/** Summary item returned in list views */
+export interface RequestItem {
+    id: string;
+    subject: string;
+    category: string;
+    priority: string;
+    status: RequestStatus;
+    creatorId: string;
+    creatorRole: string;
+    organizationId: string | null;
+    targetRole: string | null;
+    assigneeId: string | null;
+    metadata: Record<string, unknown> | null;
+    createdAt: string;
+    updatedAt: string;
+    creator: RequestUser;
+    assignee: RequestUser | null;
+    assignees: RequestUser[];
+    organization: RequestOrg | null;
+    _count: { messages: number };
+}
+
+export interface RequestUserView {
+    userId: string;
+    requestId: string;
+    lastViewedAt: string;
+}
+
+/** Full detail returned when viewing a single request */
+export interface RequestDetail extends RequestItem {
+    messages: RequestMessage[];
+    actionLogs: RequestActionLog[];
+    userViews: RequestUserView[];
+}
+
+export interface CreateRequestPayload {
+    subject: string;
+    category: string;
+    priority?: string;
+    message: string;
+    targetRole?: string;
+    assigneeIds?: string[];
+    metadata?: Record<string, unknown>;
+}
+
+export interface UpdateRequestPayload {
+    status?: RequestStatus;
+    assigneeId?: string;
+    priority?: string;
+}
+
+export interface RequestTarget {
+    id: string;
+    label: string;
+    email?: string;
+    type: 'ROLE' | 'USER';
+    role?: Role | 'ORG_STAFF';
+    avatarUrl?: string | null;
+    description?: string;
 }
 
 // Request Interfaces
@@ -356,7 +445,10 @@ export interface FinalGradeResponse {
 }
 
 export interface ApiError {
+    message?: string;
+    status?: number;
     response?: {
+        status?: number;
         data?: {
             message?: string | string[];
         };

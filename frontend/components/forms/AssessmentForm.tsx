@@ -96,8 +96,9 @@ export default function AssessmentForm({
                 const orgId = savedAssessment.organizationId || (initialData?.organizationId as string);
                 try {
                     await api.files.uploadFile(orgId, 'ASSESSMENT', savedAssessment.id, selectedFile, token!);
-                } catch (err: any) {
-                    showToast(err.message || 'Assessment saved but file upload failed', 'error');
+                } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : 'Assessment saved but file upload failed';
+                    showToast(message, 'error');
                 }
             }
 

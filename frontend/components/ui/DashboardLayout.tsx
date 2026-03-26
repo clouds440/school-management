@@ -4,10 +4,12 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight, LogOut, X, Key, LifeBuoy, User as UserIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogOut, X, Key, User as UserIcon, Mail } from 'lucide-react';
+import { useSocket } from '@/hooks/useSocket';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { Role } from '@/types';
+import { api } from '@/lib/api';
 import { BackButton } from './BackButton';
 import { DataViewModal } from './DataViewModal';
 import { getPublicUrl } from '@/lib/utils';
@@ -34,6 +36,41 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
+
+    const [mailStats, setMailStats] = React.useState({ unread: 0, total: 0 });
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+    const { subscribe } = useSocket({
+        token: token,
+        userId: user?.id || undefined,
+        userRole: user?.role || undefined,
+        orgId: user?.organizationId || undefined
+    });
+
+    const fetchMailStats = React.useCallback(async () => {
+        if (!token) return;
+        try {
+            const stats = await api.requests.getUnreadCount(token);
+            // Stats is now { unread, total }
+            setMailStats(stats);
+        } catch (error) {
+            console.error('Failed to fetch mail stats:', error);
+        }
+    }, [token]);
+
+    React.useEffect(() => {
+        fetchMailStats();
+        
+        // Real-time updates via WebSocket
+        const unsubscribe = subscribe('unread:update', () => {
+            fetchMailStats();
+        });
+
+        return () => {
+            unsubscribe();
+        };
+    }, [fetchMailStats, subscribe]);
 
     const activeLink = React.useMemo(() => {
         const allLinks = [...links, ...bottomLinks];
@@ -194,16 +231,24 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                     <div className="space-y-2">
                         {user?.orgSlug && (
                             <Link
-                                href="/support"
+                                href={`/${user.orgSlug}/mail`}
                                 onClick={(e) => {
                                     e.preventDefault();
-                                    router.push('/support');
+                                    router.push(`/${user.orgSlug}/mail`);
                                 }}
-                                className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 hover:bg-sidebar-text/10 transition-all py-2 border border-transparent shadow-sm`}
-                                title="Help & Support"
+                                className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 hover:bg-sidebar-text/10 transition-all py-2 border border-transparent shadow-sm relative`}
+                                title="Mail"
                             >
-                                <LifeBuoy className="w-4 h-4 shrink-0" />
-                                {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Support</span>}
+                                <Mail className="w-4 h-4 shrink-0" />
+                                {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Mail</span>}
+                                {mailStats.unread > 0 && !isExpanded && (
+                                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-sidebar" />
+                                )}
+                                {isExpanded && (mailStats.unread > 0 || mailStats.total > 0) && (
+                                    <span className="ml-auto bg-red-500 text-white px-1.5 py-0.5 rounded-full text-[9px] font-black min-w-[30px] text-center">
+                                        {mailStats.unread}/{mailStats.total}
+                                    </span>
+                                )}
                             </Link>
                         )}
                         <Link
@@ -213,10 +258,10 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                                 router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : `/${user?.orgSlug}/change-password`);
                             }}
                             className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 hover:bg-sidebar-text/10 transition-all py-2 border border-transparent shadow-sm`}
-                            title="Security"
+                            title="Change Password"
                         >
                             <Key className="w-4 h-4 shrink-0" />
-                            {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Security</span>}
+                            {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Change Password</span>}
                         </Link>
 
                         <button
@@ -244,7 +289,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                         </button>
 
                         <div className="flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-300">
-                            {pathname !== '/admin/dashboard' &&
+                            {pathname !== '/admin' &&
                                 !pathname.endsWith('/admin') && (
                                     <BackButton />
                                 )}

@@ -27,6 +27,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
         <div 
             className={`markdown-content ${className}`}
             dangerouslySetInnerHTML={{ __html: htmlContent }}
+            dir="auto"
             style={{
                 lineHeight: '1.6',
                 wordBreak: 'break-word',

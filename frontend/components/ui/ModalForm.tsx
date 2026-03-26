@@ -15,6 +15,7 @@ interface ModalFormProps {
     showCancel?: boolean;
     showSubmit?: boolean;
     maxWidth?: string;
+    feedback?: ReactNode;
 }
 
 
@@ -31,29 +32,36 @@ export function ModalForm({
     variant = 'info',
     showCancel = true,
     showSubmit = true,
-    maxWidth = 'max-w-lg'
+    maxWidth = 'max-w-lg',
+    feedback
 }: ModalFormProps) {
     return (
-        <ModalOverlay isOpen={isOpen} maxWidth={maxWidth} className="p-10 animate-scale-in">
-            <div className="flex justify-between items-center mb-8 shrink-0">
-                <h2 className="text-3xl font-black tracking-tight uppercase">{title}</h2>
+        <ModalOverlay isOpen={isOpen} maxWidth={maxWidth} className="p-5 animate-scale-in">
+            <div className="flex justify-between items-center border-b border-gray-100 mb-4 pb-2 shrink-0 text-gray-900">
+                <h2 className="text-xl font-black tracking-tight uppercase">{title}</h2>
                 <button
                     type="button"
                     onClick={onClose}
-                    className="text-card-text/40 hover:text-red-500 p-2 hover:bg-white/5 rounded-sm transition-all active:scale-95"
+                    className="text-card-text/40 hover:text-red-600 p-2 hover:bg-red-50 rounded-sm transition-all active:scale-95"
                 >
-                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
 
+            {feedback && (
+                <div className="mb-4 shrink-0">
+                    {feedback}
+                </div>
+            )}
+
             <form onSubmit={onSubmit} className="flex flex-col flex-1 overflow-hidden text-gray-900">
-                <div className="overflow-y-auto px-1 -mx-1 custom-scrollbar">
+                <div className="overflow-y-auto px-4 -mx-4 custom-scrollbar [scrollbar-gutter:stable]">
                     {children}
                 </div>
 
-                <div className="mt-10 pt-8 border-t border-gray-100 flex justify-end gap-4 shrink-0">
+                <div className="pt-4 border-t border-gray-100 flex justify-end gap-3 shrink-0">
                     {showCancel && (
                         <button
                             type="button"

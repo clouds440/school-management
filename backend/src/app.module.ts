@@ -4,6 +4,8 @@ import { AdminModule } from './admin/admin.module';
 import { OrgModule } from './org/org.module';
 import { FilesModule } from './files/files.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { EventsModule } from './events/events.module';
+import { RequestsModule } from './requests/requests.module';
 
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -17,6 +19,8 @@ import { APP_GUARD } from '@nestjs/core';
     OrgModule,
     FilesModule,
     PrismaModule,
+    EventsModule,
+    RequestsModule,
     ThrottlerModule.forRoot([{
       ttl: 60000,
       limit: 60,

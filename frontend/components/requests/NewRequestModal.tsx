@@ -1,0 +1,432 @@
+import React, { useState, useRef, useMemo } from 'react';
+import { Send, AlertCircle, Paperclip, X, FileText, ImageIcon, User, Users } from 'lucide-react';
+import { ModalForm } from '@/components/ui/ModalForm';
+import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
+import { RequestTarget, Role, RequestCategory } from '@/types';
+
+interface NewRequestModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess?: () => void;
+}
+
+// ── Category groups by communication context ─────────────────────────────────
+
+const PLATFORM_CATEGORIES = [
+    { value: RequestCategory.ACCOUNT_STATUS, label: 'Account Status' },
+    { value: RequestCategory.BUG_REPORT, label: 'Bug Report' },
+    { value: RequestCategory.FEATURE_REQUEST, label: 'Feature Request' },
+    { value: RequestCategory.BILLING, label: 'Billing' },
+    { value: RequestCategory.PLATFORM_SUPPORT, label: 'Platform Support' },
+];
+
+const PLATFORM_TO_ORG_CATEGORIES = [
+    { value: RequestCategory.ORG_COMPLIANCE, label: 'Org Compliance' },
+    { value: RequestCategory.ORG_ACCOUNT, label: 'Org Account' },
+    { value: RequestCategory.PLATFORM_NOTICE, label: 'Platform Notice' },
+    { value: RequestCategory.GENERAL_INQUIRY, label: 'General Inquiry' },
+];
+
+const ORG_ADMIN_TO_STAFF_CATEGORIES = [
+    { value: RequestCategory.TASK_ASSIGNMENT, label: 'Task Assignment' },
+    { value: RequestCategory.SCHEDULE_CHANGE, label: 'Schedule Change' },
+    { value: RequestCategory.POLICY_UPDATE, label: 'Policy Update' },
+    { value: RequestCategory.PERFORMANCE, label: 'Performance' },
+    { value: RequestCategory.GENERAL_NOTICE, label: 'General Notice' },
+];
+
+const TEACHER_CATEGORIES = [
+    { value: RequestCategory.LEAVE_REQUEST, label: 'Leave Request' },
+    { value: RequestCategory.RESOURCE_REQUEST, label: 'Resource Request' },
+    { value: RequestCategory.SCHEDULE_CONFLICT, label: 'Schedule Conflict' },
+    { value: RequestCategory.COLLABORATION, label: 'Collaboration' },
+    { value: RequestCategory.GENERAL_INQUIRY, label: 'General Inquiry' },
+];
+
+const UNIVERSAL_CATEGORIES = [
+    { value: RequestCategory.GENERAL_INQUIRY, label: 'General Inquiry' },
+    { value: RequestCategory.OTHER, label: 'Other' },
+];
+
+/**
+ * Returns the correct subset of categories based on the sender's role
+ * and the selected recipients' roles.
+ */
+function getCategoriesForContext(
+    senderRole: Role | undefined,
+    recipientRoles: string[],
+): { value: string; label: string }[] {
+    let base: { value: string; label: string }[] = UNIVERSAL_CATEGORIES;
+
+    if (senderRole && recipientRoles.length > 0) {
+        const recipientUpper = recipientRoles[0].toUpperCase();
+
+        // Sender is platform-level (Super/Platform Admin)
+        if (senderRole === Role.SUPER_ADMIN || senderRole === Role.PLATFORM_ADMIN) {
+            if (recipientUpper === Role.ORG_ADMIN) {
+                base = [...PLATFORM_TO_ORG_CATEGORIES, ...UNIVERSAL_CATEGORIES];
+            } else {
+                base = [...PLATFORM_CATEGORIES, ...UNIVERSAL_CATEGORIES];
+            }
+        }
+        // Sender is org-level admin/manager
+        else if (senderRole === Role.ORG_ADMIN || senderRole === Role.ORG_MANAGER) {
+            if (recipientUpper === Role.SUPER_ADMIN || recipientUpper === Role.PLATFORM_ADMIN) {
+                base = [...PLATFORM_CATEGORIES, ...UNIVERSAL_CATEGORIES];
+            } else {
+                base = [...ORG_ADMIN_TO_STAFF_CATEGORIES, ...UNIVERSAL_CATEGORIES];
+            }
+        }
+        // Sender is a teacher
+        else if (senderRole === Role.TEACHER) {
+            base = [...TEACHER_CATEGORIES, ...UNIVERSAL_CATEGORIES];
+        }
+    }
+
+    // Unique by value
+    const seen = new Set();
+    return base.filter(c => {
+        if (seen.has(c.value)) return false;
+        seen.add(c.value);
+        return true;
+    });
+}
+
+const PRIORITIES = [
+    { value: 'LOW', label: 'Low' },
+    { value: 'NORMAL', label: 'Normal' },
+    { value: 'HIGH', label: 'High' },
+    { value: 'URGENT', label: 'Urgent' },
+];
+
+export function NewRequestModal({ isOpen, onClose, onSuccess }: NewRequestModalProps) {
+    const { token, user } = useAuth();
+    const [subject, setSubject] = useState('');
+    const [category, setCategory] = useState<string>(RequestCategory.GENERAL_INQUIRY);
+    const [priority, setPriority] = useState('NORMAL');
+    const [message, setMessage] = useState('');
+    const [targetIds, setTargetIds] = useState<string[]>([]);
+    const [targets, setTargets] = useState<RequestTarget[]>([]);
+    const [searching, setSearching] = useState(false);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Fetch contactable users when modal opens
+    React.useEffect(() => {
+        if (isOpen && token) {
+            setSearching(true);
+            api.requests.getContactableUsers(token)
+                .then(setTargets)
+                .catch(console.error)
+                .finally(() => setSearching(false));
+        }
+    }, [isOpen, token]);
+
+    // Derive the selected targets
+    const selectedTargets = useMemo(
+        () => targets.filter(t => targetIds.includes(t.id)),
+        [targets, targetIds]
+    );
+
+    // Auto-clear error after 3.5 seconds
+    React.useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => setError(''), 3500);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
+
+    // Compute context-aware categories based on the FIRST selected target
+    const availableCategories = useMemo(
+        () => getCategoriesForContext(user?.role as Role | undefined, selectedTargets.map(t => t.role || '')),
+        [user?.role, selectedTargets]
+    );
+
+    // When recipients change, auto-reset category to first valid option if needed
+    const handleTargetChange = (newTargetIds: string[]) => {
+        const addedIds = newTargetIds.filter(id => !targetIds.includes(id));
+        let finalIds = [...newTargetIds];
+        let feedback = '';
+
+        const MEGA_GROUPS = ['ROLE:ORG_STAFF', 'ROLE:PLATFORM_ADMIN'];
+
+        for (const addedId of addedIds) {
+            const addedTarget = targets.find(t => t.id === addedId);
+            if (!addedTarget) continue;
+
+            // 1. Mega Group Exclusivity (All Staff / Platform Team)
+            if (selectedTargets.length > 0 && MEGA_GROUPS.includes(addedId)) {
+                finalIds = [addedId];
+                feedback = `Targeting ${addedTarget.label} cancels all other selections.`;
+                break;
+            }
+
+            // 2. If something else is added while a Mega Group is present, remove the Mega Group
+            const activeMegaGroup = finalIds.find(id => MEGA_GROUPS.includes(id) && id !== addedId);
+            if (activeMegaGroup) {
+                finalIds = finalIds.filter(id => !MEGA_GROUPS.includes(id));
+            }
+
+            // 3. Regular Group vs Sub-Group / User Exclusivity
+            if (addedTarget.type === 'ROLE') {
+                if (addedTarget.role === Role.TEACHER || addedTarget.role === Role.ORG_MANAGER) {
+                    finalIds = finalIds.filter(id => id !== 'ROLE:ORG_STAFF');
+                }
+
+                // Unselect individual users of that role
+                finalIds = finalIds.filter(id => {
+                    if (id === addedId) return true;
+                    const t = targets.find(x => x.id === id);
+                    if (t?.type === 'USER' && t.role === addedTarget.role) return false;
+                    return true;
+                });
+            } else if (addedTarget.type === 'USER') {
+                const groupSelected = finalIds.some(id => {
+                    const t = targets.find(x => x.id === id);
+                    return t?.type === 'ROLE' && t.role === addedTarget.role;
+                });
+
+                if (groupSelected) {
+                    finalIds = finalIds.filter(id => id !== addedId);
+                    feedback = `User ${addedTarget.label} is already included in the selected group.`;
+                }
+            }
+        }
+
+        if (feedback) setError(feedback);
+        else setError('');
+
+        setTargetIds(finalIds);
+        const newTargets = targets.filter(t => finalIds.includes(t.id));
+        const newCategories = getCategoriesForContext(user?.role as Role | undefined, newTargets.map(t => t.role || ''));
+
+        if (!newCategories.some(c => c.value === category)) {
+            setCategory(newCategories[0]?.value || RequestCategory.GENERAL_INQUIRY);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const filesArray = Array.from(e.target.files);
+            const validFiles = filesArray.filter(file =>
+                file.type.startsWith('image/') || file.type === 'application/pdf'
+            );
+
+            if (validFiles.length < filesArray.length) {
+                setError('Only images and PDF files are allowed');
+            }
+
+            setSelectedFiles(prev => [...prev, ...validFiles].slice(0, 5));
+        }
+    };
+
+    const removeFile = (index: number) => {
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!subject.trim() || !message.trim()) {
+            setError('Subject and message are required');
+            return;
+        }
+        if (targetIds.length === 0) {
+            setError('Please select at least one recipient');
+            return;
+        }
+        if (!token) {
+            setError('Authentication expired.');
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            setError('');
+
+            // Separate Roles from individual User IDs
+            const roleTarget = selectedTargets.find(t => t.type === 'ROLE');
+            const individualIds = selectedTargets.filter(t => t.type === 'USER').map(t => t.id);
+
+            const response = await api.requests.createRequest({
+                subject,
+                category,
+                priority,
+                message,
+                assigneeIds: individualIds.length > 0 ? individualIds : undefined,
+                targetRole: roleTarget?.role || undefined
+            }, token);
+
+            if (selectedFiles.length > 0) {
+                const messageId = response.messages?.[0]?.id;
+                const orgId = response.organizationId || 'SYSTEM';
+
+                if (messageId) {
+                    await Promise.all(
+                        selectedFiles.map(file =>
+                            api.files.uploadFile(orgId, 'REQUEST_MESSAGE', messageId, file, token)
+                        )
+                    );
+                }
+            }
+
+            setSubject('');
+            setCategory(RequestCategory.GENERAL_INQUIRY);
+            setPriority('NORMAL');
+            setMessage('');
+            setTargetIds([]);
+            setSelectedFiles([]);
+            onSuccess?.();
+            onClose();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to send mail');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <ModalForm
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Compose Mail"
+            onSubmit={handleSubmit}
+            submitText="Send Mail"
+            isSubmitting={submitting}
+            maxWidth="max-w-5xl"
+            feedback={error ? (
+                <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-sm text-red-600 animate-shake">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <p className="text-[11px] font-bold uppercase tracking-wider">{error}</p>
+                </div>
+            ) : null}
+        >
+            <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Left Column: Basic Info */}
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Subject</label>
+                            <input
+                                type="text"
+                                value={subject}
+                                onChange={(e) => setSubject(e.target.value)}
+                                placeholder="Explain your issue briefly"
+                                className="w-full px-5 py-4 rounded-sm bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-gray-900 font-bold text-base"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Recipients</label>
+                            <CustomMultiSelect
+                                values={targetIds}
+                                onChange={handleTargetChange}
+                                options={targets.map(t => ({
+                                    value: t.id,
+                                    label: t.type === 'ROLE' ? `[GROUP] ${t.label}` : t.label,
+                                    icon: t.type === 'ROLE' ? Users : User
+                                }))}
+                                className="w-full"
+                                placeholder={searching ? "Loading recipients..." : "Select one or more recipients..."}
+                            />
+                            {targetIds.length > 0 && (
+                                <div className="mt-3 space-y-2">
+                                    {selectedTargets.map(t => (
+                                        <div key={t.id} className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-sm uppercase tracking-wider block">
+                                            {t.type === 'USER'
+                                                ? `User: ${t.email} - ${t.role?.replace('_', ' ')} - ${t.description}`
+                                                : `Group: ${t.label} - ${t.description}`
+                                            }
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Category</label>
+                                <CustomSelect
+                                    value={category}
+                                    onChange={(val) => setCategory(val)}
+                                    options={availableCategories}
+                                    className="w-full"
+                                    placeholder="Select category"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Priority</label>
+                                <CustomSelect
+                                    value={priority}
+                                    onChange={(val) => setPriority(val)}
+                                    options={PRIORITIES}
+                                    className="w-full"
+                                    placeholder="Select priority"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column: Message & Files */}
+                    <div className="space-y-6 flex flex-col h-full">
+                        <div className="flex-1">
+                            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Detailed Message</label>
+                            <MarkdownEditor
+                                value={message}
+                                onChange={setMessage}
+                                placeholder="Describe your inquiry in detail... markdown is supported."
+                                rows={8}
+                            />
+                        </div>
+
+                        <div className="pt-2">
+                            <div className="flex items-center justify-between mb-3">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Attachments</label>
+                                <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">{selectedFiles.length} / 5</span>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 min-h-[44px] p-3 bg-gray-50 border border-dashed border-gray-200 rounded-sm">
+                                {selectedFiles.map((file, i) => (
+                                    <div key={i} className="flex items-center gap-2 bg-white border border-gray-200 pl-3 pr-2 py-1.5 rounded-sm shadow-sm animate-in fade-in zoom-in duration-200">
+                                        <div className="w-6 h-6 rounded-sm bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                            {file.type.startsWith('image/') ? <ImageIcon className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                                        </div>
+                                        <span className="text-[11px] font-bold text-gray-700 max-w-[100px] truncate">{file.name}</span>
+                                        <button type="button" onClick={() => removeFile(i)} className="p-1 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors ml-1">
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ))}
+
+                                {selectedFiles.length < 5 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="h-[34px] flex items-center gap-2 px-4 border border-dashed border-gray-300 rounded-sm text-gray-400 hover:border-indigo-500 hover:text-indigo-600 hover:bg-white transition-all group"
+                                    >
+                                        <Paperclip className="w-3.5 h-3.5" />
+                                        <span className="text-[10px] font-black uppercase tracking-wider">Add File</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                className="hidden"
+                                accept="image/*,.pdf"
+                                multiple
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </ModalForm>
+    );
+}

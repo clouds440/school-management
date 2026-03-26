@@ -6,8 +6,8 @@ import Footer from './Footer';
 export function ClientFooter() {
     const pathname = usePathname();
 
-    // Only show footer on home page and support page
-    const showFooter = pathname === '/' || pathname === '/support';
+    // Only show footer on home page and mail page
+    const showFooter = pathname === '/' || pathname?.includes('/mail');
 
     if (!showFooter) return null;
 

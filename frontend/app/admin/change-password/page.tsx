@@ -24,7 +24,7 @@ export default function AdminChangePasswordPage() {
                         ? 'For security reasons, you must change the default super admin password before accessing the dashboard.'
                         : 'Update your super admin administrative password'}
                     onSubmit={handleSubmit}
-                    onSuccess={() => router.push('/admin/dashboard')}
+                    onSuccess={() => router.push('/admin')}
                 />
             </div>
         </div>

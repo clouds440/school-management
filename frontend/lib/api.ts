@@ -1,11 +1,11 @@
 import {
-    Teacher, Student, Organization, RegisterRequest, LoginRequest, AuthResponse,
-    UpdateOrgSettingsRequest, PlatformAdmin, AdminStats, OrgStats, SupportTicket, Section, Course,
+    Teacher, Student, Organization, User, RegisterRequest, LoginRequest, AuthResponse,
+    UpdateOrgSettingsRequest, PlatformAdmin, AdminStats, OrgStats, Section, Course,
     CreateTeacherRequest, UpdateTeacherRequest, CreateStudentRequest, UpdateStudentRequest,
     CreateSectionRequest, UpdateSectionRequest, CreateCourseRequest, UpdateCourseRequest,
-    PaginatedResponse, OrgStatus,
+    PaginatedResponse, OrgStatus, RequestItem, RequestDetail, CreateRequestPayload, UpdateRequestPayload,
     Assessment, Grade, Submission, CreateAssessmentRequest, UpdateAssessmentRequest,
-    UpdateGradeRequest, CreateSubmissionRequest, FinalGradeResponse
+    UpdateGradeRequest, CreateSubmissionRequest, FinalGradeResponse, RequestTarget
 } from '@/types';
 
 
@@ -25,7 +25,7 @@ interface QueryParams {
 
 function buildQueryString(params: QueryParams): string {
     const query = Object.entries(params)
-        .filter(([value]) => value !== undefined && value !== '')
+        .filter(([_, value]) => value !== undefined && value !== '')
         .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
         .join('&');
     return query ? `?${query}` : '';
@@ -84,9 +84,6 @@ export const api = {
             request<void>(`/admin/organizations/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }), token }),
         suspendOrganization: (id: string, reason: string, token: string) =>
             request<void>(`/admin/organizations/${id}/suspend`, { method: 'PATCH', body: JSON.stringify({ reason }), token }),
-        getSupportTickets: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
-            request<PaginatedResponse<SupportTicket>>(`/admin/support${buildQueryString(params)}`, { token }),
-        resolveSupportTicket: (id: string, token: string) => request<void>(`/admin/support/${id}/resolve`, { method: 'PATCH', token }),
         getAdminStats: (token: string) => request<AdminStats>('/admin/stats', { token }),
         getPlatformAdmins: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
             request<PaginatedResponse<PlatformAdmin>>(`/admin/platform-admins${buildQueryString(params)}`, { token }),
@@ -102,8 +99,6 @@ export const api = {
         updateSettings: (data: UpdateOrgSettingsRequest, token: string) =>
             request<void>('/org/settings', { method: 'PATCH', body: JSON.stringify(data), token }),
         reapply: (token: string) => request<void>('/org/reapply', { method: 'PATCH', token }),
-        submitSupportTicket: (topic: string, message: string, token: string) =>
-            request<void>('/org/support', { method: 'POST', body: JSON.stringify({ topic, message }), token }),
         getStats: (token: string) => request<OrgStats>('/org/stats', { token }),
         uploadLogo: async (file: File, token: string): Promise<{ logoUrl: string; avatarUpdatedAt: string }> => {
             const formData = new FormData();
@@ -224,5 +219,22 @@ export const api = {
             return response.json();
         },
         deleteFile: (id: string, token: string) => request<void>(`/files/${id}`, { method: 'DELETE', token }),
+    },
+
+    requests: {
+        getRequests: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', status?: string, category?: string } = {}) =>
+            request<PaginatedResponse<RequestItem>>(`/requests${buildQueryString(params)}`, { token }),
+        getRequest: (id: string, token: string) =>
+            request<RequestDetail>(`/requests/${id}`, { token }),
+        createRequest: (data: CreateRequestPayload, token: string) =>
+            request<RequestDetail>('/requests', { method: 'POST', body: JSON.stringify(data), token }),
+        updateRequest: (id: string, data: UpdateRequestPayload, token: string) =>
+            request<RequestDetail>(`/requests/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+        addMessage: (requestId: string, data: { content: string }, token: string) =>
+            request<RequestDetail>(`/requests/${requestId}/messages`, { method: 'POST', body: JSON.stringify(data), token }),
+        getContactableUsers: (token: string, search?: string) =>
+            request<RequestTarget[]>(`/requests/contacts${buildQueryString({ search })}`, { token }),
+        getUnreadCount: (token: string) =>
+            request<{ unread: number; total: number }>('/requests/unread-count', { token }),
     }
 };

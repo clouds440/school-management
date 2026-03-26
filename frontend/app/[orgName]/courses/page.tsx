@@ -98,8 +98,10 @@ export default function CoursesPage() {
             setEditModalOpen(false);
             showToast('Course updated successfully', 'success');
             refresh();
-        } catch (err: any) {
-            const message = err instanceof Error ? err.message : 'Error updating course';
+        } catch (err: unknown) {
+            const apiError = err as ApiError;
+            const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Error updating course';
+            const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
             showToast(message, 'error');
         } finally {
             setIsSaving(false);
@@ -113,8 +115,10 @@ export default function CoursesPage() {
             showToast('Course deleted successfully', 'success');
             setDeleteDialogOpen(false);
             refresh();
-        } catch (err: any) {
-            const message = err instanceof Error ? err.message : 'Error deleting course';
+        } catch (err: unknown) {
+            const apiError = err as ApiError;
+            const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Error deleting course';
+            const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
             showToast(message, 'error');
         }
     };

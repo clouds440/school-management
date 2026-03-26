@@ -18,7 +18,7 @@ export default function TeacherProfilePage() {
 
     useEffect(() => {
         if (!token) return;
-        api.org.getProfile(token)
+        api.org.getProfile<Teacher>(token)
             .then(setTeacherData)
             .catch(err => console.error('Failed to fetch profile:', err))
             .finally(() => setLoading(false));

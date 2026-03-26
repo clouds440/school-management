@@ -14,11 +14,13 @@ export enum OrgStatus {
     SUSPENDED = 'SUSPENDED',
 }
 
-export enum SupportTopic {
-    ACCOUNT_STATUS = 'ACCOUNT_STATUS',
-    GENERAL_SUPPORT = 'GENERAL_SUPPORT',
-    BUG_ISSUE = 'BUG_ISSUE',
-    SUGGESTION = 'SUGGESTION',
+
+export enum RequestStatus {
+    OPEN = 'OPEN',
+    IN_PROGRESS = 'IN_PROGRESS',
+    AWAITING_RESPONSE = 'AWAITING_RESPONSE',
+    RESOLVED = 'RESOLVED',
+    CLOSED = 'CLOSED',
 }
 
 export enum TeacherStatus {
@@ -48,5 +50,33 @@ export enum OrganizationType {
     ACADEMY = 'ACADEMY',
     TUTORING_CENTER = 'TUTORING_CENTER',
     ONLINE_SCHOOL = 'ONLINE_SCHOOL',
+    OTHER = 'OTHER',
+}
+
+// ── Request Categories (context-aware) ────────────────────────────────────────
+export enum RequestCategory {
+    // Platform-level (messaging Super Admin / Platform Admin)
+    ACCOUNT_STATUS = 'ACCOUNT_STATUS',
+    BUG_REPORT = 'BUG_REPORT',
+    FEATURE_REQUEST = 'FEATURE_REQUEST',
+    BILLING = 'BILLING',
+    PLATFORM_SUPPORT = 'PLATFORM_SUPPORT',
+    // Platform → Org Admin
+    ORG_COMPLIANCE = 'ORG_COMPLIANCE',
+    ORG_ACCOUNT = 'ORG_ACCOUNT',
+    PLATFORM_NOTICE = 'PLATFORM_NOTICE',
+    // Org Admin/Manager → Staff
+    TASK_ASSIGNMENT = 'TASK_ASSIGNMENT',
+    SCHEDULE_CHANGE = 'SCHEDULE_CHANGE',
+    POLICY_UPDATE = 'POLICY_UPDATE',
+    PERFORMANCE = 'PERFORMANCE',
+    GENERAL_NOTICE = 'GENERAL_NOTICE',
+    // Teacher → Manager/Teacher
+    LEAVE_REQUEST = 'LEAVE_REQUEST',
+    RESOURCE_REQUEST = 'RESOURCE_REQUEST',
+    SCHEDULE_CONFLICT = 'SCHEDULE_CONFLICT',
+    COLLABORATION = 'COLLABORATION',
+    // Universal
+    GENERAL_INQUIRY = 'GENERAL_INQUIRY',
     OTHER = 'OTHER',
 }

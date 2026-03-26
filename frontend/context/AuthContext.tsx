@@ -11,6 +11,7 @@ export interface JwtPayload {
     sub: string;
     id: string; // Add id to avoid mapping issues
     email: string;
+    organizationId?: string | null;
     name?: string;
     orgSlug?: string;
     orgName?: string;
@@ -122,10 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isAdminPath = pathname?.startsWith('/admin');
             const isGuestPath = ['/login', '/register'].includes(pathname || '');
             const isHomePage = pathname === '/';
-            const isSupportPage = pathname === '/support';
-
-            // A user path is anything that's not guest, not admin, and not home (and not support)
-            const isUserPath = pathname && !isAdminPath && !isGuestPath && !isHomePage && !isSupportPage;
+            // A user path is anything that's not guest, not admin, and not home
+            const isUserPath = pathname && !isAdminPath && !isGuestPath && !isHomePage;
 
 
             if (user) {
@@ -138,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 // Redirect away from guest paths (login/register/home)
                 if (isGuestPath) {
                     if (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) {
-                        router.replace('/admin/dashboard');
+                        router.replace('/admin');
                     } else if (user.orgSlug) {
                         if (user.role === Role.STUDENT) {
                             router.replace(`/${user.orgSlug}/students/${user.userName}`);
@@ -164,7 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 if (isUserPath && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN)) {
-                    router.replace('/admin/dashboard');
+                    router.replace('/admin');
                     return;
                 }
 
@@ -186,7 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     // Strict role-based page restriction
                     if (user.role === Role.STUDENT) {
                         const isStudentPortal = pathSegments[2] === 'students' && pathSegments[3] === user.userName;
-                        const isSupportInOrg = pathSegments[2] === 'support';
+                        const isSupportInOrg = pathSegments[2] === 'mail';
                         
                         // All other pages are blocked for students
                         if (!isStudentPortal && !isSupportInOrg) {
@@ -207,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
             } else {
                 // Not logged in
-                if (isAdminPath || isUserPath || isSupportPage) {
+                if (isAdminPath || isUserPath) {
                     router.replace('/login');
                 }
             }
