@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { User, Mail, Lock, Hash, ShieldCheck, UserX, GraduationCap, BookOpen, MapPin, Phone, Plus, Users, DollarSign } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useGlobal } from '@/context/GlobalContext';
 import { Section, Student, StudentStatus, CreateStudentRequest, UpdateStudentRequest, Role, ApiError } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
@@ -28,9 +29,11 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
     const { token, user: currentUser, updateUser } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
+    const isProcessing = state.ui.isProcessing;
+
     const [sections, setSections] = useState<Section[]>([]);
     const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
 
     const {
         register,
@@ -89,7 +92,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
     const formData = watch();
 
     const onSubmit: SubmitHandler<StudentCreateFormData | StudentUpdateFormData | StudentProfileFormData> = async (data) => {
-        setIsSaving(true);
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             const { password, fee, age, ...rest } = data;
             const payload: CreateStudentRequest | UpdateStudentRequest = {
@@ -106,6 +109,15 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                 savedStudent = await api.org.updateStudent(studentId, payload as UpdateStudentRequest, token!);
             } else {
                 savedStudent = await api.org.createStudent(payload as CreateStudentRequest, token!);
+            }
+
+            // Sync global auth state if the updated student is the current user
+            if ((isProfile || studentId === initialData?.id) && currentUser?.id === savedStudent.userId) {
+                updateUser({
+                    name: savedStudent.user.name,
+                    email: savedStudent.user.email,
+                });
+                dispatch({ type: 'AUTH_SET_PROFILE', payload: savedStudent });
             }
 
             if (pendingPhoto && savedStudent.userId) {
@@ -140,7 +152,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                 showToast(message, 'error');
             }
         } finally {
-            setIsSaving(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -543,8 +555,8 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                     {isWatchMode ? 'Go Back' : 'Cancel'}
                 </Button>
                 {!isWatchMode && (
-                    <Button type="submit" className="w-64 h-12" disabled={isSaving}>
-                        {isSaving ? (
+                    <Button type="submit" className="w-64 h-12" disabled={isProcessing}>
+                        {isProcessing ? (
                             <div className="flex items-center gap-2">
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 <span className="font-black uppercase tracking-widest text-[10px]">Processing...</span>

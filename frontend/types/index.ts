@@ -1,4 +1,4 @@
-import { Role, TeacherStatus, StudentStatus, RequestStatus, OrganizationType, OrgStatus, AssessmentType, GradeStatus, RequestCategory } from './enums';
+import { Role, TeacherStatus, StudentStatus, RequestStatus, OrganizationType, OrgStatus, AssessmentType, GradeStatus } from './enums';
 export { Role, TeacherStatus, StudentStatus, RequestStatus, OrganizationType, OrgStatus, AssessmentType, GradeStatus, RequestCategory } from './enums';
 
 export interface PaginatedResponse<T> {
@@ -125,6 +125,7 @@ export interface Organization {
     status: OrgStatus;
     statusHistory?: StatusHistoryEntry[];
     createdAt: string;
+    adminUserId?: string;
 }
 
 export interface RegisterRequest {
@@ -175,7 +176,8 @@ export interface AdminStats {
     APPROVED: number;
     REJECTED: number;
     SUSPENDED: number;
-    OPEN_REQUESTS: number;
+    TOTAL_MAIL: number;
+    UNREAD_MAIL: number;
     PLATFORM_ADMINS: number;
 }
 
@@ -245,6 +247,7 @@ export interface RequestItem {
     assignees: RequestUser[];
     organization: RequestOrg | null;
     _count: { messages: number };
+    unreadCount: number;
 }
 
 export interface RequestUserView {

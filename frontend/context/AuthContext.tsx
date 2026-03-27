@@ -1,33 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useToast } from '@/context/ToastContext';
 import { api } from '@/lib/api';
 import { Role } from '@/types';
+import { useGlobal, JwtPayload } from './GlobalContext';
 
-
-export interface JwtPayload {
-    sub: string;
-    id: string; // Add id to avoid mapping issues
-    email: string;
-    organizationId?: string | null;
-    name?: string;
-    orgSlug?: string;
-    orgName?: string;
-    orgLogoUrl?: string | null;
-    avatarUrl?: string | null;
-    avatarUpdatedAt?: string | null;
-    role?: Role;
-    designation?: string;
-    type?: string;
-    status?: string;
-    isFirstLogin?: boolean;
-    userName?: string; // Computed field for routing
-
-    iat: number;
-    exp: number;
-}
+export type { JwtPayload };
 
 interface AuthContextType {
     token: string | null;
@@ -41,32 +20,20 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [token, setToken] = useState<string | null>(null);
-    const [user, setUser] = useState<JwtPayload | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { state, dispatch } = useGlobal();
+    const { token, user, loading } = state.auth;
     const router = useRouter();
     const pathname = usePathname();
-    const { showToast } = useToast();
-
 
     const logout = React.useCallback(async () => {
         const currentToken = token;
-        
-        // 1. Clear local storage first
         localStorage.removeItem('token');
-        
-        // 2. Clear state immediately to signal logout to components
-        setToken(null);
-        setUser(null);
-        
-        // 3. Initiate redirect
+        dispatch({ type: 'AUTH_LOGOUT' });
         router.replace('/login');
-        
-        // 4. Background cleanup
         if (currentToken) {
-            api.auth.logout(currentToken).catch(() => {});
+            api.auth.logout(currentToken).catch(() => { });
         }
-    }, [token, router]);
+    }, [token, router, dispatch]);
 
     const processToken = React.useCallback((t: string) => {
         try {
@@ -80,9 +47,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             );
             const decoded = JSON.parse(jsonPayload) as JwtPayload;
 
-            // Check expiration
             if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-                showToast('Your session has expired. Please log in again.', 'info');
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'Your session has expired. Please log in again.', type: 'info' } });
                 logout();
                 return;
             }
@@ -90,75 +56,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (decoded.name) {
                 decoded.userName = decoded.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
             }
+            if (decoded.sub && !decoded.id) decoded.id = decoded.sub;
 
-            // Map sub to id for consistent usage
-            if (decoded.sub && !decoded.id) {
-                decoded.id = decoded.sub;
-            }
-
-            setToken(t);
-            setUser(decoded);
             localStorage.setItem('token', t);
+            dispatch({ type: 'AUTH_SET_SESSION', payload: { user: decoded, token: t } });
         } catch (error) {
-            console.warn('Invalid or expired token sessions cleaned up.', error);
+            console.warn('Invalid token', error);
             logout();
-        } finally {
-            setLoading(false);
         }
-    }, [showToast, logout]);
+    }, [logout, dispatch]);
 
     useEffect(() => {
-        // Initialize token from storage
-        const storedToken = localStorage.getItem('token');
-        if (storedToken) {
-            processToken(storedToken);
-        } else {
-            setLoading(false);
-        }
-    }, [processToken]);
-
-    useEffect(() => {
-        // Route guarding
         if (!loading) {
             const isAdminPath = pathname?.startsWith('/admin');
             const isGuestPath = ['/login', '/register'].includes(pathname || '');
             const isHomePage = pathname === '/';
-            // A user path is anything that's not guest, not admin, and not home
             const isUserPath = pathname && !isAdminPath && !isGuestPath && !isHomePage;
 
-
             if (user) {
-                // If it's first login and admin, always force change password
                 if ((user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && user.isFirstLogin && pathname !== '/admin/change-password') {
                     router.replace('/admin/change-password');
                     return;
                 }
 
-                // Redirect away from guest paths (login/register/home)
                 if (isGuestPath) {
                     if (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) {
                         router.replace('/admin');
                     } else if (user.orgSlug) {
-                        if (user.role === Role.STUDENT) {
-                            router.replace(`/${user.orgSlug}/students/${user.userName}`);
-                        } else if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) {
-                            router.replace(`/${user.orgSlug}/teachers/${user.userName}`);
-                        } else if (user.role === Role.ORG_ADMIN) {
-                            router.replace(`/${user.orgSlug}/admin`);
-                        } else {
-                            router.replace(`/${user.orgSlug}/admin`);
-                        }
+                        if (user.role === Role.STUDENT) router.replace(`/${user.orgSlug}/students/${user.userName}`);
+                        else if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) router.replace(`/${user.orgSlug}/teachers/${user.userName}`);
+                        else router.replace(`/${user.orgSlug}/admin`);
                     }
                     return;
                 }
 
-                // Cross-role protection
                 if (isAdminPath && user.role !== Role.SUPER_ADMIN && user.role !== Role.PLATFORM_ADMIN) {
-                    if (user.orgSlug) {
-                        router.replace(`/${user.orgSlug}/admin`);
-                    } else {
-                        router.replace('/');
-                    }
+                    router.replace(user.orgSlug ? `/${user.orgSlug}/admin` : '/');
                     return;
                 }
 
@@ -167,96 +100,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     return;
                 }
 
-                // Verify organization slug matches the URL for Org roles
                 if (isUserPath && user.orgSlug) {
                     const pathSegments = pathname.split('/');
                     const firstSegment = pathSegments[1];
 
                     if (firstSegment !== user.orgSlug) {
                         const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
-                        if (user.role === Role.STUDENT) {
-                            router.replace(`/${user.orgSlug}/students/${nameSlug || 'dashboard'}`);
-                        } else {
-                            router.replace(`/${user.orgSlug}/${user.role === Role.ORG_ADMIN ? 'admin' : `teachers/${nameSlug}`}`);
-                        }
+                        router.replace(`/${user.orgSlug}/${user.role === Role.STUDENT ? `students/${nameSlug}` : (user.role === Role.ORG_ADMIN ? 'admin' : `teachers/${nameSlug}`)}`);
                         return;
                     }
 
-                    // Strict role-based page restriction
                     if (user.role === Role.STUDENT) {
                         const isStudentPortal = pathSegments[2] === 'students' && pathSegments[3] === user.userName;
                         const isSupportInOrg = pathSegments[2] === 'mail';
-                        
-                        // All other pages are blocked for students
                         if (!isStudentPortal && !isSupportInOrg) {
-                            showToast('Access Denied. Unauthorized page access may lead to account suspension.', 'error');
+                            dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied.', type: 'error' } });
                             router.replace(`/${user.orgSlug}/students/${user.userName}`);
                             return;
                         }
                     } else if (user.role === Role.TEACHER) {
-                        // Restrict TEACHER from accessing settings and teachers management (list) pages
                         const isTeacherList = pathSegments[2] === 'teachers' && !pathSegments[3];
                         if (pathSegments.includes('settings') || isTeacherList) {
-                            showToast('Access Denied. You do not have permission to view this page.', 'error');
+                            dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied.', type: 'error' } });
                             const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
                             router.replace(`/${user.orgSlug}/teachers/${nameSlug}`);
                             return;
                         }
                     }
                 }
-            } else {
-                // Not logged in
-                if (isAdminPath || isUserPath) {
-                    router.replace('/login');
-                }
+            } else if (isAdminPath || isUserPath) {
+                router.replace('/login');
             }
         }
-    }, [user, loading, pathname, router]);
-    // --- Dynamic tab title ---
+    }, [user, loading, pathname, router, dispatch]);
+
     useEffect(() => {
         if (loading) return;
         if (!user) { document.title = 'EduManage'; return; }
-
         const orgSuffix = user.orgName || 'EduManage';
-
         switch (user.role) {
             case Role.SUPER_ADMIN:
-            case Role.PLATFORM_ADMIN:
-                document.title = `Admin – EduManage`;
-                break;
-            case Role.ORG_ADMIN:
-                document.title = `Admin – ${orgSuffix}`;
-                break;
-            case Role.ORG_MANAGER:
-                document.title = `${user.name || 'Manager'} – ${orgSuffix}`;
-                break;
-            case Role.TEACHER:
-                document.title = `${user.name || 'Teacher'} – ${orgSuffix}`;
-                break;
-            case Role.STUDENT:
-                document.title = `${user.name || 'Student'} – ${orgSuffix}`;
-                break;
-            default:
-                document.title = orgSuffix;
+            case Role.PLATFORM_ADMIN: document.title = `Admin – EduManage`; break;
+            case Role.ORG_ADMIN: document.title = `Admin – ${orgSuffix}`; break;
+            case Role.ORG_MANAGER: document.title = `${user.name || 'Manager'} – ${orgSuffix}`; break;
+            case Role.TEACHER: document.title = `${user.name || 'Teacher'} – ${orgSuffix}`; break;
+            case Role.STUDENT: document.title = `${user.name || 'Student'} – ${orgSuffix}`; break;
+            default: document.title = orgSuffix;
         }
     }, [user, loading, pathname]);
 
-    const login = (newToken: string) => {
-        processToken(newToken);
-    };
-
-    const updateUser = (data: Partial<JwtPayload>) => {
-        setUser(prev => prev ? { ...prev, ...data } : null);
-    };
+    const login = (newToken: string) => processToken(newToken);
+    const updateUser = (data: Partial<JwtPayload>) => dispatch({ type: 'AUTH_UPDATE_USER', payload: data });
 
     return (
         <AuthContext.Provider value={{ token, user, loading, login, logout, updateUser }}>
             {loading ? (
-                // Block all rendering until auth state is resolved — eliminates
-                // every flash-of-wrong-content, premature 404, and route flicker.
                 <div className="fixed inset-0 bg-linear-to-br from-primary/5 via-white to-primary/10 flex flex-col items-center justify-center z-9999">
                     <div className="flex flex-col items-center gap-6">
-                        {/* Animated logo mark */}
                         <div className="relative w-16 h-16">
                             <div className="absolute inset-0 rounded-2xl bg-primary animate-pulse opacity-20" />
                             <div className="absolute inset-0 rounded-2xl bg-primary flex items-center justify-center shadow-xl shadow-primary/20">
@@ -266,7 +166,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 </svg>
                             </div>
                         </div>
-                        {/* Spinner */}
                         <div className="relative">
                             <div className="w-8 h-8 rounded-full border-[3px] border-primary/10" />
                             <div className="w-8 h-8 rounded-full border-[3px] border-transparent border-t-primary animate-spin absolute inset-0" />
@@ -274,17 +173,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         <p className="text-sm font-semibold text-gray-400 tracking-widest uppercase animate-pulse">Loading…</p>
                     </div>
                 </div>
-            ) : (
-                children
-            )}
+            ) : children}
         </AuthContext.Provider>
     );
 }
 
 export function useAuth() {
     const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
+    if (!context) throw new Error('useAuth must be used within an AuthProvider');
     return context;
 }

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Trophy, Calendar, Award, TrendingUp } from 'lucide-react';
 import { FinalGradeResponse } from '@/types';
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import { SearchBar } from '@/components/ui/SearchBar';
 
 export default function Grades({ grades }: { grades: FinalGradeResponse[] }) {
@@ -41,7 +41,7 @@ export default function Grades({ grades }: { grades: FinalGradeResponse[] }) {
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                
+
                 {/* Achievement Sidebar */}
                 <div className="lg:col-span-1 space-y-6">
                     <Card padding="lg" accentColor="bg-indigo-600" className="bg-slate-900 border-0 shadow-2xl relative overflow-hidden group" delay={0}>
@@ -56,7 +56,7 @@ export default function Grades({ grades }: { grades: FinalGradeResponse[] }) {
                                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 font-sans not-italic">Institutional Rank</p>
                                 <p className="text-sm font-black text-slate-100 italic flex items-center gap-2">
                                     <Trophy className="w-4 h-4 text-amber-500" />
-                                    Dean's Distinction List
+                                    Dean&apos;s Distinction List
                                 </p>
                             </div>
                         </div>

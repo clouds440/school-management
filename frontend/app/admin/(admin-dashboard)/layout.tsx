@@ -1,23 +1,44 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { DashboardLayout, SidebarLink } from '@/components/ui/DashboardLayout';
 import { Building, Mail, Users } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { AdminStats, Role } from '@/types';
+import { useSocket } from '@/hooks/useSocket';
+import { useGlobal } from '@/context/GlobalContext';
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
     const { user, token } = useAuth();
-    const [stats, setStats] = useState<AdminStats | null>(null);
+    const { state, dispatch } = useGlobal();
+    const stats = state.stats.admin;
 
-    useEffect(() => {
+    const { subscribe } = useSocket({
+        token: token,
+        userId: user?.id,
+        userRole: user?.role
+    });
+
+    const fetchStats = useCallback(() => {
         if (token) {
             api.admin.getAdminStats(token)
-                .then(setStats)
+                .then(data => dispatch({ type: 'STATS_SET_ADMIN', payload: data }))
                 .catch(err => console.error('Failed to fetch stats:', err));
         }
-    }, [token]);
+    }, [token, dispatch]);
+
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
+
+    // WebSocket: Refresh stats on mail activity
+    useEffect(() => {
+        const unsubscribe = subscribe('unread:update', () => {
+            fetchStats();
+        });
+        return () => unsubscribe();
+    }, [subscribe, fetchStats]);
 
     // Memoize links to avoid re-calculation on every render
     const links = useMemo((): SidebarLink[] => {
@@ -48,7 +69,11 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
             label: 'Mail',
             href: '/admin/mail',
             icon: Mail,
-            badge: stats?.OPEN_REQUESTS
+            // Show [Unread / Total] in the badge or just Total? 
+            // The user said "that count needs to show total count too, not just unread/new"
+            // We'll show "Unread / Total" if unread > 0, otherwise just Total?
+            // Actually usually a badge is just a number. We'll show Total as requested.
+            badge: stats ? `${stats.UNREAD_MAIL} New / ${stats.TOTAL_MAIL} Total` : undefined
         });
 
         return adminLinks;
@@ -57,7 +82,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
     const bottomLinks: SidebarLink[] = [];
 
     return (
-        <DashboardLayout title="Admin Dashboard" links={links} bottomLinks={bottomLinks}>
+        <DashboardLayout links={links} bottomLinks={bottomLinks}>
             {children}
         </DashboardLayout>
     );

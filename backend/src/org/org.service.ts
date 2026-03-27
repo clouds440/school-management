@@ -516,7 +516,7 @@ export class OrgService {
             where: { id },
             include: {
                 course: true,
-                teachers: { include: { user: { select: { email: true, name: true } } } },
+                teachers: { include: { user: { select: { id: true, email: true, name: true } } } },
                 enrollments: {
                     include: {
                         student: {
@@ -922,7 +922,7 @@ export class OrgService {
                     return obj;
                 }, {});
 
-            return this.updateStudent(orgId, student.id, filteredData as any, {
+            return this.updateStudent(orgId, student.id, filteredData, {
                 role: Role.STUDENT,
                 name: user.name,
                 email: user.email!
@@ -942,7 +942,7 @@ export class OrgService {
                     return obj;
                 }, {});
 
-            return this.updateTeacher(orgId, teacher.id, filteredData as any, {
+            return this.updateTeacher(orgId, teacher.id, filteredData, {
                 id: user.id,
                 role: user.role
             });
@@ -953,6 +953,11 @@ export class OrgService {
 
     // --- Assessments ---
     async createAssessment(orgId: string, data: CreateAssessmentDto, user: JwtPayload) {
+        // Org Admins cannot create assessments (only view)
+        if (user.role === Role.ORG_ADMIN) {
+            throw new ForbiddenException('Organization Admins are not authorized to create assessments.');
+        }
+
         // Permission check: Manager/Teacher must be assigned to the section
         if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) {
             const assignment = await this.prisma.section.findFirst({
@@ -1006,8 +1011,8 @@ export class OrgService {
         
         if (user.role === Role.STUDENT) {
             whereClause.sectionId = filters.sectionId ? filters.sectionId : (allowedSectionIds ? { in: allowedSectionIds } : undefined);
-        } else if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) {
-            // Restriction for Managers/Teachers: only assigned sections
+        } else if (user.role === Role.TEACHER) {
+            // Restriction for Teachers: only assigned sections
             const assignedSections = await this.prisma.section.findMany({
                 where: { teachers: { some: { userId: user.id } } },
                 select: { id: true }
@@ -1022,7 +1027,11 @@ export class OrgService {
             } else {
                 whereClause.sectionId = { in: assignedIds };
             }
-        } else if (filters.sectionId) {
+        } else if (user.role === Role.ORG_MANAGER) {
+            // Managers can view all assessments in the org (no restriction like Teachers)
+            if (filters.sectionId) whereClause.sectionId = filters.sectionId;
+        }
+ else if (filters.sectionId) {
             whereClause.sectionId = filters.sectionId;
         }
 
@@ -1143,6 +1152,19 @@ export class OrgService {
 
         if (grade && grade.status === 'FINALIZED' && userRole !== Role.ORG_ADMIN) {
             throw new ForbiddenException('Only Org Admin can update finalized grades');
+        }
+
+        // Permission check: Must be assigned to the section if not Org Admin
+        if (userRole === Role.TEACHER || userRole === Role.ORG_MANAGER) {
+            const assignment = await this.prisma.section.findFirst({
+                where: { 
+                    id: assessment.sectionId,
+                    teachers: { some: { userId } }
+                }
+            });
+            if (!assignment) {
+                throw new ForbiddenException('You are not assigned to this section and cannot update grades for it.');
+            }
         }
 
         if (data.marksObtained > assessment.totalMarks) {

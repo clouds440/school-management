@@ -70,9 +70,12 @@ export function CustomMultiSelect({
         };
     }, [isOpen]);
 
-    useEffect(() => {
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
         if (!isOpen) setSearchTerm("");
-    }, [isOpen]);
+    }
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {

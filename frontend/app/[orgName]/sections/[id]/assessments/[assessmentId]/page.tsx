@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Trophy, Users, Calendar, CheckCircle2, Link as LinkIcon, Download } from 'lucide-react';
 import Image from 'next/image';
 import { api } from '@/lib/api';
-import { Assessment, Section, Grade, Submission, Role, ApiError } from '@/types';
+import { Assessment, Section, Grade, Submission, Role } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { useParams, useRouter } from 'next/navigation';
 import { formatDate, getPublicUrl } from '@/lib/utils';
@@ -16,7 +16,6 @@ import { BulkGradingModal } from '@/components/forms/BulkGradingModal';
 export default function AssessmentDetailPage() {
     const { token, user } = useAuth();
     const role = user?.role;
-    const isTeacherOrAdmin = role === Role.TEACHER || role === Role.ORG_ADMIN || role === Role.ORG_MANAGER;
     const params = useParams();
     const router = useRouter();
     const { showToast } = useToast();
@@ -28,6 +27,10 @@ export default function AssessmentDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [showBulkGrading, setShowBulkGrading] = useState(false);
+
+    const isAssigned = section?.teachers?.some(t => t.user?.id === (user as any)?.id);
+    const canGrade = (role === Role.TEACHER || role === Role.ORG_MANAGER) && isAssigned;
+    const isTeacherOrAdmin = role === Role.TEACHER || role === Role.ORG_ADMIN || role === Role.ORG_MANAGER;
 
     const sectionId = params.id as string;
     const assessmentId = params.assessmentId as string;
@@ -49,7 +52,6 @@ export default function AssessmentDetailPage() {
             setGrades(gradesData);
             setSubmissions(submissionsData);
         } catch (error: unknown) {
-            const apiError = error as ApiError;
             console.error('Failed to fetch assessment details:', error);
             showToast('Failed to load assessment data', 'error');
             router.push(`/${orgSlug}/sections/${sectionId}`);
@@ -152,12 +154,14 @@ export default function AssessmentDetailPage() {
                             <Users className="w-5 h-5 text-primary" />
                             <h2 className="text-xl font-black text-black uppercase italic tracking-wider">Student Performance & Grading</h2>
                         </div>
-                        <button
-                            onClick={() => setShowBulkGrading(true)}
-                            className="px-4 py-2 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white text-[10px] font-black uppercase tracking-widest italic rounded-sm transition-colors shadow-sm active:scale-95"
-                        >
-                            Grade All
-                        </button>
+                        {canGrade && (
+                            <button
+                                onClick={() => setShowBulkGrading(true)}
+                                className="px-4 py-2 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white text-[10px] font-black uppercase tracking-widest italic rounded-sm transition-colors shadow-sm active:scale-95"
+                            >
+                                Grade All
+                            </button>
+                        )}
                     </div>
 
                     <div className="overflow-x-auto">
@@ -254,15 +258,17 @@ export default function AssessmentDetailPage() {
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedStudentId(student.id);
-                                                    }}
-                                                    className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white text-[10px] font-black uppercase tracking-widest italic rounded-sm border border-primary/20 transition-all shadow-sm active:scale-95 z-10 relative"
-                                                >
-                                                    {grade ? 'Update Grade' : 'Assign Grade'}
-                                                </button>
+                                                {canGrade && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedStudentId(student.id);
+                                                        }}
+                                                        className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white text-[10px] font-black uppercase tracking-widest italic rounded-sm border border-primary/20 transition-all shadow-sm active:scale-95 z-10 relative"
+                                                    >
+                                                        {grade ? 'Update Grade' : 'Assign Grade'}
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -295,7 +301,7 @@ export default function AssessmentDetailPage() {
                                     </p>
                                     {myGrade && myGrade.feedback && (
                                         <p className="text-sm text-card-text/60 mt-4 font-medium border-t border-white/10 pt-4 italic">
-                                            "{myGrade.feedback}"
+                                            &quot;{myGrade.feedback}&quot;
                                         </p>
                                     )}
                                 </div>
@@ -329,7 +335,7 @@ export default function AssessmentDetailPage() {
             )}
 
             {/* Bulk Grading Modal */}
-            {showBulkGrading && isTeacherOrAdmin && (
+            {showBulkGrading && canGrade && (
                 <BulkGradingModal
                     isOpen={showBulkGrading}
                     onClose={() => setShowBulkGrading(false)}
@@ -348,24 +354,28 @@ export default function AssessmentDetailPage() {
                 subtitle={selectedStudentId ? section.students?.find(s => s.id === selectedStudentId)?.user.name : ''}
                 maxWidth="max-w-xl"
             >
-                {selectedStudentId && (
-                    <GradingForm
-                        assessmentId={assessmentId}
-                        student={section.students?.find(s => s.id === selectedStudentId)!}
-                        totalMarks={assessment.totalMarks}
-                        initialData={grades.find(g => g.studentId === selectedStudentId)}
-                        onSuccess={(g) => {
-                            setGrades(prev => {
-                                const index = prev.findIndex(item => item.id === g.id);
-                                if (index !== -1) return prev.map(item => item.id === g.id ? g : item);
-                                return [...prev, g];
-                            });
-                            setSelectedStudentId(null);
-                            showToast('Grade saved successfully', 'success');
-                        }}
-                        onCancel={() => setSelectedStudentId(null)}
-                    />
-                )}
+                {selectedStudentId && (() => {
+                    const student = section.students?.find(s => s.id === selectedStudentId);
+                    if (!student) return null;
+                    return (
+                        <GradingForm
+                            assessmentId={assessmentId}
+                            student={student}
+                            totalMarks={assessment.totalMarks}
+                            initialData={grades.find(g => g.studentId === selectedStudentId)}
+                            onSuccess={(g) => {
+                                setGrades(prev => {
+                                    const index = prev.findIndex(item => item.id === g.id);
+                                    if (index !== -1) return prev.map(item => item.id === g.id ? g : item);
+                                    return [...prev, g];
+                                });
+                                setSelectedStudentId(null);
+                                showToast('Grade saved successfully', 'success');
+                            }}
+                            onCancel={() => setSelectedStudentId(null)}
+                        />
+                    );
+                })()}
             </Modal>
         </div>
     );

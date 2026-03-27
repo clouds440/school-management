@@ -1,5 +1,5 @@
 import {
-    Teacher, Student, Organization, User, RegisterRequest, LoginRequest, AuthResponse,
+    Teacher, Student, Organization, RegisterRequest, LoginRequest, AuthResponse,
     UpdateOrgSettingsRequest, PlatformAdmin, AdminStats, OrgStats, Section, Course,
     CreateTeacherRequest, UpdateTeacherRequest, CreateStudentRequest, UpdateStudentRequest,
     CreateSectionRequest, UpdateSectionRequest, CreateCourseRequest, UpdateCourseRequest,
@@ -25,7 +25,7 @@ interface QueryParams {
 
 function buildQueryString(params: QueryParams): string {
     const query = Object.entries(params)
-        .filter(([_, value]) => value !== undefined && value !== '')
+        .filter(([, value]) => value !== undefined && value !== '')
         .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
         .join('&');
     return query ? `?${query}` : '';
@@ -213,8 +213,8 @@ export const api = {
                 try {
                     const err = await response.json();
                     errMessage = Array.isArray(err.message) ? err.message[0] : err.message || errMessage;
-                } catch (e) { }
-                throw new Error(errMessage);
+                } catch (e) { console.error(e) }
+                throw new Error(errMessage || 'Failed to upload file');
             }
             return response.json();
         },
@@ -235,6 +235,6 @@ export const api = {
         getContactableUsers: (token: string, search?: string) =>
             request<RequestTarget[]>(`/requests/contacts${buildQueryString({ search })}`, { token }),
         getUnreadCount: (token: string) =>
-            request<{ unread: number; total: number }>('/requests/unread-count', { token }),
+            request<{ unread: number; total: number; countsByStatus: Record<string, number> }>('/requests/unread-count', { token }),
     }
 };

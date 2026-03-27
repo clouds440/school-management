@@ -15,7 +15,9 @@ import { Course, Role, PaginatedResponse, ApiError } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { useGlobal } from '@/context/GlobalContext';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+import { Loading } from '@/components/ui/Loading';
 
 interface CourseParams extends BasePaginationParams {
     my?: boolean;
@@ -23,12 +25,15 @@ interface CourseParams extends BasePaginationParams {
 
 export default function CoursesPage() {
     const { token, user } = useAuth();
+    const { state, dispatch } = useGlobal();
+    const isProcessing = state.ui.isProcessing;
+
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
     const { showToast } = useToast();
-    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Course> | null>(null);
 
+    // Redundant paginatedData state removed
     // URL State
     const page = parseInt(searchParams.get('page') || '1', 10);
     const searchTerm = searchParams.get('search') || '';
@@ -57,10 +62,6 @@ export default function CoursesPage() {
     );
 
     useEffect(() => {
-        setPaginatedData(fetchedData);
-    }, [fetchedData]);
-
-    useEffect(() => {
         if (user && user.role === Role.STUDENT) {
             const orgSlug = user.orgSlug || pathname.split('/')[1];
             router.replace(`/${orgSlug}/students/${user.userName}`);
@@ -70,7 +71,6 @@ export default function CoursesPage() {
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState<Course | null>(null);
     const [editFormData, setEditFormData] = useState({ name: '', description: '' });
-    const [isSaving, setIsSaving] = useState(false);
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deletingCourse, setDeletingCourse] = useState<Course | null>(null);
@@ -92,7 +92,7 @@ export default function CoursesPage() {
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingCourse || !token) return;
-        setIsSaving(true);
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             await api.org.updateCourse(editingCourse.id, editFormData, token);
             setEditModalOpen(false);
@@ -104,7 +104,7 @@ export default function CoursesPage() {
             const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
             showToast(message, 'error');
         } finally {
-            setIsSaving(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -123,7 +123,7 @@ export default function CoursesPage() {
         }
     };
 
-    const courses = paginatedData?.data || [];
+    // Redundant courses variable removed. Using fetchedData directly.
 
     const columns = [
         {
@@ -197,17 +197,13 @@ export default function CoursesPage() {
 
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
-    if ((!token && !user) || (isFetching && !paginatedData)) {
-        return (
-            <div className="flex items-center justify-center p-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        );
+    if ((!token && !user) || (isFetching && !fetchedData)) {
+        return <Loading fullScreen text="Loading Courses..." size="lg" />;
     }
 
     return (
         <div className="flex flex-col w-full animate-fade-in-up">
-            <div className="mb-6">
+            <div className="mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                         <Button
@@ -221,8 +217,8 @@ export default function CoursesPage() {
                 </div>
             </div>
 
-            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-6 md:p-8 mb-10">
-                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-2 md:p-4 mb-4">
+                <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name or description..." />
                     </div>
@@ -246,7 +242,7 @@ export default function CoursesPage() {
 
                 <div className="relative">
                     <DataTable
-                        data={courses}
+                        data={fetchedData?.data || []}
                         columns={columns}
                         keyExtractor={(row) => row.id}
                         isLoading={isFetching}
@@ -259,8 +255,8 @@ export default function CoursesPage() {
                             setEditModalOpen(true);
                         }}
                         currentPage={page}
-                        totalPages={paginatedData?.totalPages || 1}
-                        totalResults={paginatedData?.totalRecords || 0}
+                        totalPages={fetchedData?.totalPages || 1}
+                        totalResults={fetchedData?.totalRecords || 0}
                         pageSize={10}
                         onPageChange={(p) => updateQueryParams({ page: p })}
                         sortConfig={{ key: sortBy, direction: sortOrder }}
@@ -274,7 +270,7 @@ export default function CoursesPage() {
                 onClose={() => setEditModalOpen(false)}
                 title="Update Course Information"
                 onSubmit={handleEditSubmit}
-                isSubmitting={isSaving}
+                isSubmitting={isProcessing}
                 submitText="Save Changes"
                 showSubmit={user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER}
             >

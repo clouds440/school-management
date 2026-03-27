@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { BookOpen, Calendar, MapPin, Hash } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useGlobal } from '@/context/GlobalContext';
 import Link from 'next/link';
 import { Course, Role } from '@/types';
 import { useToast } from '@/context/ToastContext';
@@ -15,12 +16,13 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function CreateSectionPage() {
     const { token, user } = useAuth();
+    const { state, dispatch } = useGlobal();
+    const isProcessing = state.ui.isProcessing;
     const router = useRouter();
     const pathname = usePathname();
     const { showToast } = useToast();
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
-    const [isSaving, setIsSaving] = useState(false);
     const [courses, setCourses] = useState<Course[]>([]);
 
     const [formData, setFormData] = useState({
@@ -53,7 +55,7 @@ export default function CreateSectionPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
 
         try {
             if (!token) return;
@@ -64,12 +66,13 @@ export default function CreateSectionPage() {
             router.push(`/${orgSlug}/sections`);
         } catch (error: unknown) {
             showToast(error instanceof Error ? error.message : 'Failed to create section', 'error');
-            setIsSaving(false);
+        } finally {
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
     return (
-        <>
+        <div className="flex flex-col w-full animate-fade-in-up">
             <div className="mb-6">
                 <div className="flex items-center gap-5">
                     <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
@@ -82,7 +85,7 @@ export default function CreateSectionPage() {
                 </div>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-[0_30px_70px_var(--shadow-color)] border border-white/20 p-12 text-card-text">
+            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-8 md:p-12 mb-10">
                 <form onSubmit={handleSubmit} className="space-y-8">
                     <div className="space-y-8">
                         <div>
@@ -159,15 +162,15 @@ export default function CreateSectionPage() {
                         </Link>
                         <Button
                             type="submit"
-                            isLoading={isSaving}
+                            isLoading={isProcessing}
                             loadingText="Creating..."
-                            className="px-10"
+                            className="px-10 h-12"
                         >
                             Create Section
                         </Button>
                     </div>
                 </form>
             </div>
-        </>
+        </div>
     );
 }

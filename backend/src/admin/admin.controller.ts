@@ -40,8 +40,13 @@ export class AdminController {
 
     @Roles(Role.SUPER_ADMIN, Role.PLATFORM_ADMIN)
     @Get('stats')
-    async getAdminStats() {
-        return this.adminService.getAdminStats();
+    async getAdminStats(@User() user: UserEntity) {
+        return this.adminService.getAdminStats({
+            id: user.id,
+            role: user.role,
+            organizationId: user.organizationId,
+            name: user.name || '',
+        });
     }
 
 

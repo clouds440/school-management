@@ -9,13 +9,16 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { Role, Student, PaginatedResponse } from '@/types';
+import { Role, Student, PaginatedResponse, Section } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { TableActions } from '@/components/ui/TableActions';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 import { getPublicUrl } from '@/lib/utils';
+import { Loading } from '@/components/ui/Loading';
+import { NewRequestModal } from '@/components/requests/NewRequestModal';
+import { Send } from 'lucide-react';
 
 interface StudentParams extends BasePaginationParams {
     my?: boolean;
@@ -30,10 +33,13 @@ export default function StudentsPage() {
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
     const { showToast } = useToast();
 
-    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Student> | null>(null);
+    // Redundant paginatedData state removed
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-    const [sections, setSections] = useState<any[]>([]);
+    const [sections, setSections] = useState<Section[]>([]);
+    const [newRequestOpen, setNewRequestOpen] = useState(false);
+    const [initialTargetId, setInitialTargetId] = useState<string | undefined>(undefined);
+    const [initialSubject, setInitialSubject] = useState<string | undefined>(undefined);
 
     // URL State
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -65,10 +71,6 @@ export default function StudentsPage() {
     );
 
     useEffect(() => {
-        setPaginatedData(fetchedData);
-    }, [fetchedData]);
-
-    useEffect(() => {
         if (user && user.role === Role.STUDENT) {
             router.replace(`/${orgSlug}/students/${user.userName}`);
         }
@@ -94,7 +96,7 @@ export default function StudentsPage() {
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
     };
 
-    const students = paginatedData?.data || [];
+    // Redundant students variable removed. Using fetchedData directly.
 
     const columns: Column<Student>[] = [
         {
@@ -203,6 +205,17 @@ export default function StudentsPage() {
                         onDelete={isManagerOrAdmin ? () => handleDeleteClick(row.id) : undefined}
                         variant="user"
                         isViewAndEdit={isManagerOrAdmin}
+                        extraActions={[
+                            {
+                                variant: 'mail',
+                                title: 'Send Mail',
+                                onClick: () => {
+                                    setInitialTargetId(row.user.id);
+                                    setInitialSubject(`Inquiry regarding student: ${row.user.name}`);
+                                    setNewRequestOpen(true);
+                                }
+                            }
+                        ]}
                     />
                 );
             }
@@ -210,7 +223,7 @@ export default function StudentsPage() {
     ];
 
     const handleDeleteClick = (studentId: string) => {
-        const student = students.find((s: Student) => s.id === studentId);
+        const student = fetchedData?.data.find((s: Student) => s.id === studentId);
         if (student) {
             setSelectedStudent(student);
             setIsDeleteDialogOpen(true);
@@ -229,17 +242,13 @@ export default function StudentsPage() {
         }
     };
 
-    if ((!token && !user) || (isFetching && !paginatedData)) {
-        return (
-            <div className="flex items-center justify-center p-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        );
+    if ((!token && !user) || (isFetching && !fetchedData)) {
+        return <Loading fullScreen text="Loading Students..." size="lg" />;
     }
 
     return (
         <div className="flex flex-col w-full">
-            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                     <Button
                         onClick={() => router.push(`/${orgSlug}/students/add`)}
@@ -251,8 +260,8 @@ export default function StudentsPage() {
                 )}
             </div>
 
-            <div className="bg-card text-card-text rounded-sm md:rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-4 md:p-8 mb-10 overflow-hidden">
-                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-2 md:p-4 mb-4 overflow-hidden">
+                <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, reg, roll or major..." />
                     </div>
@@ -294,7 +303,7 @@ export default function StudentsPage() {
 
                 <div className="relative overflow-x-hidden">
                     <DataTable
-                        data={students}
+                        data={fetchedData?.data || []}
                         columns={columns}
                         keyExtractor={(row) => row.id}
                         isLoading={isFetching}
@@ -302,8 +311,8 @@ export default function StudentsPage() {
                             router.push(`/${orgSlug}/students/edit/${row.id}`);
                         }}
                         currentPage={page}
-                        totalPages={paginatedData?.totalPages || 1}
-                        totalResults={paginatedData?.totalRecords || 0}
+                        totalPages={fetchedData?.totalPages || 1}
+                        totalResults={fetchedData?.totalRecords || 0}
                         pageSize={10}
                         onPageChange={(p) => updateQueryParams({ page: p })}
                         sortConfig={{ key: sortBy, direction: sortOrder }}
@@ -321,6 +330,20 @@ export default function StudentsPage() {
                 description={<>Are you sure you want to completely remove <strong>{selectedStudent?.user?.name || 'this student'}</strong>? This will also delete their login account.</>}
                 confirmText="Yes, Remove Student"
                 isDestructive={true}
+            />
+
+            <NewRequestModal
+                isOpen={newRequestOpen}
+                onClose={() => {
+                    setNewRequestOpen(false);
+                    setInitialTargetId(undefined);
+                    setInitialSubject(undefined);
+                }}
+                initialTargetId={initialTargetId}
+                initialSubject={initialSubject}
+                onSuccess={() => {
+                    showToast('Mail sent successfully', 'success');
+                }}
             />
         </div>
     );

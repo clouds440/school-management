@@ -14,13 +14,13 @@ export enum OrgStatus {
     SUSPENDED = 'SUSPENDED',
 }
 
-
 export enum RequestStatus {
     OPEN = 'OPEN',
     IN_PROGRESS = 'IN_PROGRESS',
     AWAITING_RESPONSE = 'AWAITING_RESPONSE',
     RESOLVED = 'RESOLVED',
     CLOSED = 'CLOSED',
+    NO_REPLY = 'NO_REPLY',
 }
 
 export enum TeacherStatus {

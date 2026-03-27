@@ -9,46 +9,43 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { Teacher, ApiError, Organization, Role, Section, Assessment } from '@/types';
+import { useGlobal } from '@/context/GlobalContext';
+import { Teacher, ApiError, Role, Section, Assessment } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { getPublicUrl, formatDate } from '@/lib/utils';
 
 
 export default function TeacherLandingPage() {
     const { user: payload, loading, token } = useAuth();
-    const [orgName, setOrgName] = useState('Organization');
-    const [orgData, setOrgData] = useState<Organization | null>(null);
+    const { state } = useGlobal();
     const [sections, setSections] = useState<Section[]>([]);
     const [assessments, setAssessments] = useState<Assessment[]>([]);
-    const [teacher, setTeacher] = useState<Teacher | null>(null);
     const [fetchingData, setFetchingData] = useState(true);
     const { showToast } = useToast();
+
+    const orgData = state.stats.orgData;
+    const teacher = state.auth.userProfile as Teacher | null;
 
     const fetchData = useCallback(async () => {
         if (!token) return;
         setFetchingData(true);
         try {
-            const [orgDetails, sectionsData, assessmentsData] = await Promise.all([
-                api.org.getOrgData(token),
+            const [sectionsData, assessmentsData] = await Promise.all([
                 api.org.getSections(token, { my: true }),
                 api.org.getAssessments(token),
             ]);
 
-            setOrgData(orgDetails);
-            if (orgDetails?.name) setOrgName(orgDetails.name);
             setSections(sectionsData.data);
             setAssessments(assessmentsData);
-            const profile = await api.org.getProfile<Teacher>(token);
-            setTeacher(profile);
         } catch (error: unknown) {
             const apiError = error as ApiError;
-            console.error('Failed to fetch teacher profile:', error);
-            const message = apiError?.response?.data?.message || 'Failed to load profile. Please try again.';
+            console.error('Failed to fetch teacher data:', error);
+            const message = apiError?.response?.data?.message || 'Failed to load data. Please try again.';
             showToast(Array.isArray(message) ? message[0] : message, 'error');
         } finally {
             setFetchingData(false);
         }
-    }, [token]);
+    }, [token, showToast]);
 
     useEffect(() => {
         fetchData();
@@ -109,7 +106,7 @@ export default function TeacherLandingPage() {
                             </div>
                             <p className="text-xs font-bold uppercase tracking-widest flex items-center justify-center md:justify-start gap-2 text-gray-800">
                                 <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                                {payload.designation || (payload.role === Role.ORG_MANAGER ? 'Senior Manager' : 'Academic Faculty')} • {orgName}
+                                {payload.designation || (payload.role === Role.ORG_MANAGER ? 'Senior Manager' : 'Academic Faculty')} • {orgData?.name || 'Organization'}
                             </p>
                         </div>
                     </div>
@@ -238,7 +235,7 @@ export default function TeacherLandingPage() {
                                 <Link
                                     key={a.id}
                                     href={`/${payload.orgSlug}/sections/${a.sectionId}/assessments/${a.id}`}
-                                    className="block p-4 bg-white/5 border border-primary/30 rounded-sm hover:bg-white/50 transition-all active:scale-95 group"
+                                    className="block p-4 bg-white/50 border border-primary/30 rounded-sm hover:bg-white/80 transition-all active:scale-95 group"
                                 >
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="px-2 py-0.5 bg-primary/10 text-primary text-[8px] font-black uppercase tracking-widest rounded-sm">{a.type}</span>

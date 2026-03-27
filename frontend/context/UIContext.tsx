@@ -1,20 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+'use client';
+
+import React, { createContext, useContext, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useGlobal, ModalConfig, DataField } from './GlobalContext';
 
-export interface DataField {
-    label: string;
-    value: React.ReactNode;
-    icon?: React.ElementType | string;
-    fullWidth?: boolean;
-}
-
-interface ModalConfig {
-    isOpen: boolean;
-    title: string;
-    subtitle?: string;
-    fields: DataField[];
-    actions?: React.ReactNode;
-}
+export type { DataField };
 
 interface UIContextType {
     isExpanded: boolean;
@@ -30,29 +20,26 @@ interface UIContextType {
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export function UIProvider({ children }: { children: React.ReactNode }) {
-    const [isExpanded, setIsExpanded] = useState(true);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
-    const [modalConfig, setModalConfig] = useState<ModalConfig>({
-        isOpen: false,
-        title: '',
-        fields: []
-    });
+    const { state, dispatch } = useGlobal();
+    const { isSidebarExpanded: isExpanded, isMobileSidebarOpen: isMobileOpen, viewModal: modalConfig } = state.ui;
+    
     const pathname = usePathname();
 
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setIsMobileOpen(false);
-    }, [pathname]);
+    // Handle route change reset
+    React.useEffect(() => {
+        dispatch({ type: 'UI_SET_MOBILE_SIDEBAR', payload: false });
+    }, [pathname, dispatch]);
 
-    const toggleSidebar = () => setIsExpanded(!isExpanded);
-    const toggleMobileSidebar = () => setIsMobileOpen(!isMobileOpen);
+    const toggleSidebar = () => dispatch({ type: 'UI_TOGGLE_SIDEBAR' });
+    const toggleMobileSidebar = () => dispatch({ type: 'UI_SET_MOBILE_SIDEBAR', payload: !isMobileOpen });
+    const setIsMobileOpen = (open: boolean) => dispatch({ type: 'UI_SET_MOBILE_SIDEBAR', payload: open });
 
     const openViewModal = (config: Omit<ModalConfig, 'isOpen'>) => {
-        setModalConfig({ ...config, isOpen: true });
+        dispatch({ type: 'UI_OPEN_VIEW_MODAL', payload: config });
     };
 
     const closeViewModal = () => {
-        setModalConfig(prev => ({ ...prev, isOpen: false }));
+        dispatch({ type: 'UI_CLOSE_VIEW_MODAL' });
     };
 
     return (
@@ -73,8 +60,6 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
 
 export function useUI() {
     const context = useContext(UIContext);
-    if (context === undefined) {
-        throw new Error('useUI must be used within a UIProvider');
-    }
+    if (!context) throw new Error('useUI must be used within a UIProvider');
     return context;
 }

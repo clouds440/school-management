@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, LogOut, X, Key, User as UserIcon, Mail } fro
 import { useSocket } from '@/hooks/useSocket';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { Role } from '@/types';
 import { api } from '@/lib/api';
 import { BackButton } from './BackButton';
@@ -26,51 +27,27 @@ interface DashboardLayoutProps {
     children: React.ReactNode;
     links: SidebarLink[];
     bottomLinks?: SidebarLink[];
-    title?: string;
     brandHref?: string;
 }
 
-export function DashboardLayout({ children, links, bottomLinks = [], title = 'Dashboard', brandHref }: DashboardLayoutProps) {
+export function DashboardLayout({ children, links, bottomLinks = [], brandHref }: DashboardLayoutProps) {
     const { logout, user } = useAuth();
+    const { state, dispatch } = useGlobal();
     const { isExpanded, isMobileOpen, toggleSidebar, setIsMobileOpen, modalConfig, closeViewModal } = useUI();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
 
-    const [mailStats, setMailStats] = React.useState({ unread: 0, total: 0 });
-
+    const mailCount = state.stats.mail || { unread: 0, total: 0 };
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
     const { subscribe } = useSocket({
         token: token,
         userId: user?.id || undefined,
         userRole: user?.role || undefined,
-        orgId: user?.organizationId || undefined
+        orgId: user?.orgId || undefined
     });
 
-    const fetchMailStats = React.useCallback(async () => {
-        if (!token) return;
-        try {
-            const stats = await api.requests.getUnreadCount(token);
-            // Stats is now { unread, total }
-            setMailStats(stats);
-        } catch (error) {
-            console.error('Failed to fetch mail stats:', error);
-        }
-    }, [token]);
-
-    React.useEffect(() => {
-        fetchMailStats();
-        
-        // Real-time updates via WebSocket
-        const unsubscribe = subscribe('unread:update', () => {
-            fetchMailStats();
-        });
-
-        return () => {
-            unsubscribe();
-        };
-    }, [fetchMailStats, subscribe]);
 
     const activeLink = React.useMemo(() => {
         const allLinks = [...links, ...bottomLinks];
@@ -194,9 +171,9 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                                 <span className={`font-bold text-sm tracking-wide ${!isExpanded ? 'lg:hidden' : 'block'}`}>
                                     {link.label}
                                 </span>
-                                {link.badge !== undefined && isExpanded && (
-                                    <span className={`ml-auto ${isActive ? 'bg-sidebar-active-text/20' : 'bg-sidebar-text/10'} px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter text-sidebar-text`}>
-                                        {link.badge}
+                                {link.badge !== undefined && (
+                                    <span className={`${!isExpanded ? 'absolute top-0 -right-[8px]' : 'ml-auto bg-sidebar-active-text/20'} px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter text-sidebar-text`}>
+                                        {isExpanded ? link.badge : typeof link.badge === 'string' ? (<span className='bg-red-500 px-2 py-0.5 rounded-full'>{link.badge.split(' ')[0]}</span>) : null}
                                     </span>
                                 )}
                             </Link>
@@ -241,12 +218,12 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                             >
                                 <Mail className="w-4 h-4 shrink-0" />
                                 {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Mail</span>}
-                                {mailStats.unread > 0 && !isExpanded && (
+                                {mailCount.unread > 0 && !isExpanded && (
                                     <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-sidebar" />
                                 )}
-                                {isExpanded && (mailStats.unread > 0 || mailStats.total > 0) && (
+                                {isExpanded && mailCount.unread > 0 && (
                                     <span className="ml-auto bg-red-500 text-white px-1.5 py-0.5 rounded-full text-[9px] font-black min-w-[30px] text-center">
-                                        {mailStats.unread}/{mailStats.total}
+                                        {mailCount.unread}
                                     </span>
                                 )}
                             </Link>
@@ -308,7 +285,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], title = 'Da
                 </header>
 
                 {/* Universal Content Wrapper - This is the ONLY scrollable area */}
-                <div className="flex-1 w-full px-[3px] md:px-2 py-2 md:py-4 overflow-y-auto bg-slate-300">
+                <div className={`flex-1 w-full px-[3px] md:px-2 py-2 md:py-4 bg-slate-300 ${pathname?.endsWith('/mail') ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
                     {children}
                 </div>
             </main>

@@ -20,6 +20,7 @@ export enum RequestStatus {
     AWAITING_RESPONSE = 'AWAITING_RESPONSE',
     RESOLVED = 'RESOLVED',
     CLOSED = 'CLOSED',
+    NO_REPLY = 'NO_REPLY',
 }
 
 export enum TeacherStatus {

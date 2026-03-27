@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { User, Mail, Lock, BookOpen, DollarSign, Phone, Plus, ShieldCheck, UserX, CalendarClock, MapPin } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useGlobal } from '@/context/GlobalContext';
 import { Section, Teacher, TeacherStatus, Role, CreateTeacherRequest, UpdateTeacherRequest, ApiError } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
@@ -28,9 +29,10 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
     const { token, user: currentUser, updateUser } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
+    const isProcessing = state.ui.isProcessing;    const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+
     const [sections, setSections] = useState<Section[]>([]);
-    const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
 
     const {
         register,
@@ -81,7 +83,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
     const formData = watch();
 
     const onSubmit: SubmitHandler<TeacherCreateFormData | TeacherUpdateFormData | TeacherProfileFormData> = async (data) => {
-        setIsSaving(true);
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             const { password, salary, ...rest } = data;
             const payload: CreateTeacherRequest | UpdateTeacherRequest = {
@@ -97,6 +99,15 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                 savedTeacher = await api.org.updateTeacher(teacherId, payload as UpdateTeacherRequest, token!);
             } else {
                 savedTeacher = await api.org.createTeacher(payload as CreateTeacherRequest, token!);
+            }
+
+            // Sync global auth state if the updated teacher is the current user
+            if ((isProfile || teacherId === initialData?.id) && currentUser?.id === savedTeacher.userId) {
+                updateUser({
+                    name: savedTeacher.user.name,
+                    email: savedTeacher.user.email,
+                });
+                dispatch({ type: 'AUTH_SET_PROFILE', payload: savedTeacher });
             }
 
             if (pendingPhoto && savedTeacher.userId) {
@@ -131,7 +142,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                 showToast(message, 'error');
             }
         } finally {
-            setIsSaving(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -462,8 +473,8 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                 <Button type="button" variant="secondary" className="w-32" onClick={() => router.back()}>
                     Cancel
                 </Button>
-                <Button type="submit" className="w-64 h-12" disabled={isSaving}>
-                    {isSaving ? (
+                <Button type="submit" className="w-64 h-12" disabled={isProcessing}>
+                    {isProcessing ? (
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             <span className="font-black uppercase tracking-widest text-[10px]">Processing...</span>

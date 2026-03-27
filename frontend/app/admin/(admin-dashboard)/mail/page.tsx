@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { MessageSquare, Calendar, Plus, ArrowUpRight, Hash, User, Building2, Tag } from 'lucide-react';
+import { useGlobal } from '@/context/GlobalContext';
+import { MessageSquare, Plus, ArrowUpRight, Hash, User, Building2, Tag, User as UserIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { RequestItem, RequestDetail, RequestStatus, Role, PaginatedResponse, UpdateRequestPayload, ApiError } from '@/types';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -17,9 +18,12 @@ import { NewRequestModal } from '@/components/requests/NewRequestModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useSocket } from '@/hooks/useSocket';
 import { getPublicUrl } from '@/lib/utils';
+import { Loading } from '@/components/ui/Loading';
+import Image from 'next/image';
 
 export default function RequestsPage() {
     const { user, token, loading } = useAuth();
+    const { state, dispatch } = useGlobal();
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -38,7 +42,7 @@ export default function RequestsPage() {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const searchQuery = searchParams.get('search') || '';
     const statusFilter = (searchParams.get('status') || 'ALL');
-    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortBy = searchParams.get('sortBy') || 'updatedAt';
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
 
     const updateQueryParams = (updates: Record<string, string | number | undefined>) => {
@@ -57,15 +61,20 @@ export default function RequestsPage() {
         if (!token) return;
         try {
             setFetching(true);
-            const response = await api.requests.getRequests(token, {
-                page,
-                limit: 10,
-                search: searchQuery,
-                sortBy,
-                sortOrder,
-                status: statusFilter !== 'ALL' ? statusFilter : undefined,
-            });
-            setPaginatedData(response);
+            const [data, stats] = await Promise.all([
+                api.requests.getRequests(token, {
+                    page,
+                    limit: 10,
+                    search: searchQuery,
+                    sortBy,
+                    sortOrder,
+                    status: statusFilter !== 'ALL' ? statusFilter : undefined,
+                }),
+                api.requests.getUnreadCount(token)
+            ]);
+            setPaginatedData(data);
+            // Sync with global state
+            dispatch({ type: 'STATS_SET_MAIL', payload: stats });
         } catch (error: unknown) {
             const apiError = error as ApiError;
             const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to fetch requests';
@@ -80,7 +89,7 @@ export default function RequestsPage() {
         token: token,
         userId: user?.id || undefined,
         userRole: user?.role || undefined,
-        orgId: user?.organizationId || undefined
+        orgId: user?.orgId || undefined
     });
 
     useEffect(() => {
@@ -103,16 +112,18 @@ export default function RequestsPage() {
         if (!selectedRequest?.id) return;
 
         joinRoom(`request:${selectedRequest.id}`);
-        
+
         const unsubs = [
-            subscribe('request:message', async (data: any) => {
-                if (data.requestId === selectedRequest.id) {
+            subscribe('request:message', async (data: unknown) => {
+                const payload = data as { requestId: string };
+                if (payload.requestId === selectedRequest.id) {
                     const updated = await api.requests.getRequest(selectedRequest.id, token!);
                     setSelectedRequest(updated);
                     fetchRequests(); // Also refresh list to update message count/last update
                 }
             }),
-            subscribe('request:update', (updated: any) => {
+            subscribe('request:update', (data: unknown) => {
+                const updated = data as RequestDetail;
                 if (updated.id === selectedRequest.id) {
                     setSelectedRequest(updated);
                     fetchRequests();
@@ -144,12 +155,12 @@ export default function RequestsPage() {
         if (!token || !selectedRequest) return;
         try {
             const response = await api.requests.addMessage(selectedRequest.id, { content }, token);
-            
+
             // Upload files if any
             if (files && files.length > 0) {
                 const orgId = selectedRequest.organizationId || 'SYSTEM';
                 await Promise.all(
-                    files.map(file => 
+                    files.map(file =>
                         api.files.uploadFile(orgId, 'REQUEST_MESSAGE', response.id, file, token)
                     )
                 );
@@ -162,7 +173,7 @@ export default function RequestsPage() {
                 const updated = await api.requests.getRequest(selectedRequest.id, token);
                 setSelectedRequest(updated);
             }
-            
+
             showToast('Reply sent', 'success');
         } catch (error: unknown) {
             const apiError = error as ApiError;
@@ -174,7 +185,7 @@ export default function RequestsPage() {
 
     const handleStatusUpdate = async (newStatus: RequestStatus) => {
         if (!token || !selectedRequest || updatingStatus) return;
-        
+
         if (newStatus === RequestStatus.RESOLVED || newStatus === RequestStatus.CLOSED) {
             setPendingStatus(newStatus);
             setConfirmOpen(true);
@@ -242,25 +253,25 @@ export default function RequestsPage() {
                     <div className="flex items-center gap-3">
                         {row.organization ? (
                             <div className="relative">
-                                <div className="w-8 h-8 rounded-sm bg-indigo-50 border border-indigo-100 overflow-hidden shrink-0 flex items-center justify-center">
+                                <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 overflow-hidden shrink-0 flex items-center justify-center relative">
                                     {orgLogo ? (
-                                        <img src={orgLogo} alt={row.organization.name} className="w-full h-full object-cover" />
+                                        <Image src={orgLogo} alt={row.organization.name} fill className="object-cover rounded-sm" unoptimized />
                                     ) : (
                                         <Building2 className="w-4 h-4 text-indigo-400" />
                                     )}
                                 </div>
-                                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white border border-gray-100 flex items-center justify-center overflow-hidden">
+                                <div className="absolute bottom-0 -right-1 w-4 h-4 rounded-full bg-white border border-gray-100 flex items-center justify-center overflow-hidden">
                                     {userAvatar ? (
-                                        <img src={userAvatar} className="w-full h-full object-cover" />
+                                        <Image src={userAvatar} alt={row.creator?.name || ''} fill className="object-cover rounded-full" unoptimized />
                                     ) : (
                                         <span className="text-[8px] font-black text-gray-400 uppercase">{(row.creator?.name || '?')[0]}</span>
                                     )}
                                 </div>
                             </div>
                         ) : (
-                            <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center relative">
                                 {userAvatar ? (
-                                    <img src={userAvatar} alt={row.creator?.name || ''} className="w-full h-full object-cover" />
+                                    <Image src={userAvatar} alt={row.creator?.name || ''} fill className="object-cover rounded-full" unoptimized />
                                 ) : (
                                     <User className="w-4 h-4 text-gray-400" />
                                 )}
@@ -270,11 +281,6 @@ export default function RequestsPage() {
                             <p className="text-xs font-black text-gray-700 truncate max-w-[120px]">{row.creator?.name || row.creator.email}</p>
                             <div className="flex items-center gap-1.5">
                                 <p className="text-[10px] font-bold text-gray-400 uppercase">{row.creatorRole?.replace('_', ' ')}</p>
-                                {row.organization && (
-                                    <span className="text-[10px] font-black text-indigo-500 truncate max-w-[80px]">
-                                        • {row.organization.name}
-                                    </span>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -288,10 +294,10 @@ export default function RequestsPage() {
                     {row.assignees && row.assignees.length > 0 ? (
                         <>
                             <div className="flex -space-x-2 mr-1">
-                                {row.assignees.slice(0, 2).map((a, i) => (
-                                    <div key={a.id} className="w-7 h-7 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-indigo-600 text-[9px] font-black uppercase shadow-sm overflow-hidden">
+                                {row.assignees.slice(0, 2).map((a) => (
+                                    <div key={a.id} className="w-7 h-7 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-indigo-600 text-[9px] font-black uppercase shadow-sm overflow-hidden relative">
                                         {a.avatarUrl ? (
-                                            <img src={getPublicUrl(a.avatarUrl)} className="w-full h-full object-cover" />
+                                            <Image src={getPublicUrl(a.avatarUrl)} alt={a.name || ''} fill className="object-cover rounded-full" unoptimized />
                                         ) : (
                                             (a.name || a.email || '?')[0]
                                         )}
@@ -300,7 +306,7 @@ export default function RequestsPage() {
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-gray-700 truncate max-w-[120px]">
-                                    {row.assignees.length > 1 
+                                    {row.assignees.length > 1
                                         ? `${row.assignees[0].name || row.assignees[0].email} +${row.assignees.length - 1}`
                                         : (row.assignees[0].name || row.assignees[0].email)}
                                 </p>
@@ -338,9 +344,16 @@ export default function RequestsPage() {
         {
             header: 'Messages',
             accessor: (row) => (
-                <div className="flex items-center gap-1 text-xs font-bold text-gray-500">
-                    <MessageSquare className="w-3 h-3" />
-                    {row._count?.messages || 0}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 min-w-[30px] justify-center">
+                        <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
+                        {row._count?.messages || 0}
+                    </div>
+                    {row.unreadCount > 0 && (
+                        <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-[9px] font-black animate-in fade-in zoom-in duration-300">
+                            {row.unreadCount} new
+                        </span>
+                    )}
                 </div>
             )
         },
@@ -348,43 +361,42 @@ export default function RequestsPage() {
             header: 'Date',
             sortable: true,
             sortKey: 'createdAt',
-            accessor: (row) => (
-                <div className="flex items-center text-xs font-medium text-gray-500 gap-1.5 opacity-80">
-                    <Calendar className="w-3 h-3" />
-                    {new Date(row.createdAt).toLocaleDateString()}
+            accessor: (req: RequestItem) => (
+                <div className="flex items-center gap-3">
+                    <div className="relative inline-flex items-center">
+                        <div className="px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 min-w-[30px] text-center">
+                            {new Date(req.createdAt).toLocaleString()}
+                        </div>
+                    </div>
                 </div>
             )
         },
     ];
 
     if (loading || (!user && !loading)) {
-        return (
-            <div className="flex flex-1 items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-            </div>
-        );
+        return <Loading fullScreen text="Preparing Mailbox..." size="lg" />;
     }
 
     const isClosed = selectedRequest?.status === RequestStatus.RESOLVED || selectedRequest?.status === RequestStatus.CLOSED;
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up">
-            <div className="bg-white/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/50 flex flex-col w-full overflow-hidden">
-                <div className="px-8 pt-8 pb-6 border-b border-gray-100 flex flex-col gap-6 bg-gray-50/50">
+        <div className="flex flex-col h-full w-full animate-fade-in-up">
+            <div className="bg-white/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/50 flex flex-col w-full overflow-hidden flex-1 min-h-0">
+                <div className="px-8 pt-4 border-b border-gray-100 flex flex-col gap-6 bg-gray-50/50 shrink-0">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
                             <CustomSelect
                                 value={statusFilter}
                                 onChange={(val) => updateQueryParams({ status: val, page: 1 })}
                                 options={[
-                                    { value: 'ALL', label: 'All Statuses' },
-                                    { value: RequestStatus.OPEN, label: 'Open' },
-                                    { value: RequestStatus.IN_PROGRESS, label: 'In Progress' },
-                                    { value: RequestStatus.AWAITING_RESPONSE, label: 'Awaiting Response' },
-                                    { value: RequestStatus.RESOLVED, label: 'Resolved' },
-                                    { value: RequestStatus.CLOSED, label: 'Closed' },
+                                    { value: 'ALL', label: 'All Statuses', badge: state.stats.mail?.total },
+                                    { value: RequestStatus.OPEN, label: 'Open', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.OPEN] },
+                                    { value: RequestStatus.IN_PROGRESS, label: 'In Progress', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.IN_PROGRESS] },
+                                    { value: RequestStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.AWAITING_RESPONSE] },
+                                    { value: RequestStatus.RESOLVED, label: 'Resolved', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.RESOLVED] },
+                                    { value: RequestStatus.CLOSED, label: 'Closed', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.CLOSED] },
                                 ]}
-                                className="w-full sm:w-[200px]"
+                                className="w-full sm:w-[240px]"
                                 placeholder="Status"
                             />
 
@@ -404,7 +416,7 @@ export default function RequestsPage() {
                     </div>
                 </div>
 
-                <div className="p-4 md:p-6 bg-gray-50/10">
+                <div className="p-4 bg-gray-50/10 flex-1 min-h-0 overflow-hidden">
                     <DataTable
                         columns={columns}
                         data={requests}
@@ -419,10 +431,14 @@ export default function RequestsPage() {
                         sortConfig={{ key: sortBy, direction: sortOrder }}
                         onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                         getRowClassName={(row) => {
-                            if (row.status === RequestStatus.OPEN) return '!bg-blue-50/40 border-l-4 border-l-blue-500 shadow-sm';
-                            if (row.status === RequestStatus.IN_PROGRESS) return '!bg-amber-50/40 border-l-4 border-l-amber-400';
-                            return '';
+                            if (row.status === RequestStatus.OPEN) return '!bg-blue-50/40 border-l-4 border-l-blue-500 shadow-sm transition-colors';
+                            if (row.status === RequestStatus.IN_PROGRESS) return '!bg-amber-50/40 border-l-4 border-l-amber-400 transition-colors';
+                            if (row.status === RequestStatus.AWAITING_RESPONSE) return '!bg-indigo-50/40 border-l-4 border-l-indigo-400 transition-colors';
+                            if (row.status === RequestStatus.RESOLVED) return '!bg-emerald-50/40 border-l-4 border-l-emerald-500 transition-colors';
+                            if (row.status === RequestStatus.CLOSED) return '!bg-slate-50/40 border-l-4 border-l-slate-400 opacity-80 transition-colors';
+                            return 'transition-colors';
                         }}
+                        maxHeight="100%"
                     />
                 </div>
             </div>
@@ -434,22 +450,23 @@ export default function RequestsPage() {
                 title={selectedRequest?.subject}
                 subtitle={
                     selectedRequest ? (
-                        <span className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-3 flex-wrap">
                             <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{selectedRequest.category.replace('_', ' ')}</span>
                             <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{selectedRequest.id.slice(0, 8)}</span>
-                            <span className="flex items-center gap-1"><User className="w-3 h-3" />{selectedRequest.creator?.name || selectedRequest.creator?.email}</span>
+                            <span className="flex items-center gap-1"><UserIcon className="w-3 h-3" />{selectedRequest.creator?.name || selectedRequest.creator?.email}</span>
                             {selectedRequest.organization && (
                                 <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{selectedRequest.organization.name}</span>
                             )}
-                        </span>
+                        </div>
                     ) : undefined
                 }
-                maxWidth="max-w-4xl"
+                maxWidth="max-w-5xl"
+                className='mb-3'
             >
                 {selectedRequest && (
-                    <div className="flex flex-col" style={{ minHeight: '400px' }}>
+                    <div className="flex flex-col h-full" style={{ minHeight: '600px' }}>
                         {/* Status controls */}
-                        <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100 flex-wrap">
+                        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-gray-100 flex-wrap shrink-0">
                             <RequestStatusBadge status={selectedRequest.status} />
                             <RequestPriorityBadge priority={selectedRequest.priority} />
 
@@ -459,7 +476,7 @@ export default function RequestsPage() {
                                         <button
                                             onClick={() => handleStatusUpdate(RequestStatus.IN_PROGRESS)}
                                             disabled={updatingStatus}
-                                            className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all disabled:opacity-50"
+                                            className="flex items-center gap-1 px-4 py-2 bg-amber-500 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all disabled:opacity-50 shadow-lg shadow-amber-500/20"
                                         >
                                             <ArrowUpRight className="w-3 h-3" />
                                             Start Progress
@@ -468,14 +485,14 @@ export default function RequestsPage() {
                                     <button
                                         onClick={() => handleStatusUpdate(RequestStatus.RESOLVED)}
                                         disabled={updatingStatus}
-                                        className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all disabled:opacity-50"
+                                        className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all disabled:opacity-50 shadow-lg shadow-green-500/20"
                                     >
                                         Resolve
                                     </button>
                                     <button
                                         onClick={() => handleStatusUpdate(RequestStatus.CLOSED)}
                                         disabled={updatingStatus}
-                                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-500 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-gray-600 transition-all disabled:opacity-50"
+                                        className="flex items-center gap-1 px-4 py-2 bg-gray-500 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-gray-600 transition-all disabled:opacity-50 shadow-lg shadow-gray-500/20"
                                     >
                                         Close
                                     </button>
@@ -484,12 +501,15 @@ export default function RequestsPage() {
                         </div>
 
                         {/* Thread */}
-                        <RequestThread
-                            request={selectedRequest}
-                            currentUserId={user?.id || ''}
-                            onReply={handleReply}
-                            isClosed={isClosed}
-                        />
+                        <div className="flex-1 overflow-hidden">
+                            <RequestThread
+                                request={selectedRequest}
+                                currentUserId={user?.id || ''}
+                                currentUserRole={user?.role}
+                                onReply={handleReply}
+                                isClosed={isClosed}
+                            />
+                        </div>
                     </div>
                 )}
             </Modal>

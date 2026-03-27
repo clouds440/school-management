@@ -7,6 +7,7 @@ import * as z from 'zod';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Upload, FileCheck } from 'lucide-react';
@@ -27,7 +28,8 @@ interface SubmissionFormProps {
 export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: SubmissionFormProps) {
     const { token } = useAuth();
     const { showToast } = useToast();
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { state, dispatch } = useGlobal();
+    const isProcessing = state.ui.isProcessing;
 
     const { register, handleSubmit, formState: { errors } } = useForm<SubmissionFormValues>({
         resolver: zodResolver(submissionSchema),
@@ -38,7 +40,7 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
 
     const onSubmit = async (data: SubmissionFormValues) => {
         if (!token) return;
-        setIsSubmitting(true);
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             const submission = await api.org.createSubmission(assessmentId, {
                 assessmentId,
@@ -52,7 +54,7 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
             const message = apiError?.response?.data?.message || 'Failed to submit work';
             showToast(Array.isArray(message) ? message[0] : message, 'error');
         } finally {
-            setIsSubmitting(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -82,7 +84,7 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
                 <Button type="button" variant="secondary" onClick={onCancel} className="px-8 h-12 font-black italic uppercase tracking-widest text-xs">
                     Cancel
                 </Button>
-                <Button type="submit" isLoading={isSubmitting} className="px-10 h-12 font-black italic uppercase tracking-widest text-xs flex gap-2">
+                <Button type="submit" isLoading={isProcessing} className="px-10 h-12 font-black italic uppercase tracking-widest text-xs flex gap-2">
                     <FileCheck className="w-4 h-4" />
                     Submit Final Work
                 </Button>

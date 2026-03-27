@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { useGlobal } from '@/context/GlobalContext';
 import { Section, FinalGradeResponse, Student, ApiError, Role, Assessment } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { ShieldOff, GraduationCap } from 'lucide-react';
@@ -26,47 +27,37 @@ function StudentPortalContent() {
 
     const orgName = (params?.orgName as string) || '';
 
+    const { state } = useGlobal();
     const [sections, setSections] = useState<Section[]>([]);
     const [grades, setGrades] = useState<FinalGradeResponse[]>([]);
-    const [profile, setProfile] = useState<Student | null>(null);
     const [assessments, setAssessments] = useState<Assessment[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [fetchingData, setFetchingData] = useState(true);
+
+    const profile = state.auth.userProfile as Student | null;
 
     useEffect(() => {
         if (!token || !user) return;
 
         // Role Guard: Only Student self-view, ORG_ADMIN, or ORG_MANAGER
         // We can add TEACHER check later if needed, but for now strict access.
-        const isAuthorized = 
-            user.role === Role.ORG_ADMIN || 
-            user.role === Role.ORG_MANAGER || 
+        const isAuthorized =
+            user.role === Role.ORG_ADMIN ||
+            user.role === Role.ORG_MANAGER ||
             (user.role === Role.STUDENT && user.userName === params.userName);
 
         if (!isAuthorized) {
             showToast('Access Denied. You are not authorized to view this portal.', 'error');
             const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
-            const redirectPath = user.role === Role.STUDENT 
+            const redirectPath = user.role === Role.STUDENT
                 ? `/${orgName}/students/${user.userName}`
                 : `/${orgName}/${user.role === Role.ORG_ADMIN ? 'admin' : `teachers/${nameSlug}`}`;
-            
+
             router.replace(redirectPath);
             return;
         }
 
         const fetchData = async () => {
-            setLoading(true);
-            let fetchedProfile: Student | null = null;
-
-            try {
-                fetchedProfile = await api.org.getProfile<Student>(token);
-                setProfile(fetchedProfile);
-            } catch (error: unknown) {
-                const apiError = error as ApiError;
-                console.error('Failed to fetch student profile:', error);
-                const message = apiError?.response?.data?.message || 'Failed to load profile. Please try again.';
-                showToast(Array.isArray(message) ? message[0] : message, 'error');
-                setProfile(null); // Ensure profile is null on error
-            }
+            setFetchingData(true);
 
             try {
                 const [sectionsRes, gradesRes, assessmentsRes] = await Promise.all([
@@ -84,12 +75,12 @@ function StudentPortalContent() {
                 console.error('Failed to fetch other student data:', err);
                 showToast('Failed to load some data. Please try again.', 'error');
             } finally {
-                setLoading(false);
+                setFetchingData(false);
             }
         };
 
         fetchData();
-    }, [token, showToast]);
+    }, [token, showToast, orgName]);
 
     if (!user) return null;
 
@@ -111,9 +102,9 @@ function StudentPortalContent() {
         );
     }
 
-    if (loading) {
+    if (fetchingData || state.auth.loading) {
         return (
-            <div className="flex flex-1 items-center justify-center h-full">
+            <div className="flex flex-1 items-center justify-center h-full py-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
         );

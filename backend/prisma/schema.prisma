@@ -321,6 +321,7 @@ enum RequestStatus {
   AWAITING_RESPONSE
   RESOLVED
   CLOSED
+  NO_REPLY
 }
 
 enum TeacherStatus {

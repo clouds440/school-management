@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
 import { X, Check, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';

@@ -18,13 +18,7 @@ const MAX_ACTIVE_REQUESTS = 10;
 
 /** Roles that can manage (view all, assign, change status) requests */
 const ADMIN_ROLES = new Set([Role.SUPER_ADMIN, Role.PLATFORM_ADMIN]);
-
-interface RequestUser {
-    id: string;
-    role: string;
-    organizationId: string | null;
-    name: string | null;
-}
+import { RequestUser } from './interfaces/request-user.interface';
 
 export interface ContactTarget {
     id: string;
@@ -45,10 +39,33 @@ export class RequestService {
 
     // ──────────────────────────────── Create ─────────────────────────────────
 
-    async createRequest(dto: CreateRequestDto, user: RequestUser) {
+    async createRequest(dto: CreateRequestDto, user: RequestUser, noReply: boolean = false) {
         if (user.role === Role.STUDENT) {
             throw new ForbiddenException('Students are not allowed to submit requests.');
         }
+
+        // --- Role-based Messaging Restrictions ---
+        if (user.role === Role.ORG_MANAGER) {
+            if (dto.targetRole === 'ORG_STAFF' || dto.targetRole === Role.ORG_MANAGER) {
+                throw new ForbiddenException('Managers are not authorized to send mail to large groups (All Staff/Managers).');
+            }
+        }
+
+        if (user.role === Role.TEACHER) {
+            if (dto.targetRole === Role.ORG_ADMIN) {
+                 throw new ForbiddenException('Teachers are not authorized to send mail to Organization Admins.');
+            }
+            if (dto.assigneeIds?.length) {
+                const recipients = await this.prisma.user.findMany({
+                    where: { id: { in: dto.assigneeIds } },
+                    select: { role: true }
+                });
+                if (recipients.some(r => r.role === Role.ORG_ADMIN)) {
+                    throw new ForbiddenException('Teachers are not authorized to send mail to Organization Admins.');
+                }
+            }
+        }
+
         // Rate limiting: check active request count
         const activeCount = await this.prisma.request.count({
             where: {
@@ -70,9 +87,10 @@ export class RequestService {
                     subject: dto.subject,
                     category: dto.category,
                     priority: dto.priority || 'NORMAL',
+                    status: noReply ? RequestStatus.NO_REPLY : (dto as any).status || RequestStatus.OPEN,
                     creatorId: user.id,
                     creatorRole: user.role,
-                    organizationId: user.organizationId,
+                    organizationId: user.organizationId || (user as any).organizationId,
                     targetRole: dto.targetRole,
                     assigneeId: dto.assigneeIds?.[0], // For legacy compatibility/single field
                     assignees: dto.assigneeIds?.length ? {
@@ -99,6 +117,13 @@ export class RequestService {
                     action: 'CREATED',
                     details: { category: dto.category, priority: dto.priority || 'NORMAL' },
                 },
+            });
+
+            // Mark as read for the creator immediately
+            await tx.requestUserView.upsert({
+                where: { userId_requestId: { userId: user.id, requestId: req.id } },
+                update: { lastViewedAt: new Date() },
+                create: { userId: user.id, requestId: req.id, lastViewedAt: new Date() }
             });
 
             return req;
@@ -140,7 +165,7 @@ export class RequestService {
     ) {
         const { skip, take, search, sortBy, sortOrder } = getPaginationOptions({
             ...options,
-            sortBy: options.sortBy || 'createdAt',
+            sortBy: options.sortBy || 'updatedAt',
             sortOrder: options.sortOrder || 'desc',
         });
 
@@ -153,29 +178,62 @@ export class RequestService {
                 ...(options.category ? [{ category: options.category }] : []),
                 
                 // Participation / Visibility Filter
-                ...(isAdmin ? [] : [{
-                    OR: [
-                        { creatorId: user.id },
-                        { assigneeId: user.id },
-                        { assignees: { some: { id: user.id } } },
-                        { targetRole: user.role as Role },
-                        // Organization admins see all requests in their Org
-                        ...(user.role === Role.ORG_ADMIN ? [{ organizationId: user.organizationId }] : []),
-                        // Staff see requests targeted to ORG_STAFF
-                        ...(user.role === Role.TEACHER || user.role === Role.ORG_MANAGER 
-                            ? [{ targetRole: 'ORG_STAFF' }] 
-                            : [])
-                    ]
-                }]),
+                ...(user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN
+                    ? [{
+                        OR: [
+                            { organizationId: null },
+                            { creatorId: user.id },
+                            { assigneeId: user.id },
+                            { assignees: { some: { id: user.id } } },
+                            { targetRole: user.role as Role },
+                        ]
+                    }]
+                    : [{
+                        OR: [
+                            { creatorId: user.id },
+                            { assigneeId: user.id },
+                            { assignees: { some: { id: user.id } } },
+                            { targetRole: user.role as Role },
+                            // Organization admins see all requests in their Org
+                            ...(user.role === Role.ORG_ADMIN ? [{ organizationId: user.organizationId }] : []),
+                            // Staff see requests targeted to ORG_STAFF
+                            ...(user.role === Role.TEACHER || user.role === Role.ORG_MANAGER 
+                                ? [{ targetRole: 'ORG_STAFF' }] 
+                                : [])
+                        ]
+                    }]),
 
                 // Search Filter
-                ...(search ? [{
-                    OR: [
-                        { subject: { contains: search, mode: 'insensitive' as const } },
-                        { category: { contains: search, mode: 'insensitive' as const } },
-                        { creator: { name: { contains: search, mode: 'insensitive' as const } } },
-                    ]
-                }] : [])
+                ...(search ? (() => {
+                    const normalizedSearch = search.trim().toUpperCase().replace(/\s+/g, '_');
+                    
+                    const possibleStatuses = Object.values(RequestStatus) as string[];
+                    const isStatusMatch = possibleStatuses.find(s => s === normalizedSearch || s.includes(normalizedSearch));
+                    
+                    // Also check for category matches
+                    const possibleCategories = [
+                        'ACCOUNT_STATUS', 'BUG_REPORT', 'FEATURE_REQUEST', 'BILLING', 'PLATFORM_SUPPORT',
+                        'ORG_COMPLIANCE', 'ORG_ACCOUNT', 'PLATFORM_NOTICE', 'TASK_ASSIGNMENT', 'SCHEDULE_CHANGE',
+                        'POLICY_UPDATE', 'PERFORMANCE', 'GENERAL_NOTICE', 'LEAVE_REQUEST', 'RESOURCE_REQUEST',
+                        'SCHEDULE_CONFLICT', 'COLLABORATION', 'GENERAL_INQUIRY', 'OTHER'
+                    ];
+                    const isCategoryMatch = possibleCategories.find(c => c === normalizedSearch || c.includes(normalizedSearch));
+
+                    return [{
+                        OR: [
+                            { subject: { contains: search, mode: 'insensitive' as const } },
+                            { category: { contains: search, mode: 'insensitive' as const } },
+                            { creator: { name: { contains: search, mode: 'insensitive' as const } } },
+                            { creator: { email: { contains: search, mode: 'insensitive' as const } } },
+                            { assignee: { name: { contains: search, mode: 'insensitive' as const } } },
+                            { assignee: { email: { contains: search, mode: 'insensitive' as const } } },
+                            { assignees: { some: { name: { contains: search, mode: 'insensitive' as const } } } },
+                            { assignees: { some: { email: { contains: search, mode: 'insensitive' as const } } } },
+                            ...(isStatusMatch ? [{ status: isStatusMatch as RequestStatus }] : []),
+                            ...(isCategoryMatch ? [{ category: isCategoryMatch }] : []),
+                        ]
+                    }];
+                })() : [])
             ]
         };
 
@@ -185,7 +243,6 @@ export class RequestService {
                 skip,
                 take,
                 orderBy: [
-                    { status: 'asc' }, // open requests first
                     { [sortBy]: sortOrder } as Prisma.RequestOrderByWithRelationInput,
                 ],
                 include: {
@@ -209,7 +266,30 @@ export class RequestService {
             this.prisma.request.count({ where }),
         ]);
 
-        return formatPaginatedResponse(requests, totalRecords, options.page, options.limit);
+        const result = formatPaginatedResponse(requests, totalRecords, options.page, options.limit);
+
+        // Fetch unread count for each request efficiently
+        const requestIds = requests.map((r) => r.id);
+        const userViews = await this.prisma.requestUserView.findMany({
+            where: { userId: user.id, requestId: { in: requestIds } },
+        });
+        const viewMap = new Map(userViews.map((v) => [v.requestId, v.lastViewedAt]));
+
+        const requestsWithUnread = await Promise.all(
+            requests.map(async (req) => {
+                const lastViewedAt = viewMap.get(req.id);
+                const unreadCount = await this.prisma.requestMessage.count({
+                    where: {
+                        requestId: req.id,
+                        senderId: { not: user.id },
+                        ...(lastViewedAt ? { createdAt: { gt: lastViewedAt } } : {}),
+                    },
+                });
+                return { ...req, unreadCount };
+            }),
+        );
+
+        return { ...result, data: requestsWithUnread };
     }
 
     // ──────────────────────────── Get Single ─────────────────────────────────
@@ -405,7 +485,7 @@ export class RequestService {
             this.events.emitToRoom(`request:${requestId}`, 'request:update', updated);
             this.events.emitToUser(existing.creatorId, 'request:update', updated);
         }
-
+        
         return updated;
     }
 
@@ -420,8 +500,9 @@ export class RequestService {
             where: { id: requestId },
         });
 
-        if (!request) {
-            throw new NotFoundException('Request not found');
+        if (!request) throw new NotFoundException('Request not found');
+        if (request.status === RequestStatus.CLOSED || request.status === RequestStatus.RESOLVED || request.status === RequestStatus.NO_REPLY) {
+            throw new BadRequestException('This thread is closed or does not allow replies.');
         }
 
         // Permission: creator, assignee, or admin
@@ -431,11 +512,6 @@ export class RequestService {
 
         if (!isAdmin && !isCreator && !isAssignee) {
             throw new ForbiddenException('You do not have permission to reply to this request');
-        }
-
-        // Cannot message on closed requests
-        if (request.status === RequestStatus.CLOSED) {
-            throw new BadRequestException('Cannot add messages to a closed request');
         }
 
         const [message] = await this.prisma.$transaction(async (tx) => {
@@ -460,24 +536,34 @@ export class RequestService {
                 },
             });
 
-            // Auto-update status if the request is awaiting response and someone else replies
+            // Auto-update status if needed AND always update request.updatedAt
+            let newStatus: RequestStatus | undefined;
             if (
                 request.status === RequestStatus.AWAITING_RESPONSE &&
                 request.creatorId !== user.id
             ) {
-                await tx.request.update({
-                    where: { id: requestId },
-                    data: { status: RequestStatus.IN_PROGRESS },
-                });
+                newStatus = RequestStatus.IN_PROGRESS;
             } else if (
                 request.status === RequestStatus.OPEN &&
                 isAdmin
             ) {
-                await tx.request.update({
-                    where: { id: requestId },
-                    data: { status: RequestStatus.IN_PROGRESS },
-                });
+                newStatus = RequestStatus.IN_PROGRESS;
             }
+
+            await tx.request.update({
+                where: { id: requestId },
+                data: { 
+                    status: newStatus,
+                    updatedAt: new Date() 
+                },
+            });
+
+            // Mark as read for the sender immediately
+            await tx.requestUserView.upsert({
+                where: { userId_requestId: { userId: user.id, requestId } },
+                update: { lastViewedAt: new Date() },
+                create: { userId: user.id, requestId, lastViewedAt: new Date() }
+            });
 
             return [msg];
         });
@@ -588,21 +674,20 @@ export class RequestService {
         this.events.emitToUser(userId, 'unread:update', null);
     }
 
-    /**
-     * Count requests where the user is a participant AND there are messages
-     * newer than the user's last view (or they've never viewed it).
-     *
-     * Uses a two-step Prisma approach instead of raw SQL:
-     * Step 1: Build participation WHERE clause
-     * Step 2: Count requests with unread messages via Prisma relations
-     */
-    async getUnreadCount(user: RequestUser): Promise<{ unread: number; total: number }> {
-        const isAdmin = ADMIN_ROLES.has(user.role as Role);
+    async getUnreadCount(user: RequestUser): Promise<{ unread: number; total: number; countsByStatus: Record<string, number> }> {
         const isOrgStaff = user.role === Role.TEACHER || user.role === Role.ORG_MANAGER;
 
         // Build participation filter (same logic as getRequests)
-        const participationFilter: Prisma.RequestWhereInput = isAdmin
-            ? {}
+        const participationFilter: Prisma.RequestWhereInput = (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN)
+            ? {
+                OR: [
+                    { organizationId: null },
+                    { creatorId: user.id },
+                    { assigneeId: user.id },
+                    { assignees: { some: { id: user.id } } },
+                    { targetRole: user.role },
+                ],
+            }
             : {
                 OR: [
                     { creatorId: user.id },
@@ -610,77 +695,64 @@ export class RequestService {
                     { assignees: { some: { id: user.id } } },
                     { targetRole: user.role },
                     ...(isOrgStaff ? [{ targetRole: 'ORG_STAFF' as const }] : []),
+                    // Org admins see everything in their org
+                    ...(user.role === Role.ORG_ADMIN ? [{ organizationId: user.organizationId }] : []),
                 ],
             };
 
-        // Total count (active only, or all? Usually we count non-closed for unread, 
-        // but "total" usually means total active/eligible messages).
-        // Let's count all eligible requests that the user participates in and aren't resolved/closed.
-        const totalCount = await this.prisma.request.count({
-            where: {
-                ...participationFilter,
-                status: { notIn: [RequestStatus.RESOLVED, RequestStatus.CLOSED] },
-            }
+        // Get status counts (all statuses)
+        const statusCounts = await this.prisma.request.groupBy({
+            by: ['status'],
+            where: participationFilter,
+            _count: { _all: true }
         });
 
-        // Fetch user's view timestamps for all relevant requests in one query
-        const userViews = await this.prisma.requestUserView.findMany({
-            where: { userId: user.id },
-            select: { requestId: true, lastViewedAt: true },
-        });
-        const viewMap = new Map(userViews.map(v => [v.requestId, v.lastViewedAt]));
-
-        // Count requests that are active, the user participates in, and have unread messages.
-        // 1. Requests the user has NEVER viewed (but have at least one message)
-        const neverViewedCount = await this.prisma.request.count({
-            where: {
-                ...participationFilter,
-                status: { notIn: [RequestStatus.RESOLVED, RequestStatus.CLOSED] },
-                messages: { some: {} },
-                userViews: { none: { userId: user.id } },
-            },
-        });
-
-        // 2. Requests the user HAS viewed — check if any message is newer than their view.
-        if (viewMap.size === 0) {
-            return { unread: neverViewedCount, total: totalCount };
+        const countsByStatus: Record<string, number> = {};
+        for (const s of statusCounts) {
+            countsByStatus[s.status] = s._count._all;
         }
 
-        const viewedRequestIds = Array.from(viewMap.keys());
-        const viewedRequests = await this.prisma.request.findMany({
-            where: {
-                id: { in: viewedRequestIds },
-                ...participationFilter,
-                status: { notIn: [RequestStatus.RESOLVED, RequestStatus.CLOSED] },
-            },
+        // 1. All relevant requests based on participation (including platform team mail)
+        const relevantRequests = await this.prisma.request.findMany({
+            where: participationFilter,
             select: {
                 id: true,
-                messages: {
-                    orderBy: { createdAt: 'desc' },
-                    take: 1,
-                    select: { createdAt: true },
-                },
-            },
+                userViews: {
+                    where: { userId: user.id },
+                    select: { lastViewedAt: true }
+                }
+            }
         });
 
-        let viewedUnreadCount = 0;
-        for (const req of viewedRequests) {
-            const lastMessage = req.messages[0];
-            const lastViewed = viewMap.get(req.id);
-            if (lastMessage && lastViewed && lastMessage.createdAt > lastViewed) {
-                viewedUnreadCount++;
-            }
+        const totalActive = relevantRequests.length;
+
+        // 2. Count requests with unread messages
+        let unreadRequestCount = 0;
+        
+        for (const req of relevantRequests) {
+            const lastViewed = req.userViews[0]?.lastViewedAt;
+            
+            const hasUnread = await this.prisma.requestMessage.count({
+                where: {
+                    requestId: req.id,
+                    createdAt: lastViewed ? { gt: lastViewed } : undefined,
+                    senderId: { not: user.id } // Don't count own messages as unread
+                },
+                take: 1
+            });
+            
+            if (hasUnread > 0) unreadRequestCount++;
         }
 
-        return { unread: neverViewedCount + viewedUnreadCount, total: totalCount };
+        return { 
+            unread: unreadRequestCount, 
+            total: totalActive,
+            countsByStatus
+        };
     }
 
     // ─────────────────── WebSocket Notification Helpers ───────────────────────
 
-    /**
-     * Emit `unread:update` to all participants of a request.
-     * Used after new messages or status updates.
-     */
     private emitUnreadUpdateToParticipants(
         request: { creatorId: string; assigneeId: string | null; targetRole: string | null },
         excludeUserId?: string,

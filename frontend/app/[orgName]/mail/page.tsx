@@ -1,26 +1,40 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { MessageSquare, Calendar, Plus, ArrowUpRight, Hash, User, Building2, Tag, Mail, Phone, MapPin, ExternalLink } from 'lucide-react';
+import { ArrowUpRight, Calendar, Hash, Inbox, Mail, MessageSquare, Plus, Tag, User } from 'lucide-react';
 import { api } from '@/lib/api';
-import { RequestItem, RequestDetail, RequestStatus, PaginatedResponse, Role, UpdateRequestPayload, ApiError } from '@/types';
-import { Button } from '@/components/ui/Button';
+import { RequestItem, RequestDetail, RequestStatus, PaginatedResponse, UpdateRequestPayload, ApiError } from '@/types';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { Modal } from '@/components/ui/Modal';
 import { RequestStatusBadge, RequestPriorityBadge } from '@/components/requests/RequestStatusBadge';
 import { RequestThread } from '@/components/requests/RequestThread';
 import { NewRequestModal } from '@/components/requests/NewRequestModal';
 import { SearchBar } from '@/components/ui/SearchBar';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { getPublicUrl } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useSocket } from '@/hooks/useSocket';
+import { useGlobal } from '@/context/GlobalContext';
+import Image from 'next/image';
+
+const getStatusColor = (status: RequestStatus) => {
+    switch (status) {
+        case RequestStatus.OPEN: return { border: 'border-l-blue-500', bg: 'bg-blue-50' };
+        case RequestStatus.IN_PROGRESS: return { border: 'border-l-amber-400', bg: 'bg-amber-50' };
+        case RequestStatus.AWAITING_RESPONSE: return { border: 'border-l-indigo-400', bg: 'bg-indigo-50' };
+        case RequestStatus.RESOLVED: return { border: 'border-l-emerald-500', bg: 'bg-emerald-50' };
+        case RequestStatus.CLOSED: return { border: 'border-l-slate-400', bg: 'bg-slate-50' };
+        default: return { border: 'border-l-gray-200', bg: 'bg-white' };
+    }
+};
 
 export default function OrgMailPage() {
     const { user, token, loading } = useAuth();
     const { showToast } = useToast();
+    const { state } = useGlobal();
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -36,8 +50,9 @@ export default function OrgMailPage() {
 
     const page = parseInt(searchParams.get('page') || '1', 10);
     const searchQuery = searchParams.get('search') || '';
-    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortBy = searchParams.get('sortBy') || 'updatedAt';
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+    const statusFilter = searchParams.get('status') || 'ALL';
 
     const updateQueryParams = (updates: Record<string, string | number | undefined>) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -54,7 +69,6 @@ export default function OrgMailPage() {
     const fetchRequests = useCallback(async () => {
         if (!token) return;
         try {
-            setFetching(true);
             const response = await api.requests.getRequests(token, {
                 page,
                 limit: 10,
@@ -63,6 +77,7 @@ export default function OrgMailPage() {
                 sortOrder,
             });
             setPaginatedData(response);
+            // Layout handles the unread count globally
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Failed to fetch requests';
             showToast(message, 'error');
@@ -75,7 +90,7 @@ export default function OrgMailPage() {
         token: token,
         userId: user?.id || undefined,
         userRole: user?.role || undefined,
-        orgId: user?.organizationId || undefined
+        orgId: user?.orgId || undefined
     });
 
     useEffect(() => {
@@ -98,16 +113,18 @@ export default function OrgMailPage() {
         if (!selectedRequest?.id) return;
 
         joinRoom(`request:${selectedRequest.id}`);
-        
+
         const unsubs = [
-            subscribe('request:message', async (data: any) => {
-                if (data.requestId === selectedRequest.id) {
+            subscribe('request:message', async (data: unknown) => {
+                const payload = data as { requestId: string };
+                if (payload.requestId === selectedRequest.id) {
                     const updated = await api.requests.getRequest(selectedRequest.id, token!);
                     setSelectedRequest(updated);
-                    fetchRequests(); 
+                    fetchRequests();
                 }
             }),
-            subscribe('request:update', (updated: any) => {
+            subscribe('request:update', (data: unknown) => {
+                const updated = data as RequestDetail;
                 if (updated.id === selectedRequest.id) {
                     setSelectedRequest(updated);
                     fetchRequests();
@@ -140,7 +157,7 @@ export default function OrgMailPage() {
 
             // Upload files if any
             if (files && files.length > 0) {
-                const orgId = user?.organizationId || 'SYSTEM';
+                const orgId = user?.orgId || 'SYSTEM';
                 await Promise.all(
                     files.map(file =>
                         api.files.uploadFile(orgId, 'REQUEST_MESSAGE', response.id, file, token)
@@ -223,9 +240,9 @@ export default function OrgMailPage() {
             header: 'Sender',
             accessor: (row) => (
                 <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-card-text/5 border border-white/10 flex items-center justify-center text-card-text/40 text-[10px] font-black uppercase overflow-hidden">
+                    <div className="w-7 h-7 rounded-full bg-card-text/5 border border-white/10 flex items-center justify-center text-card-text/40 text-[10px] font-black uppercase overflow-hidden relative">
                         {row.creator?.avatarUrl ? (
-                            <img src={getPublicUrl(row.creator.avatarUrl)} className="w-full h-full object-cover" />
+                            <Image src={getPublicUrl(row.creator.avatarUrl)} alt={row.creator?.name || ''} fill className="object-cover" unoptimized />
                         ) : (
                             (row.creator?.name || row.creator?.email || '?')[0]
                         )}
@@ -244,10 +261,10 @@ export default function OrgMailPage() {
                     {row.assignees && row.assignees.length > 0 ? (
                         <>
                             <div className="flex -space-x-2 mr-1">
-                                {row.assignees.slice(0, 2).map((a, i) => (
-                                    <div key={a.id} className="w-7 h-7 rounded-full bg-primary/10 border-2 border-card flex items-center justify-center text-primary text-[9px] font-black uppercase shadow-sm overflow-hidden">
+                                {row.assignees.slice(0, 2).map((a) => (
+                                    <div key={a.id} className="w-7 h-7 rounded-full bg-primary/10 border-2 border-card flex items-center justify-center text-primary text-[9px] font-black uppercase shadow-sm overflow-hidden relative">
                                         {a.avatarUrl ? (
-                                            <img src={getPublicUrl(a.avatarUrl)} className="w-full h-full object-cover" />
+                                            <Image src={getPublicUrl(a.avatarUrl)} alt={a.name || ''} fill className="object-cover" unoptimized />
                                         ) : (
                                             (a.name || a.email || '?')[0]
                                         )}
@@ -292,9 +309,16 @@ export default function OrgMailPage() {
         {
             header: 'Messages',
             accessor: (row) => (
-                <div className="flex items-center gap-1 text-xs font-bold text-card-text/60">
-                    <MessageSquare className="w-3 h-3" />
-                    {row._count?.messages || 0}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-card-text/5 rounded-full text-[10px] font-black text-card-text/40 min-w-[30px] justify-center">
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        {row._count?.messages || 0}
+                    </div>
+                    {row.unreadCount > 0 && (
+                        <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-[9px] font-black animate-in fade-in zoom-in duration-300">
+                            {row.unreadCount} new
+                        </span>
+                    )}
                 </div>
             )
         },
@@ -311,38 +335,67 @@ export default function OrgMailPage() {
         },
     ];
 
+    const sortConfig = { key: sortBy, direction: sortOrder };
+
     return (
-        <>
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-4xl font-black text-white tracking-tight flex items-center gap-3 drop-shadow-xl">
-                        <Mail className="w-10 h-10" />
-                        Mail &amp; Communication
+        <div className="flex flex-col h-full w-full animate-fade-in-up">
+            <div className="flex items-center justify-between mb-4 shrink-0">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                        <Inbox className="w-8 h-8 text-primary" />
+                        MAIL PORTAL
                     </h1>
-                    <p className="text-white/80 font-bold opacity-80 mt-2 uppercase tracking-widest text-[10px]">
-                        VIEW YOUR REQUESTS AND SUBMIT NEW ONES
-                    </p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Communication & Requests Hub</p>
                 </div>
+                <button
+                    onClick={() => setNewRequestOpen(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-primary-hover transition-all active:scale-95 shadow-xl shadow-primary/20"
+                >
+                    <Plus className="w-4 h-4" />
+                    New Message
+                </button>
             </div>
 
             {/* My Requests Table */}
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 flex flex-col w-full overflow-hidden">
-                <div className="px-6 pt-6 pb-4 border-b border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <SearchBar
-                        value={searchQuery}
-                        onChange={(val) => updateQueryParams({ search: val, page: 1 })}
-                        placeholder="Search mail..."
-                    />
-                    <button
-                        onClick={() => setNewRequestOpen(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-text rounded-sm font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all active:scale-95 shadow-lg shrink-0"
-                    >
-                        <Plus className="w-4 h-4" />
-                        SEND MAIL
-                    </button>
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 flex flex-col w-full overflow-hidden flex-1 min-h-0">
+                <div className="px-8 pt-4 border-b border-white/10 flex flex-col gap-6 bg-slate-50/50 shrink-0">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
+                            <CustomSelect
+                                value={statusFilter}
+                                onChange={(val) => updateQueryParams({ status: val, page: 1 })}
+                                options={[
+                                    { value: 'ALL', label: 'All Statuses', badge: state.stats.mail?.total },
+                                    { value: RequestStatus.OPEN, label: 'Open', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.OPEN] },
+                                    { value: RequestStatus.IN_PROGRESS, label: 'In Progress', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.IN_PROGRESS] },
+                                    { value: RequestStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.AWAITING_RESPONSE] },
+                                    { value: RequestStatus.RESOLVED, label: 'Resolved', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.RESOLVED] },
+                                    { value: RequestStatus.CLOSED, label: 'Closed', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.CLOSED] },
+                                ]}
+                                className="w-full sm:w-[240px]"
+                                placeholder="Status"
+                            />
+
+                            <SearchBar
+                                value={searchQuery}
+                                onChange={(val) => updateQueryParams({ search: val, page: 1 })}
+                                placeholder="Search mail..."
+                            />
+                        </div>
+                    </div>
+                    <div className="flex gap-8 overflow-x-auto scrollbar-none pb-0.5">
+                        <button
+                            onClick={() => updateQueryParams({ status: 'ALL', page: 1 })}
+                            className={`flex items-center gap-2 pb-3 px-1 text-[11px] font-black uppercase tracking-widest transition-all relative ${statusFilter === 'ALL' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                            <Mail className="w-3.5 h-3.5" />
+                            All Mails
+                            {statusFilter === 'ALL' && <div className="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-t-full" />}
+                        </button>
+                    </div>
                 </div>
 
-                <div className="p-4">
+                <div className="p-4 flex-1 min-h-0 overflow-hidden">
                     <DataTable
                         columns={columns}
                         data={requests}
@@ -354,18 +407,19 @@ export default function OrgMailPage() {
                         totalResults={paginatedData?.totalRecords || 0}
                         pageSize={10}
                         onPageChange={(p) => updateQueryParams({ page: p })}
-                        sortConfig={{ key: sortBy, direction: sortOrder }}
+                        sortConfig={sortConfig}
                         onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                         getRowClassName={(row) => {
-                            if (row.status === RequestStatus.OPEN) return '!bg-blue-500/5 border-l-4 border-l-blue-400';
-                            return '';
+                            const statusColor = getStatusColor(row.status);
+                            return `border-l-4 ${statusColor.border} ${statusColor.bg}/40 transition-colors`;
                         }}
+                        maxHeight="100%"
                     />
                 </div>
             </div>
 
             {/* Contact Info Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* <div className="grid grid-cols-1 md:grid-cols-3 mt-3 gap-6">
                 <div className="bg-card/80 backdrop-blur-xl p-8 rounded-sm border border-white/20 shadow-xl flex flex-col items-center text-center space-y-4 hover:shadow-2xl transition-all group">
                     <div className="w-16 h-16 bg-primary/10 rounded-sm flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-text transition-all">
                         <Mail className="w-8 h-8" />
@@ -395,7 +449,7 @@ export default function OrgMailPage() {
                     <p className="text-card-text/60 font-medium h-12">Headquarters for in-person consultations</p>
                     <p className="text-primary font-bold">New York, NY 10001</p>
                 </div>
-            </div>
+            </div> */}
 
             {/* Thread Modal */}
             <Modal
@@ -471,7 +525,6 @@ export default function OrgMailPage() {
                 isDestructive={pendingStatus === RequestStatus.CLOSED}
             />
 
-            {/* New Request Modal */}
             <NewRequestModal
                 isOpen={newRequestOpen}
                 onClose={() => setNewRequestOpen(false)}
@@ -480,6 +533,6 @@ export default function OrgMailPage() {
                     showToast('Mail sent successfully!', 'success');
                 }}
             />
-        </>
+        </div>
     );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Send, AlertCircle, Paperclip, X, FileText, ImageIcon, User, Users } from 'lucide-react';
+import { AlertCircle, Paperclip, X, FileText, ImageIcon, User, Users } from 'lucide-react';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -7,11 +7,14 @@ import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { RequestTarget, Role, RequestCategory } from '@/types';
+import { ADMIN_REPLY_TEMPLATES } from './MailTemplates';
 
 interface NewRequestModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess?: () => void;
+    initialTargetId?: string;
+    initialSubject?: string;
 }
 
 // ── Category groups by communication context ─────────────────────────────────
@@ -103,7 +106,13 @@ const PRIORITIES = [
     { value: 'URGENT', label: 'Urgent' },
 ];
 
-export function NewRequestModal({ isOpen, onClose, onSuccess }: NewRequestModalProps) {
+export function NewRequestModal({
+    isOpen,
+    onClose,
+    onSuccess,
+    initialTargetId,
+    initialSubject
+}: NewRequestModalProps) {
     const { token, user } = useAuth();
     const [subject, setSubject] = useState('');
     const [category, setCategory] = useState<string>(RequestCategory.GENERAL_INQUIRY);
@@ -117,24 +126,37 @@ export function NewRequestModal({ isOpen, onClose, onSuccess }: NewRequestModalP
     const [error, setError] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Fetch contactable users when modal opens
-    React.useEffect(() => {
-        if (isOpen && token) {
-            setSearching(true);
-            api.requests.getContactableUsers(token)
-                .then(setTargets)
-                .catch(console.error)
-                .finally(() => setSearching(false));
-        }
-    }, [isOpen, token]);
-
-    // Derive the selected targets
     const selectedTargets = useMemo(
         () => targets.filter(t => targetIds.includes(t.id)),
         [targets, targetIds]
     );
 
-    // Auto-clear error after 3.5 seconds
+    const isPlatformAdmin = user?.role === 'PLATFORM_ADMIN' || user?.role === 'SUPER_ADMIN';
+    const primaryTarget = selectedTargets[0];
+
+    const orgData: Record<string, string> = isPlatformAdmin ? {
+        name: primaryTarget?.label || 'User',
+        id: primaryTarget?.id || 'ID',
+        admin: user?.name || 'Administrator',
+        role: user?.role || 'Platform Admin',
+        date: new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
+        signature: 'EduManage Support'
+    } : {};
+
+    // Fetch contactable users when modal opens
+    React.useEffect(() => {
+        if (isOpen && token) {
+            setSearching(true);
+            api.requests.getContactableUsers(token)
+                .then(data => {
+                    setTargets(data);
+                    if (initialTargetId) setTargetIds([initialTargetId]);
+                    if (initialSubject) setSubject(initialSubject);
+                })
+                .catch(console.error)
+                .finally(() => setSearching(false));
+        }
+    }, [isOpen, token, initialTargetId, initialSubject]);
     React.useEffect(() => {
         if (error) {
             const timer = setTimeout(() => setError(''), 3500);
@@ -298,7 +320,7 @@ export function NewRequestModal({ isOpen, onClose, onSuccess }: NewRequestModalP
             onSubmit={handleSubmit}
             submitText="Send Mail"
             isSubmitting={submitting}
-            maxWidth="max-w-5xl"
+            maxWidth="max-w-7xl"
             feedback={error ? (
                 <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-sm text-red-600 animate-shake">
                     <AlertCircle className="w-4 h-4 shrink-0" />
@@ -307,9 +329,9 @@ export function NewRequestModal({ isOpen, onClose, onSuccess }: NewRequestModalP
             ) : null}
         >
             <div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-3">
                     {/* Left Column: Basic Info */}
-                    <div className="space-y-6">
+                    <div className="space-y-3">
                         <div>
                             <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Subject</label>
                             <input
@@ -379,8 +401,10 @@ export function NewRequestModal({ isOpen, onClose, onSuccess }: NewRequestModalP
                             <MarkdownEditor
                                 value={message}
                                 onChange={setMessage}
-                                placeholder="Describe your inquiry in detail... markdown is supported."
+                                placeholder="Describe your request in detail..."
                                 rows={8}
+                                templates={isPlatformAdmin ? ADMIN_REPLY_TEMPLATES.map(t => ({ label: t.name, content: t.content })) : []}
+                                orgData={orgData}
                             />
                         </div>
 

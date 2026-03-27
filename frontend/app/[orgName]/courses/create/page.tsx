@@ -10,15 +10,17 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { Role } from '@/types';
+import { useGlobal } from '@/context/GlobalContext';
+import { api } from '@/lib/api';
 
 export default function CreateCoursePage() {
     const { token, user } = useAuth();
+    const { state, dispatch } = useGlobal();
+    const isProcessing = state.ui.isProcessing;
     const router = useRouter();
     const pathname = usePathname();
     const { showToast } = useToast();
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
-
-    const [isSaving, setIsSaving] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -41,36 +43,23 @@ export default function CreateCoursePage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
+        if (!token) return;
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
 
         try {
-            const submitData = { ...formData };
-
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/org/courses`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(submitData)
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || 'Failed to create course');
-            }
-
+            await api.org.createCourse(formData, token);
             window.dispatchEvent(new Event('stats-updated'));
             showToast('Course created successfully', 'success');
             router.push(`/${orgSlug}/courses`);
         } catch (error: unknown) {
             showToast(error instanceof Error ? error.message : 'Failed to create course', 'error');
-            setIsSaving(false);
+        } finally {
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
     return (
-        <>
+        <div className="flex flex-col w-full animate-fade-in-up">
             <div className="mb-6">
                 <div className="flex items-center gap-5">
                     <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
@@ -83,7 +72,7 @@ export default function CreateCoursePage() {
                 </div>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-[0_30px_70px_var(--shadow-color)] border border-white/20 p-12 text-card-text">
+            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-8 md:p-12 mb-10">
                 <form onSubmit={handleSubmit} className="space-y-8">
                     <div className="space-y-8">
                         <div>
@@ -126,15 +115,15 @@ export default function CreateCoursePage() {
                         </Link>
                         <Button
                             type="submit"
-                            isLoading={isSaving}
+                            isLoading={isProcessing}
                             loadingText="Creating..."
-                            className="px-10"
+                            className="px-10 h-12"
                         >
                             Create Course
                         </Button>
                     </div>
                 </form>
             </div>
-        </>
+        </div>
     );
 }

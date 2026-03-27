@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldOff, ShieldAlert, ShieldCheck, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone, Info, Hash, Clock, GraduationCap, BookOpen, School, Library, MonitorPlay, Pencil } from 'lucide-react';
+import { useGlobal } from '@/context/GlobalContext';
+import { ShieldOff, ShieldAlert, ShieldCheck, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone, Info, Hash, Clock, GraduationCap, BookOpen, School, Library, MonitorPlay, Pencil, Send } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Organization, AdminStats, OrgStatus, PaginatedResponse } from '@/types';
 import { getPublicUrl } from '@/lib/utils';
@@ -18,6 +19,8 @@ import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { Loading } from '@/components/ui/Loading';
+import { NewRequestModal } from '@/components/requests/NewRequestModal';
 
 interface AdminOrgParams extends BasePaginationParams {
     status: OrgStatus;
@@ -26,19 +29,23 @@ interface AdminOrgParams extends BasePaginationParams {
 
 export default function OrganizationsPage() {
     const { user, token, loading } = useAuth();
+    const { state, dispatch } = useGlobal();
     const router = useRouter();
     const searchParams = useSearchParams();
     const { showToast } = useToast();
 
-    // const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Organization> | null>(null);
     const { openViewModal } = useUI();
     const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [stats, setStats] = useState<AdminStats | null>(null);
+    const stats = state.stats.admin;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [operatingOrg, setOperatingOrg] = useState<{ id: string, name: string, email: string, statusHistory?: Organization['statusHistory'] } | null>(null);
     const [modalMode, setModalMode] = useState<'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE'>('REJECT');
     const [reason, setReason] = useState('');
+
+    const [newRequestOpen, setNewRequestOpen] = useState(false);
+    const [initialTargetId, setInitialTargetId] = useState<string | undefined>(undefined);
+    const [initialSubject, setInitialSubject] = useState<string | undefined>(undefined);
 
     // URL State
     const orgParams: AdminOrgParams = {
@@ -72,11 +79,7 @@ export default function OrganizationsPage() {
     // Sync is now direct via usePaginatedData data variable
 
 
-    useEffect(() => {
-        if (token) {
-            api.admin.getAdminStats(token).then(setStats).catch(console.error);
-        }
-    }, [token]);
+    // Stats are now managed globally via layout and dispatch
 
     const updateQueryParams = (updates: Record<string, string | number | undefined>) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -100,8 +103,8 @@ export default function OrganizationsPage() {
             showToast(`${name} approved successfully`, 'success');
             // Re-fetch to update the current page data
             refresh();
-            // Also refresh stats
-            api.admin.getAdminStats(token!).then(setStats).catch(console.error);
+            // Also refresh stats globally
+            api.admin.getAdminStats(token!).then(data => dispatch({ type: 'STATS_SET_ADMIN', payload: data })).catch(console.error);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Failed to approve organization';
             showToast(message, 'error');
@@ -151,6 +154,12 @@ export default function OrganizationsPage() {
         } finally {
             setActionLoading(null);
         }
+    };
+
+    const handleSendMail = (org: Organization) => {
+        setInitialTargetId(org.adminUserId);
+        setInitialSubject(`Inquiry regarding ${org.name}`);
+        setNewRequestOpen(true);
     };
 
     // Use dynamic counts from server if available, otherwise fallback to stats
@@ -264,7 +273,16 @@ export default function OrganizationsPage() {
 
                 return (
                     <div className="flex flex-col gap-1 shrink-0 items-end">
-                        <TableActions extraActions={getActions()} showLabels={window.innerWidth > 1440} />
+                        <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                            <button
+                                onClick={() => handleSendMail(row)}
+                                className="p-2 hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 rounded-sm transition-all"
+                                title="Send Mail"
+                            >
+                                <Send className="w-4 h-4" />
+                            </button>
+                            <TableActions extraActions={getActions()} showLabels={window.innerWidth > 1440} />
+                        </div>
                     </div>
                 );
             }
@@ -272,11 +290,7 @@ export default function OrganizationsPage() {
     ];
 
     if ((loading || (!user && !loading)) || (isFetching && !fetchedData)) {
-        return (
-            <div className="flex flex-1 items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-            </div>
-        );
+        return <Loading fullScreen text="Loading Organizations..." size="lg" icon={Building2} />;
     }
 
     const handleViewOrg = (org: Organization) => {
@@ -495,6 +509,20 @@ export default function OrganizationsPage() {
                     />
                 </div>
             </ModalForm>
+            {/* New Request Modal */}
+            <NewRequestModal
+                isOpen={newRequestOpen}
+                onClose={() => {
+                    setNewRequestOpen(false);
+                    setInitialTargetId(undefined);
+                    setInitialSubject(undefined);
+                }}
+                initialTargetId={initialTargetId}
+                initialSubject={initialSubject}
+                onSuccess={() => {
+                    showToast('Mail sent successfully', 'success');
+                }}
+            />
         </div>
     );
 }

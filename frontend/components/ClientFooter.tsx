@@ -7,7 +7,7 @@ export function ClientFooter() {
     const pathname = usePathname();
 
     // Only show footer on home page and mail page
-    const showFooter = pathname === '/' || pathname?.includes('/mail');
+    const showFooter = pathname === '/';
 
     if (!showFooter) return null;
 

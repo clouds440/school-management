@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -24,8 +24,9 @@ type EventCallback = (...args: unknown[]) => void;
  */
 export function useSocket(options: UseSocketOptions) {
     const { token, userId, userRole, orgId, enabled = true } = options;
-    const socketRef = useRef<Socket | null>(null);
+    const [socket, setSocket] = useState<Socket | null>(null);
     const listenersRef = useRef<Map<string, Set<EventCallback>>>(new Map());
+    const [isConnected, setIsConnected] = useState(false);
 
     // Connect on mount when enabled + token available
     useEffect(() => {
@@ -34,7 +35,7 @@ export function useSocket(options: UseSocketOptions) {
         // Derive base URL for WebSocket (same origin as API, but at root)
         const wsUrl = API_BASE_URL.replace(/\/api$/, '').replace(/\/$/, '');
 
-        const socket = io(wsUrl, {
+        const newSocket = io(wsUrl, {
             auth: { token },
             transports: ['websocket', 'polling'],
             autoConnect: true,
@@ -43,35 +44,37 @@ export function useSocket(options: UseSocketOptions) {
             reconnectionDelay: 2000,
         });
 
-        socketRef.current = socket;
-
-        socket.on('connect', () => {
-            console.log('[WS] Connected:', socket.id);
+        newSocket.on('connect', () => {
+            console.log('[WS] Connected:', newSocket.id);
+            setIsConnected(true);
+            setSocket(newSocket);
 
             // Auto-join rooms for the user
-            // Gateway @MessageBody() expects { roomId: string }
-            if (userId) socket.emit('joinRoom', { roomId: `user:${userId}` });
-            if (userRole) socket.emit('joinRoom', { roomId: `role:${userRole}` });
-            if (orgId) socket.emit('joinRoom', { roomId: `org:${orgId}` });
+            if (userId) newSocket.emit('joinRoom', { roomId: `user:${userId}` });
+            if (userRole) newSocket.emit('joinRoom', { roomId: `role:${userRole}` });
+            if (orgId) newSocket.emit('joinRoom', { roomId: `org:${orgId}` });
         });
 
-        socket.on('disconnect', (reason) => {
+        newSocket.on('disconnect', (reason: string) => {
             console.log('[WS] Disconnected:', reason);
+            setIsConnected(false);
         });
 
-        socket.on('connect_error', (err) => {
+        newSocket.on('connect_error', (err: Error) => {
             console.warn('[WS] Connection error:', err.message);
+            setIsConnected(false);
         });
 
         // Re-register any existing listeners (for reconnection scenarios)
         listenersRef.current.forEach((callbacks, event) => {
-            callbacks.forEach(cb => socket.on(event, cb));
+            callbacks.forEach(cb => newSocket.on(event, cb));
         });
 
         return () => {
-            socket.removeAllListeners();
-            socket.disconnect();
-            socketRef.current = null;
+            newSocket.removeAllListeners();
+            newSocket.disconnect();
+            setSocket(null);
+            setIsConnected(false);
         };
     }, [token, userId, userRole, orgId, enabled]);
 
@@ -86,35 +89,35 @@ export function useSocket(options: UseSocketOptions) {
         listenersRef.current.get(event)!.add(callback);
 
         // If socket is already connected, attach immediately
-        if (socketRef.current) {
-            socketRef.current.on(event, callback);
+        if (socket) {
+            socket.on(event, callback);
         }
 
         return () => {
             listenersRef.current.get(event)?.delete(callback);
-            socketRef.current?.off(event, callback);
+            socket?.off(event, callback);
         };
-    }, []);
+    }, [socket]);
 
     /**
      * Join a specific room (e.g., `request:{id}`)
      */
     const joinRoom = useCallback((room: string) => {
-        socketRef.current?.emit('joinRoom', { roomId: room });
-    }, []);
+        socket?.emit('joinRoom', { roomId: room });
+    }, [socket]);
 
     /**
      * Leave a specific room
      */
     const leaveRoom = useCallback((room: string) => {
-        socketRef.current?.emit('leaveRoom', { roomId: room });
-    }, []);
+        socket?.emit('leaveRoom', { roomId: room });
+    }, [socket]);
 
     return {
-        socket: socketRef.current,
+        socket,
         subscribe,
         joinRoom,
         leaveRoom,
-        isConnected: socketRef.current?.connected ?? false,
+        isConnected,
     };
 }

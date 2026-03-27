@@ -1,8 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-
+import React from 'react';
 import { ModalOverlay } from './Modal';
 
 interface ConfirmDialogProps {

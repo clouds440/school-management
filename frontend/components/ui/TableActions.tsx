@@ -1,7 +1,7 @@
 import React from 'react';
-import { Pencil, Trash2, Eye, UserPen, Check, X, ShieldAlert, CheckCircle2, MessageSquareText } from 'lucide-react';
+import { Pencil, Trash2, Eye, UserPen, Check, X, ShieldAlert, CheckCircle2, MessageSquareText, Send } from 'lucide-react';
 
-export type AdminActionVariant = 'approve' | 'reject' | 'suspend' | 'unsuspend' | 'resolve' | 'reapprove' | 'editMessage';
+export type AdminActionVariant = 'approve' | 'reject' | 'suspend' | 'unsuspend' | 'resolve' | 'reapprove' | 'editMessage' | 'mail';
 
 export interface AdminAction {
     variant: AdminActionVariant;
@@ -32,7 +32,8 @@ const adminActionConfig: Record<AdminActionVariant, { icon: React.ElementType, c
     unsuspend: { icon: Check, color: 'text-indigo-600 hover:bg-indigo-600', defaultTitle: 'Unsuspend' },
     reapprove: { icon: Check, color: 'text-indigo-600 hover:bg-indigo-600', defaultTitle: 'Re-approve' },
     resolve: { icon: CheckCircle2, color: 'text-indigo-600 hover:bg-indigo-600', defaultTitle: 'Resolve' },
-    editMessage: { icon: MessageSquareText, color: 'text-blue-600 hover:bg-blue-600', defaultTitle: 'Edit Message' }
+    editMessage: { icon: MessageSquareText, color: 'text-blue-600 hover:bg-blue-600', defaultTitle: 'Edit Message' },
+    mail: { icon: Send, color: 'text-indigo-600 hover:bg-indigo-600', defaultTitle: 'Send Mail' }
 };
 
 export const TableActions: React.FC<TableActionsProps> = ({
@@ -53,7 +54,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
 
     return (
         <div className={`flex gap-3 items-center ${className}`}>
-            {onView && (
+            {onView && !isViewAndEdit && (
                 <button
                     onClick={(e) => {
                         e.stopPropagation();

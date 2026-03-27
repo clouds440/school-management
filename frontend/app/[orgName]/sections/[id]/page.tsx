@@ -52,7 +52,7 @@ export default function SectionDetailPage() {
     return (
         <div className="flex flex-col w-full animate-fade-in-up space-y-8">
             {/* Header Card - Premium Design */}
-            <div className="bg-card text-card-text rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/20 p-8 md:p-12 relative overflow-hidden group">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-2 md:p-4 relative overflow-hidden group">
                 {/* Decorative background element */}
                 <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-700"></div>
 

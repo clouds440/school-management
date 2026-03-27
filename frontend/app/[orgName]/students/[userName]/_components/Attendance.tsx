@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { CheckCircle, XCircle, Clock, AlertCircle, Calendar as CalendarIcon, Search } from 'lucide-react';
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
+import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { SearchBar } from '@/components/ui/SearchBar';
 
 export default function Attendance() {

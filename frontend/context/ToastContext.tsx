@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useCallback, ReactNode } from 'react';
 import { Toast, ToastType } from '@/components/ui/Toast';
+import { useGlobal } from './GlobalContext';
 
 interface ToastOptions {
     duration?: number;
@@ -14,16 +15,16 @@ interface ToastContextType {
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-    const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: ToastType; duration?: number }>>([]);
+    const { state, dispatch } = useGlobal();
+    const toasts = state.toasts;
 
     const showToast = useCallback((message: string, type: ToastType, options?: ToastOptions) => {
-        const id = Math.random().toString(36).substring(2, 9);
-        setToasts(prev => [...prev, { id, message, type, ...options }]);
-    }, []);
+        dispatch({ type: 'TOAST_ADD', payload: { message, type, ...options } });
+    }, [dispatch]);
 
     const removeToast = useCallback((id: string) => {
-        setToasts(prev => prev.filter(toast => toast.id !== id));
-    }, []);
+        dispatch({ type: 'TOAST_REMOVE', payload: id });
+    }, [dispatch]);
 
     return (
         <ToastContext.Provider value={{ showToast }}>
@@ -47,8 +48,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 export function useToast() {
     const context = useContext(ToastContext);
-    if (context === undefined) {
-        throw new Error('useToast must be used within a ToastProvider');
-    }
+    if (!context) throw new Error('useToast must be used within a ToastProvider');
     return context;
 }

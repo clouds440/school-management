@@ -1,48 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import {
     Clock, Mail,
     Building, MapPin, Phone, PlusCircle, UserPlus, Settings
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
-import { Organization, OrgStats, Role } from '@/types';
+import { useGlobal } from '@/context/GlobalContext';
 import { OrgLogoOrIcon } from '@/components/ui/OrgLogoOrIcon';
 
+import { Loading } from '@/components/ui/Loading';
+
 export default function AdminPage() {
-    const { user: payload, loading, token } = useAuth();
-    const [orgData, setOrgData] = useState<Organization | null>(null);
-    const [stats, setStats] = useState<OrgStats | null>(null);
-    const [fetchingData, setFetchingData] = useState(true);
+    const { user: payload, loading } = useAuth();
+    const { state } = useGlobal();
 
-    useEffect(() => {
-        if (!payload || !token) return;
+    const orgData = state.stats.orgData;
+    const stats = state.stats.org;
 
-        Promise.all([
-            api.org.getOrgData(token),
-            api.org.getStats(token)
-        ])
-            .then(([settings, statsData]) => {
-                setOrgData(settings);
-                setStats(statsData);
-            })
-            .catch((err) => {
-                console.error("Failed to fetch admin dashboard data", err);
-            })
-            .finally(() => setFetchingData(false));
-    }, [payload, token]);
-
-    if (loading || fetchingData) {
-        return (
-            <div className="flex flex-1 items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        );
+    if (loading || !orgData || !payload) {
+        return <Loading fullScreen text="Loading Dashboard..." size="lg" />;
     }
-
-    if (!payload || !orgData) return null;
 
     return (
         <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
@@ -87,9 +65,9 @@ export default function AdminPage() {
                         <span className="text-xs opacity-60">{stats?.SECTIONS ?? 0} sections</span>
                     </div>
                     <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
-                        <span className="text-xs font-black opacity-40 uppercase tracking-widest">Pending Requests</span>
-                        <span className="text-3xl font-black text-yellow-600">3</span> {/* Placeholder */}
-                        <span className="text-xs opacity-60">2 teachers · 1 student</span>
+                        <span className="text-xs font-black opacity-40 uppercase tracking-widest">Unread Mail</span>
+                        <span className="text-3xl font-black text-yellow-600">{state.stats.mail?.unread ?? 0}</span>
+                        <span className="text-xs opacity-60">{state.stats.mail?.total ?? 0} total requests</span>
                     </div>
                     <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
                         <span className="text-xs font-black opacity-40 uppercase tracking-widest">System Health</span>

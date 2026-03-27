@@ -5,7 +5,6 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { Section, FinalGradeResponse, Assessment } from '@/types';
-import { useState } from 'react';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 
 export interface StudentAnnouncement {
@@ -20,11 +19,6 @@ export default function Overview({ sections, grades, assessments = [] }: { secti
     const { user } = useAuth();
     const params = useParams();
     const router = useRouter();
-
-    const [announcements] = useState<StudentAnnouncement[]>([
-        { id: '1', title: 'Spring Semester Final Exams', content: 'The final exam schedule for the Spring 2026 semester has been posted. Please check your course pages for details.', date: '2026-03-18', author: 'Registrar' },
-        { id: '2', title: 'Library Extended Hours', content: 'Starting next week, the central library will be open 24/7 for exam preparation.', date: '2026-03-15', author: 'Library Services' },
-    ]);
 
     if (!user) return null;
 
@@ -149,8 +143,8 @@ export default function Overview({ sections, grades, assessments = [] }: { secti
                             <Trophy className="w-6 h-6 text-amber-500" />
                             Academic Merits
                         </h2>
-                    <Card padding="none" className="overflow-hidden border-slate-200" delay={400}>
-                        <div className="divide-y divide-slate-100">
+                        <Card padding="none" className="overflow-hidden border-slate-200" delay={400}>
+                            <div className="divide-y divide-slate-100">
                                 {grades.slice(0, 5).map(grade => (
                                     <div key={grade.sectionId} className="p-5 flex items-center justify-between hover:bg-slate-50 transition-all duration-300 group/item">
                                         <div className="flex items-center gap-5">

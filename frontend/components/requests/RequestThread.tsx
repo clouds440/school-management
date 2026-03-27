@@ -1,15 +1,17 @@
+'use client';
+
 import React, { useState, useRef } from 'react';
-import { Send, Clock, User, Paperclip, X, FileText, ImageIcon, Download } from 'lucide-react';
+import { Send, Clock, Paperclip, X, FileText, ImageIcon, Download, MessageSquare, User as UserIcon } from 'lucide-react';
 import { RequestDetail, RequestMessage as RequestMessageType, RequestActionLog, Attachment } from '@/types';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
 import { getPublicUrl } from '@/lib/utils';
-import { api } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
+import Image from 'next/image';
 
 interface RequestThreadProps {
     request: RequestDetail;
     currentUserId: string;
+    currentUserRole?: string;
     onReply: (content: string, files?: File[]) => Promise<void>;
     isClosed?: boolean;
 }
@@ -19,15 +21,15 @@ function AttachmentPreview({ file }: { file: Attachment }) {
     const url = getPublicUrl(file.path);
 
     return (
-        <a 
-            href={url} 
-            target="_blank" 
+        <a
+            href={url}
+            target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 p-2 bg-white/50 border border-black/5 rounded-sm hover:bg-white hover:shadow-sm transition-all group max-w-sm"
         >
             {isImage ? (
-                <div className="w-10 h-10 rounded-sm overflow-hidden shrink-0 border border-black/5">
-                    <img src={url} alt={file.filename} className="w-full h-full object-cover" />
+                <div className="w-10 h-10 rounded-sm overflow-hidden shrink-0 border border-black/5 relative">
+                    <Image src={url} alt={file.filename} fill className="object-cover" unoptimized />
                 </div>
             ) : (
                 <div className="w-10 h-10 bg-indigo-50 rounded-sm flex items-center justify-center shrink-0">
@@ -46,11 +48,11 @@ function AttachmentPreview({ file }: { file: Attachment }) {
 function MessageBubble({ message, isOwn }: { message: RequestMessageType; isOwn: boolean }) {
     return (
         <div className="flex gap-3">
-            <div className={`w-8 h-8 rounded-full ${isOwn ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'} flex items-center justify-center shrink-0 text-xs font-black uppercase shadow-sm`}>
+            <div className={`w-8 h-8 rounded-full ${isOwn ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'} flex items-center justify-center shrink-0 text-xs font-black uppercase shadow-sm overflow-hidden relative`}>
                 {message.sender?.avatarUrl ? (
-                    <img src={message.sender.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                    <Image src={getPublicUrl(message.sender.avatarUrl)} alt="" fill className="object-cover" unoptimized />
                 ) : (
-                    (message.sender?.name || message.sender?.email || '?')[0]
+                    <UserIcon className="w-4 h-4" />
                 )}
             </div>
             <div className="flex-1 max-w-[90%]">
@@ -67,7 +69,7 @@ function MessageBubble({ message, isOwn }: { message: RequestMessageType; isOwn:
                 </div>
                 <div className={`inline-block p-4 rounded-sm shadow-sm ${isOwn ? 'bg-indigo-50/50 border border-indigo-100/50' : 'bg-white border border-gray-100'} text-left w-full`}>
                     <MarkdownRenderer content={message.content} className="text-sm text-gray-800" />
-                    
+
                     {message.files && message.files.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-2">
                             {message.files.map(file => (
@@ -117,12 +119,25 @@ function ActionLogItem({ log }: { log: RequestActionLog }) {
     );
 }
 
-export function RequestThread({ request, currentUserId, onReply, isClosed }: RequestThreadProps) {
-    const { token } = useAuth();
+import { ADMIN_REPLY_TEMPLATES } from './MailTemplates';
+
+export function RequestThread({ request, currentUserId, currentUserRole, onReply, isClosed }: RequestThreadProps) {
     const [replyContent, setReplyContent] = useState('');
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [sending, setSending] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const isPlatformAdmin = currentUserRole === 'PLATFORM_ADMIN' || currentUserRole === 'SUPER_ADMIN';
+
+    // Prepare orgData for template placeholders
+    const orgData = isPlatformAdmin ? {
+        name: request.organization?.name || request.creator.name || 'User',
+        id: request.organization?.id || request.creator.id,
+        admin: 'Platform Support Team',
+        role: currentUserRole || 'Administrator',
+        date: new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
+        signature: 'EduManage @ Support Team'
+    } : {};
 
     const handleSend = async () => {
         if ((!replyContent.trim() && selectedFiles.length === 0) || sending) return;
@@ -139,7 +154,7 @@ export function RequestThread({ request, currentUserId, onReply, isClosed }: Req
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const filesArray = Array.from(e.target.files);
-            const validFiles = filesArray.filter(file => 
+            const validFiles = filesArray.filter(file =>
                 file.type.startsWith('image/') || file.type === 'application/pdf'
             );
             setSelectedFiles(prev => [...prev, ...validFiles].slice(0, 3));
@@ -172,7 +187,7 @@ export function RequestThread({ request, currentUserId, onReply, isClosed }: Req
                             {(request.creator.name || request.creator.email || '?')[0]}
                         </div>
                         {request.assignees.length > 0 ? (
-                            request.assignees.slice(0, 2).map((a, i) => (
+                            request.assignees.slice(0, 2).map((a) => (
                                 <div key={a.id} className="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-orange-600 text-[10px] font-black uppercase shadow-sm" title={`To: ${a.name || a.email}`}>
                                     {(a.name || a.email || '?')[0]}
                                 </div>
@@ -191,24 +206,23 @@ export function RequestThread({ request, currentUserId, onReply, isClosed }: Req
                     <div>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Conversation Between</p>
                         <p className="text-sm font-bold text-gray-700">
-                            {request.creator.name || request.creator.email} 
-                            <span className="mx-2 text-gray-300">→</span> 
+                            {request.creator.name || request.creator.email}
+                            <span className="mx-2 text-gray-300">→</span>
                             {request.assignees.length > 0 ? (
-                                request.assignees.length > 3 
+                                request.assignees.length > 3
                                     ? `${request.assignees.slice(0, 2).map(a => a.name || a.email).join(', ')} and ${request.assignees.length - 2} others`
                                     : request.assignees.map(a => a.name || a.email).join(', ')
                             ) : request.targetRole === 'ORG_STAFF' ? 'All Employees' :
-                             (request.targetRole?.replace('_', ' ') || 'Platform Support Team')}
+                                (request.targetRole?.replace('_', ' ') || 'Platform Support Team')}
                         </p>
                     </div>
                 </div>
                 <div className="text-right">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Priority</p>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${
-                        request.priority === 'URGENT' ? 'bg-red-100 text-red-600' :
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${request.priority === 'URGENT' ? 'bg-red-100 text-red-600' :
                         request.priority === 'HIGH' ? 'bg-orange-100 text-orange-600' :
-                        'bg-blue-100 text-blue-600'
-                    }`}>
+                            'bg-blue-100 text-blue-600'
+                        }`}>
                         {request.priority}
                     </span>
                 </div>
@@ -218,6 +232,7 @@ export function RequestThread({ request, currentUserId, onReply, isClosed }: Req
             <div className="flex-1 overflow-y-auto space-y-6 py-6 px-4 custom-scrollbar min-h-[300px]">
                 {timeline.length === 0 && (
                     <div className="flex items-center justify-center py-12 text-gray-400">
+                        <MessageSquare className="w-12 h-12 opacity-10 mb-2" />
                         <p className="text-sm font-medium">No messages yet</p>
                     </div>
                 )}
@@ -241,9 +256,11 @@ export function RequestThread({ request, currentUserId, onReply, isClosed }: Req
                         value={replyContent}
                         onChange={setReplyContent}
                         placeholder="Write a reply..."
-                        rows={3}
+                        rows={5}
+                        templates={isPlatformAdmin ? ADMIN_REPLY_TEMPLATES.map((t: any) => ({ label: t.name, content: t.content })) : []}
+                        orgData={orgData as Record<string, string>}
                     />
-                    
+
                     {/* Selected Files Preview */}
                     {selectedFiles.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-3">
@@ -302,4 +319,3 @@ export function RequestThread({ request, currentUserId, onReply, isClosed }: Req
         </div>
     );
 }
-

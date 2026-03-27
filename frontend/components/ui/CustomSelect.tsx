@@ -8,6 +8,7 @@ export interface DropdownOption<T extends string = string> {
     value: T;
     label: string;
     icon?: LucideIcon;
+    badge?: number | string;
 }
 
 export interface CustomSelectProps<T extends string = string> {
@@ -43,9 +44,12 @@ export function CustomSelect<T extends string = string>({
 
     const selectedOption = options.find(opt => opt.value === value);
 
-    useEffect(() => {
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
         if (!isOpen) setSearchTerm("");
-    }, [isOpen]);
+    }
 
     const updateCoords = () => {
         if (containerRef.current) {
@@ -192,7 +196,14 @@ export function CustomSelect<T extends string = string>({
                                 `}
                                 >
                                     {option.icon && <option.icon className="h-4 w-4 mr-2" />}
-                                    {option.label}
+                                    <span className="flex-1">{option.label}</span>
+                                    {option.badge !== undefined && (
+                                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                                            option.value === value ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                                        }`}>
+                                            {option.badge}
+                                        </span>
+                                    )}
                                 </button>
                             ))
                         )}

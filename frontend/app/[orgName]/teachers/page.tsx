@@ -15,6 +15,9 @@ import { api } from '@/lib/api';
 import { TableActions } from '@/components/ui/TableActions';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 import { getPublicUrl } from '@/lib/utils';
+import { Loading } from '@/components/ui/Loading';
+import { NewRequestModal } from '@/components/requests/NewRequestModal';
+import { Send } from 'lucide-react';
 
 type TeacherParams = BasePaginationParams;
 
@@ -25,11 +28,12 @@ export default function TeachersPage() {
     const searchParams = useSearchParams();
     const { showToast } = useToast();
 
-    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Teacher> | null>(null);
-
-    // URL State
+    // We no longer need local paginatedData state as fetchedData is used directly
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
+    const [newRequestOpen, setNewRequestOpen] = useState(false);
+    const [initialTargetId, setInitialTargetId] = useState<string | undefined>(undefined);
+    const [initialSubject, setInitialSubject] = useState<string | undefined>(undefined);
 
     // URL State
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -55,10 +59,6 @@ export default function TeachersPage() {
         `teachers-${user?.orgSlug || pathname.split('/')[1]}`,
         { enabled: !!token }
     );
-
-    useEffect(() => {
-        setPaginatedData(fetchedData);
-    }, [fetchedData]);
 
     useEffect(() => {
         if (user && user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER) {
@@ -98,8 +98,6 @@ export default function TeachersPage() {
             showToast(err instanceof Error ? err.message : 'Failed to delete teacher', 'error');
         }
     };
-
-    const teachers = paginatedData?.data || [];
 
     const columns = [
         {
@@ -177,6 +175,17 @@ export default function TeachersPage() {
                     }}
                     variant="user"
                     isViewAndEdit={true}
+                    extraActions={[
+                        {
+                            variant: 'mail',
+                            title: 'Send Mail',
+                            onClick: () => {
+                                setInitialTargetId(row.user.id);
+                                setInitialSubject(`Inquiry regarding ${row.user.name}`);
+                                setNewRequestOpen(true);
+                            }
+                        }
+                    ]}
                 />
             )
         }
@@ -184,17 +193,13 @@ export default function TeachersPage() {
 
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
-    if ((!token && !user) || (isFetching && !paginatedData)) {
-        return (
-            <div className="flex items-center justify-center p-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        );
+    if ((!token && !user) || (isFetching && !fetchedData)) {
+        return <Loading fullScreen text="Loading Faculty..." size="lg" />;
     }
 
     return (
         <div className="flex flex-col w-full animate-fade-in-up">
-            <div className="mb-6">
+            <div className="mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <Button
                         onClick={() => router.push(`/${orgSlug}/teachers/add`)}
@@ -206,31 +211,29 @@ export default function TeachersPage() {
                 </div>
             </div>
 
-            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-6 md:p-8 mb-10">
-                <div className="mb-10 flex">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-2 md:p-4 mb-4 overflow-hidden">
+                <div className="mb-4 flex">
                     <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, email or subject..." />
                 </div>
 
-                <div className="relative">
-                    <DataTable
-                        data={teachers}
-                        columns={columns}
-                        keyExtractor={(row) => row.id}
-                        isLoading={isFetching}
-                        onRowClick={(row) => {
-                            if (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) {
-                                router.push(`/${orgSlug}/teachers/edit/${row.id}`);
-                            }
-                        }}
-                        currentPage={page}
-                        totalPages={paginatedData?.totalPages || 1}
-                        totalResults={paginatedData?.totalRecords || 0}
-                        pageSize={10}
-                        onPageChange={(p) => updateQueryParams({ page: p })}
-                        sortConfig={{ key: sortBy, direction: sortOrder }}
-                        onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
-                    />
-                </div>
+                <DataTable
+                    data={fetchedData?.data || []}
+                    columns={columns}
+                    keyExtractor={(row) => row.id}
+                    isLoading={isFetching}
+                    onRowClick={(row) => {
+                        if (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) {
+                            router.push(`/${orgSlug}/teachers/edit/${row.id}`);
+                        }
+                    }}
+                    currentPage={page}
+                    totalPages={fetchedData?.totalPages || 1}
+                    totalResults={fetchedData?.totalRecords || 0}
+                    pageSize={10}
+                    onPageChange={(p) => updateQueryParams({ page: p })}
+                    sortConfig={{ key: sortBy, direction: sortOrder }}
+                    onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
+                />
             </div>
 
             <ConfirmDialog
@@ -241,6 +244,20 @@ export default function TeachersPage() {
                 description={<>Are you really sure you want to remove <strong>{deletingTeacher?.user?.email}</strong>? This action is permanent and cannot be reversed.</>}
                 confirmText="Permanently Delete"
                 isDestructive={true}
+            />
+
+            <NewRequestModal
+                isOpen={newRequestOpen}
+                onClose={() => {
+                    setNewRequestOpen(false);
+                    setInitialTargetId(undefined);
+                    setInitialSubject(undefined);
+                }}
+                initialTargetId={initialTargetId}
+                initialSubject={initialSubject}
+                onSuccess={() => {
+                    showToast('Mail sent successfully', 'success');
+                }}
             />
         </div>
     );

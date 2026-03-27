@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { BookOpen, Calendar, Type, FileText, Percent, UploadCloud, Link as LinkIcon, Check, X } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useGlobal } from '@/context/GlobalContext';
 import { Assessment, AssessmentType, CreateAssessmentRequest, UpdateAssessmentRequest, ApiError } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
@@ -33,7 +34,9 @@ export default function AssessmentForm({
 }: AssessmentFormProps) {
     const { token } = useAuth();
     const { showToast } = useToast();
-    const [isSaving, setIsSaving] = useState(false);
+    const { state, dispatch } = useGlobal();
+    const isProcessing = state.ui.isProcessing;
+
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     const {
@@ -68,7 +71,7 @@ export default function AssessmentForm({
     const formData = watch();
 
     const onSubmit = async (data: AssessmentFormData) => {
-        setIsSaving(true);
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             const payload: CreateAssessmentRequest = {
                 ...data,
@@ -110,7 +113,7 @@ export default function AssessmentForm({
             const message = apiError?.response?.data?.message || 'Failed to save assessment';
             showToast(Array.isArray(message) ? message[0] : message, 'error');
         } finally {
-            setIsSaving(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -209,7 +212,7 @@ export default function AssessmentForm({
                             error={!!errors.externalLink}
                             icon={LinkIcon}
                             placeholder="https://youtube.com/..."
-                            disabled={isSaving}
+                            disabled={isProcessing}
                         />
                         {errors.externalLink && <p className="text-xs text-red-500 font-bold">{errors.externalLink.message}</p>}
                     </div>
@@ -270,11 +273,11 @@ export default function AssessmentForm({
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
-                <Button type="button" variant="secondary" onClick={onCancel} disabled={isSaving}>
+                <Button type="button" variant="secondary" onClick={onCancel} disabled={isProcessing}>
                     Cancel
                 </Button>
-                <Button type="submit" disabled={isSaving}>
-                    {isSaving ? (
+                <Button type="submit" disabled={isProcessing}>
+                    {isProcessing ? (
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             <span>Saving...</span>

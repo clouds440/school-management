@@ -362,7 +362,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                         <div className={`pt-4 border-t ${colors.border} italic`}>
                                             <p className={`text-[10px] font-bold ${colors.muted} uppercase tracking-widest mb-2`}>Teacher Remarks</p>
                                             <p className="text-slate-700 font-medium leading-relaxed bg-white/60 p-4 rounded-xl shadow-xs">
-                                                "{selectedAssessment.grades[0].feedback}"
+                                                &quot;{selectedAssessment.grades[0].feedback}&quot;
                                             </p>
                                         </div>
                                     )}

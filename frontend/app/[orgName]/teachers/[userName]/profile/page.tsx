@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { Teacher } from '@/types';
+import { useGlobal } from '@/context/GlobalContext';
 import TeacherForm from '@/components/forms/TeacherForm';
 import { Settings, UserCircle } from 'lucide-react';
 
@@ -11,18 +12,10 @@ import { useParams } from 'next/navigation';
 
 export default function TeacherProfilePage() {
     const params = useParams();
-    const orgName = (params?.orgName as string) || '';
-    const { token } = useAuth();
-    const [teacherData, setTeacherData] = useState<Teacher | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        if (!token) return;
-        api.org.getProfile<Teacher>(token)
-            .then(setTeacherData)
-            .catch(err => console.error('Failed to fetch profile:', err))
-            .finally(() => setLoading(false));
-    }, [token]);
+    const orgSlug = (params?.orgName as string) || '';
+    const { state } = useGlobal();
+    const teacherData = state.auth.userProfile as Teacher | null;
+    const loading = state.auth.loading;
 
     return (
         <div className="flex flex-col w-full animate-fade-in-up">
@@ -46,7 +39,7 @@ export default function TeacherProfilePage() {
                         </div>
                     ) : teacherData ? (
                         <TeacherForm
-                            orgSlug={orgName}
+                            orgSlug={orgSlug}
                             initialData={teacherData}
                             isProfile={true}
                         />

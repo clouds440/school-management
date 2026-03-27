@@ -19,7 +19,7 @@ export function ModalOverlay({
     isOpen,
     children,
     maxWidth = 'max-w-4xl',
-    className = ''
+    className = 'mb-3'
 }: {
     isOpen: boolean;
     children: ReactNode;
@@ -29,8 +29,12 @@ export function ModalOverlay({
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
-        if (isOpen) {
+        const raf = requestAnimationFrame(() => setMounted(true));
+        return () => cancelAnimationFrame(raf);
+    }, []);
+
+    useEffect(() => {
+        if (mounted && isOpen) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = 'unset';
@@ -38,12 +42,12 @@ export function ModalOverlay({
         return () => {
             document.body.style.overflow = 'unset';
         };
-    }, [isOpen]);
+    }, [isOpen, mounted]);
 
     if (!isOpen || !mounted) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/80 backdrop-blur-[2px] transition-all duration-300 p-3">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-gray-950/80 backdrop-blur-[2px] transition-all duration-300 p-3 pt-[10vh]">
             <div className={`bg-card text-card-text backdrop-blur-2xl rounded-sm shadow-[0_30px_70px_rgba(0,0,0,0.2)] w-full ${maxWidth} transform transition-all border border-white/50 animate-scale-in flex flex-col max-h-[90vh] overflow-hidden ${className}`}>
                 {children}
             </div>
@@ -71,7 +75,7 @@ export function Modal({
                     <div className="flex justify-between items-start p-4 pb-2 shrink-0">
                         <div>
                             {typeof title === 'string' ? <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase leading-none">{title}</h2> : title}
-                            {subtitle && <p className="text-xs font-bold text-card-text/40 mt-2 uppercase tracking-widest">{subtitle}</p>}
+                            {subtitle && <div className="text-xs font-bold text-card-text/40 mt-2 uppercase tracking-widest">{subtitle}</div>}
                         </div>
                         <button
                             type="button"
@@ -86,7 +90,7 @@ export function Modal({
                 )
             )}
 
-            <div className="overflow-y-auto px-8 pb-8 custom-scrollbar flex-1 relative">
+            <div className="overflow-y-auto px-8 pb-8 mb-3 custom-scrollbar flex-1 relative">
                 {children}
             </div>
         </ModalOverlay>

@@ -12,7 +12,6 @@ import {
     Edit,
     Send,
     CheckCircle,
-    X
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Assessment, Section, Role, AssessmentType } from '@/types';
@@ -74,10 +73,17 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
             setDeletingAssessment(null);
         } catch (error) {
             showToast('Failed to delete assessment', 'error');
+            setDeletingAssessment(null);
+            console.error('Failed to delete assessment:', error);
         }
     };
 
-    const isTeacherOrAdmin = role === Role.TEACHER || role === Role.ORG_ADMIN || role === Role.ORG_MANAGER;
+    const { user } = useAuth();
+    const isAssigned = section.teachers?.some(t => t.user?.id === user?.id);
+    const canCreate = role === Role.TEACHER && isAssigned;
+    const canEdit = role === Role.TEACHER && isAssigned;
+    const canDelete = role === Role.TEACHER && isAssigned;
+    const canView = role === Role.ORG_ADMIN || role === Role.ORG_MANAGER || role === Role.TEACHER;
 
     if (isLoading) {
         return (
@@ -90,7 +96,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center bg-card/30 p-4 rounded-sm border border-white/5 shadow-inner">
-                {isTeacherOrAdmin && (
+                {canCreate && (
                     <Button onClick={() => setIsCreateModalOpen(true)} icon={Plus}>
                         Add Assessment
                     </Button>
@@ -106,39 +112,38 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                     {assessments.map(assessment => {
                         const targetUrl = `/${orgSlug}/sections/${section.id}/assessments/${assessment.id}`;
-                        
+
                         return (
-                            <Card 
-                                key={assessment.id} 
+                            <Card
+                                key={assessment.id}
                                 onClick={() => router.push(targetUrl)}
                                 accentColor={assessment.type === AssessmentType.FINAL ? 'bg-indigo-500' : assessment.type === AssessmentType.MIDTERM ? 'bg-orange-500' : 'bg-primary'}
                                 padding="lg"
                             >
                                 <CardHeader>
-                                    <div className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] border-2 shadow-sm ${
-                                        assessment.type === AssessmentType.FINAL ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                                    <div className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] border-2 shadow-sm ${assessment.type === AssessmentType.FINAL ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
                                         assessment.type === AssessmentType.MIDTERM ? 'bg-orange-50 text-orange-700 border-orange-100' :
-                                        'bg-primary/5 text-primary border-primary/10'
-                                    }`}>
+                                            'bg-primary/5 text-primary border-primary/10'
+                                        }`}>
                                         {assessment.type}
                                     </div>
-                                    {isTeacherOrAdmin && (
+                                    {canCreate && (
                                         <div className="flex gap-2 opacity-40 group-hover:opacity-100 transition-all duration-300">
-                                            <button 
+                                            <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     setEditingAssessment(assessment);
-                                                }} 
+                                                }}
                                                 className="p-2.5 text-slate-400 hover:text-primary transition-all hover:bg-primary/10 rounded-xl border border-transparent hover:border-primary/20 bg-slate-50 shadow-xs"
                                                 title="Edit"
                                             >
                                                 <Edit className="w-4 h-4" />
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     setDeletingAssessment(assessment);
-                                                }} 
+                                                }}
                                                 className="p-2.5 text-slate-400 hover:text-red-500 transition-all hover:bg-red-50/50 rounded-xl border border-transparent hover:border-red-100 bg-slate-50 shadow-xs"
                                                 title="Delete"
                                             >
@@ -150,7 +155,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
 
                                 <CardContent>
                                     <h4 className="text-xl font-black text-slate-900 leading-tight tracking-tight group-hover:text-primary transition-colors duration-300">{assessment.title}</h4>
-                                    
+
                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-500 font-bold uppercase tracking-widest pt-2">
                                         <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100">
                                             <Trophy className="w-4 h-4 text-primary/70" />
@@ -171,7 +176,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
 
                                     <div className="flex items-center gap-3">
                                         <div className="h-10 px-6 text-[11px] uppercase font-black tracking-widest gap-2 flex items-center justify-center bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200 group-hover:bg-primary group-hover:shadow-primary/20 transition-all duration-300">
-                                            {isTeacherOrAdmin ? (
+                                            {canView ? (
                                                 <><Users className="w-4 h-4" /> View Grades</>
                                             ) : (
                                                 <><FileText className="w-4 h-4" /> View Details</>
@@ -204,6 +209,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                                                             showToast('Marked as done', 'success');
                                                         } catch (e) {
                                                             showToast('Failed to mark as done', 'error');
+                                                            console.error('Failed to mark as done:', e);
                                                         }
                                                     }}
                                                 >

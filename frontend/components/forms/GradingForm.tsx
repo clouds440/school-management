@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Check, Edit3, MessageCircle, Star } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useGlobal } from '@/context/GlobalContext';
 import { Grade, GradeStatus, UpdateGradeRequest, ApiError, Student } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
@@ -31,9 +32,11 @@ export default function GradingForm({
     onSuccess,
     onCancel
 }: GradingFormProps) {
+    const { state, dispatch } = useGlobal();
+    const isProcessing = state.ui.isProcessing;
+
     const { token } = useAuth();
     const { showToast } = useToast();
-    const [isSaving, setIsSaving] = useState(false);
 
     const {
         register,
@@ -62,7 +65,7 @@ export default function GradingForm({
             return;
         }
 
-        setIsSaving(true);
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             const payload: UpdateGradeRequest = {
                 marksObtained: Number(data.marksObtained),
@@ -79,7 +82,7 @@ export default function GradingForm({
             const message = apiError?.response?.data?.message || 'Failed to save grade';
             showToast(Array.isArray(message) ? message[0] : message, 'error');
         } finally {
-            setIsSaving(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -144,11 +147,11 @@ export default function GradingForm({
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
-                <Button type="button" variant="secondary" onClick={onCancel} disabled={isSaving}>
+                <Button type="button" variant="secondary" onClick={onCancel} disabled={isProcessing}>
                     Cancel
                 </Button>
-                <Button type="submit" disabled={isSaving}>
-                    {isSaving ? (
+                <Button type="submit" disabled={isProcessing}>
+                    {isProcessing ? (
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             <span>Saving...</span>

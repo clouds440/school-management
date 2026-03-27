@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePathname } from 'next/navigation';
 import { Search } from 'lucide-react';
@@ -15,30 +15,27 @@ interface SearchBarProps {
 export function SearchBar({ value, onChange, placeholder = 'Search...', delay = 500, className }: SearchBarProps) {
     const [localValue, setLocalValue] = useState(value);
     const debouncedValue = useDebounce(localValue, delay);
-    const lastValueRef = useRef(value);
     const pathname = usePathname();
+    const [prevValue, setPrevValue] = useState(value);
+    const [prevPathname, setPrevPathname] = useState(pathname);
+    const [prevDebouncedValue, setPrevDebouncedValue] = useState(debouncedValue);
 
-    // Sync from parent prop (external change like route param update)
-    useEffect(() => {
-        if (value !== lastValueRef.current) {
-            setLocalValue(value);
-            lastValueRef.current = value;
-        }
-    }, [value]);
+    // Sync from parent prop or route change in render (React Compiler preferred pattern)
+    if (value !== prevValue || pathname !== prevPathname) {
+        setPrevValue(value);
+        setPrevPathname(pathname);
+        const newValue = pathname !== prevPathname ? '' : value;
+        setLocalValue(newValue);
+    }
 
-    // Clear search on route change
+    // Trigger parent onChange only when debounced value changes. This is to prevent the parent component from re-rendering unnecessarily.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
-        setLocalValue('');
-        lastValueRef.current = '';
-    }, [pathname]);
-
-    // Trigger parent onChange only when debounced value changes 
-    useEffect(() => {
-        if (debouncedValue !== lastValueRef.current) {
-            lastValueRef.current = debouncedValue;
+        if (debouncedValue !== prevDebouncedValue) {
+            setPrevDebouncedValue(debouncedValue);
             onChange(debouncedValue);
         }
-    }, [debouncedValue, onChange]);
+    }, [debouncedValue, prevDebouncedValue, onChange]);
 
     return (
         <div className={cn("relative group w-full max-w-sm", className)}>

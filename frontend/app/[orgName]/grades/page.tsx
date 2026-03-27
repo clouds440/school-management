@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Trophy, BookOpen, GraduationCap, ChevronRight, Search, FileBarChart } from 'lucide-react';
+import { BookOpen, GraduationCap, ChevronRight, Search } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Section, Role, FinalGradeResponse } from '@/types';
+import { Section, Role } from '@/types';
 import { useToast } from '@/context/ToastContext';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Input } from '@/components/ui/Input';
 
@@ -15,7 +15,6 @@ export default function GradesPage() {
     const params = useParams();
     const { showToast } = useToast();
     const [sections, setSections] = useState<Section[]>([]);
-    const [studentGrades, setStudentGrades] = useState<FinalGradeResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -25,15 +24,10 @@ export default function GradesPage() {
         if (!token || !user) return;
         setIsLoading(true);
         try {
-            if (user.role === Role.STUDENT) {
-                const grades = await api.org.getOwnFinalGrades(token);
-                setStudentGrades(grades);
-            } else {
-                // Admins/Teachers see sections to manage
-                const params = user.role === Role.TEACHER ? { my: true } : {};
-                const data = await api.org.getSections(token, params);
-                setSections(data.data || []);
-            }
+            // Admins/Teachers see sections to manage
+            const params = user.role === Role.TEACHER ? { my: true } : {};
+            const data = await api.org.getSections(token, params);
+            setSections(data.data || []);
         } catch (error) {
             console.error('Failed to fetch grades data:', error);
             showToast('Failed to load grades information', 'error');

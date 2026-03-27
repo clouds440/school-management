@@ -1,10 +1,12 @@
 import { UnauthorizedException, NotFoundException, Injectable } from '@nestjs/common';
 import { Prisma, User as UserEntity } from '@prisma/client';
-import { OrgStatus, Role, RequestStatus } from '../common/enums';
+import { OrgStatus, Role, RequestStatus, RequestCategory } from '../common/enums';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { getPaginationOptions, formatPaginatedResponse, mapStatusCounts, PaginationOptions } from '../common/utils';
+import { RequestService } from '../requests/requests.service';
+import { RequestUser } from '../requests/interfaces/request-user.interface';
 
 import { CreatePlatformAdminDto } from './dto/create-platform-admin.dto';
 import { UpdatePlatformAdminDto } from './dto/update-platform-admin.dto';
@@ -14,7 +16,8 @@ import { UpdatePlatformAdminDto } from './dto/update-platform-admin.dto';
 export class AdminService {
     constructor(
         private readonly authService: AuthService,
-        private readonly prisma: PrismaService
+        private readonly prisma: PrismaService,
+        private readonly requestService: RequestService
     ) { }
 
     async getOrganizations(options: PaginationOptions & {
@@ -58,7 +61,14 @@ export class AdminService {
                 where,
                 skip,
                 take,
-                orderBy: { [prismaSortBy]: sortOrder } as Prisma.OrganizationOrderByWithRelationInput
+                orderBy: { [prismaSortBy]: sortOrder } as Prisma.OrganizationOrderByWithRelationInput,
+                include: {
+                    users: {
+                        where: { role: Role.ORG_ADMIN },
+                        select: { id: true },
+                        take: 1
+                    }
+                }
             }),
             this.prisma.organization.count({ where }),
             this.prisma.organization.groupBy({
@@ -80,7 +90,8 @@ export class AdminService {
             statusHistory: org.statusHistory,
             createdAt: org.createdAt,
             phone: org.phone,
-            email: org.contactEmail
+            email: org.contactEmail,
+            adminUserId: (org as any).users?.[0]?.id
         }));
 
         const response = formatPaginatedResponse(mappedData, totalRecords, options.page, options.limit);
@@ -105,13 +116,31 @@ export class AdminService {
             createdAt: new Date()
         };
 
-        return this.prisma.organization.update({
+        const result = await this.prisma.organization.update({
             where: { id },
             data: {
                 status: OrgStatus.APPROVED,
                 statusHistory: [...history, newEntry] as Prisma.InputJsonValue
             }
         });
+
+        // Find the admin user to send the welcome mail
+        const orgAdmin = await this.prisma.user.findFirst({
+            where: { organizationId: id, role: Role.ORG_ADMIN }
+        });
+
+        if (orgAdmin) {
+            // Send NO_REPLY welcome mail
+            await this.requestService.createRequest({
+                subject: `Welcome to EduManage: ${org.name}`,
+                category: RequestCategory.PLATFORM_NOTICE,
+                priority: 'NORMAL',
+                message: `Congratulations! Your organization **${org.name}** has been approved. You now have full access to your dashboard.\n\nWelcome to the EduManage community!`,
+                assigneeIds: [orgAdmin.id],
+            }, { id: admin.id, role: admin.role, name: admin.name, email: admin.email, organizationId: undefined } as any, true); // true for noReply
+        }
+
+        return result;
     }
 
 
@@ -131,13 +160,58 @@ export class AdminService {
             createdAt: new Date()
         };
 
-        return this.prisma.organization.update({
-            where: { id },
-            data: {
-                status: OrgStatus.REJECTED,
-                statusHistory: [...history, newEntry] as Prisma.InputJsonValue
-            }
+        const result = await this.prisma.$transaction(async (tx) => {
+            // 1. Update status and history
+            const updatedOrg = await tx.organization.update({
+                where: { id },
+                data: {
+                    status: OrgStatus.REJECTED,
+                    statusHistory: [...history, newEntry] as Prisma.InputJsonValue
+                }
+            });
+
+            // 2. Find any admin user of this organization to be the target of the mail
+            const orgAdmin = await tx.user.findFirst({
+                where: { organizationId: id, role: Role.ORG_ADMIN }
+            });
+
+            // 3. Create a Request thread (Notice)
+            const request = await tx.request.create({
+                data: {
+                    subject: 'Application Status Update: REJECTED',
+                    category: 'System Notice',
+                    priority: 'URGENT',
+                    status: RequestStatus.OPEN,
+                    creatorId: admin.id,
+                    creatorRole: admin.role,
+                    organizationId: id,
+                    targetRole: Role.ORG_ADMIN,
+                    assigneeId: orgAdmin?.id,
+                }
+            });
+
+            // 4. Initial Message
+            await tx.requestMessage.create({
+                data: {
+                    requestId: request.id,
+                    senderId: admin.id,
+                    content: reason
+                }
+            });
+
+            // 5. Mark as read for the admin (sender)
+            await tx.requestUserView.create({
+                data: {
+                    userId: admin.id,
+                    requestId: request.id,
+                    lastViewedAt: new Date()
+                }
+            });
+
+            return updatedOrg;
         });
+
+        return result;
     }
 
 
@@ -156,25 +230,68 @@ export class AdminService {
             createdAt: new Date()
         };
 
-        return this.prisma.organization.update({
-            where: { id },
-            data: {
-                status: OrgStatus.SUSPENDED,
-                statusHistory: [...history, newEntry] as Prisma.InputJsonValue,
-            },
+        const result = await this.prisma.$transaction(async (tx) => {
+            // 1. Update status and history
+            const updatedOrg = await tx.organization.update({
+                where: { id },
+                data: {
+                    status: OrgStatus.SUSPENDED,
+                    statusHistory: [...history, newEntry] as Prisma.InputJsonValue,
+                },
+            });
+
+            // 2. Find any admin user of this organization to be the target of the mail
+            const orgAdmin = await tx.user.findFirst({
+                where: { organizationId: id, role: Role.ORG_ADMIN }
+            });
+
+            // 3. Create a Request thread (Notice)
+            const request = await tx.request.create({
+                data: {
+                    subject: 'Organization Status Update: SUSPENDED',
+                    category: 'Security/Admin Notice',
+                    priority: 'URGENT',
+                    status: RequestStatus.OPEN,
+                    creatorId: admin.id,
+                    creatorRole: admin.role,
+                    organizationId: id,
+                    targetRole: Role.ORG_ADMIN,
+                    assigneeId: orgAdmin?.id,
+                }
+            });
+
+            // 4. Initial Message
+            await tx.requestMessage.create({
+                data: {
+                    requestId: request.id,
+                    senderId: admin.id,
+                    content: reason
+                }
+            });
+
+            // 5. Mark as read for the admin (sender)
+            await tx.requestUserView.create({
+                data: {
+                    userId: admin.id,
+                    requestId: request.id,
+                    lastViewedAt: new Date()
+                }
+            });
+
+            return updatedOrg;
         });
+
+        return result;
     }
 
 
-    async getAdminStats() {
-        const [orgStatusCounts, openRequests, platformAdmins] = await Promise.all([
+    async getAdminStats(user: RequestUser) {
+        const [orgStatusCounts, unreadMail, platformAdmins] = await Promise.all([
             this.prisma.organization.groupBy({
                 by: ['status'],
                 _count: { _all: true }
             }),
-            this.prisma.request.count({
-                where: { status: { notIn: [RequestStatus.RESOLVED, RequestStatus.CLOSED] } }
-            }),
+            this.requestService.getUnreadCount(user),
             this.prisma.user.count({ where: { role: Role.PLATFORM_ADMIN } }),
         ]);
 
@@ -182,7 +299,8 @@ export class AdminService {
 
         return {
             ...orgCounts,
-            OPEN_REQUESTS: openRequests,
+            UNREAD_MAIL: unreadMail.unread,
+            TOTAL_MAIL: unreadMail.total,
             PLATFORM_ADMINS: platformAdmins
         };
     }

@@ -16,7 +16,7 @@ interface DataTableProps<T> {
     keyExtractor: (row: T) => string;
     onRowClick?: (row: T) => void;
     isLoading?: boolean;
-    
+
     // Server-side props
     currentPage: number;
     totalPages: number;
@@ -26,13 +26,15 @@ interface DataTableProps<T> {
     sortConfig?: { key: string; direction: 'asc' | 'desc' } | null;
     onSort?: (key: string, direction: 'asc' | 'desc') => void;
     getRowClassName?: (row: T) => string;
+    disableZebra?: boolean;
+    maxHeight?: string; // e.g., '500px' or 'calc(100vh - 300px)'
 }
 
-export function DataTable<T>({ 
-    data, 
-    columns, 
-    keyExtractor, 
-    onRowClick, 
+export function DataTable<T>({
+    data,
+    columns,
+    keyExtractor,
+    onRowClick,
     isLoading,
     currentPage,
     totalPages,
@@ -41,7 +43,9 @@ export function DataTable<T>({
     onPageChange,
     sortConfig,
     onSort,
-    getRowClassName
+    getRowClassName,
+    disableZebra = false,
+    maxHeight
 }: DataTableProps<T>) {
     const [columnWidths, setColumnWidths] = useState<number[]>(columns.map(c => c.width || 200));
     const [resizingIndex, setResizingIndex] = useState<number | null>(null);
@@ -60,7 +64,7 @@ export function DataTable<T>({
         if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
             direction = 'desc';
         }
-        
+
         onSort(key, direction);
     };
 
@@ -108,14 +112,17 @@ export function DataTable<T>({
     }, [resizingIndex]);
 
     return (
-        <div className="w-full overflow-hidden rounded-sm border border-gray-200/20 bg-card shadow-[0_8px_30px_var(--shadow-color)] ring-1 ring-gray-900/5 relative">
-            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200">
+        <div 
+            className="w-full overflow-hidden rounded-sm border border-gray-200/20 bg-card shadow-[0_8px_30px_var(--shadow-color)] ring-1 ring-gray-900/5 relative flex flex-col"
+            style={maxHeight ? { height: maxHeight } : {}}
+        >
+            <div className={`flex-1 min-h-0 overflow-auto scrollbar-thin scrollbar-thumb-gray-200`}>
                 <table
                     ref={tableRef}
                     className="w-full text-left text-sm text-card-text table-fixed"
                     style={{ minWidth: '100%', width: columnWidths.reduce((a, b) => a + b, 0) }}
                 >
-                    <thead className="bg-primary/5 text-[11px] uppercase tracking-wider font-black opacity-60 border-b border-gray-200/20 select-none">
+                    <thead className="bg-primary/5 text-[11px] uppercase tracking-wider font-black opacity-90 border-b border-gray-200/50 select-none sticky top-0 z-10 backdrop-blur-md shadow-sm">
                         <tr>
                             {columns.map((col, index) => {
                                 const key = col.sortKey || (typeof col.accessor === 'string' ? col.accessor : '');
@@ -123,7 +130,7 @@ export function DataTable<T>({
                                 return (
                                     <th
                                         key={index}
-                                        style={{ width: columnWidths[index] }}
+                                        style={{ width: columnWidths[index] + (index === 0 ? 30 : 5) }}
                                         className={`px-6 py-5 border-b border-b-gray-300 whitespace-nowrap relative group/th ${col.sortable ? 'cursor-pointer hover:bg-primary/10' : ''}`}
                                         onClick={() => handleSort(index)}
                                     >
@@ -166,7 +173,7 @@ export function DataTable<T>({
                                     onClick={() => onRowClick && onRowClick(row)}
                                     className={`
                                         transition-colors duration-200 group relative h-20 border-b border-b-gray-300
-                                        ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-200/80'}
+                                        ${(!disableZebra && rowIndex % 2 === 0) ? 'bg-white' : (!disableZebra ? 'bg-gray-50' : '')}
                                         ${onRowClick ? 'cursor-pointer hover:bg-primary/5' : ''}
                                         ${getRowClassName ? getRowClassName(row) : ''}
                                     `}
@@ -203,7 +210,7 @@ export function DataTable<T>({
             </div>
 
             {/* Pagination Controls */}
-            <Pagination 
+            <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={onPageChange}
