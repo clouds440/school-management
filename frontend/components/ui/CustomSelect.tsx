@@ -3,11 +3,13 @@
 import { useState, useRef, useEffect, useMemo, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { LucideIcon, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface DropdownOption<T extends string = string> {
     value: T;
     label: string;
     icon?: LucideIcon;
+    iconClassName?: string;
     badge?: number | string;
 }
 
@@ -121,27 +123,41 @@ export function CustomSelect<T extends string = string>({
                 type="button"
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 disabled={disabled}
-                className={`
-                    flex items-center w-full px-4 py-3 rounded-sm border transition-all duration-200 outline-none
-                    ${isOpen
+                className={cn(
+                    "flex items-center w-full px-4 py-3 rounded-sm border transition-all duration-200 outline-none",
+                    isOpen
                         ? 'border-primary ring-4 ring-primary/10 bg-card'
                         : error
                             ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/50'
-                            : 'border-white/10 bg-primary/5 hover:border-white/20'
-                    }
-                    ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                    text-card-text font-bold text-left
-                `}
+                            : 'border-white/10 bg-primary/5 hover:border-white/20',
+                    disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+                    "text-card-text font-bold text-left",
+                    className
+                )}
             >
-                {Icon && (
-                    <Icon className={`h-5 w-5 mr-3 transition-colors ${isOpen ? 'text-primary' : error ? 'text-red-500' : 'text-card-text/40 group-focus-within:text-primary'}`} />
+                {/* Prefix Icon (Prop) or Selected Option Icon */}
+                {(selectedOption?.icon || Icon) && (
+                    <div className="mr-3 shrink-0">
+                        {selectedOption?.icon ? (
+                            <selectedOption.icon className={cn("h-5 w-5", selectedOption.iconClassName || (isOpen ? 'text-primary' : 'text-card-text/40'))} />
+                        ) : (
+                            Icon && <Icon className={cn("h-5 w-5 transition-colors", isOpen ? 'text-primary' : error ? 'text-red-500' : 'text-card-text/40 group-focus-within:text-primary')} />
+                        )}
+                    </div>
                 )}
 
                 <span className={`flex-1 truncate ${!selectedOption ? 'text-card-text/40' : ''}`}>
                     {selectedOption ? selectedOption.label : placeholder}
                 </span>
 
-                <ChevronDown className={`h-4 w-4 ml-2 transition-transform duration-200 text-card-text/40 ${isOpen ? 'rotate-180' : ''}`} />
+                {/* Selected Option Badge (Visible when closed too) */}
+                {selectedOption?.badge !== undefined && (
+                    <span className="mx-2 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-primary/10 text-primary shrink-0">
+                        {selectedOption.badge}
+                    </span>
+                )}
+
+                <ChevronDown className={cn("h-4 w-4 ml-auto transition-transform duration-200 text-card-text/40", isOpen && "rotate-180")} />
             </button>
 
             {isOpen && coords && createPortal(
@@ -195,7 +211,7 @@ export function CustomSelect<T extends string = string>({
                                     text-left
                                 `}
                                 >
-                                    {option.icon && <option.icon className="h-4 w-4 mr-2" />}
+                                    {option.icon && <option.icon className={cn("h-4 w-4 mr-2", option.iconClassName)} />}
                                     <span className="flex-1">{option.label}</span>
                                     {option.badge !== undefined && (
                                         <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${

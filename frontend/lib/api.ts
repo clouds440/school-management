@@ -230,8 +230,22 @@ export const api = {
             request<RequestDetail>('/requests', { method: 'POST', body: JSON.stringify(data), token }),
         updateRequest: (id: string, data: UpdateRequestPayload, token: string) =>
             request<RequestDetail>(`/requests/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-        addMessage: (requestId: string, data: { content: string }, token: string) =>
-            request<RequestDetail>(`/requests/${requestId}/messages`, { method: 'POST', body: JSON.stringify(data), token }),
+        addMessage: async (requestId: string, data: { content: string }, token: string, files?: File[]) => {
+            if (files && files.length > 0) {
+                const formData = new FormData();
+                formData.append('content', data.content);
+                files.forEach(file => formData.append('files', file));
+
+                const response = await fetch(`${API_BASE_URL}/requests/${requestId}/messages`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: formData,
+                });
+                if (!response.ok) throw new Error('Failed to send reply with files');
+                return response.json();
+            }
+            return request<RequestDetail>(`/requests/${requestId}/messages`, { method: 'POST', body: JSON.stringify(data), token });
+        },
         getContactableUsers: (token: string, search?: string) =>
             request<RequestTarget[]>(`/requests/contacts${buildQueryString({ search })}`, { token }),
         getUnreadCount: (token: string) =>

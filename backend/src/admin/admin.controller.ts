@@ -45,7 +45,8 @@ export class AdminController {
             id: user.id,
             role: user.role,
             organizationId: user.organizationId,
-            name: user.name || '',
+            name: user.name || null,
+            email: user.email,
         });
     }
 

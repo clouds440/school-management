@@ -150,7 +150,10 @@ export function NewRequestModal({
             api.requests.getContactableUsers(token)
                 .then(data => {
                     setTargets(data);
-                    if (initialTargetId) setTargetIds([initialTargetId]);
+                    if (initialTargetId) {
+                        // Call the handler to ensure categories etc. are updated
+                        handleTargetChange([initialTargetId], data);
+                    }
                     if (initialSubject) setSubject(initialSubject);
                 })
                 .catch(console.error)
@@ -171,7 +174,8 @@ export function NewRequestModal({
     );
 
     // When recipients change, auto-reset category to first valid option if needed
-    const handleTargetChange = (newTargetIds: string[]) => {
+    const handleTargetChange = (newTargetIds: string[], overrideTargets?: RequestTarget[]) => {
+        const currentTargets = overrideTargets || targets;
         const addedIds = newTargetIds.filter(id => !targetIds.includes(id));
         let finalIds = [...newTargetIds];
         let feedback = '';
@@ -179,11 +183,11 @@ export function NewRequestModal({
         const MEGA_GROUPS = ['ROLE:ORG_STAFF', 'ROLE:PLATFORM_ADMIN'];
 
         for (const addedId of addedIds) {
-            const addedTarget = targets.find(t => t.id === addedId);
+            const addedTarget = currentTargets.find(t => t.id === addedId);
             if (!addedTarget) continue;
 
             // 1. Mega Group Exclusivity (All Staff / Platform Team)
-            if (selectedTargets.length > 0 && MEGA_GROUPS.includes(addedId)) {
+            if (activeTargets(finalIds, currentTargets).length > 0 && MEGA_GROUPS.includes(addedId)) {
                 finalIds = [addedId];
                 feedback = `Targeting ${addedTarget.label} cancels all other selections.`;
                 break;
@@ -204,13 +208,13 @@ export function NewRequestModal({
                 // Unselect individual users of that role
                 finalIds = finalIds.filter(id => {
                     if (id === addedId) return true;
-                    const t = targets.find(x => x.id === id);
+                    const t = currentTargets.find(x => x.id === id);
                     if (t?.type === 'USER' && t.role === addedTarget.role) return false;
                     return true;
                 });
             } else if (addedTarget.type === 'USER') {
                 const groupSelected = finalIds.some(id => {
-                    const t = targets.find(x => x.id === id);
+                    const t = currentTargets.find(x => x.id === id);
                     return t?.type === 'ROLE' && t.role === addedTarget.role;
                 });
 
@@ -225,13 +229,16 @@ export function NewRequestModal({
         else setError('');
 
         setTargetIds(finalIds);
-        const newTargets = targets.filter(t => finalIds.includes(t.id));
+        const newTargets = currentTargets.filter(t => finalIds.includes(t.id));
         const newCategories = getCategoriesForContext(user?.role as Role | undefined, newTargets.map(t => t.role || ''));
 
         if (!newCategories.some(c => c.value === category)) {
             setCategory(newCategories[0]?.value || RequestCategory.GENERAL_INQUIRY);
         }
     };
+
+    // Helper for handleTargetChange
+    const activeTargets = (ids: string[], currentTargets: RequestTarget[]) => currentTargets.filter(t => ids.includes(t.id));
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {

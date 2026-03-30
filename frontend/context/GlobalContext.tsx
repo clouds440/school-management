@@ -60,7 +60,7 @@ export interface GlobalState {
         admin: AdminStats | null;
         org: OrgStats | null;
         orgData: Organization | null;
-        mail: { unread: number; total: number } | null;
+        mail: { unread: number; total: number; countsByStatus?: Record<string, number> } | null;
     };
     toasts: ToastItem[];
     ui: {
@@ -83,7 +83,7 @@ type Action =
     | { type: 'STATS_SET_ADMIN'; payload: AdminStats }
     | { type: 'STATS_SET_ORG'; payload: OrgStats }
     | { type: 'STATS_SET_ORG_DATA'; payload: Organization }
-    | { type: 'STATS_SET_MAIL'; payload: { unread: number; total: number } }
+    | { type: 'STATS_SET_MAIL'; payload: { unread: number; total: number; countsByStatus?: Record<string, number> } }
     | { type: 'TOAST_ADD'; payload: Omit<ToastItem, 'id'> }
     | { type: 'TOAST_REMOVE'; payload: string }
     | { type: 'UI_TOGGLE_SIDEBAR' }

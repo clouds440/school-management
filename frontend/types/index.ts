@@ -6,12 +6,7 @@ export interface PaginatedResponse<T> {
     totalRecords: number;
     totalPages: number;
     currentPage: number;
-    counts?: {
-        PENDING: number;
-        APPROVED: number;
-        REJECTED: number;
-        SUSPENDED: number;
-    };
+    counts?: Record<string, number>;
 }
 
 export interface User {

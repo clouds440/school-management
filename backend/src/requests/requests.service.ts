@@ -87,10 +87,10 @@ export class RequestService {
                     subject: dto.subject,
                     category: dto.category,
                     priority: dto.priority || 'NORMAL',
-                    status: noReply ? RequestStatus.NO_REPLY : (dto as any).status || RequestStatus.OPEN,
+                    status: noReply ? RequestStatus.NO_REPLY : dto.status || RequestStatus.OPEN,
                     creatorId: user.id,
                     creatorRole: user.role,
-                    organizationId: user.organizationId || (user as any).organizationId,
+                    organizationId: user.organizationId,
                     targetRole: dto.targetRole,
                     assigneeId: dto.assigneeIds?.[0], // For legacy compatibility/single field
                     assignees: dto.assigneeIds?.length ? {
@@ -131,7 +131,8 @@ export class RequestService {
 
         // Fetch the full request with relations for the response & event
         const fullRequest = await this.getRequestByIdInternal(request.id);
-
+        const transformed = this.transformRequest(fullRequest, user.role as Role);
+        
         // Emit to targeted role, assignee, or platform admins
         let targetRoom = `role:${Role.PLATFORM_ADMIN}`;
         if (dto.assigneeIds?.length) {
@@ -140,9 +141,11 @@ export class RequestService {
             targetRoom = `role:${dto.targetRole}`;
         }
         
-        this.events.emitToRoom(targetRoom, 'request:new', fullRequest);
+        // Use transformed for potentially organization-level rooms
+        const isOrgTarget = targetRoom.startsWith('user:') || (dto.targetRole && !ADMIN_ROLES.has(dto.targetRole as Role));
+        this.events.emitToRoom(targetRoom, 'request:new', isOrgTarget ? transformed : fullRequest);
 
-        // Also emit to super admins if not already targeted
+        // Also emit to super admins if not already targeted (always untransformed for admins)
         if (targetRoom !== `role:${Role.SUPER_ADMIN}`) {
             this.events.emitToRole(Role.SUPER_ADMIN, 'request:new', fullRequest);
         }
@@ -154,7 +157,7 @@ export class RequestService {
             targetRole: dto.targetRole ?? null,
         }, user.id);
 
-        return fullRequest;
+        return transformed;
     }
 
     // ───────────────────────────────── List ──────────────────────────────────
@@ -289,7 +292,10 @@ export class RequestService {
             }),
         );
 
-        return { ...result, data: requestsWithUnread };
+        return { 
+            ...result, 
+            data: requestsWithUnread.map(r => this.transformRequest(r, user.role as Role)) 
+        };
     }
 
     // ──────────────────────────── Get Single ─────────────────────────────────
@@ -387,7 +393,7 @@ export class RequestService {
         // Mark as read when viewed
         await this.markAsRead(requestId, user.id);
 
-        return request;
+        return this.transformRequest(request, user.role as Role);
     }
 
     // ──────────────────────────── Update ─────────────────────────────────────
@@ -453,7 +459,7 @@ export class RequestService {
         }
 
         if (Object.keys(updateData).length === 0) {
-            return this.getRequestByIdInternal(requestId);
+            return this.transformRequest(await this.getRequestByIdInternal(requestId), user.role as Role);
         }
 
         await this.prisma.$transaction(async (tx) => {
@@ -478,15 +484,15 @@ export class RequestService {
             });
         });
 
-        const updated = await this.getRequestByIdInternal(requestId);
+        const fullRequest = await this.getRequestByIdInternal(requestId);
+        const transformed = this.transformRequest(fullRequest, user.role as Role);
 
-        // Emit update event (only if request still exists)
-        if (updated) {
-            this.events.emitToRoom(`request:${requestId}`, 'request:update', updated);
-            this.events.emitToUser(existing.creatorId, 'request:update', updated);
-        }
-        
-        return updated;
+        // Emit update to appropriate rooms
+        this.events.emitToRoom(`request:${requestId}`, 'request:update', transformed);
+        this.events.emitToRoom(`role:${Role.PLATFORM_ADMIN}`, 'request:update', fullRequest);
+        this.events.emitToRole(Role.SUPER_ADMIN, 'request:update', fullRequest);
+
+        return transformed;
     }
 
     // ──────────────────────────── Add Message ────────────────────────────────
@@ -568,17 +574,19 @@ export class RequestService {
             return [msg];
         });
 
-        // Emit message event to users watching this request thread
-        this.events.emitToRoom(`request:${requestId}`, 'request:message', {
-            ...message,
-            requestId,
-        });
+        const fullRequest = await this.getRequestByIdInternal(requestId);
+        const transformed = this.transformRequest(fullRequest, user.role as Role);
 
-        // Notify all participants that their unread count changed.
-        // Use a single consolidated approach instead of multiple redundant queries.
+        // Notify rooms
+        this.events.emitToRoom(`request:${requestId}`, 'request:message', {
+            requestId,
+            message: transformed.messages[transformed.messages.length - 1],
+        });
+        
+        // Notify total unread count changes
         this.emitUnreadUpdateToParticipants(request, user.id);
 
-        return message;
+        return transformed;
     }
 
     // ────────────────────────── Contactable Users ─────────────────────────────
@@ -775,5 +783,48 @@ export class RequestService {
         // 4. Platform admins & super admins always see all requests
         this.events.emitToRole(Role.SUPER_ADMIN, 'unread:update', null);
         this.events.emitToRole(Role.PLATFORM_ADMIN, 'unread:update', null);
+    }
+
+    /**
+     * Anonymizes Super Admin / Platform Admin sender info for non-admin viewers.
+     */
+    private anonymizeUser(user: any, viewerRole: Role) {
+        if (!user) return user;
+        const isAdminSender = user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN;
+        const isNonAdminViewer = !ADMIN_ROLES.has(viewerRole);
+
+        if (isAdminSender && isNonAdminViewer) {
+            return {
+                ...user,
+                name: 'EduManage Team',
+                email: user.role === Role.SUPER_ADMIN ? 'System Admin' : 'Platform Admin',
+                avatarUrl: null,
+            };
+        }
+        return user;
+    }
+
+    /**
+     * Transforms a request object by anonymizing administrative identities if the viewer is a non-admin.
+     */
+    private transformRequest(request: any, viewerRole: Role) {
+        if (!request) return request;
+
+        const anonymized = {
+            ...request,
+            creator: this.anonymizeUser(request.creator, viewerRole),
+            assignee: this.anonymizeUser(request.assignee, viewerRole),
+            assignees: request.assignees?.map(u => this.anonymizeUser(u, viewerRole)),
+            messages: request.messages?.map(m => ({
+                ...m,
+                sender: this.anonymizeUser(m.sender, viewerRole),
+            })),
+            actionLogs: request.actionLogs?.map(log => ({
+                ...log,
+                performer: this.anonymizeUser(log.performer, viewerRole),
+            })),
+        };
+
+        return anonymized;
     }
 }

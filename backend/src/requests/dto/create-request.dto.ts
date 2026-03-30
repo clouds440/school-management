@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsNotEmpty, MaxLength, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, MaxLength, IsIn, IsEnum } from 'class-validator';
+import { RequestStatus } from '../../common/enums';
 
 export class CreateRequestDto {
     @IsString()
@@ -28,6 +29,10 @@ export class CreateRequestDto {
     @IsString({ each: true })
     @IsOptional()
     assigneeIds?: string[];
+
+    @IsOptional()
+    @IsEnum(RequestStatus)
+    status?: RequestStatus;
 
     @IsOptional()
     metadata?: Record<string, unknown>;

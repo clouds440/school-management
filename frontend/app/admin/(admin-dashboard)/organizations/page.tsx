@@ -163,7 +163,7 @@ export default function OrganizationsPage() {
     };
 
     // Use dynamic counts from server if available, otherwise fallback to stats
-    const dynamicCounts = (fetchedData as (PaginatedResponse<Organization> & { counts: Record<string, number> }))?.counts || stats;
+    const dynamicCounts = fetchedData?.counts || stats;
 
     const statusTabs: { id: OrgStatus, label: string, icon: LucideIcon, color: string, bg: string, count?: number }[] = [
         { id: OrgStatus.PENDING, label: 'Pending', icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-600/10', count: dynamicCounts?.PENDING },
@@ -276,7 +276,7 @@ export default function OrganizationsPage() {
                         <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                             <button
                                 onClick={() => handleSendMail(row)}
-                                className="p-2 hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 rounded-sm transition-all"
+                                className="py-2 px-3 bg-indigo-100 hover:bg-indigo-200 text-gray-400 hover:text-indigo-600 rounded-sm transition-all"
                                 title="Send Mail"
                             >
                                 <Send className="w-4 h-4" />

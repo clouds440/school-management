@@ -1,5 +1,5 @@
 import { UnauthorizedException, NotFoundException, Injectable } from '@nestjs/common';
-import { Prisma, User as UserEntity } from '@prisma/client';
+import { Prisma, User as UserEntity, Organization } from '@prisma/client';
 import { OrgStatus, Role, RequestStatus, RequestCategory } from '../common/enums';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth/auth.service';
@@ -19,6 +19,14 @@ export class AdminService {
         private readonly prisma: PrismaService,
         private readonly requestService: RequestService
     ) { }
+    
+    private orgWithAdminInclude = Prisma.validator<Prisma.OrganizationInclude>()({
+        users: {
+            where: { role: Role.ORG_ADMIN },
+            select: { id: true },
+            take: 1
+        }
+    });
 
     async getOrganizations(options: PaginationOptions & {
         status?: OrgStatus;
@@ -69,7 +77,7 @@ export class AdminService {
                         take: 1
                     }
                 }
-            }),
+            }) as unknown as (Organization & { users: { id: string }[] })[],
             this.prisma.organization.count({ where }),
             this.prisma.organization.groupBy({
                 by: ['status'],
@@ -91,7 +99,7 @@ export class AdminService {
             createdAt: org.createdAt,
             phone: org.phone,
             email: org.contactEmail,
-            adminUserId: (org as any).users?.[0]?.id
+            adminUserId: (org as (Organization & { users: { id: string }[] })).users?.[0]?.id
         }));
 
         const response = formatPaginatedResponse(mappedData, totalRecords, options.page, options.limit);
@@ -137,7 +145,13 @@ export class AdminService {
                 priority: 'NORMAL',
                 message: `Congratulations! Your organization **${org.name}** has been approved. You now have full access to your dashboard.\n\nWelcome to the EduManage community!`,
                 assigneeIds: [orgAdmin.id],
-            }, { id: admin.id, role: admin.role, name: admin.name, email: admin.email, organizationId: undefined } as any, true); // true for noReply
+            }, { 
+                id: admin.id, 
+                role: admin.role, 
+                name: admin.name || null, 
+                email: admin.email, 
+                organizationId: null 
+            }, true); // true for noReply
         }
 
         return result;

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { UserPlus, BadgeCheck } from 'lucide-react';
-import { DataTable } from '@/components/ui/DataTable';
+import { DataTable, Column } from '@/components/ui/DataTable';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -99,7 +99,7 @@ export default function TeachersPage() {
         }
     };
 
-    const columns = [
+    const columns: Column<Teacher>[] = [
         {
             header: 'Teacher',
             sortable: true,

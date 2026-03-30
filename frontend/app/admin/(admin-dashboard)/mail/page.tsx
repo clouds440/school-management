@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
-import { MessageSquare, Plus, ArrowUpRight, Hash, User, Building2, Tag, User as UserIcon } from 'lucide-react';
+import { Search, Plus, Filter, MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Tag, Hash, User as UserIcon, Building2, Calendar, User, Clock } from 'lucide-react';
 import { api } from '@/lib/api';
 import { RequestItem, RequestDetail, RequestStatus, Role, PaginatedResponse, UpdateRequestPayload, ApiError } from '@/types';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -13,7 +13,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Modal } from '@/components/ui/Modal';
 import { RequestStatusBadge, RequestPriorityBadge } from '@/components/requests/RequestStatusBadge';
-import { RequestThread } from '@/components/requests/RequestThread';
+import { RequestThread, RequestThreadHandle } from '@/components/requests/RequestThread';
 import { NewRequestModal } from '@/components/requests/NewRequestModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useSocket } from '@/hooks/useSocket';
@@ -37,6 +37,7 @@ export default function RequestsPage() {
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [pendingStatus, setPendingStatus] = useState<RequestStatus | null>(null);
+    const threadRef = useRef<RequestThreadHandle>(null);
 
     // URL State
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -83,7 +84,7 @@ export default function RequestsPage() {
         } finally {
             setFetching(false);
         }
-    }, [token, page, searchQuery, sortBy, sortOrder, statusFilter, showToast]);
+    }, [token, page, searchQuery, sortBy, sortOrder, statusFilter, showToast, dispatch]);
 
     const { subscribe, joinRoom, leaveRoom } = useSocket({
         token: token,
@@ -98,7 +99,7 @@ export default function RequestsPage() {
         }
     }, [loading, user, token, fetchRequests]);
 
-    // Real-time: Refresh list on new/unread updates
+    // Real-time updates
     useEffect(() => {
         const unsubs = [
             subscribe('unread:update', () => fetchRequests()),
@@ -107,19 +108,16 @@ export default function RequestsPage() {
         return () => unsubs.forEach(u => u());
     }, [subscribe, fetchRequests]);
 
-    // Real-time: Refresh selected thread
     useEffect(() => {
         if (!selectedRequest?.id) return;
-
         joinRoom(`request:${selectedRequest.id}`);
-
         const unsubs = [
             subscribe('request:message', async (data: unknown) => {
                 const payload = data as { requestId: string };
-                if (payload.requestId === selectedRequest.id) {
-                    const updated = await api.requests.getRequest(selectedRequest.id, token!);
+                if (payload.requestId === selectedRequest.id && token) {
+                    const updated = await api.requests.getRequest(selectedRequest.id, token);
                     setSelectedRequest(updated);
-                    fetchRequests(); // Also refresh list to update message count/last update
+                    fetchRequests();
                 }
             }),
             subscribe('request:update', (data: unknown) => {
@@ -130,7 +128,6 @@ export default function RequestsPage() {
                 }
             })
         ];
-
         return () => {
             unsubs.forEach(u => u());
             leaveRoom(`request:${selectedRequest.id}`);
@@ -144,54 +141,32 @@ export default function RequestsPage() {
             setSelectedRequest(detail);
             setThreadModalOpen(true);
         } catch (error: unknown) {
-            const apiError = error as ApiError;
-            const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to load request';
-            const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
-            showToast(message, 'error');
+            showToast('Failed to load request', 'error');
         }
     };
 
     const handleReply = async (content: string, files?: File[]) => {
-        if (!token || !selectedRequest) return;
+        if (!selectedRequest || !token) return;
         try {
-            const response = await api.requests.addMessage(selectedRequest.id, { content }, token);
-
-            // Upload files if any
-            if (files && files.length > 0) {
-                const orgId = selectedRequest.organizationId || 'SYSTEM';
-                await Promise.all(
-                    files.map(file =>
-                        api.files.uploadFile(orgId, 'REQUEST_MESSAGE', response.id, file, token)
-                    )
-                );
-                // Refresh detail after file uploads
-                const updated = await api.requests.getRequest(selectedRequest.id, token);
-                setSelectedRequest(updated);
-            } else {
-                // If no files, we can just use the returned message to update local state if we want,
-                // but getRequest is safer to get the full updated thread
-                const updated = await api.requests.getRequest(selectedRequest.id, token);
-                setSelectedRequest(updated);
-            }
-
-            showToast('Reply sent', 'success');
-        } catch (error: unknown) {
-            const apiError = error as ApiError;
-            const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to send reply';
-            const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
-            showToast(message, 'error');
+            await api.requests.addMessage(selectedRequest.id, { content }, token, files);
+            const updated = await api.requests.getRequest(selectedRequest.id, token);
+            setSelectedRequest(updated);
+        } catch (error) {
+            showToast('Failed to send reply', 'error');
         }
+    };
+
+    const handleScrollToReply = () => {
+        threadRef.current?.scrollToReply();
     };
 
     const handleStatusUpdate = async (newStatus: RequestStatus) => {
         if (!token || !selectedRequest || updatingStatus) return;
-
         if (newStatus === RequestStatus.RESOLVED || newStatus === RequestStatus.CLOSED) {
             setPendingStatus(newStatus);
             setConfirmOpen(true);
             return;
         }
-
         await executeStatusUpdate(newStatus);
     };
 
@@ -203,20 +178,15 @@ export default function RequestsPage() {
             const updated = await api.requests.updateRequest(selectedRequest.id, payload, token);
             setSelectedRequest(updated);
             showToast(`Status updated to ${newStatus.replace('_', ' ')}`, 'success');
-            fetchRequests(); // refresh list
+            fetchRequests();
         } catch (error: unknown) {
-            const apiError = error as ApiError;
-            const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to update status';
-            const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
-            showToast(message, 'error');
+            showToast('Failed to update status', 'error');
         } finally {
             setUpdatingStatus(false);
             setConfirmOpen(false);
             setPendingStatus(null);
         }
     };
-
-    // handleCreateRequest is now handled internally by NewRequestModal
 
     const requests = paginatedData?.data || [];
 
@@ -225,7 +195,7 @@ export default function RequestsPage() {
             header: 'Mail',
             sortable: true,
             sortKey: 'subject',
-            accessor: (row) => (
+            accessor: (row: RequestItem) => (
                 <div className="flex items-start gap-3 min-w-0">
                     <div className="w-10 h-10 bg-indigo-50 rounded-sm flex items-center justify-center text-indigo-600 shrink-0">
                         <MessageSquare className="w-5 h-5" />
@@ -245,10 +215,9 @@ export default function RequestsPage() {
         },
         {
             header: 'Sender',
-            accessor: (row) => {
+            accessor: (row: RequestItem) => {
                 const orgLogo = row.organization?.logoUrl ? getPublicUrl(row.organization.logoUrl) : null;
                 const userAvatar = row.creator?.avatarUrl ? getPublicUrl(row.creator.avatarUrl) : null;
-
                 return (
                     <div className="flex items-center gap-3">
                         {row.organization ? (
@@ -279,9 +248,7 @@ export default function RequestsPage() {
                         )}
                         <div className="min-w-0">
                             <p className="text-xs font-black text-gray-700 truncate max-w-[120px]">{row.creator?.name || row.creator.email}</p>
-                            <div className="flex items-center gap-1.5">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase">{row.creatorRole?.replace('_', ' ')}</p>
-                            </div>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase">{row.creatorRole?.replace('_', ' ')}</p>
                         </div>
                     </div>
                 );
@@ -289,7 +256,7 @@ export default function RequestsPage() {
         },
         {
             header: 'Recipient',
-            accessor: (row) => (
+            accessor: (row: RequestItem) => (
                 <div className="flex items-center gap-2">
                     {row.assignees && row.assignees.length > 0 ? (
                         <>
@@ -335,15 +302,15 @@ export default function RequestsPage() {
             header: 'Status',
             sortable: true,
             sortKey: 'status',
-            accessor: (row) => <RequestStatusBadge status={row.status} />
+            accessor: (row: RequestItem) => <RequestStatusBadge status={row.status} />
         },
         {
             header: 'Priority',
-            accessor: (row) => <RequestPriorityBadge priority={row.priority} />
+            accessor: (row: RequestItem) => <RequestPriorityBadge priority={row.priority} />
         },
         {
             header: 'Messages',
-            accessor: (row) => (
+            accessor: (row: RequestItem) => (
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 min-w-[30px] justify-center">
                         <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
@@ -362,12 +329,8 @@ export default function RequestsPage() {
             sortable: true,
             sortKey: 'createdAt',
             accessor: (req: RequestItem) => (
-                <div className="flex items-center gap-3">
-                    <div className="relative inline-flex items-center">
-                        <div className="px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 min-w-[30px] text-center">
-                            {new Date(req.createdAt).toLocaleString()}
-                        </div>
-                    </div>
+                <div className="flex items-center text-xs font-medium text-card-text/60 gap-1.5">
+                    <Calendar className="w-3 h-3" /> {new Date(req.createdAt).toLocaleString()}
                 </div>
             )
         },
@@ -377,7 +340,7 @@ export default function RequestsPage() {
         return <Loading fullScreen text="Preparing Mailbox..." size="lg" />;
     }
 
-    const isClosed = selectedRequest?.status === RequestStatus.RESOLVED || selectedRequest?.status === RequestStatus.CLOSED;
+    const isClosed = selectedRequest?.status === RequestStatus.CLOSED || selectedRequest?.status === RequestStatus.RESOLVED;
 
     return (
         <div className="flex flex-col h-full w-full animate-fade-in-up">
@@ -387,31 +350,31 @@ export default function RequestsPage() {
                         <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
                             <CustomSelect
                                 value={statusFilter}
-                                onChange={(val) => updateQueryParams({ status: val, page: 1 })}
+                                onChange={(val: string) => updateQueryParams({ status: val, page: 1 })}
                                 options={[
                                     { value: 'ALL', label: 'All Statuses', badge: state.stats.mail?.total },
-                                    { value: RequestStatus.OPEN, label: 'Open', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.OPEN] },
-                                    { value: RequestStatus.IN_PROGRESS, label: 'In Progress', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.IN_PROGRESS] },
-                                    { value: RequestStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.AWAITING_RESPONSE] },
-                                    { value: RequestStatus.RESOLVED, label: 'Resolved', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.RESOLVED] },
-                                    { value: RequestStatus.CLOSED, label: 'Closed', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.CLOSED] },
+                                    { value: RequestStatus.OPEN, label: 'Open', badge: state.stats.mail?.countsByStatus?.[RequestStatus.OPEN], icon: Clock, iconClassName: 'text-blue-500' },
+                                    { value: RequestStatus.IN_PROGRESS, label: 'In Progress', badge: state.stats.mail?.countsByStatus?.[RequestStatus.IN_PROGRESS], icon: ArrowUpRight, iconClassName: 'text-amber-500' },
+                                    { value: RequestStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[RequestStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-indigo-500' },
+                                    { value: RequestStatus.RESOLVED, label: 'Resolved', badge: state.stats.mail?.countsByStatus?.[RequestStatus.RESOLVED], icon: CheckCircle2, iconClassName: 'text-green-500' },
+                                    { value: RequestStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[RequestStatus.CLOSED], icon: XCircle, iconClassName: 'text-gray-500' },
                                 ]}
                                 className="w-full sm:w-[240px]"
                                 placeholder="Status"
+                                icon={Filter}
                             />
-
                             <SearchBar
                                 value={searchQuery}
-                                onChange={(val) => updateQueryParams({ search: val, page: 1 })}
+                                onChange={(val: string) => updateQueryParams({ search: val, page: 1 })}
                                 placeholder="Search mail..."
                             />
                         </div>
                         <button
                             onClick={() => setNewRequestOpen(true)}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-200 shrink-0"
+                            className="flex items-center gap-2 px-8 py-4 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-200 shrink-0"
                         >
                             <Plus className="w-4 h-4" />
-                            SEND MAIL
+                            NEW MAIL
                         </button>
                     </div>
                 </div>
@@ -427,7 +390,7 @@ export default function RequestsPage() {
                         totalPages={paginatedData?.totalPages || 1}
                         totalResults={paginatedData?.totalRecords || 0}
                         pageSize={10}
-                        onPageChange={(p) => updateQueryParams({ page: p })}
+                        onPageChange={(p: number) => updateQueryParams({ page: p })}
                         sortConfig={{ key: sortBy, direction: sortOrder }}
                         onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                         getRowClassName={(row) => {
@@ -443,11 +406,46 @@ export default function RequestsPage() {
                 </div>
             </div>
 
-            {/* Thread Modal */}
             <Modal
                 isOpen={threadModalOpen}
                 onClose={() => { setThreadModalOpen(false); setSelectedRequest(null); }}
-                title={selectedRequest?.subject}
+                title={
+                    selectedRequest ? (
+                        <div className="flex items-center justify-between w-full pr-12">
+                            <span className="text-xl font-black text-gray-900">{selectedRequest.subject}</span>
+                            {!isClosed && (
+                                <div className="flex items-center gap-2 ml-4">
+                                    {selectedRequest.status === RequestStatus.OPEN && (
+                                        <button
+                                            onClick={() => handleStatusUpdate(RequestStatus.IN_PROGRESS)}
+                                            disabled={updatingStatus}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all disabled:opacity-50 shadow-sm"
+                                        >
+                                            <ArrowUpRight className="w-3 h-3" />
+                                            In Progress
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => handleStatusUpdate(RequestStatus.RESOLVED)}
+                                        disabled={updatingStatus}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-green-700 transition-all disabled:opacity-50 shadow-sm"
+                                    >
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        Resolve
+                                    </button>
+                                    <button
+                                        onClick={() => handleStatusUpdate(RequestStatus.CLOSED)}
+                                        disabled={updatingStatus}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-500 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-gray-600 transition-all disabled:opacity-50 shadow-sm"
+                                    >
+                                        <XCircle className="w-3 h-3" />
+                                        Close Thread
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : undefined
+                }
                 subtitle={
                     selectedRequest ? (
                         <div className="flex items-center gap-3 flex-wrap">
@@ -461,48 +459,43 @@ export default function RequestsPage() {
                     ) : undefined
                 }
                 maxWidth="max-w-5xl"
-                className='mb-3'
+                footer={
+                    selectedRequest ? (
+                        <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                                {!isClosed ? (
+                                    <button
+                                        onClick={handleScrollToReply}
+                                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-50 text-indigo-600 rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all active:scale-95 border border-indigo-200/50"
+                                    >
+                                        <MessageSquare className="w-3.5 h-3.5" />
+                                        Reply to Thread
+                                    </button>
+                                ) : (
+                                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                        Thread is {selectedRequest.status}
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => { setThreadModalOpen(false); setSelectedRequest(null); }}
+                                className="px-6 py-2.5 text-gray-600 bg-gray-200 hover:bg-gray-300 hover:text-gray-900 text-[10px] font-black uppercase tracking-widest transition-all"
+                            >
+                                Close Window
+                            </button>
+                        </div>
+                    ) : undefined
+                }
             >
                 {selectedRequest && (
-                    <div className="flex flex-col h-full" style={{ minHeight: '600px' }}>
-                        {/* Status controls */}
-                        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-gray-100 flex-wrap shrink-0">
+                    <div className="flex flex-col h-full overflow-hidden">
+                        <div className="flex items-center gap-3 mb-6 shrink-0 flex-wrap">
                             <RequestStatusBadge status={selectedRequest.status} />
                             <RequestPriorityBadge priority={selectedRequest.priority} />
-
-                            {!isClosed && (
-                                <div className="flex items-center gap-2 ml-auto">
-                                    {selectedRequest.status === RequestStatus.OPEN && (
-                                        <button
-                                            onClick={() => handleStatusUpdate(RequestStatus.IN_PROGRESS)}
-                                            disabled={updatingStatus}
-                                            className="flex items-center gap-1 px-4 py-2 bg-amber-500 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all disabled:opacity-50 shadow-lg shadow-amber-500/20"
-                                        >
-                                            <ArrowUpRight className="w-3 h-3" />
-                                            Start Progress
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => handleStatusUpdate(RequestStatus.RESOLVED)}
-                                        disabled={updatingStatus}
-                                        className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all disabled:opacity-50 shadow-lg shadow-green-500/20"
-                                    >
-                                        Resolve
-                                    </button>
-                                    <button
-                                        onClick={() => handleStatusUpdate(RequestStatus.CLOSED)}
-                                        disabled={updatingStatus}
-                                        className="flex items-center gap-1 px-4 py-2 bg-gray-500 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-gray-600 transition-all disabled:opacity-50 shadow-lg shadow-gray-500/20"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
-                            )}
                         </div>
-
-                        {/* Thread */}
                         <div className="flex-1 overflow-hidden">
                             <RequestThread
+                                ref={threadRef}
                                 request={selectedRequest}
                                 currentUserId={user?.id || ''}
                                 currentUserRole={user?.role}
@@ -514,25 +507,18 @@ export default function RequestsPage() {
                 )}
             </Modal>
 
-            {/* Confirmation Dialog for status updates */}
             <ConfirmDialog
                 isOpen={confirmOpen}
                 onClose={() => { setConfirmOpen(false); setPendingStatus(null); }}
                 onConfirm={() => pendingStatus && executeStatusUpdate(pendingStatus)}
-                title={`Mark as ${pendingStatus?.replace('_', ' ')}?`}
-                description={`Are you sure you want to change the status to ${pendingStatus?.replace('_', ' ')}? This action will be logged and notify participants.`}
-                confirmText={`Yes, ${pendingStatus?.replace('_', ' ')}`}
-                isDestructive={pendingStatus === RequestStatus.CLOSED}
+                title="Status Update"
+                description={`Are you sure you want to ${pendingStatus?.replace('_', ' ')} this mail thread?`}
             />
 
-            {/* New Request Modal */}
             <NewRequestModal
                 isOpen={newRequestOpen}
                 onClose={() => setNewRequestOpen(false)}
-                onSuccess={() => {
-                    fetchRequests();
-                    showToast('Mail sent', 'success');
-                }}
+                onSuccess={() => { fetchRequests(); showToast('Mail sent', 'success'); }}
             />
         </div>
     );

@@ -9,6 +9,7 @@ const STATUS_CONFIG: Record<RequestStatus, { label: string; bg: string; text: st
     [RequestStatus.AWAITING_RESPONSE]: { label: 'Awaiting', bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/20' },
     [RequestStatus.RESOLVED]: { label: 'Resolved', bg: 'bg-green-500/10', text: 'text-green-600', border: 'border-green-500/20' },
     [RequestStatus.CLOSED]: { label: 'Closed', bg: 'bg-gray-500/10', text: 'text-gray-500', border: 'border-gray-500/20' },
+    [RequestStatus.NO_REPLY]: { label: 'Notice (No Reply)', bg: 'bg-neutral-500/10', text: 'text-neutral-600', border: 'border-neutral-500/20' },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; bg: string; text: string; border: string }> = {
