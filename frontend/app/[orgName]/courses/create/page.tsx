@@ -5,7 +5,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { LibraryBig, FileText } from 'lucide-react';
 import Link from 'next/link';
-import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
@@ -19,7 +18,6 @@ export default function CreateCoursePage() {
     const isProcessing = state.ui.isProcessing;
     const router = useRouter();
     const pathname = usePathname();
-    const { showToast } = useToast();
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
     const [formData, setFormData] = useState({
@@ -49,17 +47,17 @@ export default function CreateCoursePage() {
         try {
             await api.org.createCourse(formData, token);
             window.dispatchEvent(new Event('stats-updated'));
-            showToast('Course created successfully', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Course created successfully', type: 'success' } });
             router.push(`/${orgSlug}/courses`);
         } catch (error: unknown) {
-            showToast(error instanceof Error ? error.message : 'Failed to create course', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to create course', type: 'error' } });
         } finally {
             dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up">
+        <div className="flex flex-col w-full">
             <div className="mb-6">
                 <div className="flex items-center gap-5">
                     <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
@@ -115,8 +113,6 @@ export default function CreateCoursePage() {
                         </Link>
                         <Button
                             type="submit"
-                            isLoading={isProcessing}
-                            loadingText="Creating..."
                             className="px-10 h-12"
                         >
                             Create Course

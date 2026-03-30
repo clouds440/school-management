@@ -157,7 +157,7 @@ export function CustomSelect<T extends string = string>({
                     </span>
                 )}
 
-                <ChevronDown className={cn("h-4 w-4 ml-auto transition-transform duration-200 text-card-text/40", isOpen && "rotate-180")} />
+                <ChevronDown className={cn("h-4 w-4 ml-2.5 transition-transform duration-200 text-card-text/40", isOpen && "rotate-180")} />
             </button>
 
             {isOpen && coords && createPortal(
@@ -214,9 +214,8 @@ export function CustomSelect<T extends string = string>({
                                     {option.icon && <option.icon className={cn("h-4 w-4 mr-2", option.iconClassName)} />}
                                     <span className="flex-1">{option.label}</span>
                                     {option.badge !== undefined && (
-                                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
-                                            option.value === value ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-                                        }`}>
+                                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${option.value === value ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                                            }`}>
                                             {option.badge}
                                         </span>
                                     )}

@@ -18,7 +18,7 @@ export default function TeacherProfilePage() {
     const loading = state.auth.loading;
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up">
+        <div className="flex flex-col w-full">
             <div className="bg-card rounded-sm border border-white/40 shadow-xl overflow-hidden">
                 <div className="p-8 border-b border-primary/10 bg-primary/5 flex items-center gap-4">
                     <div className="p-4 bg-primary/10 rounded-sm shadow-inner group">

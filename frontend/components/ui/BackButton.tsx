@@ -38,7 +38,7 @@ export function BackButton({
                     border border-white/10 dark:border-gray-700/40 
                     rounded-sm py-2.5 px-4 
                     shadow-lg hover:shadow-xl 
-                    hover:-translate-y-0.5 active:scale-95
+                    hover:-translate-y-0.5 active:scale-95 cursor-pointer
                     ${className}
                 `}
                 aria-label="Go back to previous page"

@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { Modal } from '@/components/ui/Modal';
 import { getPublicUrl } from '@/lib/utils';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
@@ -56,7 +56,7 @@ const getGradeColors = (marks: number, total: number) => {
 
 export default function Assessments({ sections, assessments }: { sections: Section[], assessments: Assessment[] }) {
     const { token, user } = useAuth();
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
@@ -66,7 +66,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
 
     const [search, setSearch] = useState('');
     const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const isSubmitting = state.ui.isProcessing;
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     useEffect(() => {
@@ -115,7 +115,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
         e.preventDefault();
         if (!token || !user || !selectedAssessment) return;
 
-        setIsSubmitting(true);
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             const submissionRes = await api.org.createSubmission(selectedAssessment.id, {
                 assessmentId: selectedAssessment.id,
@@ -125,7 +125,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                 await api.files.uploadFile(selectedAssessment.organizationId, 'SUBMISSION', submissionRes.id, selectedFile, token);
             }
 
-            showToast('Assessment submitted successfully', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Assessment submitted successfully', type: 'success' } });
             setSelectedAssessment(null);
             setSelectedFile(null);
             handleCloseModal();
@@ -133,9 +133,9 @@ export default function Assessments({ sections, assessments }: { sections: Secti
         } catch (error: unknown) {
             const apiError = error as ApiError;
             const message = apiError.response?.data?.message || 'Failed to submit assessment';
-            showToast(Array.isArray(message) ? message[0] : message, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
-            setIsSubmitting(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -240,7 +240,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                     )}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-1 animate-fade-in-up">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-1">
                     {filteredAssessments.map((ann, index) => {
                         const isDone = (ann._count?.submissions || 0) > 0;
                         return (
@@ -345,7 +345,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                         {(selectedAssessment.grades && selectedAssessment.grades.length > 0 && (selectedAssessment.grades[0].status === GradeStatus.PUBLISHED || selectedAssessment.grades[0].status === GradeStatus.FINALIZED)) && (() => {
                             const colors = getGradeColors(selectedAssessment.grades[0].marksObtained, selectedAssessment.totalMarks);
                             return (
-                                <div className={`space-y-4 p-6 ${colors.bg}/50 rounded-2xl border-2 ${colors.border} shadow-inner animate-fade-in-up`}>
+                                <div className={`space-y-4 p-6 ${colors.bg}/50 rounded-2xl border-2 ${colors.border} shadow-inner`}>
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                         <h3 className={`text-lg font-black ${colors.dark} tracking-tight uppercase italic flex items-center gap-2`}>
                                             <Check className={`w-6 h-6 ${colors.fill}`} />

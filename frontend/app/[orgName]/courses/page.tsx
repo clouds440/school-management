@@ -10,8 +10,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Button } from '@/components/ui/Button';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useToast } from '@/context/ToastContext';
-import { Course, Role, PaginatedResponse, ApiError } from '@/types';
+import { Course, Role, ApiError } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -31,7 +30,6 @@ export default function CoursesPage() {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { showToast } = useToast();
 
     // Redundant paginatedData state removed
     // URL State
@@ -40,10 +38,17 @@ export default function CoursesPage() {
     const sortBy = searchParams.get('sortBy') || 'name';
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
     const showOnlyMyCourses = searchParams.get('my') === 'true';
+    const [pageSize, setPageSize] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('edu-courses-limit');
+            return saved ? parseInt(saved, 10) : 10;
+        }
+        return 10;
+    });
 
     const courseParams: CourseParams = {
         page,
-        limit: 10,
+        limit: pageSize,
         search: searchTerm,
         sortBy,
         sortOrder,
@@ -87,6 +92,12 @@ export default function CoursesPage() {
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
     };
 
+    const handlePageSizeChange = (newSize: number) => {
+        setPageSize(newSize);
+        localStorage.setItem('edu-courses-limit', String(newSize));
+        updateQueryParams({ page: 1 });
+    };
+
     // We no longer need fetchCourses locally as it's handled by the hook
 
     const handleEditSubmit = async (e: React.FormEvent) => {
@@ -96,13 +107,13 @@ export default function CoursesPage() {
         try {
             await api.org.updateCourse(editingCourse.id, editFormData, token);
             setEditModalOpen(false);
-            showToast('Course updated successfully', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Course updated successfully', type: 'success' } });
             refresh();
         } catch (err: unknown) {
             const apiError = err as ApiError;
             const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Error updating course';
             const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
-            showToast(message, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
         } finally {
             dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
@@ -112,14 +123,14 @@ export default function CoursesPage() {
         if (!deletingCourse || !token) return;
         try {
             await api.org.deleteCourse(deletingCourse.id, token);
-            showToast('Course deleted successfully', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Course deleted successfully', type: 'success' } });
             setDeleteDialogOpen(false);
             refresh();
         } catch (err: unknown) {
             const apiError = err as ApiError;
             const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Error deleting course';
             const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
-            showToast(message, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
         }
     };
 
@@ -159,6 +170,7 @@ export default function CoursesPage() {
         },
         {
             header: 'Actions',
+            width: 210,
             accessor: (row: Course) => {
                 const isAdmin = user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER;
                 const isTeacher = user?.role === Role.TEACHER;
@@ -202,45 +214,42 @@ export default function CoursesPage() {
     }
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up">
-            <div className="mb-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                    {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
-                        <Button
-                            onClick={() => router.push(`/${orgSlug}/courses/create`)}
-                            icon={Plus}
-                            className="px-8 py-4"
-                        >
-                            Create Course
-                        </Button>
-                    )}
-                </div>
-            </div>
-
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-2 md:p-4 mb-4">
-                <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col h-full w-full">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name or description..." />
                     </div>
 
-                    {user?.role === Role.ORG_MANAGER && (
-                        <div className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10 self-start md:self-auto">
-                            <button
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                        {user?.role === Role.ORG_MANAGER && (
+                            <div
                                 onClick={() => updateQueryParams({ my: !showOnlyMyCourses, page: 1 })}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMyCourses ? 'bg-primary' : 'bg-gray-200'
-                                    }`}
+                                className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all cursor-pointer group select-none"
                             >
-                                <span
-                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showOnlyMyCourses ? 'translate-x-6' : 'translate-x-1'
-                                        }`}
-                                />
-                            </button>
-                            <span className="text-xs font-bold text-card-text uppercase tracking-wider">My Courses</span>
-                        </div>
-                    )}
+                                <button
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMyCourses ? 'bg-primary' : 'bg-gray-200'}`}
+                                >
+                                    <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showOnlyMyCourses ? 'translate-x-6' : 'translate-x-1'}`}
+                                    />
+                                </button>
+                                <span className="text-xs font-bold text-card-text uppercase tracking-wider">My Courses</span>
+                            </div>
+                        )}
+                        {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
+                            <Button
+                                onClick={() => router.push(`/${orgSlug}/courses/create`)}
+                                icon={Plus}
+                                className="px-8 w-full md:w-auto text-xs font-black uppercase tracking-widest"
+                            >
+                                Create Course
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
-                <div className="relative">
+                <div className="relative overflow-x-hidden flex-1 min-h-0">
                     <DataTable
                         data={fetchedData?.data || []}
                         columns={columns}
@@ -257,8 +266,10 @@ export default function CoursesPage() {
                         currentPage={page}
                         totalPages={fetchedData?.totalPages || 1}
                         totalResults={fetchedData?.totalRecords || 0}
-                        pageSize={10}
+                        pageSize={pageSize}
                         onPageChange={(p) => updateQueryParams({ page: p })}
+                        onPageSizeChange={handlePageSizeChange}
+                        maxHeight="100%"
                         sortConfig={{ key: sortBy, direction: sortOrder }}
                         onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                     />

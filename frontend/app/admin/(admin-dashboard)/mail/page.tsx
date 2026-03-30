@@ -7,7 +7,6 @@ import { Search, Plus, Filter, MessageSquare, ArrowUpRight, CheckCircle2, XCircl
 import { api } from '@/lib/api';
 import { RequestItem, RequestDetail, RequestStatus, Role, PaginatedResponse, UpdateRequestPayload, ApiError } from '@/types';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -19,25 +18,35 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useSocket } from '@/hooks/useSocket';
 import { getPublicUrl } from '@/lib/utils';
 import { Loading } from '@/components/ui/Loading';
+import { Button } from '@/components/ui/Button';
 import Image from 'next/image';
 
 export default function RequestsPage() {
-    const { user, token, loading } = useAuth();
+    const { user, token, loading: authLoading } = useAuth();
     const { state, dispatch } = useGlobal();
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { showToast } = useToast();
 
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<RequestItem> | null>(null);
-    const [fetching, setFetching] = useState(true);
     const [selectedRequest, setSelectedRequest] = useState<RequestDetail | null>(null);
     const [threadModalOpen, setThreadModalOpen] = useState(false);
     const [newRequestOpen, setNewRequestOpen] = useState(false);
-    const [updatingStatus, setUpdatingStatus] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [pendingStatus, setPendingStatus] = useState<RequestStatus | null>(null);
     const threadRef = useRef<RequestThreadHandle>(null);
+
+    // Global UI states alias
+    const fetching = state.ui.isLoading;
+    const isProcessing = state.ui.isProcessing;
+
+    const [pageSize, setPageSize] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('edu-admin-mail-limit');
+            return saved ? parseInt(saved, 10) : 10;
+        }
+        return 10;
+    });
 
     // URL State
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -61,11 +70,11 @@ export default function RequestsPage() {
     const fetchRequests = useCallback(async () => {
         if (!token) return;
         try {
-            setFetching(true);
+            dispatch({ type: 'UI_SET_LOADING', payload: true });
             const [data, stats] = await Promise.all([
                 api.requests.getRequests(token, {
                     page,
-                    limit: 10,
+                    limit: pageSize,
                     search: searchQuery,
                     sortBy,
                     sortOrder,
@@ -80,11 +89,11 @@ export default function RequestsPage() {
             const apiError = error as ApiError;
             const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to fetch requests';
             const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
-            showToast(message, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
         } finally {
-            setFetching(false);
+            dispatch({ type: 'UI_SET_LOADING', payload: false });
         }
-    }, [token, page, searchQuery, sortBy, sortOrder, statusFilter, showToast, dispatch]);
+    }, [token, page, searchQuery, sortBy, sortOrder, statusFilter, pageSize, dispatch]);
 
     const { subscribe, joinRoom, leaveRoom } = useSocket({
         token: token,
@@ -94,10 +103,10 @@ export default function RequestsPage() {
     });
 
     useEffect(() => {
-        if (!loading && user && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && token) {
+        if (!authLoading && user && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && token) {
             fetchRequests();
         }
-    }, [loading, user, token, fetchRequests]);
+    }, [authLoading, user, token, fetchRequests]);
 
     // Real-time updates
     useEffect(() => {
@@ -137,22 +146,29 @@ export default function RequestsPage() {
     const handleViewRequest = async (item: RequestItem) => {
         if (!token) return;
         try {
+            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
             const detail = await api.requests.getRequest(item.id, token);
             setSelectedRequest(detail);
             setThreadModalOpen(true);
         } catch (error: unknown) {
-            showToast('Failed to load request', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load request', type: 'error' } });
+        } finally {
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
     const handleReply = async (content: string, files?: File[]) => {
         if (!selectedRequest || !token) return;
         try {
+            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
             await api.requests.addMessage(selectedRequest.id, { content }, token, files);
             const updated = await api.requests.getRequest(selectedRequest.id, token);
             setSelectedRequest(updated);
-        } catch (error) {
-            showToast('Failed to send reply', 'error');
+            fetchRequests();
+        } catch (error: unknown) {
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to send reply', type: 'error' } });
+        } finally {
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -160,8 +176,14 @@ export default function RequestsPage() {
         threadRef.current?.scrollToReply();
     };
 
+    const handlePageSizeChange = (newSize: number) => {
+        setPageSize(newSize);
+        localStorage.setItem('edu-admin-mail-limit', String(newSize));
+        updateQueryParams({ page: 1 });
+    };
+
     const handleStatusUpdate = async (newStatus: RequestStatus) => {
-        if (!token || !selectedRequest || updatingStatus) return;
+        if (!token || !selectedRequest || isProcessing) return;
         if (newStatus === RequestStatus.RESOLVED || newStatus === RequestStatus.CLOSED) {
             setPendingStatus(newStatus);
             setConfirmOpen(true);
@@ -173,16 +195,16 @@ export default function RequestsPage() {
     const executeStatusUpdate = async (newStatus: RequestStatus) => {
         if (!token || !selectedRequest) return;
         try {
-            setUpdatingStatus(true);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
             const payload: UpdateRequestPayload = { status: newStatus };
             const updated = await api.requests.updateRequest(selectedRequest.id, payload, token);
             setSelectedRequest(updated);
-            showToast(`Status updated to ${newStatus.replace('_', ' ')}`, 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: `Status updated to ${newStatus.replace('_', ' ')}`, type: 'success' } });
             fetchRequests();
         } catch (error: unknown) {
-            showToast('Failed to update status', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to update status', type: 'error' } });
         } finally {
-            setUpdatingStatus(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
             setConfirmOpen(false);
             setPendingStatus(null);
         }
@@ -247,8 +269,8 @@ export default function RequestsPage() {
                             </div>
                         )}
                         <div className="min-w-0">
-                            <p className="text-xs font-black text-gray-700 truncate max-w-[120px]">{row.creator?.name || row.creator.email}</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase">{row.creatorRole?.replace('_', ' ')}</p>
+                            <p className="text-xs font-black text-gray-700 truncate max-w-[120px]">{row.creator?.name || row.creator?.email || 'Unknown'}</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase">{row.creatorRole?.replace('_', ' ') || 'N/A'}</p>
                         </div>
                     </div>
                 );
@@ -336,16 +358,16 @@ export default function RequestsPage() {
         },
     ];
 
-    if (loading || (!user && !loading)) {
+    if (authLoading || (!user && !authLoading)) {
         return <Loading fullScreen text="Preparing Mailbox..." size="lg" />;
     }
 
     const isClosed = selectedRequest?.status === RequestStatus.CLOSED || selectedRequest?.status === RequestStatus.RESOLVED;
 
     return (
-        <div className="flex flex-col h-full w-full animate-fade-in-up">
-            <div className="bg-white/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/50 flex flex-col w-full overflow-hidden flex-1 min-h-0">
-                <div className="px-8 pt-4 border-b border-gray-100 flex flex-col gap-6 bg-gray-50/50 shrink-0">
+        <div className="flex flex-col h-full w-full">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="px-6 md:px-8 pt-2 pb-2 border-b border-gray-100 flex flex-col gap-4 bg-gray-50/50 shrink-0">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
                             <CustomSelect
@@ -369,17 +391,17 @@ export default function RequestsPage() {
                                 placeholder="Search mail..."
                             />
                         </div>
-                        <button
+                        <Button
                             onClick={() => setNewRequestOpen(true)}
-                            className="flex items-center gap-2 px-8 py-4 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-200 shrink-0"
+                            icon={Plus}
+                            className="flex items-center gap-2 px-8 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-200 shrink-0 border-none"
                         >
-                            <Plus className="w-4 h-4" />
                             NEW MAIL
-                        </button>
+                        </Button>
                     </div>
                 </div>
 
-                <div className="p-4 bg-gray-50/10 flex-1 min-h-0 overflow-hidden">
+                <div className="p-1 md:p-2 bg-gray-50/10 flex-1 min-h-0 overflow-hidden">
                     <DataTable
                         columns={columns}
                         data={requests}
@@ -389,8 +411,9 @@ export default function RequestsPage() {
                         currentPage={paginatedData?.currentPage || 1}
                         totalPages={paginatedData?.totalPages || 1}
                         totalResults={paginatedData?.totalRecords || 0}
-                        pageSize={10}
+                        pageSize={pageSize}
                         onPageChange={(p: number) => updateQueryParams({ page: p })}
+                        onPageSizeChange={handlePageSizeChange}
                         sortConfig={{ key: sortBy, direction: sortOrder }}
                         onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                         getRowClassName={(row) => {
@@ -416,31 +439,29 @@ export default function RequestsPage() {
                             {!isClosed && (
                                 <div className="flex items-center gap-2 ml-4">
                                     {selectedRequest.status === RequestStatus.OPEN && (
-                                        <button
+                                        <Button
                                             onClick={() => handleStatusUpdate(RequestStatus.IN_PROGRESS)}
-                                            disabled={updatingStatus}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all disabled:opacity-50 shadow-sm"
+                                            variant="secondary"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all border-none shadow-sm"
                                         >
                                             <ArrowUpRight className="w-3 h-3" />
                                             In Progress
-                                        </button>
+                                        </Button>
                                     )}
-                                    <button
+                                    <Button
                                         onClick={() => handleStatusUpdate(RequestStatus.RESOLVED)}
-                                        disabled={updatingStatus}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-green-700 transition-all disabled:opacity-50 shadow-sm"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-green-700 transition-all border-none shadow-sm"
                                     >
                                         <CheckCircle2 className="w-3 h-3" />
                                         Resolve
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         onClick={() => handleStatusUpdate(RequestStatus.CLOSED)}
-                                        disabled={updatingStatus}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-500 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-gray-600 transition-all disabled:opacity-50 shadow-sm"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-500 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-gray-600 transition-all border-none shadow-sm"
                                     >
                                         <XCircle className="w-3 h-3" />
                                         Close Thread
-                                    </button>
+                                    </Button>
                                 </div>
                             )}
                         </div>
@@ -451,7 +472,7 @@ export default function RequestsPage() {
                         <div className="flex items-center gap-3 flex-wrap">
                             <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{selectedRequest.category.replace('_', ' ')}</span>
                             <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{selectedRequest.id.slice(0, 8)}</span>
-                            <span className="flex items-center gap-1"><UserIcon className="w-3 h-3" />{selectedRequest.creator?.name || selectedRequest.creator?.email}</span>
+                            <span className="flex items-center gap-1"><UserIcon className="w-3 h-3" />{selectedRequest.creator?.name || selectedRequest.creator?.email || 'Unknown'}</span>
                             {selectedRequest.organization && (
                                 <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{selectedRequest.organization.name}</span>
                             )}
@@ -464,13 +485,13 @@ export default function RequestsPage() {
                         <div className="flex items-center justify-between w-full">
                             <div className="flex items-center gap-2">
                                 {!isClosed ? (
-                                    <button
+                                    <Button
                                         onClick={handleScrollToReply}
-                                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-50 text-indigo-600 rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all active:scale-95 border border-indigo-200/50"
+                                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-50 text-indigo-600 rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all border border-indigo-200/50"
                                     >
                                         <MessageSquare className="w-3.5 h-3.5" />
                                         Reply to Thread
-                                    </button>
+                                    </Button>
                                 ) : (
                                     <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                                         Thread is {selectedRequest.status}
@@ -518,7 +539,7 @@ export default function RequestsPage() {
             <NewRequestModal
                 isOpen={newRequestOpen}
                 onClose={() => setNewRequestOpen(false)}
-                onSuccess={() => { fetchRequests(); showToast('Mail sent', 'success'); }}
+                onSuccess={() => { fetchRequests(); dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent', type: 'success' } }); }}
             />
         </div>
     );

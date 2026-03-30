@@ -11,24 +11,22 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { Teacher, ApiError, Role, Section, Assessment } from '@/types';
-import { useToast } from '@/context/ToastContext';
 import { getPublicUrl, formatDate } from '@/lib/utils';
 
 
 export default function TeacherLandingPage() {
     const { user: payload, loading, token } = useAuth();
-    const { state } = useGlobal();
+    const { state, dispatch } = useGlobal();
     const [sections, setSections] = useState<Section[]>([]);
     const [assessments, setAssessments] = useState<Assessment[]>([]);
-    const [fetchingData, setFetchingData] = useState(true);
-    const { showToast } = useToast();
+    const fetchingData = state.ui.isLoading;
 
     const orgData = state.stats.orgData;
     const teacher = state.auth.userProfile as Teacher | null;
 
     const fetchData = useCallback(async () => {
         if (!token) return;
-        setFetchingData(true);
+        dispatch({ type: 'UI_SET_LOADING', payload: true });
         try {
             const [sectionsData, assessmentsData] = await Promise.all([
                 api.org.getSections(token, { my: true }),
@@ -41,11 +39,11 @@ export default function TeacherLandingPage() {
             const apiError = error as ApiError;
             console.error('Failed to fetch teacher data:', error);
             const message = apiError?.response?.data?.message || 'Failed to load data. Please try again.';
-            showToast(Array.isArray(message) ? message[0] : message, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
-            setFetchingData(false);
+            dispatch({ type: 'UI_SET_LOADING', payload: false });
         }
-    }, [token, showToast]);
+    }, [token, dispatch]);
 
     useEffect(() => {
         fetchData();
@@ -74,7 +72,7 @@ export default function TeacherLandingPage() {
         .slice(0, 3);
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up space-y-8 pb-12">
+        <div className="flex flex-col w-full space-y-8 pb-12">
             {/* Premium Header with Profile */}
             <div className="relative group">
                 <div className="absolute -inset-1 bg-linear-to-r from-primary/20 to-primary/5 rounded-sm blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>

@@ -115,15 +115,23 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
                 `}
             >
                 {/* Sidebar Header - Branded */}
-                <div className={`h-16 flex items-center px-6 border-b border-sidebar-text/10 bg-sidebar-text/5 shrink-0 ${!isExpanded ? 'justify-center' : 'justify-between'}`}>
-                    {isExpanded && (
-                        <Link
-                            href={brandHref || '#'}
-                            className="font-black text-lg text-sidebar-text truncate transition-all animate-in fade-in duration-300 hover:text-primary-hover"
-                        >
-                            Dashboard
-                        </Link>
-                    )}
+                <div className={`h-14 flex items-center px-4 border-b border-sidebar-text/10 bg-sidebar-text/5 shrink-0 ${!isExpanded ? 'justify-center' : 'justify-between'} gap-2 overflow-hidden`}>
+                    <div className="flex items-center gap-2 min-w-0 group cursor-pointer">
+                        {pathname !== '/admin' && !pathname.endsWith('/admin') && (
+                            <BackButton
+                                label=""
+                                className="p-1.5! bg-transparent! border-none! shadow-none! text-sidebar-text/40! group-hover:text-sidebar-text! backdrop-blur-none! py-0! px-0!"
+                            />
+                        )}
+                        {isExpanded && (
+                            <Link
+                                href={brandHref || '#'}
+                                className="font-black text-[11px] uppercase tracking-[0.2em] text-sidebar-text truncate transition-all animate-in fade-in duration-500 hover:text-primary-hover"
+                            >
+                                {activeLink?.label || 'Dashboard'}
+                            </Link>
+                        )}
+                    </div>
                     <button
                         onClick={() => setIsMobileOpen(false)}
                         className="lg:hidden p-2 text-sidebar-text opacity-70 hover:opacity-100 rounded-sm transition-colors"
@@ -137,7 +145,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
                             e.stopPropagation();
                             toggleSidebar();
                         }}
-                        className={`hidden lg:flex absolute ${isExpanded ? 'right-3' : 'right-5'} top-4 p-3 rounded-sm cursor-pointer bg-primary text-primary-text hover:bg-primary-hover shadow-lg transition-all z-100 hover:scale-110 active:scale-90 border-2 border-white/20`}
+                        className={`hidden lg:flex absolute ${isExpanded ? 'right-3' : 'right-5'} top-4 p-2 rounded-sm cursor-pointer bg-primary text-primary-text hover:bg-primary-hover shadow-lg transition-all z-100 hover:scale-110 active:scale-90 border-2 border-white/20`}
                         title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
                     >
                         {isExpanded ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -182,7 +190,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
                 </div>
 
                 {/* Branded Sidebar Footer */}
-                <div className="p-4 border-t border-sidebar-text/10 bg-sidebar-text/5 shrink-0">
+                <div className="p-4 border-t border-sidebar-text/10 shrink-0">
                     {user && (
                         <div className={`flex items-center ${!isExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
                             <div className={`w-9 h-9 rounded-sm ${user.avatarUrl || user.orgLogoUrl ? 'bg-transparent' : 'bg-primary'} flex items-center justify-center text-sidebar-active-text font-bold shrink-0 shadow-inner overflow-hidden relative`}>
@@ -213,17 +221,14 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
                                     e.preventDefault();
                                     router.push(`/${user.orgSlug}/mail`);
                                 }}
-                                className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 hover:bg-sidebar-text/10 transition-all py-2 border border-transparent shadow-sm relative`}
+                                className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-sidebar-active' : 'bg-sidebar hover:bg-sidebar-text/30'} transition-all py-3 border border-transparent shadow-sm relative`}
                                 title="Mail"
                             >
                                 <Mail className="w-4 h-4 shrink-0" />
                                 {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Mail</span>}
-                                {mailCount.unread > 0 && !isExpanded && (
-                                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-sidebar" />
-                                )}
-                                {isExpanded && mailCount.unread > 0 && (
-                                    <span className="ml-auto bg-red-500 text-white px-1.5 py-0.5 rounded-full text-[9px] font-black min-w-[30px] text-center">
-                                        {mailCount.unread}
+                                {mailCount.unread > 0 && (
+                                    <span className={`ml-auto bg-red-500 text-white ${!isExpanded ? 'absolute -top-1 right-0' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
+                                        {mailCount.unread > 99 ? '99+' : mailCount.unread}
                                     </span>
                                 )}
                             </Link>
@@ -234,7 +239,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
                                 e.preventDefault();
                                 router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : `/${user?.orgSlug}/change-password`);
                             }}
-                            className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 hover:bg-sidebar-text/10 transition-all py-2 border border-transparent shadow-sm`}
+                            className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-sidebar-active' : 'bg-sidebar hover:bg-sidebar-text/30'}  transition-all py-3 border border-transparent shadow-sm`}
                             title="Change Password"
                         >
                             <Key className="w-4 h-4 shrink-0" />
@@ -243,7 +248,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
 
                         <button
                             onClick={handleLogout}
-                            className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} w-full rounded-sm text-red-500 hover:bg-red-500/10 transition-all py-2 border border-transparent shadow-sm`}
+                            className={`flex items-center cursor-pointer ${!isExpanded ? 'justify-center' : 'justify-start px-3'} w-full rounded-sm text-red-500 bg-red-500/10 hover:bg-red-500/30 transition-all py-3 border border-transparent shadow-sm`}
                             title="Log out"
                         >
                             <LogOut className="w-4 h-4 shrink-0" />
@@ -255,37 +260,15 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
-                {/* Branded Navbar */}
-                <header className="h-16 border-b border-black/5 bg-navbar text-navbar-text flex items-center justify-between px-4 md:px-8 shrink-0 shadow-sm relative z-20">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setIsMobileOpen(true)}
-                            className="lg:hidden p-2 hover:bg-white/10 rounded-sm transition-colors"
-                        >
-                            <ChevronRight className="w-6 h-6 rotate-180" />
-                        </button>
-
-                        <div className="flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-300">
-                            {pathname !== '/admin' &&
-                                !pathname.endsWith('/admin') && (
-                                    <BackButton />
-                                )}
-                            <div className="flex items-center gap-3">
-                                {activeLink && activeLink.icon && (
-                                    <div className="p-2 bg-primary/10 rounded-sm text-white">
-                                        <activeLink.icon className="w-5 h-5" />
-                                    </div>
-                                )}
-                                <h2 className="text-xl font-black tracking-tight uppercase truncate max-w-[200px] md:max-w-none">
-                                    {activeLink?.label}
-                                </h2>
-                            </div>
-                        </div>
-                    </div>
-                </header>
+                <button
+                    onClick={() => setIsMobileOpen(true)}
+                    className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-primary text-primary-text rounded-sm shadow-xl border-2 border-white/20 active:scale-95 transition-all hover:bg-primary-hover"
+                >
+                    <ChevronRight className="w-5 h-5 rotate-180" />
+                </button>
 
                 {/* Universal Content Wrapper - This is the ONLY scrollable area */}
-                <div className={`flex-1 w-full px-[3px] md:px-2 py-2 md:py-4 bg-slate-300 ${pathname?.endsWith('/mail') ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
+                <div className="flex-1 min-h-0 w-full px-[3px] md:px-2 py-1 md:py-2 bg-slate-300 overflow-y-auto custom-scrollbar flex flex-col">
                     {children}
                 </div>
             </main>

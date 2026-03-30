@@ -6,7 +6,7 @@ import { Trophy, Users, Calendar, CheckCircle2, Link as LinkIcon, Download } fro
 import Image from 'next/image';
 import { api } from '@/lib/api';
 import { Assessment, Section, Grade, Submission, Role } from '@/types';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { useParams, useRouter } from 'next/navigation';
 import { formatDate, getPublicUrl } from '@/lib/utils';
 import { Modal } from '@/components/ui/Modal';
@@ -18,13 +18,13 @@ export default function AssessmentDetailPage() {
     const role = user?.role;
     const params = useParams();
     const router = useRouter();
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
 
     const [assessment, setAssessment] = useState<Assessment | null>(null);
     const [section, setSection] = useState<Section | null>(null);
     const [grades, setGrades] = useState<Grade[]>([]);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = state.ui.isLoading;
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [showBulkGrading, setShowBulkGrading] = useState(false);
 
@@ -38,7 +38,7 @@ export default function AssessmentDetailPage() {
 
     const fetchData = useCallback(async () => {
         if (!token || !sectionId || !assessmentId) return;
-        setIsLoading(true);
+        dispatch({ type: 'UI_SET_LOADING', payload: true });
         try {
             const [assessmentData, sectionData, gradesData, submissionsData] = await Promise.all([
                 api.org.getAssessment(assessmentId, token),
@@ -53,12 +53,12 @@ export default function AssessmentDetailPage() {
             setSubmissions(submissionsData);
         } catch (error: unknown) {
             console.error('Failed to fetch assessment details:', error);
-            showToast('Failed to load assessment data', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load assessment data', type: 'error' } });
             router.push(`/${orgSlug}/sections/${sectionId}`);
         } finally {
-            setIsLoading(false);
+            dispatch({ type: 'UI_SET_LOADING', payload: false });
         }
-    }, [token, sectionId, assessmentId, showToast, router, orgSlug]);
+    }, [token, sectionId, assessmentId, dispatch, router, orgSlug]);
 
     useEffect(() => {
         fetchData();
@@ -75,7 +75,7 @@ export default function AssessmentDetailPage() {
     if (!assessment || !section) return null;
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up space-y-8">
+        <div className="flex flex-col w-full space-y-8">
             {/* Assessment Header */}
             <div className="bg-card border border-white/20 rounded-sm p-8 md:p-10 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none text-primary">
@@ -370,7 +370,7 @@ export default function AssessmentDetailPage() {
                                     return [...prev, g];
                                 });
                                 setSelectedStudentId(null);
-                                showToast('Grade saved successfully', 'success');
+                                dispatch({ type: 'TOAST_ADD', payload: { message: 'Grade saved successfully', type: 'success' } });
                             }}
                             onCancel={() => setSelectedStudentId(null)}
                         />

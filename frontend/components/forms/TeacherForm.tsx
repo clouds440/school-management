@@ -7,7 +7,6 @@ import { User, Mail, Lock, BookOpen, DollarSign, Phone, Plus, ShieldCheck, UserX
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { Section, Teacher, TeacherStatus, Role, CreateTeacherRequest, UpdateTeacherRequest, ApiError } from '@/types';
-import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
@@ -28,9 +27,9 @@ interface TeacherFormProps {
 export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile }: TeacherFormProps) {
     const { token, user: currentUser, updateUser } = useAuth();
     const router = useRouter();
-    const { showToast } = useToast();
     const { state, dispatch } = useGlobal();
-    const isProcessing = state.ui.isProcessing;    const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+    const isProcessing = state.ui.isProcessing;
+    const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
 
     const [sections, setSections] = useState<Section[]>([]);
 
@@ -121,12 +120,12 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                         });
                     }
                 } catch {
-                    showToast('Profile updated, but photo upload failed', 'info');
+                    dispatch({ type: 'TOAST_ADD', payload: { message: 'Profile updated, but photo upload failed', type: 'info' } });
                 }
             }
 
             window.dispatchEvent(new Event('stats-updated'));
-            showToast(`${isProfile ? 'Profile' : 'Teacher account'} ${teacherId || isProfile ? 'updated' : 'created'} successfully`, 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: `${isProfile ? 'Profile' : 'Teacher account'} ${teacherId || isProfile ? 'updated' : 'created'} successfully`, type: 'success' } });
             if (isProfile) {
                 router.back();
             } else {
@@ -137,9 +136,9 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
             const message = apiError?.response?.data?.message || 'Failed to save teacher';
 
             if (Array.isArray(message)) {
-                message.forEach((m: string) => showToast(m, 'error'));
+                message.forEach((m: string) => dispatch({ type: 'TOAST_ADD', payload: { message: m, type: 'error' } }));
             } else {
-                showToast(message, 'error');
+                dispatch({ type: 'TOAST_ADD', payload: { message: message, type: 'error' } });
             }
         } finally {
             dispatch({ type: 'UI_SET_PROCESSING', payload: false });
@@ -473,17 +472,10 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                 <Button type="button" variant="secondary" className="w-32" onClick={() => router.back()}>
                     Cancel
                 </Button>
-                <Button type="submit" className="w-64 h-12" disabled={isProcessing}>
-                    {isProcessing ? (
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            <span className="font-black uppercase tracking-widest text-[10px]">Processing...</span>
-                        </div>
-                    ) : (
-                        <span className="font-black uppercase tracking-widest text-[10px] italic">
-                            {isProfile ? 'Update Profile' : (teacherId ? 'Update Faculty Member' : 'Create Faculty Account')}
-                        </span>
-                    )}
+                <Button type="submit" className="w-64 h-12" loadingText="PROCESSING...">
+                    <span className="font-black uppercase tracking-widest text-[10px] italic">
+                        {isProfile ? 'Update Profile' : (teacherId ? 'Update Faculty Member' : 'Create Faculty Account')}
+                    </span>
                 </Button>
             </div>
         </form>

@@ -8,6 +8,7 @@ import { MarkdownEditor, MarkdownEditorHandle } from '@/components/ui/MarkdownEd
 import { getPublicUrl } from '@/lib/utils';
 import Image from 'next/image';
 import { ADMIN_REPLY_TEMPLATES } from './MailTemplates';
+import { Button } from '@/components/ui/Button';
 
 interface RequestThreadProps {
     request: RequestDetail;
@@ -260,7 +261,7 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
                             onChange={setReplyContent}
                             placeholder="Write a reply..."
                             rows={5}
-                            templates={isPlatformAdmin ? ADMIN_REPLY_TEMPLATES.map((t: any) => ({ label: t.name, content: t.content })) : []}
+                            templates={isPlatformAdmin ? ADMIN_REPLY_TEMPLATES.map((t: { name: string; content: string }) => ({ label: t.name, content: t.content })) : []}
                             orgData={orgData as Record<string, string>}
                         />
 
@@ -296,18 +297,14 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
                                 multiple
                             />
 
-                            <button
+                            <Button
                                 onClick={handleSend}
-                                disabled={(!replyContent.trim() && selectedFiles.length === 0) || sending}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 shadow-lg"
+                                isLoading={sending}
+                                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all border-none shadow-lg"
+                                icon={Send}
                             >
-                                {sending ? (
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                                ) : (
-                                    <Send className="w-4 h-4" />
-                                )}
                                 SEND REPLY
-                            </button>
+                            </Button>
                         </div>
                     </div>}
 

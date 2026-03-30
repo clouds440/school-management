@@ -11,17 +11,16 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, RegisterFormData } from '@/lib/schemas';
 
 export default function RegisterPage() {
     const router = useRouter();
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
     const [sameAsLoginEmail, setSameAsLoginEmail] = useState(false);
     const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
 
     const {
         register,
@@ -53,7 +52,8 @@ export default function RegisterPage() {
     }, [formData.email, sameAsLoginEmail, setValue, trigger, errors.contactEmail]);
 
     const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
-        setIsSaving(true);
+        if (state.ui.isProcessing) return;
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             const payload: RegisterRequest = {
                 ...data,
@@ -71,11 +71,11 @@ export default function RegisterPage() {
                         await api.org.uploadLogo(pendingLogoFile, loginRes.access_token);
                     }
                 } catch {
-                    showToast('Account created! Logo upload failed — you can add it from Settings.', 'info');
+                    dispatch({ type: 'TOAST_ADD', payload: { message: 'Account created! Logo upload failed — you can add it from Settings.', type: 'info' } });
                 }
             }
 
-            showToast('Registration successful! Please wait for approval.', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Registration successful! Please wait for approval.', type: 'success' } });
             router.push('/login');
         } catch (error: unknown) {
             const apiError = error as ApiError;
@@ -84,12 +84,12 @@ export default function RegisterPage() {
                 : (apiError?.response?.data?.message || 'Registration failed');
             
             if (Array.isArray(message)) {
-                message.forEach((m: string) => showToast(m, 'error'));
+                message.forEach((m: string) => dispatch({ type: 'TOAST_ADD', payload: { message: m, type: 'error' } }));
             } else {
-                showToast(message as string, 'error');
+                dispatch({ type: 'TOAST_ADD', payload: { message: message as string, type: 'error' } });
             }
         } finally {
-            setIsSaving(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -266,15 +266,8 @@ export default function RegisterPage() {
                         </div>
                     </div>
 
-                    <Button type="submit" className="w-full h-14" disabled={isSaving}>
-                        {isSaving ? (
-                            <div className="flex items-center gap-3">
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                <span className="font-black uppercase tracking-widest text-xs">Registering...</span>
-                            </div>
-                        ) : (
-                            <span className="font-black uppercase tracking-widest text-xs italic">Create Organization Account</span>
-                        )}
+                    <Button type="submit" className="w-full h-14" loadingText="Registering...">
+                        <span className="font-black uppercase tracking-widest text-xs italic">Create Organization Account</span>
                     </Button>
                 </form>
             </div>

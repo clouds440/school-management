@@ -23,7 +23,7 @@ const StatusOverlay = ({ orgData, user, orgSlug }: { orgData: Organization, user
 
     if (orgData.status === OrgStatus.PENDING) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-xl border border-white/40 text-center max-w-2xl mx-auto my-10 animate-fade-in-up">
+            <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-xl border border-white/40 text-center max-w-2xl mx-auto my-10">
                 <div className="p-6 bg-yellow-50 rounded-full mb-6 relative">
                     <Clock className="w-20 h-20 text-yellow-500 animate-pulse" />
                     <div className="absolute inset-0 bg-yellow-400 rounded-full animate-ping opacity-20"></div>
@@ -42,7 +42,7 @@ const StatusOverlay = ({ orgData, user, orgSlug }: { orgData: Organization, user
 
     if (orgData.status === OrgStatus.REJECTED) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-xl border border-white/40 text-center max-w-2xl mx-auto my-10 animate-fade-in-up">
+            <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-xl border border-white/40 text-center max-w-2xl mx-auto my-10">
                 <div className="p-6 bg-red-50 rounded-full mb-6">
                     <ShieldOff className="w-20 h-20 text-red-500" />
                 </div>
@@ -74,7 +74,7 @@ const StatusOverlay = ({ orgData, user, orgSlug }: { orgData: Organization, user
 
     if (orgData.status === OrgStatus.SUSPENDED) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-xl border border-orange-200 text-center max-w-2xl mx-auto my-10 animate-fade-in-up">
+            <div className="flex flex-col items-center justify-center p-12 bg-white/70 backdrop-blur-md rounded-sm shadow-xl border border-orange-200 text-center max-w-2xl mx-auto my-10">
                 <div className="p-6 bg-orange-50 rounded-full mb-6">
                     <ShieldOff className="w-20 h-20 text-orange-500" />
                 </div>

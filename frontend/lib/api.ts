@@ -15,6 +15,12 @@ if (!API_BASE_URL) {
     throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
 }
 
+let unauthorizedHandler: (() => void) | null = null;
+
+export const setUnauthorizedHandler = (handler: () => void) => {
+    unauthorizedHandler = handler;
+};
+
 interface RequestOptions extends RequestInit {
     token?: string;
 }
@@ -43,6 +49,10 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     };
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...rest, headers });
+
+    if (response.status === 401 && unauthorizedHandler) {
+        unauthorizedHandler();
+    }
 
     if (!response.ok) {
         let message = `Request failed with status ${response.status}`;
@@ -109,6 +119,11 @@ export const api = {
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,
             });
+            
+            if (response.status === 401 && unauthorizedHandler) {
+                unauthorizedHandler();
+            }
+
             if (!response.ok) throw new Error('Failed to upload logo');
             return response.json();
         },
@@ -154,6 +169,11 @@ export const api = {
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,
             });
+
+            if (response.status === 401 && unauthorizedHandler) {
+                unauthorizedHandler();
+            }
+
             if (!response.ok) throw new Error('Failed to upload avatar');
             return response.json();
         },
@@ -208,6 +228,11 @@ export const api = {
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,
             });
+
+            if (response.status === 401 && unauthorizedHandler) {
+                unauthorizedHandler();
+            }
+
             if (!response.ok) {
                 let errMessage = 'Failed to upload file';
                 try {
@@ -241,6 +266,11 @@ export const api = {
                     headers: { Authorization: `Bearer ${token}` },
                     body: formData,
                 });
+
+                if (response.status === 401 && unauthorizedHandler) {
+                    unauthorizedHandler();
+                }
+
                 if (!response.ok) throw new Error('Failed to send reply with files');
                 return response.json();
             }

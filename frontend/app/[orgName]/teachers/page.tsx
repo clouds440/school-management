@@ -8,16 +8,15 @@ import { DataTable, Column } from '@/components/ui/DataTable';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useToast } from '@/context/ToastContext';
 import { Teacher, Role, PaginatedResponse } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
+import { useGlobal } from '@/context/GlobalContext';
 import { TableActions } from '@/components/ui/TableActions';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 import { getPublicUrl } from '@/lib/utils';
 import { Loading } from '@/components/ui/Loading';
 import { NewRequestModal } from '@/components/requests/NewRequestModal';
-import { Send } from 'lucide-react';
 
 type TeacherParams = BasePaginationParams;
 
@@ -26,7 +25,7 @@ export default function TeachersPage() {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
 
     // We no longer need local paginatedData state as fetchedData is used directly
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -40,10 +39,17 @@ export default function TeachersPage() {
     const searchTerm = searchParams.get('search') || '';
     const sortBy = searchParams.get('sortBy') || 'name';
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
+    const [pageSize, setPageSize] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('edu-teachers-limit');
+            return saved ? parseInt(saved, 10) : 10;
+        }
+        return 10;
+    });
 
     const teacherParams: TeacherParams = {
         page,
-        limit: 10,
+        limit: pageSize,
         search: searchTerm,
         sortBy,
         sortOrder,
@@ -85,17 +91,23 @@ export default function TeachersPage() {
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
     };
 
+    const handlePageSizeChange = (newSize: number) => {
+        setPageSize(newSize);
+        localStorage.setItem('edu-teachers-limit', String(newSize));
+        updateQueryParams({ page: 1 });
+    };
+
     // We no longer need fetchData locally as it's handled by the hook
 
     const handleDeleteConfirm = async () => {
         if (!deletingTeacher || !token) return;
         try {
             await api.org.deleteTeacher(deletingTeacher.id, token);
-            showToast('Teacher removed from organization', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Teacher removed from organization', type: 'success' } });
             setDeleteDialogOpen(false);
             refresh();
         } catch (err: unknown) {
-            showToast(err instanceof Error ? err.message : 'Failed to delete teacher', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: err instanceof Error ? err.message : 'Failed to delete teacher', type: 'error' } });
         }
     };
 
@@ -166,6 +178,7 @@ export default function TeachersPage() {
         },
         {
             header: 'Actions',
+            width: 200,
             accessor: (row: Teacher) => (
                 <TableActions
                     onEdit={() => router.push(`/${orgSlug}/teachers/edit/${row.id}`)}
@@ -198,42 +211,46 @@ export default function TeachersPage() {
     }
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up">
-            <div className="mb-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                    <Button
-                        onClick={() => router.push(`/${orgSlug}/teachers/add`)}
-                        icon={UserPlus}
-                        className="px-8 py-4"
-                    >
-                        Add Teacher
-                    </Button>
-                </div>
-            </div>
+        <div className="flex flex-col h-full w-full">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
+                    <div className="flex-1 max-w-xl">
+                        <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, email or subject..." />
+                    </div>
 
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-2 md:p-4 mb-4 overflow-hidden">
-                <div className="mb-4 flex">
-                    <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, email or subject..." />
+                    {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
+                        <Button
+                            onClick={() => router.push(`/${orgSlug}/teachers/add`)}
+                            icon={UserPlus}
+                            className="px-8 w-full md:w-auto text-xs font-black uppercase tracking-widest"
+                        >
+                            Add Teacher
+                        </Button>
+                    )}
                 </div>
 
-                <DataTable
-                    data={fetchedData?.data || []}
-                    columns={columns}
-                    keyExtractor={(row) => row.id}
-                    isLoading={isFetching}
-                    onRowClick={(row) => {
-                        if (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) {
-                            router.push(`/${orgSlug}/teachers/edit/${row.id}`);
-                        }
-                    }}
-                    currentPage={page}
-                    totalPages={fetchedData?.totalPages || 1}
-                    totalResults={fetchedData?.totalRecords || 0}
-                    pageSize={10}
-                    onPageChange={(p) => updateQueryParams({ page: p })}
-                    sortConfig={{ key: sortBy, direction: sortOrder }}
-                    onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
-                />
+                <div className="relative overflow-x-hidden flex-1 min-h-0">
+                    <DataTable
+                        data={fetchedData?.data || []}
+                        columns={columns}
+                        keyExtractor={(row) => row.id}
+                        isLoading={isFetching}
+                        onRowClick={(row) => {
+                            if (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) {
+                                router.push(`/${orgSlug}/teachers/edit/${row.id}`);
+                            }
+                        }}
+                        currentPage={page}
+                        totalPages={fetchedData?.totalPages || 1}
+                        totalResults={fetchedData?.totalRecords || 0}
+                        pageSize={pageSize}
+                        onPageChange={(p) => updateQueryParams({ page: p })}
+                        onPageSizeChange={handlePageSizeChange}
+                        maxHeight="100%"
+                        sortConfig={{ key: sortBy, direction: sortOrder }}
+                        onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
+                    />
+                </div>
             </div>
 
             <ConfirmDialog
@@ -256,7 +273,7 @@ export default function TeachersPage() {
                 initialTargetId={initialTargetId}
                 initialSubject={initialSubject}
                 onSuccess={() => {
-                    showToast('Mail sent successfully', 'success');
+                    dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent successfully', type: 'success' } });
                 }}
             />
         </div>

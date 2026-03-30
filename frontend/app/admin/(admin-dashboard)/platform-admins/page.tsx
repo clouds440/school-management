@@ -9,7 +9,7 @@ import { PlatformAdmin, PaginatedResponse } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 
@@ -20,9 +20,9 @@ export default function PlatformAdminsPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const pathname = usePathname();
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
+    const actionLoading = state.ui.isProcessing;
 
-    const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<PlatformAdmin> | null>(null);
 
     // URL State
@@ -31,9 +31,17 @@ export default function PlatformAdminsPage() {
     const sortBy = searchParams.get('sortBy') || 'name';
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
 
+    const [pageSize, setPageSize] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('edu-admin-admins-limit');
+            return saved ? parseInt(saved, 10) : 10;
+        }
+        return 10;
+    });
+
     const adminParams: PlatformAdminParams = {
         page,
-        limit: 10,
+        limit: pageSize,
         search: searchQuery,
         sortBy,
         sortOrder,
@@ -73,6 +81,12 @@ export default function PlatformAdminsPage() {
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
     };
 
+    const handlePageSizeChange = (newSize: number) => {
+        setPageSize(newSize);
+        localStorage.setItem('edu-admin-admins-limit', String(newSize));
+        updateQueryParams({ page: 1 });
+    };
+
     const handleOpenAdminModal = (mode: 'CREATE' | 'EDIT', admin: PlatformAdmin | null = null) => {
         setAdminModalMode(mode);
         setOperatingAdmin(admin);
@@ -88,11 +102,11 @@ export default function PlatformAdminsPage() {
         e.preventDefault();
         if (!token) return;
         try {
-            setActionLoading('admin-save');
+            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
             if (adminModalMode === 'CREATE') {
                 await api.admin.createPlatformAdmin(adminFormData, token);
                 refresh();
-                showToast('Platform Admin created successfully', 'success');
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'Platform Admin created successfully', type: 'success' } });
             } else if (operatingAdmin) {
                 await api.admin.updatePlatformAdmin(operatingAdmin.id, {
                     name: adminFormData.name,
@@ -100,13 +114,13 @@ export default function PlatformAdminsPage() {
                     ...(adminFormData.password ? { password: adminFormData.password } : {})
                 }, token);
                 refresh();
-                showToast('Platform Admin updated successfully', 'success');
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'Platform Admin updated successfully', type: 'success' } });
             }
             setIsAdminModalOpen(false);
         } catch (error) {
-            showToast(error instanceof Error ? error.message : 'Failed to save admin', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to save admin', type: 'error' } });
         } finally {
-            setActionLoading(null);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -120,16 +134,16 @@ export default function PlatformAdminsPage() {
         if (!operatingAdmin || !token) return;
 
         try {
-            setActionLoading(`delete-${operatingAdmin.id}`);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
             await api.admin.deletePlatformAdmin(operatingAdmin.id, token);
             refresh();
-            showToast(`${operatingAdmin.name} deleted successfully`, 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingAdmin.name} deleted successfully`, type: 'success' } });
             setIsDeleteModalOpen(false);
             setOperatingAdmin(null);
         } catch (error) {
-            showToast(error instanceof Error ? error.message : 'Failed to delete admin', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to delete admin', type: 'error' } });
         } finally {
-            setActionLoading(null);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -184,13 +198,14 @@ export default function PlatformAdminsPage() {
         },
         {
             header: 'Actions',
+            width: 150,
             accessor: (row) => {
                 if (row.id === user?.id) return <span className="text-xs text-gray-400 italic">Current User</span>;
                 return (
                     <TableActions
                         onEdit={() => handleOpenAdminModal('EDIT', row)}
                         onDelete={() => handleDeleteAdmin(row)}
-                        isDeleting={actionLoading === `delete-${row.id}`}
+                        isDeleting={actionLoading && operatingAdmin?.id === row.id}
                         isViewAndEdit={true}
                         variant="user"
                     />
@@ -212,27 +227,26 @@ export default function PlatformAdminsPage() {
     }
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up">
-            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
-                <button
-                    onClick={() => handleOpenAdminModal('CREATE')}
-                    className="px-6 py-3 rounded-sm bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 w-full sm:w-auto"
-                >
-                    <UserPlus className="w-4 h-4" />
-                    Add Admin
-                </button>
-            </div>
-
-            <div className="bg-white/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/50 flex flex-col w-full overflow-hidden">
-                <div className="px-8 pt-6 pb-6 border-b border-gray-100 flex flex-col gap-6 bg-gray-50/50">
-                    <SearchBar
-                        value={searchQuery}
-                        onChange={(val) => updateQueryParams({ search: val, page: 1 })}
-                        placeholder="Search admins by name or email..."
-                    />
+        <div className="flex flex-col h-full w-full">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="px-6 md:px-8 pt-3 pb-3 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gray-50/50 shrink-0">
+                    <div className="flex-1 max-w-xl">
+                        <SearchBar
+                            value={searchQuery}
+                            onChange={(val) => updateQueryParams({ search: val, page: 1 })}
+                            placeholder="Search admins by name or email..."
+                        />
+                    </div>
+                    <button
+                        onClick={() => handleOpenAdminModal('CREATE')}
+                        className="px-6 py-3 rounded-sm bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 w-full md:w-auto uppercase tracking-widest"
+                    >
+                        <UserPlus className="w-4 h-4" />
+                        Add Admin
+                    </button>
                 </div>
 
-                <div className="p-4 md:p-6 bg-gray-50/10">
+                <div className="p-2 md:p-3 bg-gray-50/10 flex-1 min-h-0">
                     <DataTable
                         columns={columns}
                         data={platformAdmins}
@@ -242,8 +256,10 @@ export default function PlatformAdminsPage() {
                         currentPage={paginatedData?.currentPage || 1}
                         totalPages={paginatedData?.totalPages || 1}
                         totalResults={paginatedData?.totalRecords || 0}
-                        pageSize={10}
+                        pageSize={pageSize}
                         onPageChange={(p) => updateQueryParams({ page: p })}
+                        onPageSizeChange={handlePageSizeChange}
+                        maxHeight="100%"
                         sortConfig={{ key: sortBy, direction: sortOrder }}
                         onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                     />
@@ -256,7 +272,7 @@ export default function PlatformAdminsPage() {
                 onSubmit={handleAdminSubmit}
                 title={adminModalMode === 'CREATE' ? 'Add New Platform Admin' : `Edit ${operatingAdmin?.name}`}
                 submitText={adminModalMode === 'CREATE' ? 'Create Admin' : 'Save Changes'}
-                isSubmitting={actionLoading === 'admin-save'}
+                isSubmitting={actionLoading}
             >
                 <div className="space-y-4 py-2">
                     <div className="space-y-2">
@@ -317,7 +333,7 @@ export default function PlatformAdminsPage() {
                 title="Confirm Deletion"
                 submitText="Permanently Delete"
                 variant="danger"
-                isSubmitting={actionLoading === `delete-${operatingAdmin?.id}`}
+                isSubmitting={actionLoading}
             >
                 <div>
                     <p className="text-sm font-medium text-gray-700">

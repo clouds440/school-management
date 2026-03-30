@@ -6,7 +6,6 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { Section, FinalGradeResponse, Student, ApiError, Role, Assessment } from '@/types';
-import { useToast } from '@/context/ToastContext';
 import { ShieldOff, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 
@@ -23,15 +22,14 @@ function StudentPortalContent() {
     const searchParams = useSearchParams();
     const tab = searchParams.get('tab') || 'overview';
     const { user, token } = useAuth();
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
 
     const orgName = (params?.orgName as string) || '';
 
-    const { state } = useGlobal();
     const [sections, setSections] = useState<Section[]>([]);
     const [grades, setGrades] = useState<FinalGradeResponse[]>([]);
     const [assessments, setAssessments] = useState<Assessment[]>([]);
-    const [fetchingData, setFetchingData] = useState(true);
+    const fetchingData = state.ui.isLoading;
 
     const profile = state.auth.userProfile as Student | null;
 
@@ -46,7 +44,7 @@ function StudentPortalContent() {
             (user.role === Role.STUDENT && user.userName === params.userName);
 
         if (!isAuthorized) {
-            showToast('Access Denied. You are not authorized to view this portal.', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied. You are not authorized to view this portal.', type: 'error' } });
             const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
             const redirectPath = user.role === Role.STUDENT
                 ? `/${orgName}/students/${user.userName}`
@@ -57,7 +55,7 @@ function StudentPortalContent() {
         }
 
         const fetchData = async () => {
-            setFetchingData(true);
+            dispatch({ type: 'UI_SET_LOADING', payload: true });
 
             try {
                 const [sectionsRes, gradesRes, assessmentsRes] = await Promise.all([
@@ -73,14 +71,14 @@ function StudentPortalContent() {
                 const apiError = err as ApiError;
                 if (apiError?.response?.data?.message === 'Silent') return; // Custom check if needed
                 console.error('Failed to fetch other student data:', err);
-                showToast('Failed to load some data. Please try again.', 'error');
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load some data. Please try again.', type: 'error' } });
             } finally {
-                setFetchingData(false);
+                dispatch({ type: 'UI_SET_LOADING', payload: false });
             }
         };
 
         fetchData();
-    }, [token, showToast, orgName]);
+    }, [token, dispatch, orgName, user, params.userName, router]);
 
     if (!user) return null;
 

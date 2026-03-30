@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { BookOpen, GraduationCap, ChevronRight, Search } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Section, Role } from '@/types';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Input } from '@/components/ui/Input';
@@ -13,16 +13,16 @@ import { Input } from '@/components/ui/Input';
 export default function GradesPage() {
     const { token, user } = useAuth();
     const params = useParams();
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
     const [sections, setSections] = useState<Section[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = state.ui.isLoading;
     const [searchTerm, setSearchTerm] = useState('');
 
     const orgSlug = params.orgName as string;
 
     const fetchGradesData = useCallback(async () => {
         if (!token || !user) return;
-        setIsLoading(true);
+        dispatch({ type: 'UI_SET_LOADING', payload: true });
         try {
             // Admins/Teachers see sections to manage
             const params = user.role === Role.TEACHER ? { my: true } : {};
@@ -30,11 +30,11 @@ export default function GradesPage() {
             setSections(data.data || []);
         } catch (error) {
             console.error('Failed to fetch grades data:', error);
-            showToast('Failed to load grades information', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load grades information', type: 'error' } });
         } finally {
-            setIsLoading(false);
+            dispatch({ type: 'UI_SET_LOADING', payload: false });
         }
-    }, [token, user, showToast]);
+    }, [token, user, dispatch]);
 
     useEffect(() => {
         fetchGradesData();
@@ -54,7 +54,7 @@ export default function GradesPage() {
     }
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up space-y-8">
+        <div className="flex flex-col h-full w-full space-y-8">
             <div className="space-y-6">
                 <div className="flex items-center justify-between bg-card/50 p-6 rounded-sm border border-white/5 shadow-inner">
                     <div className="flex-1 max-w-md">

@@ -30,7 +30,11 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'UI_SET_MOBILE_SIDEBAR', payload: false });
     }, [pathname, dispatch]);
 
-    const toggleSidebar = () => dispatch({ type: 'UI_TOGGLE_SIDEBAR' });
+    const toggleSidebar = () => {
+        const newState = !isExpanded;
+        localStorage.setItem('edu-sidebar-expanded', String(newState));
+        dispatch({ type: 'UI_TOGGLE_SIDEBAR' });
+    };
     const toggleMobileSidebar = () => dispatch({ type: 'UI_SET_MOBILE_SIDEBAR', payload: !isMobileOpen });
     const setIsMobileOpen = (open: boolean) => dispatch({ type: 'UI_SET_MOBILE_SIDEBAR', payload: open });
 

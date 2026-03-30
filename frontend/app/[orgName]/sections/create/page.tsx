@@ -8,7 +8,6 @@ import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import Link from 'next/link';
 import { Course, Role } from '@/types';
-import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
@@ -20,7 +19,6 @@ export default function CreateSectionPage() {
     const isProcessing = state.ui.isProcessing;
     const router = useRouter();
     const pathname = usePathname();
-    const { showToast } = useToast();
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
 
     const [courses, setCourses] = useState<Course[]>([]);
@@ -62,35 +60,35 @@ export default function CreateSectionPage() {
             await api.org.createSection(formData, token);
 
             window.dispatchEvent(new Event('stats-updated'));
-            showToast('Section created successfully', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Section created successfully', type: 'success' } });
             router.push(`/${orgSlug}/sections`);
         } catch (error: unknown) {
-            showToast(error instanceof Error ? error.message : 'Failed to create section', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to create section', type: 'error' } });
         } finally {
             dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up">
+        <div className="flex flex-col w-full">
             <div className="mb-6">
                 <div className="flex items-center gap-5">
                     <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
-                        <BookOpen className="w-10 h-10 text-white" />
+                        < BookOpen className="w-10 h-10 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-4xl font-black text-white tracking-tight drop-shadow-lg">Create Section</h1>
-                        <p className="text-white/80 font-bold opacity-80 mt-1 uppercase tracking-widest text-[10px]">ADD A NEW COURSE OFFERING</p>
+                        <h1 className="text-4xl font-black text-white tracking-tight drop-shadow-lg" > Create Section </h1>
+                        < p className="text-white/80 font-bold opacity-80 mt-1 uppercase tracking-widest text-[10px]" > ADD A NEW COURSE OFFERING </p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-8 md:p-12 mb-10">
-                <form onSubmit={handleSubmit} className="space-y-8">
-                    <div className="space-y-8">
+            < div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-8 md:p-12 mb-10" >
+                <form onSubmit={handleSubmit} className="space-y-8" >
+                    <div className="space-y-8" >
                         <div>
-                            <Label>Section Name *</Label>
-                            <Input
+                            <Label>Section Name * </Label>
+                            < Input
                                 type="text"
                                 name="name"
                                 value={formData.name}
@@ -101,9 +99,9 @@ export default function CreateSectionPage() {
                             />
                         </div>
 
-                        <div>
-                            <Label>Course *</Label>
-                            <CustomSelect
+                        < div >
+                            <Label>Course * </Label>
+                            < CustomSelect
                                 value={formData.courseId}
                                 onChange={(value) => setFormData({ ...formData, courseId: value })}
                                 icon={BookOpen}
@@ -114,10 +112,10 @@ export default function CreateSectionPage() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        < div className="grid grid-cols-1 md:grid-cols-2 gap-8" >
                             <div>
-                                <Label>Semester</Label>
-                                <Input
+                                <Label>Semester </Label>
+                                < Input
                                     type="text"
                                     name="semester"
                                     value={formData.semester}
@@ -127,9 +125,9 @@ export default function CreateSectionPage() {
                                 />
                             </div>
 
-                            <div>
-                                <Label>Year</Label>
-                                <Input
+                            < div >
+                                <Label>Year </Label>
+                                < Input
                                     type="text"
                                     name="year"
                                     value={formData.year}
@@ -140,9 +138,9 @@ export default function CreateSectionPage() {
                             </div>
                         </div>
 
-                        <div>
-                            <Label>Room</Label>
-                            <Input
+                        < div >
+                            <Label>Room </Label>
+                            < Input
                                 type="text"
                                 name="room"
                                 value={formData.room}
@@ -153,17 +151,15 @@ export default function CreateSectionPage() {
                         </div>
                     </div>
 
-                    <div className="pt-10 mt-10 border-t border-gray-100 flex justify-end gap-5">
+                    < div className="pt-10 mt-10 border-t border-gray-100 flex justify-end gap-5" >
                         <Link
                             href={`/${orgSlug}/sections`}
                             className="px-8 py-3 text-base font-bold text-secondary-text bg-secondary rounded-sm hover:brightness-110 transition-all hover:scale-105 active:scale-95 flex items-center shadow-lg border border-transparent"
                         >
                             Cancel
                         </Link>
-                        <Button
+                        < Button
                             type="submit"
-                            isLoading={isProcessing}
-                            loadingText="Creating..."
                             className="px-10 h-12"
                         >
                             Create Section

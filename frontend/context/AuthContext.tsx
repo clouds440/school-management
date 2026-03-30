@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api, setUnauthorizedHandler } from '@/lib/api';
 import { Role } from '@/types';
 import { useGlobal, JwtPayload } from './GlobalContext';
 
@@ -65,6 +65,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logout();
         }
     }, [logout, dispatch]);
+    
+    // Register global 401 handler
+    useEffect(() => {
+        setUnauthorizedHandler(() => {
+            if (localStorage.getItem('token')) {
+                localStorage.removeItem('token');
+                dispatch({ type: 'AUTH_LOGOUT' });
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'Your session has expired. Please log in again.', type: 'info' } });
+                router.replace('/login');
+            }
+        });
+    }, [dispatch, router]);
 
     useEffect(() => {
         if (!loading) {

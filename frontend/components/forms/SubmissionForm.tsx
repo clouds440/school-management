@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/context/ToastContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -27,7 +25,6 @@ interface SubmissionFormProps {
 
 export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: SubmissionFormProps) {
     const { token } = useAuth();
-    const { showToast } = useToast();
     const { state, dispatch } = useGlobal();
     const isProcessing = state.ui.isProcessing;
 
@@ -46,13 +43,13 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
                 assessmentId,
                 fileUrl: data.fileUrl || undefined,
             }, token);
-            showToast('Work submitted successfully!', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Work submitted successfully!', type: 'success' } });
             onSuccess(submission);
         } catch (error: unknown) {
             const apiError = error as ApiError;
             console.error('Submission failed:', error);
             const message = apiError?.response?.data?.message || 'Failed to submit work';
-            showToast(Array.isArray(message) ? message[0] : message, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
             dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }

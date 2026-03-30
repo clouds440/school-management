@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { BookOpen, GraduationCap, Users, Trophy, Calendar, MapPin } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Section, Role } from '@/types';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { useParams, useRouter } from 'next/navigation';
 import AssessmentList from '@/components/sections/AssessmentList';
 
@@ -13,27 +13,27 @@ export default function SectionDetailPage() {
     const { token, user } = useAuth();
     const params = useParams();
     const router = useRouter();
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
     const [section, setSection] = useState<Section | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = state.ui.isLoading;
 
     const sectionId = params.id as string;
     const orgSlug = params.orgName as string;
 
     const fetchSection = useCallback(async () => {
         if (!token || !sectionId) return;
-        setIsLoading(true);
+        dispatch({ type: 'UI_SET_LOADING', payload: true });
         try {
             const data = await api.org.getSection(sectionId, token);
             setSection(data);
         } catch (error) {
             console.error('Failed to fetch section:', error);
-            showToast('Failed to load section details', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load section details', type: 'error' } });
             router.push(`/${orgSlug}/sections`);
         } finally {
-            setIsLoading(false);
+            dispatch({ type: 'UI_SET_LOADING', payload: false });
         }
-    }, [token, sectionId, showToast, router, orgSlug]);
+    }, [token, sectionId, dispatch, router, orgSlug]);
 
     useEffect(() => {
         fetchSection();
@@ -50,7 +50,7 @@ export default function SectionDetailPage() {
     if (!section) return null;
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up space-y-8">
+        <div className="flex flex-col w-full space-y-8">
             {/* Header Card - Premium Design */}
             <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-2 md:p-4 relative overflow-hidden group">
                 {/* Decorative background element */}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Lock, ShieldCheck } from 'lucide-react';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
@@ -20,39 +20,40 @@ export default function ChangePasswordForm({
     onSubmit,
     onSuccess
 }: ChangePasswordFormProps) {
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
+    const isProcessing = state.ui.isProcessing;
+
     const [formData, setFormData] = useState({
         oldPassword: '',
         newPassword: '',
         confirmPassword: ''
     });
-    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (formData.newPassword !== formData.confirmPassword) {
-            showToast('New passwords do not match', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'New passwords do not match', type: 'error' } });
             return;
         }
 
         if (formData.newPassword.length < 6) {
-            showToast('Password must be at least 6 characters long', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Password must be at least 6 characters long', type: 'error' } });
             return;
         }
 
-        setLoading(true);
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             await onSubmit(formData.oldPassword, formData.newPassword);
-            showToast('Password changed successfully', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Password changed successfully', type: 'success' } });
             if (onSuccess) {
                 onSuccess();
             }
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to change password';
-            showToast(errorMessage, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: errorMessage, type: 'error' } });
         } finally {
-            setLoading(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -117,7 +118,7 @@ export default function ChangePasswordForm({
                 </div>
 
                 <div>
-                    <Button type="submit" isLoading={loading} loadingText="Updating..." className="w-full">
+                    <Button type="submit" className="w-full">
                         Change Password
                     </Button>
                 </div>

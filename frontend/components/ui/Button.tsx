@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useGlobal } from "@/context/GlobalContext"
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     isLoading?: boolean
@@ -8,7 +9,13 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, isLoading, loadingText = "LOADING...", variant = 'primary', children, disabled, icon, ...props }, ref) => {
+    ({ className, isLoading: localIsLoading, loadingText = "LOADING...", variant = 'primary', children, disabled, icon, ...props }, ref) => {
+        const { state } = useGlobal();
+
+        // Determine effective loading/disabled state
+        const isGlobalBusy = state.ui.isProcessing || state.ui.isLoading;
+        const effectiveDisabled = disabled || isGlobalBusy || localIsLoading;
+        const effectiveLoading = localIsLoading || state.ui.isProcessing;
 
         let variantClasses = "";
         if (variant === 'primary') {
@@ -22,18 +29,19 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         return (
             <button
                 className={`
-          group relative flex justify-center items-center space-x-3 
+          group relative flex justify-center items-center space-x-3 cursor-pointer
           rounded-sm border border-transparent py-3 px-6 text-base font-bold
           focus:outline-none focus:ring-4
           transition-all duration-300 shadow-lg
           ${variantClasses}
+          ${effectiveDisabled ? 'pointer-events-none cursor-not-allowed opacity-70' : ''}
           ${className || ''}
         `}
-                disabled={isLoading || disabled}
+                disabled={effectiveDisabled}
                 ref={ref}
                 {...props}
             >
-                {isLoading ? (
+                {effectiveLoading ? (
                     <>
                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

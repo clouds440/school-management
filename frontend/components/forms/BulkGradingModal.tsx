@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { Assessment, Section, Grade, GradeStatus, UpdateGradeRequest, ApiError } from '@/types';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -22,8 +22,7 @@ interface BulkGradingModalProps {
 
 export function BulkGradingModal({ isOpen, onClose, assessment, section, existingGrades, onSuccess }: BulkGradingModalProps) {
     const { token } = useAuth();
-    const { showToast } = useToast();
-    const [isSaving, setIsSaving] = useState(false);
+    const { state, dispatch } = useGlobal();
 
     // State to hold bulk marks and status
     const [bulkData, setBulkData] = useState<Record<string, { marksObtained: string, status: GradeStatus }>>({});
@@ -46,7 +45,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
 
     const handleBulkSubmit = async () => {
         if (!token) return;
-        setIsSaving(true);
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             const promises: Promise<Grade>[] = [];
 
@@ -54,8 +53,8 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                 if (data.marksObtained.trim() !== '') {
                     const marks = Number(data.marksObtained);
                     if (marks > assessment.totalMarks) {
-                        showToast(`Marks for a student cannot exceed ${assessment.totalMarks}`, 'error');
-                        setIsSaving(false);
+                        dispatch({ type: 'TOAST_ADD', payload: { message: `Marks for a student cannot exceed ${assessment.totalMarks}`, type: 'error' } });
+                        dispatch({ type: 'UI_SET_PROCESSING', payload: false });
                         return; // Abort saving if validation fails
                     }
                     const payload: UpdateGradeRequest = {
@@ -68,19 +67,19 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
 
             if (promises.length > 0) {
                 await Promise.all(promises);
-                showToast('All grades updated successfully!', 'success');
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'All grades updated successfully!', type: 'success' } });
                 onSuccess();
             } else {
-                showToast('No grades to update.', 'info');
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'No grades to update.', type: 'info' } });
             }
             onClose();
         } catch (error: unknown) {
             console.error('Failed to update bulk grades', error);
             const apiError = error as ApiError;
             const message = apiError?.response?.data?.message || 'Failed to update grades in bulk';
-            showToast(Array.isArray(message) ? message[0] : message, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
-            setIsSaving(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -202,10 +201,10 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                 </div>
 
                 <div className="flex gap-4 justify-end pt-4 border-t border-white/10 mt-6">
-                    <Button type="button" variant="secondary" onClick={onClose} disabled={isSaving}>
+                    <Button type="button" variant="secondary" onClick={onClose}>
                         Cancel
                     </Button>
-                    <Button type="button" onClick={handleBulkSubmit} isLoading={isSaving} className="min-w-[120px]">
+                    <Button type="button" onClick={handleBulkSubmit} className="min-w-[120px]">
                         Save All Grades
                     </Button>
                 </div>
