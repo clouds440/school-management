@@ -85,8 +85,8 @@ export default function EditStudentPage() {
     const isWatchMode = user?.role === Role.TEACHER;
 
     return (
-        <>
-            <div className="mb-6">
+        <div className="flex flex-col">
+            <div className="mb-6 shrink-0">
                 <div className="flex items-center gap-5">
                     <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl shrink-0">
                         <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-white" />
@@ -102,9 +102,9 @@ export default function EditStudentPage() {
                 </div>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-2xl border border-white/20 p-6 md:p-12 text-card-text">
+            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-2xl border border-white/20 p-6 md:p-12 text-card-text mb-10">
                 <StudentForm orgSlug={orgSlug} studentId={studentId} initialData={studentData} />
             </div>
-        </>
+        </div>
     );
 }
