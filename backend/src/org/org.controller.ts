@@ -342,9 +342,9 @@ export class OrgController {
 
     // --- Assessments ---
     @Roles(Role.ORG_MANAGER, Role.TEACHER)
-    @Post('assessments')
     createAssessment(@OrgId() orgId: string, @Body() dto: CreateAssessmentDto, @Request() req: AuthenticatedRequest) {
-        return this.orgService.createAssessment(orgId, dto, req.user);
+        const orgSlug = req.user.organization?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        return this.orgService.createAssessment(orgId, dto, req.user as AuthenticatedRequest['user'], orgSlug);
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
@@ -396,7 +396,8 @@ export class OrgController {
         @Body() dto: UpdateGradeDto,
         @Request() req: AuthenticatedRequest
     ) {
-        return this.orgService.updateGrade(orgId, assessmentId, studentId, dto, req.user.id, req.user.role.toString() as Role);
+        const orgSlug = req.user.organization?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        return this.orgService.updateGrade(orgId, assessmentId, studentId, dto, req.user.id, req.user.role.toString() as Role, orgSlug);
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
@@ -420,11 +421,12 @@ export class OrgController {
         @Body() dto: CreateSubmissionDto,
         @Request() req: AuthenticatedRequest
     ) {
+        const orgSlug = req.user.organization?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         // Find student profile for the current user
         return this.orgService.getStudentByUserId(req.user.id)
             .then(student => {
                 if (!student) throw new NotFoundException('Student profile not found');
-                return this.orgService.createSubmission(orgId, student.id, { ...dto, assessmentId });
+                return this.orgService.createSubmission(orgId, student.id, { ...dto, assessmentId }, orgSlug);
             });
     }
 

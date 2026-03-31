@@ -50,7 +50,7 @@ export class AuthService {
                     password: hashedPassword,
                     role: Role.ORG_ADMIN,
                     organizationId: org.id,
-                    name: registerDto.name, // Set name to Org name for ORG_ADMIN
+                    name: registerDto.adminName, // Set name to Admin Name for ORG_ADMIN
                 },
             });
 

@@ -36,4 +36,7 @@ export class CreateRequestDto {
 
     @IsOptional()
     metadata?: Record<string, unknown>;
+
+    @IsOptional()
+    noReply?: boolean;
 }

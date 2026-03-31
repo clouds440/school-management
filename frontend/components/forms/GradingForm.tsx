@@ -63,7 +63,7 @@ export default function GradingForm({
             return;
         }
 
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'grading-submit' } });
         try {
             const payload: UpdateGradeRequest = {
                 marksObtained: Number(data.marksObtained),
@@ -147,7 +147,7 @@ export default function GradingForm({
                 <Button type="button" variant="secondary" onClick={onCancel}>
                     Cancel
                 </Button>
-                <Button type="submit">
+                <Button type="submit" loadingId="grading-submit" loadingText="SAVING...">
                     <Check className="w-4 h-4 mr-2" />
                     Save Grade
                 </Button>

@@ -224,7 +224,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
         }
     ];
 
-    const showOverlay = orgData && orgData.status !== OrgStatus.APPROVED;
+    const isMailPage = pathname.endsWith('/mail');
+    const showOverlay = orgData && orgData.status !== OrgStatus.APPROVED && !isMailPage;
 
     // Determine brandHref (landing page)
     let brandHref = `/${orgSlug}/admin`;

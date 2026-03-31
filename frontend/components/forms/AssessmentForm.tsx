@@ -69,7 +69,7 @@ export default function AssessmentForm({
     const formData = watch();
 
     const onSubmit = async (data: AssessmentFormData) => {
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'assessment-submit' } });
         try {
             const payload: CreateAssessmentRequest = {
                 ...data,
@@ -274,7 +274,7 @@ export default function AssessmentForm({
                 <Button type="button" variant="secondary" onClick={onCancel}>
                     Cancel
                 </Button>
-                <Button type="submit">
+                <Button type="submit" loadingId="assessment-submit" loadingText="SAVING...">
                     {assessmentId ? 'Update Assessment' : 'Create Assessment'}
                 </Button>
             </div>

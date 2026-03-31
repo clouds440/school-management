@@ -455,7 +455,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                 )}
 
                                 <div className="flex justify-end gap-3 pt-4">
-                                    <Button type="button" variant="secondary" onClick={() => setSelectedAssessment(null)} disabled={isSubmitting}>
+                                    <Button type="button" variant="secondary" onClick={handleCloseModal} disabled={isSubmitting}>
                                         Cancel
                                     </Button>
                                     <Button type="submit" disabled={isSubmitting || (selectedAssessment?.allowSubmissions && !selectedFile)}>

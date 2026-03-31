@@ -42,7 +42,7 @@ export default function ChangePasswordForm({
             return;
         }
 
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'password-change-submit' } });
         try {
             await onSubmit(formData.oldPassword, formData.newPassword);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Password changed successfully', type: 'success' } });
@@ -118,7 +118,7 @@ export default function ChangePasswordForm({
                 </div>
 
                 <div>
-                    <Button type="submit" className="w-full">
+                    <Button type="submit" loadingId="password-change-submit" loadingText="CHANGING..." className="w-full">
                         Change Password
                     </Button>
                 </div>

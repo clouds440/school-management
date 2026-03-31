@@ -12,6 +12,7 @@ interface ModalFormProps {
     onSubmit: (e: React.FormEvent) => void;
     submitText?: string;
     isSubmitting?: boolean;
+    loadingId?: string;
     variant?: 'info' | 'danger' | 'warning' | 'success';
     showCancel?: boolean;
     showSubmit?: boolean;
@@ -27,6 +28,7 @@ export function ModalForm({
     onSubmit,
     submitText = 'Save',
     isSubmitting = false,
+    loadingId,
     variant = 'info',
     showCancel = true,
     showSubmit = true,
@@ -50,6 +52,7 @@ export function ModalForm({
                     type="submit"
                     form="modal-form"
                     isLoading={isSubmitting}
+                    loadingId={loadingId}
                     className={`px-10 py-3.5 text-xs font-black uppercase tracking-widest text-white border-none shadow-lg hover:scale-105 active:scale-95 ${
                         variant === 'danger' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' :
                         variant === 'warning' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' :

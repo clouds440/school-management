@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { RequestTarget, Role, RequestCategory } from '@/types';
 import { ADMIN_REPLY_TEMPLATES } from './MailTemplates';
+import { useGlobal } from '@/context/GlobalContext';
 
 interface NewRequestModalProps {
     isOpen: boolean;
@@ -114,6 +115,7 @@ export function NewRequestModal({
     initialSubject
 }: NewRequestModalProps) {
     const { token, user } = useAuth();
+    const { dispatch } = useGlobal();
     const [subject, setSubject] = useState('');
     const [category, setCategory] = useState<string>(RequestCategory.GENERAL_INQUIRY);
     const [priority, setPriority] = useState('NORMAL');
@@ -122,8 +124,10 @@ export function NewRequestModal({
     const [targets, setTargets] = useState<RequestTarget[]>([]);
     const [searching, setSearching] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [noReply, setNoReply] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [info, setInfo] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const selectedTargets = useMemo(
@@ -133,6 +137,9 @@ export function NewRequestModal({
 
     const isPlatformAdmin = user?.role === 'PLATFORM_ADMIN' || user?.role === 'SUPER_ADMIN';
     const primaryTarget = selectedTargets[0];
+    const isTargetingPlatform = selectedTargets.some(t => t.role === Role.PLATFORM_ADMIN || t.role === Role.SUPER_ADMIN);
+    const showNoReply = (isPlatformAdmin || user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) &&
+        !(user?.role !== Role.SUPER_ADMIN && user?.role !== Role.PLATFORM_ADMIN && isTargetingPlatform);
 
     const orgData: Record<string, string> = isPlatformAdmin ? {
         name: primaryTarget?.label || 'User',
@@ -161,11 +168,14 @@ export function NewRequestModal({
         }
     }, [isOpen, token, initialTargetId, initialSubject]);
     React.useEffect(() => {
-        if (error) {
-            const timer = setTimeout(() => setError(''), 3500);
+        if (error || info) {
+            const timer = setTimeout(() => {
+                setError('');
+                setInfo('');
+            }, 3500);
             return () => clearTimeout(timer);
         }
-    }, [error]);
+    }, [error, info]);
 
     // Compute context-aware categories based on the FIRST selected target
     const availableCategories = useMemo(
@@ -225,8 +235,10 @@ export function NewRequestModal({
             }
         }
 
-        if (feedback) setError(feedback);
-        else setError('');
+        if (feedback) setInfo(feedback);
+        else setInfo('');
+
+        setError('');
 
         setTargetIds(finalIds);
         const newTargets = currentTargets.filter(t => finalIds.includes(t.id));
@@ -277,6 +289,7 @@ export function NewRequestModal({
         try {
             setSubmitting(true);
             setError('');
+            dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'new-mail-submit' } });
 
             // Separate Roles from individual User IDs
             const roleTarget = selectedTargets.find(t => t.type === 'ROLE');
@@ -288,7 +301,8 @@ export function NewRequestModal({
                 priority,
                 message,
                 assigneeIds: individualIds.length > 0 ? individualIds : undefined,
-                targetRole: roleTarget?.role || undefined
+                targetRole: roleTarget?.role || undefined,
+                noReply
             }, token);
 
             if (selectedFiles.length > 0) {
@@ -316,6 +330,7 @@ export function NewRequestModal({
             setError(err instanceof Error ? err.message : 'Failed to send mail');
         } finally {
             setSubmitting(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -327,13 +342,21 @@ export function NewRequestModal({
             onSubmit={handleSubmit}
             submitText="Send Mail"
             isSubmitting={submitting}
+            loadingId="new-mail-submit"
             maxWidth="max-w-7xl"
-            feedback={error ? (
-                <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-sm text-red-600 animate-shake">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <p className="text-[11px] font-bold uppercase tracking-wider">{error}</p>
-                </div>
-            ) : null}
+            feedback={
+                error ? (
+                    <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-sm text-red-600 animate-shake">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <p className="text-[11px] font-bold uppercase tracking-wider">{error}</p>
+                    </div>
+                ) : info ? (
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-sm text-blue-600 animate-in fade-in slide-in-from-top-1">
+                        <AlertCircle className="w-4 h-4 shrink-0 opacity-70" />
+                        <p className="text-[11px] font-bold uppercase tracking-wider">{info}</p>
+                    </div>
+                ) : null
+            }
         >
             <div>
                 <div className="grid grid-cols-1 gap-3">
@@ -398,23 +421,35 @@ export function NewRequestModal({
                                     placeholder="Select priority"
                                 />
                             </div>
+                            {/* No Reply Option for Admins/Managers */}
+                            {showNoReply && (
+                                <div
+                                    className="flex items-center space-x-3 p-4 bg-indigo-50/50 border border-indigo-100/50 rounded-sm mt-3 cursor-pointer hover:bg-indigo-100/50 transition-colors group"
+                                    onClick={() => setNoReply(!noReply)}
+                                >
+                                    <div className="flex items-center space-x-2 flex-1">
+                                        <input
+                                            type="checkbox"
+                                            id="no-reply-checkbox"
+                                            checked={noReply}
+                                            onChange={(e) => {
+                                                e.stopPropagation();
+                                                setNoReply(e.target.checked);
+                                            }}
+                                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                                        />
+                                        <span className="text-xs font-bold text-indigo-900 uppercase tracking-widest cursor-pointer select-none">
+                                            No Reply Needed (Broadcast)
+                                        </span>
+                                    </div>
+                                    <p className="text-[10px] text-indigo-600/70 italic font-medium group-hover:text-indigo-700 transition-colors">Recipient won&apos;t be able to reply</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {/* Right Column: Message & Files */}
                     <div className="space-y-6 flex flex-col h-full">
-                        <div className="flex-1">
-                            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Detailed Message</label>
-                            <MarkdownEditor
-                                value={message}
-                                onChange={setMessage}
-                                placeholder="Describe your request in detail..."
-                                rows={8}
-                                templates={isPlatformAdmin ? ADMIN_REPLY_TEMPLATES.map(t => ({ label: t.name, content: t.content })) : []}
-                                orgData={orgData}
-                            />
-                        </div>
-
                         <div className="pt-2">
                             <div className="flex items-center justify-between mb-3">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Attachments</label>
@@ -453,6 +488,18 @@ export function NewRequestModal({
                                 className="hidden"
                                 accept="image/*,.pdf"
                                 multiple
+                            />
+                        </div>
+
+                        <div className="flex-1">
+                            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Detailed Message</label>
+                            <MarkdownEditor
+                                value={message}
+                                onChange={setMessage}
+                                placeholder="Describe your request in detail..."
+                                rows={8}
+                                templates={isPlatformAdmin ? ADMIN_REPLY_TEMPLATES.map(t => ({ label: t.name, content: t.content })) : []}
+                                orgData={orgData}
                             />
                         </div>
                     </div>

@@ -66,9 +66,11 @@ function MessageBubble({ message, isOwn }: { message: RequestMessageType; isOwn:
                     <span className="text-[11px] font-black text-gray-700">
                         {message.sender?.name || message.sender?.email}
                     </span>
-                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                        {message.sender?.role?.replace('_', ' ')}
-                    </span>
+                    {message.sender?.role && (
+                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                            {message.sender.role.replace('_', ' ')}
+                        </span>
+                    )}
                     {isOwn && (
                         <span className="text-[8px] font-black text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">You</span>
                     )}
@@ -219,6 +221,7 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
                                         ? `${request.assignees.slice(0, 2).map(a => a.name || a.email).join(', ')} and ${request.assignees.length - 2} others`
                                         : request.assignees.map(a => a.name || a.email).join(', ')
                                 ) : request.targetRole === 'ORG_STAFF' ? 'All Employees' :
+                                    request.targetRole === 'PLATFORM_ADMIN' || request.targetRole === 'SUPER_ADMIN' ? 'Platform Administrative Team' :
                                     (request.targetRole?.replace('_', ' ') || 'Platform Support Team')}
                             </p>
                         </div>
@@ -254,7 +257,43 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
                     )}
 
                     {!isClosed && <div ref={replyAreaRef} className="pt-4 mt-8 border-t border-gray-100">
-                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Post a Reply</h3>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Post a Reply</h3>
+                            
+                            <div className="flex items-center gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="flex items-center gap-2 text-gray-400 hover:text-indigo-600 transition-colors p-1"
+                                >
+                                    <Paperclip className="w-4 h-4" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Attach Files</span>
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                    accept="image/*,.pdf"
+                                    multiple
+                                />
+                            </div>
+                        </div>
+
+                        {selectedFiles.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in slide-in-from-top-1">
+                                {selectedFiles.map((file, i) => (
+                                    <div key={i} className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-sm">
+                                        {file.type.startsWith('image/') ? <ImageIcon className="w-3 h-3 text-indigo-400" /> : <FileText className="w-3 h-3 text-indigo-400" />}
+                                        <span className="text-[10px] font-bold text-indigo-900 truncate max-w-[150px]">{file.name}</span>
+                                        <button onClick={() => removeFile(i)} className="p-0.5 hover:bg-indigo-200 rounded-full text-indigo-400 transition-colors">
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                         <MarkdownEditor
                             ref={editorRef}
                             value={replyContent}
@@ -265,42 +304,12 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
                             orgData={orgData as Record<string, string>}
                         />
 
-                        {selectedFiles.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-3">
-                                {selectedFiles.map((file, i) => (
-                                    <div key={i} className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1 rounded-sm">
-                                        {file.type.startsWith('image/') ? <ImageIcon className="w-3 h-3 text-gray-400" /> : <FileText className="w-3 h-3 text-gray-400" />}
-                                        <span className="text-[10px] font-bold text-gray-600 truncate max-w-[100px]">{file.name}</span>
-                                        <button onClick={() => removeFile(i)} className="p-0.5 hover:bg-gray-200 rounded-full">
-                                            <X className="w-2.5 h-2.5 text-gray-400" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        <div className="flex items-center justify-between mt-3">
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="flex items-center gap-2 text-gray-400 hover:text-indigo-600 transition-colors p-1"
-                            >
-                                <Paperclip className="w-4 h-4" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Attach</span>
-                            </button>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                                className="hidden"
-                                accept="image/*,.pdf"
-                                multiple
-                            />
-
+                        <div className="flex items-center justify-end mt-3">
                             <Button
                                 onClick={handleSend}
                                 isLoading={sending}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all border-none shadow-lg"
+                                loadingId="reply-submit"
+                                className="flex items-center gap-2 px-8 py-2.5 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all border-none shadow-lg shadow-indigo-200"
                                 icon={Send}
                             >
                                 SEND REPLY

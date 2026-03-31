@@ -84,8 +84,15 @@ export function RequestDetailsModal({ requestId, isOpen, onClose, onUpdate }: Re
 
     const handleStatusUpdate = async (newStatus: RequestStatus) => {
         if (!request || !token || loading) return;
+        const idMap = {
+            [RequestStatus.IN_PROGRESS]: 'status-progress',
+            [RequestStatus.RESOLVED]: 'status-resolve',
+            [RequestStatus.CLOSED]: 'status-close',
+        };
+        const lid = idMap[newStatus as keyof typeof idMap] || 'status-update';
+        
         try {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+            dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: lid } });
             await api.requests.updateRequest(request.id, { status: newStatus }, token);
             const updated = await api.requests.getRequest(request.id, token);
             setRequest(updated);
@@ -101,7 +108,7 @@ export function RequestDetailsModal({ requestId, isOpen, onClose, onUpdate }: Re
     const handleReply = async (content: string, files?: File[]) => {
         if (!request || !token) return;
         try {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+            dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'reply-submit' } });
             await api.requests.addMessage(request.id, { content }, token, files);
             const updated = await api.requests.getRequest(request.id, token);
             setRequest(updated);
@@ -146,6 +153,7 @@ export function RequestDetailsModal({ requestId, isOpen, onClose, onUpdate }: Re
                                             onClick={() => handleStatusUpdate(RequestStatus.IN_PROGRESS)}
                                             icon={ArrowUpRight}
                                             variant="warning"
+                                            loadingId="status-progress"
                                             px='px-3'
                                             py='py-1.5'
                                             className="text-[9px] uppercase"
@@ -157,6 +165,7 @@ export function RequestDetailsModal({ requestId, isOpen, onClose, onUpdate }: Re
                                         onClick={() => handleStatusUpdate(RequestStatus.RESOLVED)}
                                         icon={CheckCircle2}
                                         variant="success"
+                                        loadingId="status-resolve"
                                         px='px-3'
                                         py='py-1.5'
                                         className="text-[9px] uppercase"
@@ -167,6 +176,7 @@ export function RequestDetailsModal({ requestId, isOpen, onClose, onUpdate }: Re
                                         onClick={() => handleStatusUpdate(RequestStatus.CLOSED)}
                                         icon={XCircle}
                                         variant="danger"
+                                        loadingId="status-close"
                                         px='px-3'
                                         py='py-1.5'
                                         className="text-[9px] uppercase"

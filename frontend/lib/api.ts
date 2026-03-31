@@ -5,7 +5,8 @@ import {
     CreateSectionRequest, UpdateSectionRequest, CreateCourseRequest, UpdateCourseRequest,
     PaginatedResponse, OrgStatus, RequestItem, RequestDetail, CreateRequestPayload, UpdateRequestPayload,
     Assessment, Grade, Submission, CreateAssessmentRequest, UpdateAssessmentRequest,
-    UpdateGradeRequest, CreateSubmissionRequest, FinalGradeResponse, RequestTarget
+    UpdateGradeRequest, CreateSubmissionRequest, FinalGradeResponse, RequestTarget,
+    Chat, ChatMessage, Notification, Announcement, ChatType, TargetType, AnnouncementPriority, User
 } from '@/types';
 
 
@@ -14,6 +15,12 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
 if (!API_BASE_URL) {
     throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
 }
+
+export const getPublicUrl = (path: string | null | undefined) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+};
 
 let unauthorizedHandler: (() => void) | null = null;
 
@@ -280,5 +287,44 @@ export const api = {
             request<RequestTarget[]>(`/requests/contacts${buildQueryString({ search })}`, { token }),
         getUnreadCount: (token: string) =>
             request<{ unread: number; total: number; countsByStatus: Record<string, number> }>('/requests/unread-count', { token }),
+    },
+
+    chat: {
+        searchUsers: (token: string, search?: string) =>
+             request<User[]>(`/chat/users${buildQueryString({ search })}`, { token }),
+        createDirectChat: (participantId: string, token: string) =>
+            request<Chat>('/chat/direct', { method: 'POST', body: JSON.stringify({ participantId }), token }),
+        createGroupChat: (name: string, participantIds: string[], token: string) =>
+            request<Chat>('/chat/group', { method: 'POST', body: JSON.stringify({ name, participantIds }), token }),
+        getUserChats: (token: string) =>
+            request<Chat[]>('/chat', { token }),
+        getChatMessages: (chatId: string, token: string, params: { page?: number, limit?: number } = {}) =>
+            request<PaginatedResponse<ChatMessage>>(`/chat/${chatId}/messages${buildQueryString(params)}`, { token }),
+        sendMessage: (chatId: string, content: string, token: string) =>
+            request<ChatMessage>(`/chat/${chatId}/messages`, { method: 'POST', body: JSON.stringify({ content }), token }),
+        markAsRead: (chatId: string, messageId: string, token: string) =>
+            request<void>(`/chat/${chatId}/read${messageId ? `/${messageId}` : ''}`, { method: 'PATCH', token }),
+        deleteMessage: (chatId: string, messageId: string, token: string) =>
+            request<void>(`/chat/${chatId}/messages/${messageId}/delete`, { method: 'POST', token }),
+        addParticipants: (chatId: string, participantIds: string[], token: string) =>
+            request<void>(`/chat/${chatId}/participants`, { method: 'POST', body: JSON.stringify({ participantIds }), token }),
+        removeParticipant: (chatId: string, userId: string, token: string) =>
+            request<void>(`/chat/${chatId}/participants/${userId}/remove`, { method: 'POST', token }),
+    },
+
+    notifications: {
+        getUserNotifications: (token: string, params: { page?: number, limit?: number } = {}) =>
+            request<PaginatedResponse<Notification> & { unreadCount: number }>(`/notifications${buildQueryString(params)}`, { token }),
+        markAsRead: (id: string, token: string) =>
+            request<void>(`/notifications/${id}/read`, { method: 'PATCH', token }),
+        markAllAsRead: (token: string) =>
+            request<void>('/notifications/read-all', { method: 'PATCH', token }),
+    },
+
+    announcements: {
+        createAnnouncement: (data: { title: string, body: string, targetType: TargetType, targetId?: string, actionUrl?: string, priority?: AnnouncementPriority }, token: string) =>
+            request<Announcement>('/announcements', { method: 'POST', body: JSON.stringify(data), token }),
+        getAnnouncements: (token: string, params: { page?: number, limit?: number } = {}) =>
+            request<PaginatedResponse<Announcement>>(`/announcements${buildQueryString(params)}`, { token }),
     }
 };

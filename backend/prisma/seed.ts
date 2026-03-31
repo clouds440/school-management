@@ -1,4 +1,4 @@
-import { PrismaClient, Role, OrgStatus, RequestStatus, TeacherStatus, StudentStatus, AssessmentType, GradeStatus } from '@prisma/client';
+import { PrismaClient, Role, OrgStatus, RequestStatus, TeacherStatus, StudentStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { faker } from '@faker-js/faker';
 
@@ -9,6 +9,11 @@ async function main() {
 
   // Order of deletion matters to avoid FK violations
   const tableNames = [
+    'Announcement',
+    'Notification',
+    'ChatMessage',
+    'ChatParticipant',
+    'Chat',
     'RequestActionLog',
     'RequestMessage',
     'RequestUserView',
@@ -261,11 +266,11 @@ async function main() {
   console.log('--- Assessments & Grades Seeded ---');
 
   // 11. Mail System (Requests, Messages, Logs)
-  const users = await prisma.user.findMany({ take: 50 });
+  const users = await prisma.user.findMany({ take: 100 });
   const possibleCategories = ['Billing', 'Technical Support', 'Admission Query', 'Attendance Issue', 'Grade Revision'];
   const possiblePriorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
 
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 30; i++) {
     const creator = faker.helpers.arrayElement(users);
     const request = await prisma.request.create({
       data: {
@@ -302,7 +307,120 @@ async function main() {
       },
     });
   }
-  console.log('--- 50+ Mail Requests Created ---');
+  console.log('--- 30 Mail Requests Created ---');
+
+  // 12. Seeding Announcements
+  console.log('--- Seeding Announcements ---');
+  // Global Announcement
+  await prisma.announcement.create({
+    data: {
+      title: 'Platform Maintenance Notice',
+      body: 'The platform will undergo scheduled maintenance this Sunday at 2 AM UTC. Expect up to 2 hours of downtime.',
+      targetType: 'GLOBAL',
+      priority: 'HIGH',
+      creatorId: superAdmin.id,
+    },
+  });
+
+  // Org Announcement
+  if (targetOrg) {
+    await prisma.announcement.create({
+      data: {
+        title: 'New Semester Registration Open',
+        body: 'Students can now register for the Fall 2026 semester through their portal. Deadline is May 15th.',
+        targetType: 'ORG',
+        targetId: targetOrg.id,
+        organizationId: targetOrg.id,
+        priority: 'NORMAL',
+        creatorId: orgAdminUser.id,
+      },
+    });
+  }
+
+  // 13. Seeding Notifications
+  console.log('--- Seeding Notifications ---');
+  const sampleUsers = faker.helpers.arrayElements(users, 20);
+  for (const u of sampleUsers) {
+    await prisma.notification.createMany({
+      data: [
+        {
+          userId: u.id,
+          title: 'Welcome to EduManage',
+          body: 'Your account has been successfully set up. Please complete your profile.',
+          isRead: true,
+        },
+        {
+          userId: u.id,
+          title: 'Security Alert',
+          body: 'A new login was detected from a new device.',
+          isRead: false,
+        },
+      ],
+    });
+  }
+
+  // 14. Seeding Advanced Chat
+  console.log('--- Seeding Advanced Chat ---');
+  if (targetOrg && students.length >= 2 && teachers.length >= 1) {
+    // A. Direct Chat between two students
+    const s1 = students[0].user;
+    const s2 = students[1].user;
+    const directChat = await prisma.chat.create({
+      data: {
+        type: ChatType.DIRECT,
+        organizationId: targetOrg.id,
+        creatorId: s1.id,
+        participants: {
+          create: [
+            { userId: s1.id },
+            { userId: s2.id },
+          ],
+        },
+      },
+    });
+
+    await prisma.chatMessage.createMany({
+      data: [
+        { chatId: directChat.id, senderId: s1.id, content: 'Hey, did you finish the assignment?' },
+        { chatId: directChat.id, senderId: s2.id, content: 'Work in progress! It is quite challenging.' },
+      ],
+    });
+
+    // B. Group Chat: "Staff Lounge"
+    const staffLounge = await prisma.chat.create({
+      data: {
+        type: ChatType.GROUP,
+        name: 'Faculty Lounge',
+        organizationId: targetOrg.id,
+        creatorId: orgAdminUser.id,
+        participants: {
+          create: [
+            ...teachers.map(t => ({
+              userId: t.userId,
+              role: ChatParticipantRole.MEMBER
+            })),
+            { userId: orgAdminUser.id, role: ChatParticipantRole.ADMIN }
+          ]
+        }
+      }
+    });
+
+    await prisma.chatMessage.create({
+      data: {
+        chatId: staffLounge.id,
+        senderId: orgAdminUser.id,
+        content: `Welcome to the ${targetOrg.name} Faculty Lounge!`,
+        type: ChatMessageType.SYSTEM
+      }
+    });
+
+    await prisma.chatMessage.createMany({
+      data: [
+        { chatId: staffLounge.id, senderId: teachers[0].userId, content: 'Great to be here!' },
+        { chatId: staffLounge.id, senderId: teachers[1].userId, content: 'When is the next staff meeting?' },
+      ]
+    });
+  }
 
   console.log('--- Seeding Completed Perfectly! ---');
 }

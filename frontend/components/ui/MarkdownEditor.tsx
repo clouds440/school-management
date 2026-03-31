@@ -11,6 +11,8 @@ interface MarkdownEditorProps {
     className?: string;
     templates?: { label: string; content: string }[];
     orgData?: Record<string, string>;
+    onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+    onFocus?: () => void;
 }
 
 export interface MarkdownEditorHandle {
@@ -24,7 +26,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     rows = 6,
     className = '',
     templates = [],
-    orgData = {}
+    orgData = {},
+    onKeyDown,
+    onFocus
 }, ref) => {
     const [previewMode, setPreviewMode] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -167,7 +171,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 </button>
             </div>
 
-            <div className="relative min-h-[180px]">
+            <div className="relative min-h-auto">
                 {previewMode ? (
                     <div className="p-5 overflow-y-auto max-h-[400px] bg-white">
                         {value ? (
@@ -185,9 +189,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                         ref={textareaRef}
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
+                        onKeyDown={onKeyDown}
+                        onFocus={onFocus}
                         placeholder={placeholder}
                         rows={rows}
-                        className="w-full p-5 text-sm outline-none resize-y border-none focus:ring-0 bg-transparent font-medium leading-relaxed text-gray-800 placeholder:text-gray-300"
+                        className="w-full p-5 text-sm outline-none resize-y border-none focus:ring-0 bg-transparent custom-scrollbar max-h-96 min-h-16 font-medium leading-relaxed text-gray-800 placeholder:text-gray-300"
                     />
                 )}
             </div>

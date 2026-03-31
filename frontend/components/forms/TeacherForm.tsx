@@ -82,7 +82,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
     const formData = watch();
 
     const onSubmit: SubmitHandler<TeacherCreateFormData | TeacherUpdateFormData | TeacherProfileFormData> = async (data) => {
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'teacher-submit' } });
         try {
             const { password, salary, ...rest } = data;
             const payload: CreateTeacherRequest | UpdateTeacherRequest = {
@@ -472,7 +472,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                 <Button type="button" variant="secondary" className="w-32" onClick={() => router.back()}>
                     Cancel
                 </Button>
-                <Button type="submit" className="w-64 h-12" loadingText="PROCESSING...">
+                <Button type="submit" className="w-64 h-12" loadingId="teacher-submit" loadingText="SAVING...">
                     <span className="font-black uppercase tracking-widest text-[10px] italic">
                         {isProfile ? 'Update Profile' : (teacherId ? 'Update Faculty Member' : 'Create Faculty Account')}
                     </span>

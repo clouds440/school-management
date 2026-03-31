@@ -45,7 +45,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
 
     const handleBulkSubmit = async () => {
         if (!token) return;
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'bulk-grading-submit' } });
         try {
             const promises: Promise<Grade>[] = [];
 
@@ -204,7 +204,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                     <Button type="button" variant="secondary" onClick={onClose}>
                         Cancel
                     </Button>
-                    <Button type="button" onClick={handleBulkSubmit} className="min-w-[120px]">
+                    <Button type="button" onClick={handleBulkSubmit} loadingId="bulk-grading-submit" loadingText="SAVING ALL..." className="min-w-[120px]">
                         Save All Grades
                     </Button>
                 </div>

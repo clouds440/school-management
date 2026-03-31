@@ -1,0 +1,625 @@
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { EventsGateway } from '../events/events.gateway';
+import { CreateDirectChatDto } from './dto/create-direct-chat.dto';
+import { CreateGroupChatDto } from './dto/create-group.dto';
+import { SendMessageDto } from './dto/send-message.dto';
+import { AddParticipantsDto } from './dto/add-participants.dto';
+import { Role, ChatType, ChatParticipantRole, ChatMessageType, Prisma } from '@prisma/client';
+
+interface CurrentUser {
+    id: string;
+    role: Role;
+    organizationId: string | null;
+}
+
+@Injectable()
+export class ChatService {
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly events: EventsGateway,
+    ) {}
+
+    async searchUsers(query: string, user: CurrentUser) {
+        if (user.role === Role.STUDENT) {
+            throw new ForbiddenException('Students cannot search for users to initiate chats.');
+        }
+
+        const searchQuery = query.trim();
+        if (!searchQuery) return [];
+
+        let whereClause: Prisma.UserWhereInput = {
+            OR: [
+                { name: { contains: searchQuery, mode: 'insensitive' } },
+                { email: { contains: searchQuery, mode: 'insensitive' } },
+            ],
+            id: { not: user.id }, // don't return self
+            organizationId: user.organizationId,
+        };
+
+        // Strict Role-Based Search Filters
+        if (user.role === Role.TEACHER) {
+            const teacher = await this.prisma.teacher.findUnique({
+                where: { userId: user.id },
+                include: { sections: { select: { id: true } } }
+            });
+            const sectionIds = teacher?.sections.map(s => s.id) || [];
+
+            // Teachers can only see: Org Admins, Org Managers, and their Section Students
+            whereClause = {
+                ...whereClause,
+                AND: [
+                    {
+                        OR: [
+                            { role: Role.ORG_ADMIN },
+                            { role: Role.ORG_MANAGER },
+                            {
+                                role: Role.STUDENT,
+                                studentProfile: {
+                                    enrollments: {
+                                        some: { sectionId: { in: sectionIds } }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            };
+        } else if (user.role !== Role.SUPER_ADMIN && user.role !== Role.PLATFORM_ADMIN) {
+            // General Org Users (Manager/Admin) can see anyone in their org (restricted by organizationId above)
+        } else if (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) {
+            // Platform Admins can only see other platform admins/super admins
+            whereClause = {
+                ...whereClause,
+                role: { in: [Role.SUPER_ADMIN, Role.PLATFORM_ADMIN] }
+            };
+            delete whereClause.organizationId;
+        }
+
+        const usersList = await this.prisma.user.findMany({
+            where: whereClause,
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                avatarUrl: true
+            },
+            take: 20
+        });
+
+        return usersList;
+    }
+
+    async createDirectChat(dto: CreateDirectChatDto, user: CurrentUser) {
+        if (user.role === Role.STUDENT) {
+            throw new ForbiddenException('Students cannot initiate 1:1 direct chats.');
+        }
+
+        if (user.id === dto.participantId) {
+            throw new BadRequestException('Cannot chat with yourself.');
+        }
+
+        // Verify target exists
+        const targetUser = await this.prisma.user.findUnique({ where: { id: dto.participantId } });
+        if (!targetUser) throw new NotFoundException('User not found.');
+
+        // Restriction: Platform Admins can only chat with other Platform Admins
+        const isPlatformUser = (role: Role) => role === Role.SUPER_ADMIN || role === Role.PLATFORM_ADMIN;
+        const curUserIsPlatform = isPlatformUser(user.role);
+        const targetUserIsPlatform = isPlatformUser(targetUser.role as Role);
+
+        if (curUserIsPlatform && !targetUserIsPlatform) {
+            throw new ForbiddenException('Platform Administrators can only initiate chats with other Platform Administrators. Please use the Mail system for Organization support.');
+        }
+        if (!curUserIsPlatform && targetUserIsPlatform) {
+            throw new ForbiddenException('Organization users cannot initiate 1:1 chats with Platform Administrators. Please use the "Contact Platform Administrative Team" mail feature.');
+        }
+
+        // Enforce Org isolation (except Platform Admins)
+        if (user.role !== Role.SUPER_ADMIN && user.role !== Role.PLATFORM_ADMIN) {
+            if (targetUser.organizationId !== user.organizationId) {
+                throw new ForbiddenException('Cannot chat outside your organization.');
+            }
+
+            // Teacher Restrictions: Can only 1:1 with Org Admin, Org Manager, or their Section Students
+            if (user.role === Role.TEACHER) {
+                const allowedRoles: Role[] = [Role.ORG_ADMIN, Role.ORG_MANAGER];
+                if (!allowedRoles.includes(targetUser.role as Role)) {
+                    // If target is a student, check if they are in the teacher's section
+                    if (targetUser.role === Role.STUDENT) {
+                        const teacher = await this.prisma.teacher.findUnique({
+                            where: { userId: user.id },
+                            include: { sections: { select: { id: true } } }
+                        });
+                        const sectionIds = teacher?.sections.map(s => s.id) || [];
+                        
+                        const isEnrolled = await this.prisma.enrollment.findFirst({
+                            where: {
+                                student: { userId: targetUser.id },
+                                sectionId: { in: sectionIds }
+                            }
+                        });
+
+                        if (!isEnrolled) {
+                            throw new ForbiddenException('Teachers can only initiate 1:1 chats with students in their assigned sections.');
+                        }
+                    } else {
+                        // Target is another teacher? Not allowed as per rules ("Org managers, Org admins, Students in their assigned sections")
+                        throw new ForbiddenException('Teachers cannot initiate 1:1 chats with other teachers.');
+                    }
+                }
+            }
+        }
+
+        // Check if chat already exists
+        const existingChat = await this.prisma.chat.findFirst({
+            where: {
+                type: ChatType.DIRECT,
+                AND: [
+                    { participants: { some: { userId: user.id } } },
+                    { participants: { some: { userId: dto.participantId } } }
+                ]
+            },
+            include: { 
+                participants: {
+                    include: {
+                        user: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } }
+                    }
+                }
+            }
+        });
+
+        if (existingChat) {
+            return existingChat;
+        }
+
+        // Create new direct chat
+        return this.prisma.chat.create({
+            data: {
+                type: ChatType.DIRECT,
+                organizationId: user.organizationId,
+                creatorId: user.id,
+                participants: {
+                    create: [
+                        { userId: user.id, role: ChatParticipantRole.ADMIN },
+                        { userId: dto.participantId, role: ChatParticipantRole.ADMIN }
+                    ]
+                }
+            },
+            include: {
+                participants: {
+                    include: {
+                        user: {
+                            select: { id: true, name: true, email: true, avatarUrl: true, role: true }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    async createGroupChat(dto: CreateGroupChatDto, user: CurrentUser) {
+        if (user.role === Role.STUDENT) {
+            throw new ForbiddenException('Students cannot create group chats.');
+        }
+
+        const participants = Array.from(new Set([...dto.participantIds, user.id]));
+        if (participants.length < 2) {
+            throw new BadRequestException('Group must have at least 2 participants.');
+        }
+
+        // Check organization scoping
+        const usersList = await this.prisma.user.findMany({
+            where: { id: { in: participants } }
+        });
+
+        if (usersList.length !== participants.length) {
+            throw new NotFoundException('One or more users not found.');
+        }
+
+        const isPlatformUser = (role: Role) => role === Role.SUPER_ADMIN || role === Role.PLATFORM_ADMIN;
+        const curUserIsPlatform = isPlatformUser(user.role);
+
+        if (curUserIsPlatform) {
+            const orgUsers = usersList.filter(u => !isPlatformUser(u.role as Role));
+            if (orgUsers.length > 0) {
+                throw new ForbiddenException('Platform Administrators can only include other Platform Administrators in group chats.');
+            }
+        } else {
+            const externalUsers = usersList.filter(u => u.organizationId !== user.organizationId || isPlatformUser(u.role as Role));
+            if (externalUsers.length > 0) {
+                throw new ForbiddenException('Cannot include users outside your organization or Platform Administrators in organization group chats.');
+            }
+        }
+
+        // If Teacher, enforce they only add students from their sections (and ONLY students)
+        if (user.role === Role.TEACHER) {
+            const externalStaff = usersList.filter(u => u.id !== user.id && u.role !== Role.STUDENT);
+            if (externalStaff.length > 0) {
+                throw new ForbiddenException('Teachers can only create group chats with students. They cannot add other staff members.');
+            }
+
+            // Find teacher sections
+            const teacher = await this.prisma.teacher.findUnique({
+                where: { userId: user.id },
+                include: { sections: true }
+            });
+            const teacherSectionIds = teacher?.sections.map(s => s.id) || [];
+
+            // Get students they are trying to add
+            const targetStudentUserIds = usersList.filter(u => u.role === Role.STUDENT).map(u => u.id);
+
+            if (targetStudentUserIds.length > 0) {
+                const enrolledStudentsCount = await this.prisma.enrollment.groupBy({
+                    by: ['studentId'],
+                    where: {
+                        student: { userId: { in: targetStudentUserIds } },
+                        sectionId: { in: teacherSectionIds }
+                    }
+                });
+                
+                // Comparing unique students enrolled in teacher's sections vs unique students they're adding
+                if (enrolledStudentsCount.length < targetStudentUserIds.length) {
+                    throw new ForbiddenException('Teachers can only add students from their assigned sections.');
+                }
+            } else if (participants.length > 1) {
+                // If there are participants but no students (and we already excluded other staff), 
+                // this case shouldn't be reachable but good for safety.
+                throw new BadRequestException('Group must contain students.');
+            }
+        }
+
+        const chat = await this.prisma.chat.create({
+            data: {
+                type: ChatType.GROUP,
+                name: dto.name,
+                organizationId: user.organizationId,
+                creatorId: user.id,
+                participants: {
+                    create: participants.map(userId => ({
+                        userId,
+                        role: userId === user.id ? ChatParticipantRole.ADMIN : ChatParticipantRole.MEMBER
+                    }))
+                }
+            },
+            include: {
+                participants: {
+                    include: {
+                        user: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } }
+                    }
+                }
+            }
+        });
+
+        // Create initial system message
+        const userRec = await this.prisma.user.findUnique({ where: { id: user.id } });
+        const systemMsg = await this.prisma.chatMessage.create({
+            data: {
+                chatId: chat.id,
+                senderId: user.id,
+                organizationId: user.organizationId,
+                content: `${userRec?.name || 'Someone'} created the group "${dto.name}"`,
+                type: ChatMessageType.SYSTEM
+            },
+            include: { sender: { select: { id: true, name: true } } }
+        });
+
+        // Broadcast to all participants
+        for (const p of participants) {
+            this.events.emitToRoom(`user:${p}`, 'chat:message', systemMsg);
+        }
+
+        return chat;
+    }
+
+    async addParticipants(chatId: string, dto: AddParticipantsDto, user: CurrentUser) {
+        const chat = await this.prisma.chat.findUnique({
+            where: { id: chatId },
+            include: { participants: true }
+        });
+
+        if (!chat) throw new NotFoundException('Chat not found.');
+        if (chat.type === ChatType.DIRECT) throw new BadRequestException('Cannot add participants to a direct chat.');
+
+        // Permission check: Creator or Org Admin
+        const isCreator = chat.creatorId === user.id;
+        const isOrgAdmin = user.role === Role.ORG_ADMIN;
+        if (!isCreator && !isOrgAdmin) {
+            throw new ForbiddenException('Only the group creator or an org admin can add participants.');
+        }
+
+        const newUsersList = await this.prisma.user.findMany({
+            where: { id: { in: dto.participantIds }, organizationId: user.organizationId }
+        });
+
+        if (newUsersList.length !== dto.participantIds.length) {
+            throw new BadRequestException('One or more users not found or outside organization.');
+        }
+
+        const adminUser = await this.prisma.user.findUnique({ where: { id: user.id } });
+        const systemMessages: string[] = [];
+
+        for (const targetUser of newUsersList) {
+            const existing = chat.participants.find(p => p.userId === targetUser.id);
+            if (existing) {
+                if (existing.isActive) continue; // Already active
+                await this.prisma.chatParticipant.update({
+                    where: { id: existing.id },
+                    data: { isActive: true }
+                });
+            } else {
+                await this.prisma.chatParticipant.create({
+                    data: { chatId, userId: targetUser.id }
+                });
+            }
+            systemMessages.push(`${adminUser?.name || 'Admin'} added ${targetUser.name || targetUser.email} to the group`);
+        }
+
+        // Log system messages
+        for (const content of systemMessages) {
+            const msg = await this.prisma.chatMessage.create({
+                data: {
+                    chatId,
+                    senderId: user.id,
+                    organizationId: user.organizationId,
+                    content,
+                    type: ChatMessageType.SYSTEM
+                },
+                include: { sender: { select: { id: true, name: true } } }
+            });
+            this.events.emitToRoom(`chat:${chatId}`, 'chat:message', msg);
+            // Notify participants individually
+            const currentParticipants = await this.prisma.chatParticipant.findMany({ where: { chatId, isActive: true } });
+            for (const p of currentParticipants) {
+                this.events.emitToRoom(`user:${p.userId}`, 'chat:message', msg);
+            }
+        }
+
+        return { message: 'Participants added successfully.' };
+    }
+
+    async removeParticipant(chatId: string, targetUserId: string, user: CurrentUser) {
+        const chat = await this.prisma.chat.findUnique({
+            where: { id: chatId },
+            include: { participants: true }
+        });
+
+        if (!chat) throw new NotFoundException('Chat not found.');
+        if (chat.type === ChatType.DIRECT) throw new BadRequestException('Cannot remove participants from a direct chat.');
+
+        // Creator cannot be removed
+        if (targetUserId === chat.creatorId) {
+            throw new ForbiddenException('The group creator cannot be removed from the chat.');
+        }
+
+        // Permission check: Creator or Org Admin
+        const isCreator = chat.creatorId === user.id;
+        const isOrgAdmin = user.role === Role.ORG_ADMIN;
+        if (!isCreator && !isOrgAdmin) {
+            throw new ForbiddenException('Only the group creator or an org admin can remove participants.');
+        }
+
+        const participant = chat.participants.find(p => p.userId === targetUserId);
+        if (!participant || !participant.isActive) {
+            throw new BadRequestException('User is not an active participant of this chat.');
+        }
+
+        const adminUserRecord = await this.prisma.user.findUnique({ where: { id: user.id } });
+        const targetUserRecord = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+
+        await this.prisma.chatParticipant.update({
+            where: { id: participant.id },
+            data: { isActive: false }
+        });
+
+        // Log system message
+        const content = `${adminUserRecord?.name || 'Admin'} removed ${targetUserRecord?.name || targetUserRecord?.email || 'someone'} from the group`;
+        const msg = await this.prisma.chatMessage.create({
+            data: {
+                chatId,
+                senderId: user.id,
+                organizationId: user.organizationId,
+                content,
+                type: ChatMessageType.SYSTEM
+            },
+            include: { sender: { select: { id: true, name: true } } }
+        });
+
+        this.events.emitToRoom(`chat:${chatId}`, 'chat:message', msg);
+        const remainingParticipants = await this.prisma.chatParticipant.findMany({ where: { chatId, isActive: true } });
+        for (const p of remainingParticipants) {
+            this.events.emitToRoom(`user:${p.userId}`, 'chat:message', msg);
+        }
+        // Also notify the removed user
+        this.events.emitToRoom(`user:${targetUserId}`, 'chat:message', msg);
+
+        return { message: 'Participant removed successfully.' };
+    }
+
+    async deleteMessage(chatId: string, messageId: string, user: CurrentUser) {
+        await this.verifyChatAccess(chatId, user.id, true);
+
+        const message = await this.prisma.chatMessage.findUnique({
+            where: { id: messageId }
+        });
+
+        if (!message || message.chatId !== chatId) throw new NotFoundException('Message not found.');
+
+        // Permission: Org Admin can delete anything, others only own
+        const isOrgAdmin = user.role === Role.ORG_ADMIN;
+        const isOwnMessage = message.senderId === user.id;
+        if (!isOrgAdmin && !isOwnMessage) {
+            throw new ForbiddenException('You can only delete your own messages.');
+        }
+
+        if (message.deletedAt) return message;
+
+        const updated = await this.prisma.chatMessage.update({
+            where: { id: messageId },
+            data: { 
+                deletedAt: new Date(),
+                deletedById: user.id
+            },
+            include: {
+                sender: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } },
+                deletedBy: { select: { id: true, name: true } }
+            }
+        });
+
+        this.events.emitToRoom(`chat:${chatId}`, 'chat:message:delete', updated);
+        const participants = await this.prisma.chatParticipant.findMany({ where: { chatId, isActive: true } });
+        for (const p of participants) {
+            this.events.emitToRoom(`user:${p.userId}`, 'chat:message:delete', updated);
+        }
+
+        return updated;
+    }
+
+    async getUserChats(user: CurrentUser) {
+        return this.prisma.chat.findMany({
+            where: {
+                participants: { some: { userId: user.id, isActive: true } }
+            },
+            include: {
+                participants: {
+                    include: {
+                        user: {
+                            select: { id: true, name: true, email: true, avatarUrl: true, role: true }
+                        }
+                    }
+                },
+                messages: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                    include: {
+                        sender: { select: { id: true, name: true, email: true } }
+                    }
+                }
+            },
+            orderBy: {
+                updatedAt: 'desc'
+            }
+        });
+    }
+
+    async getChatMessages(chatId: string, user: CurrentUser, page: number = 1, limit: number = 20) {
+        await this.verifyChatAccess(chatId, user.id, true); // Allow inactive to see history
+
+        const messagesList = await this.prisma.chatMessage.findMany({
+            where: { chatId },
+            orderBy: { createdAt: 'desc' },
+            skip: (page - 1) * limit,
+            take: limit,
+            include: {
+                sender: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } },
+                deletedBy: { select: { id: true, name: true } }
+            }
+        });
+
+        const totalCount = await this.prisma.chatMessage.count({ where: { chatId } });
+
+        // Include read receipts for active participants
+        const activeParticipants = await this.prisma.chatParticipant.findMany({
+            where: { chatId, isActive: true },
+            select: { userId: true, lastReadMessageId: true }
+        });
+
+        return {
+            data: messagesList.reverse().map(m => ({
+                ...m,
+                readBy: activeParticipants
+                    .filter(p => p.userId !== m.senderId && p.lastReadMessageId && p.lastReadMessageId >= m.id)
+                    .map(p => p.userId)
+            })),
+            total: totalCount,
+            page,
+            totalPages: Math.ceil(totalCount / limit)
+        };
+    }
+
+    async sendMessage(chatId: string, dto: SendMessageDto, user: CurrentUser) {
+        const participant = await this.verifyChatAccess(chatId, user.id);
+        if (!participant.isActive) {
+            throw new ForbiddenException('You have been removed from this chat and can no longer send messages.');
+        }
+
+        const newMessage = await this.prisma.chatMessage.create({
+            data: {
+                chatId,
+                senderId: user.id,
+                organizationId: user.organizationId,
+                content: dto.content,
+                type: ChatMessageType.TEXT
+            },
+            include: {
+                sender: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } },
+                chat: { select: { id: true, name: true, type: true } }
+            }
+        });
+
+        // Update chat's updatedAt field
+        await this.prisma.chat.update({
+            where: { id: chatId },
+            data: { updatedAt: new Date() }
+        });
+
+        // Broadcast to ACTIVE participants
+        const activeParticipants = await this.prisma.chatParticipant.findMany({
+            where: { chatId, isActive: true }
+        });
+
+        this.events.emitToRoom(`chat:${chatId}`, 'chat:message', newMessage);
+
+        for (const p of activeParticipants) {
+            this.events.emitToRoom(`user:${p.userId}`, 'chat:message', newMessage);
+        }
+
+        return newMessage;
+    }
+
+    async markAsRead(chatId: string, messageId: string | undefined, user: CurrentUser) {
+        const participant = await this.prisma.chatParticipant.findUnique({
+            where: { chatId_userId: { chatId, userId: user.id } }
+        });
+
+        if (!participant || !participant.isActive) throw new ForbiddenException('Not an active participant.');
+
+        let finalReadMessageId = messageId;
+        
+        if (!finalReadMessageId) {
+            const lastMsg = await this.prisma.chatMessage.findFirst({
+                where: { chatId },
+                orderBy: { createdAt: 'desc' },
+                select: { id: true }
+            });
+            if (lastMsg) {
+                finalReadMessageId = lastMsg.id;
+            }
+        }
+
+        if (!finalReadMessageId) {
+            return participant;
+        }
+
+        const updatedParticipant = await this.prisma.chatParticipant.update({
+            where: { id: participant.id },
+            data: { lastReadMessageId: finalReadMessageId }
+        });
+        
+        this.events.emitToRoom(`chat:${chatId}`, 'chat:read', { chatId, userId: user.id, messageId: finalReadMessageId });
+        
+        return updatedParticipant;
+    }
+
+    private async verifyChatAccess(chatId: string, userId: string, allowInactive = false) {
+        const participant = await this.prisma.chatParticipant.findUnique({
+            where: { chatId_userId: { chatId, userId } }
+        });
+        if (!participant) throw new ForbiddenException('You do not have access to this chat.');
+        if (!participant.isActive && !allowInactive) {
+            throw new ForbiddenException('You are no longer an active participant of this chat.');
+        }
+        return participant;
+    }
+}

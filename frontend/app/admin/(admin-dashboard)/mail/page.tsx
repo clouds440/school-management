@@ -103,6 +103,13 @@ export default function RequestsPage() {
     }, [authLoading, user, token, fetchRequests]);
 
     useEffect(() => {
+        const rid = searchParams.get('requestId');
+        if (rid) {
+            setSelectedRequestId(rid);
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
         const unsubs = [
             subscribe('unread:update', () => fetchRequests()),
             subscribe('request:new', () => fetchRequests()),

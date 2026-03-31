@@ -33,6 +33,7 @@ export default function RegisterPage() {
         resolver: zodResolver(registerSchema),
         defaultValues: {
             name: '',
+            adminName: '',
             location: '',
             type: OrganizationType.HIGH_SCHOOL,
             email: '',
@@ -146,6 +147,18 @@ export default function RegisterPage() {
                                 placeholder="EduPulse Academy"
                             />
                             {errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{errors.name.message}</p>}
+                        </div>
+
+                        <div>
+                            <Label htmlFor="adminName">Administrator Full Name</Label>
+                            <Input
+                                id="adminName"
+                                {...register('adminName')}
+                                error={!!errors.adminName}
+                                icon={BookOpen}
+                                placeholder="John Doe"
+                            />
+                            {errors.adminName && <p className="mt-1 text-xs text-red-500 font-bold">{errors.adminName.message}</p>}
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

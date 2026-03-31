@@ -4,6 +4,7 @@ import { useGlobal } from "@/context/GlobalContext"
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     isLoading?: boolean
     loadingText?: string
+    loadingId?: string
     variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning'
     icon?: React.ElementType
     iconPosition?: 'start' | 'end'
@@ -12,13 +13,17 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, isLoading: localIsLoading, loadingText = "LOADING...", variant = 'primary', children, disabled, icon, iconPosition = 'start', px = 'px-6', py = 'py-3', ...props }, ref) => {
+    ({ className, isLoading: localIsLoading, loadingId, loadingText = "LOADING...", variant = 'primary', children, disabled, icon, iconPosition = 'start', px = 'px-6', py = 'py-3', ...props }, ref) => {
         const { state } = useGlobal();
 
         // Determine effective loading/disabled state
         const isGlobalBusy = state.ui.isProcessing || state.ui.isLoading;
         const effectiveDisabled = disabled || isGlobalBusy || localIsLoading;
-        const effectiveLoading = localIsLoading || state.ui.isProcessing;
+        
+        // Only show spinner if:
+        // 1. Local loading is true
+        // 2. Global processing is true AND (no specific ID was tracked OR the ID matches this button)
+        const effectiveLoading = localIsLoading || (state.ui.isProcessing && (!state.ui.processingId || state.ui.processingId === (loadingId || props.id)));
 
         let variantClasses = "";
         if (variant === 'primary') {

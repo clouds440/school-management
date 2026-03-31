@@ -10,7 +10,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { Role } from '@/types';
-import { api } from '@/lib/api';
 import { BackButton } from './BackButton';
 import { DataViewModal } from './DataViewModal';
 import { getPublicUrl } from '@/lib/utils';

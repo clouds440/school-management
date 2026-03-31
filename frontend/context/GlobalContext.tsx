@@ -11,6 +11,7 @@ export interface JwtPayload {
     id: string;
     email: string;
     orgId?: string | null;
+    organizationId?: string | null;
     name?: string;
     orgSlug?: string;
     orgName?: string;
@@ -69,6 +70,7 @@ export interface GlobalState {
         viewModal: ModalConfig;
         isLoading: boolean;
         isProcessing: boolean;
+        processingId: string | null;
     };
     data: {
         sections: Section[];
@@ -93,7 +95,7 @@ type Action =
     | { type: 'UI_TOGGLE_SIDEBAR' }
     | { type: 'UI_SET_MOBILE_SIDEBAR'; payload: boolean }
     | { type: 'UI_SET_LOADING'; payload: boolean }
-    | { type: 'UI_SET_PROCESSING'; payload: boolean }
+    | { type: 'UI_SET_PROCESSING'; payload: boolean | { isProcessing: boolean; id: string } }
     | { type: 'UI_OPEN_VIEW_MODAL'; payload: Omit<ModalConfig, 'isOpen'> }
     | { type: 'UI_CLOSE_VIEW_MODAL' }
     | { type: 'DATA_SET_SECTIONS'; payload: Section[] }
@@ -120,6 +122,7 @@ const initialState: GlobalState = {
         isMobileSidebarOpen: false,
         isLoading: false,
         isProcessing: false,
+        processingId: null,
         viewModal: {
             isOpen: false,
             title: '',
@@ -186,7 +189,10 @@ function globalReducer(state: GlobalState, action: Action): GlobalState {
         case 'UI_SET_LOADING':
             return { ...state, ui: { ...state.ui, isLoading: action.payload } };
         case 'UI_SET_PROCESSING':
-            return { ...state, ui: { ...state.ui, isProcessing: action.payload } };
+            if (typeof action.payload === 'boolean') {
+                return { ...state, ui: { ...state.ui, isProcessing: action.payload, processingId: action.payload ? state.ui.processingId : null } };
+            }
+            return { ...state, ui: { ...state.ui, isProcessing: action.payload.isProcessing, processingId: action.payload.isProcessing ? action.payload.id : null } };
         case 'UI_OPEN_VIEW_MODAL':
             return { ...state, ui: { ...state.ui, viewModal: { ...action.payload, isOpen: true } } };
         case 'UI_CLOSE_VIEW_MODAL':

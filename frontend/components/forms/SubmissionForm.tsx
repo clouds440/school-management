@@ -37,7 +37,7 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
 
     const onSubmit = async (data: SubmissionFormValues) => {
         if (!token) return;
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'submission-submit' } });
         try {
             const submission = await api.org.createSubmission(assessmentId, {
                 assessmentId,
@@ -81,7 +81,7 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
                 <Button type="button" variant="secondary" onClick={onCancel} className="px-8 h-12 font-black italic uppercase tracking-widest text-xs">
                     Cancel
                 </Button>
-                <Button type="submit" isLoading={isProcessing} className="px-10 h-12 font-black italic uppercase tracking-widest text-xs flex gap-2">
+                <Button type="submit" loadingId="submission-submit" loadingText="SUBMITTING..." className="px-10 h-12 font-black italic uppercase tracking-widest text-xs flex gap-2">
                     <FileCheck className="w-4 h-4" />
                     Submit Final Work
                 </Button>
