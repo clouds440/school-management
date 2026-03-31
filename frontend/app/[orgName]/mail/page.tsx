@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { Plus, MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Tag, Hash, Calendar, User, Filter, Clock } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Plus, MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Tag, Calendar, User, Filter, Clock } from 'lucide-react';
 import { api } from '@/lib/api';
-import { RequestItem, RequestDetail, RequestStatus, PaginatedResponse } from '@/types';
+import { RequestItem, RequestStatus, PaginatedResponse } from '@/types';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { Modal } from '@/components/ui/Modal';
-import { RequestStatusBadge, RequestPriorityBadge } from '@/components/requests/RequestStatusBadge';
-import { RequestThread, RequestThreadHandle } from '@/components/requests/RequestThread';
+import { RequestStatusBadge, RequestPriorityBadge, getRequestRowClassName } from '@/components/requests/RequestStatusBadge';
+import { RequestDetailsModal } from '@/components/requests/RequestDetailsModal';
 import { NewRequestModal } from '@/components/requests/NewRequestModal';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -27,9 +26,8 @@ export default function OrgRequestsPage() {
     const pathname = usePathname();
 
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<RequestItem> | null>(null);
-    const [selectedRequest, setSelectedRequest] = useState<RequestDetail | null>(null);
+    const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
     const [newRequestOpen, setNewRequestOpen] = useState(false);
-    const threadRef = useRef<RequestThreadHandle>(null);
 
     // Global symbols
     const fetching = state.ui.isLoading;
@@ -83,87 +81,18 @@ export default function OrgRequestsPage() {
         }
     }, [authLoading, token, fetchRequests]);
 
-    // Real-time updates
     useEffect(() => {
         const unsubs = [
             subscribe('unread:update', () => fetchRequests()),
-            subscribe('request:new', () => fetchRequests())
+            subscribe('request:new', () => fetchRequests()),
+            subscribe('request:message', () => fetchRequests()),
+            subscribe('request:update', () => fetchRequests())
         ];
         return () => unsubs.forEach(u => u());
     }, [subscribe, fetchRequests]);
 
-    useEffect(() => {
-        if (!selectedRequest?.id) return;
-        joinRoom(`request:${selectedRequest.id}`);
-        const unsubs = [
-            subscribe('request:message', async (data: unknown) => {
-                const payload = data as { requestId: string };
-                if (payload.requestId === selectedRequest.id && token) {
-                    const updated = await api.requests.getRequest(selectedRequest.id, token);
-                    setSelectedRequest(updated);
-                    fetchRequests();
-                }
-            }),
-            subscribe('request:update', (data: unknown) => {
-                const updated = data as RequestDetail;
-                if (updated.id === selectedRequest.id) {
-                    setSelectedRequest(updated);
-                    fetchRequests();
-                }
-            })
-        ];
-        return () => {
-            unsubs.forEach(u => u());
-            leaveRoom(`request:${selectedRequest.id}`);
-        };
-    }, [selectedRequest?.id, subscribe, joinRoom, leaveRoom, token, fetchRequests]);
-
-    const handleRequestClick = async (request: RequestItem) => {
-        if (!token) return;
-        try {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
-            const detail = await api.requests.getRequest(request.id, token);
-            setSelectedRequest(detail);
-        } catch (error: unknown) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load thread', type: 'error' } });
-        } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
-        }
-    };
-
-    const handleStatusUpdate = async (newStatus: RequestStatus) => {
-        if (!selectedRequest || !token || isProcessing) return;
-        try {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
-            await api.requests.updateRequest(selectedRequest.id, { status: newStatus }, token);
-            const updated = await api.requests.getRequest(selectedRequest.id, token);
-            setSelectedRequest(updated);
-            fetchRequests();
-            dispatch({ type: 'TOAST_ADD', payload: { message: `Status updated to ${newStatus.replace('_', ' ')}`, type: 'success' } });
-        } catch (error: unknown) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to update status', type: 'error' } });
-        } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
-        }
-    };
-
-    const handleReply = async (content: string, files?: File[]) => {
-        if (!selectedRequest || !token) return;
-        try {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
-            await api.requests.addMessage(selectedRequest.id, { content }, token, files);
-            const updated = await api.requests.getRequest(selectedRequest.id, token);
-            setSelectedRequest(updated);
-            fetchRequests();
-        } catch (error: unknown) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to send reply', type: 'error' } });
-        } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
-        }
-    };
-
-    const handleScrollToReply = () => {
-        threadRef.current?.scrollToReply();
+    const handleRequestClick = (request: RequestItem) => {
+        setSelectedRequestId(request.id);
     };
 
     const updateFilters = (key: string, value: string) => {
@@ -179,8 +108,6 @@ export default function OrgRequestsPage() {
         localStorage.setItem('edu-org-mail-limit', String(newSize));
         updateFilters('page', '1');
     };
-
-    const isClosed = selectedRequest?.status === RequestStatus.CLOSED || selectedRequest?.status === RequestStatus.RESOLVED;
 
     const columns: Column<RequestItem>[] = [
         {
@@ -268,6 +195,7 @@ export default function OrgRequestsPage() {
                                     { value: '', label: 'All Statuses', badge: state.stats.mail?.total },
                                     { value: RequestStatus.OPEN, label: 'Open', badge: state.stats.mail?.countsByStatus?.[RequestStatus.OPEN], icon: Clock, iconClassName: 'text-blue-500' },
                                     { value: RequestStatus.IN_PROGRESS, label: 'In Progress', badge: state.stats.mail?.countsByStatus?.[RequestStatus.IN_PROGRESS], icon: ArrowUpRight, iconClassName: 'text-amber-500' },
+                                    { value: RequestStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[RequestStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-indigo-500' },
                                     { value: RequestStatus.RESOLVED, label: 'Resolved', badge: state.stats.mail?.countsByStatus?.[RequestStatus.RESOLVED], icon: CheckCircle2, iconClassName: 'text-green-500' },
                                     { value: RequestStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[RequestStatus.CLOSED], icon: XCircle, iconClassName: 'text-gray-500' },
                                 ]}
@@ -306,112 +234,18 @@ export default function OrgRequestsPage() {
                         pageSize={pageSize}
                         onPageChange={(p: number) => updateFilters('page', p.toString())}
                         onPageSizeChange={handlePageSizeChange}
+                        getRowClassName={(row: RequestItem) => getRequestRowClassName(row.status)}
                         maxHeight="100%"
                     />
                 </div>
             </div>
 
-            <Modal
-                isOpen={!!selectedRequest}
-                onClose={() => setSelectedRequest(null)}
-                title={
-                    selectedRequest ? (
-                        <div className="flex items-center w-full pr-12 text-sm sm:text-base md:text-xl">
-                            <span className="text-xl font-black text-gray-900">{selectedRequest.subject}</span>
-                        </div>
-                    ) : undefined
-                }
-                subtitle={
-                    selectedRequest ? (
-                        <div className="block md:flex items-center justify-between w-full pr-12 text-sm sm:text-base md:text-xl">
-                            <div className="flex items-center gap-3 flex-wrap text-[10px] text-indigo-500/60 font-bold uppercase tracking-widest">
-                                <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{selectedRequest.category.replace('_', ' ')}</span>
-                                <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{selectedRequest.id.slice(0, 8)}</span>
-                                <span className="flex items-center gap-1"><User className="w-3 h-3" />Support Team</span>
-                            </div>
-                            <div className="block md:flex md:ml-5">
-                                {!isClosed && (
-                                    <div className="flex items-center mt-3 md:mt-0 gap-2 md:ml-4">
-                                        {selectedRequest.status === RequestStatus.OPEN && (
-                                            <Button
-                                                onClick={() => handleStatusUpdate(RequestStatus.IN_PROGRESS)}
-                                                variant="secondary"
-                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all border-none shadow-sm"
-                                            >
-                                                <ArrowUpRight className="w-3 h-3" />
-                                                In Progress
-                                            </Button>
-                                        )}
-                                        <Button
-                                            onClick={() => handleStatusUpdate(RequestStatus.RESOLVED)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-green-700 transition-all border-none shadow-sm"
-                                        >
-                                            <CheckCircle2 className="w-3 h-3" />
-                                            Resolve
-                                        </Button>
-                                        <Button
-                                            onClick={() => handleStatusUpdate(RequestStatus.CLOSED)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-500 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-gray-600 transition-all border-none shadow-sm"
-                                        >
-                                            <XCircle className="w-3 h-3" />
-                                            Close Thread
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ) : undefined
-                }
-                maxWidth="max-w-5xl"
-                footer={
-                    selectedRequest ? (
-                        <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-2">
-                                {!isClosed ? (
-                                    <Button
-                                        onClick={handleScrollToReply}
-                                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-50 text-indigo-600 rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all border border-indigo-200/50"
-                                    >
-                                        <MessageSquare className="w-3.5 h-3.5" />
-                                        Reply to Thread
-                                    </Button>
-                                ) : (
-                                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                        Thread is {selectedRequest.status}
-                                    </div>
-                                )}
-                            </div>
-
-                            <button
-                                onClick={() => setSelectedRequest(null)}
-                                className="px-6 py-2.5 text-gray-400 hover:text-gray-900 text-[10px] font-black uppercase tracking-widest transition-all"
-                            >
-                                Close Window
-                            </button>
-                        </div>
-                    ) : undefined
-                }
-            >
-                {selectedRequest && (
-                    <div className="flex flex-col h-full overflow-hidden">
-                        <div className="flex items-center gap-3 mb-6 shrink-0 flex-wrap">
-                            <RequestStatusBadge status={selectedRequest.status} />
-                            <RequestPriorityBadge priority={selectedRequest.priority} />
-                        </div>
-
-                        <div className="flex-1 overflow-hidden">
-                            <RequestThread
-                                ref={threadRef}
-                                request={selectedRequest}
-                                currentUserId={user?.id || ''}
-                                currentUserRole={user?.role}
-                                onReply={handleReply}
-                                isClosed={isClosed}
-                            />
-                        </div>
-                    </div>
-                )}
-            </Modal>
+            <RequestDetailsModal
+                isOpen={!!selectedRequestId}
+                requestId={selectedRequestId}
+                onClose={() => setSelectedRequestId(null)}
+                onUpdate={fetchRequests}
+            />
 
             <NewRequestModal
                 isOpen={newRequestOpen}

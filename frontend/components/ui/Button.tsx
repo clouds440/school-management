@@ -4,12 +4,15 @@ import { useGlobal } from "@/context/GlobalContext"
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     isLoading?: boolean
     loadingText?: string
-    variant?: 'primary' | 'secondary' | 'danger'
+    variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning'
     icon?: React.ElementType
+    iconPosition?: 'start' | 'end'
+    px?: string
+    py?: string
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, isLoading: localIsLoading, loadingText = "LOADING...", variant = 'primary', children, disabled, icon, ...props }, ref) => {
+    ({ className, isLoading: localIsLoading, loadingText = "LOADING...", variant = 'primary', children, disabled, icon, iconPosition = 'start', px = 'px-6', py = 'py-3', ...props }, ref) => {
         const { state } = useGlobal();
 
         // Determine effective loading/disabled state
@@ -21,16 +24,20 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         if (variant === 'primary') {
             variantClasses = "bg-primary text-primary-text hover:bg-primary-hover hover:shadow-2xl hover:-translate-y-1 focus:ring-(--primary)/20 disabled:bg-primary/50 disabled:hover:translate-y-0";
         } else if (variant === 'secondary') {
-            variantClasses = "bg-secondary text-secondary-text border-gray-200/50 hover:bg-secondary-hover hover:shadow-lg hover:-translate-y-1 focus:ring-(--secondary)/20 disabled:bg-secondary/50 disabled:text-gray-400 disabled:hover:translate-y-0";
+            variantClasses = "bg-gray-300 text-gray-900 border-gray-200/50 hover:bg-gray-400 hover:shadow-lg hover:-translate-y-1 focus:ring-(--secondary)/20 disabled:bg-secondary/50 disabled:text-gray-400 disabled:hover:translate-y-0";
         } else if (variant === 'danger') {
             variantClasses = "bg-red-600 text-white hover:bg-red-700 hover:shadow-2xl hover:-translate-y-1 focus:ring-red-500/20 disabled:bg-red-300 disabled:hover:translate-y-0";
+        } else if (variant === 'success') {
+            variantClasses = "bg-green-600 text-white hover:bg-green-700 hover:shadow-2xl hover:-translate-y-1 focus:ring-green-500/20 disabled:bg-green-300 disabled:hover:translate-y-0";
+        } else if (variant === 'warning') {
+            variantClasses = "bg-yellow-600 text-white hover:bg-yellow-700 hover:shadow-2xl hover:-translate-y-1 focus:ring-yellow-500/20 disabled:bg-yellow-300 disabled:hover:translate-y-0";
         }
 
         return (
             <button
                 className={`
           group relative flex justify-center items-center space-x-3 cursor-pointer
-          rounded-sm border border-transparent py-3 px-6 text-base font-bold
+          rounded-sm border border-transparent ${px} ${py} text-base font-bold
           focus:outline-none focus:ring-4
           transition-all duration-300 shadow-lg
           ${variantClasses}

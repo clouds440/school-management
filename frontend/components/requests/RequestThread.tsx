@@ -191,7 +191,7 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
 
         return (
             <div className="flex flex-col h-full">
-                <div className="px-6 py-3 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between shrink-0">
+                <div className="px-6 py-2 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-4">
                         <div className="flex -space-x-2">
                             <div className="w-8 h-8 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-indigo-600 text-[10px] font-black uppercase shadow-sm">

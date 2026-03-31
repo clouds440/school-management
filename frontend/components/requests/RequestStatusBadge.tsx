@@ -46,3 +46,20 @@ export function RequestPriorityBadge({ priority, className = '' }: PriorityBadge
         </span>
     );
 }
+
+export function getRequestRowClassName(status: RequestStatus) {
+    switch (status) {
+        case RequestStatus.OPEN:
+            return '!bg-blue-50/40 border-l-4 border-l-blue-500 shadow-sm transition-colors';
+        case RequestStatus.IN_PROGRESS:
+            return '!bg-amber-50/40 border-l-4 border-l-amber-400 transition-colors';
+        case RequestStatus.AWAITING_RESPONSE:
+            return '!bg-indigo-50/40 border-l-4 border-l-indigo-400 transition-colors';
+        case RequestStatus.RESOLVED:
+            return '!bg-emerald-50/40 border-l-4 border-l-emerald-500 transition-colors';
+        case RequestStatus.CLOSED:
+            return '!bg-slate-50/40 border-l-4 border-l-slate-400 opacity-80 transition-colors';
+        default:
+            return 'transition-colors hover:bg-gray-50/50';
+    }
+}

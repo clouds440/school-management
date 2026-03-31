@@ -1,20 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
-import { Search, Plus, Filter, MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Tag, Hash, User as UserIcon, Building2, Calendar, User, Clock } from 'lucide-react';
+import { Search, Plus, Filter, MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Hash, Building2, Calendar, User, Clock } from 'lucide-react';
 import { api } from '@/lib/api';
-import { RequestItem, RequestDetail, RequestStatus, Role, PaginatedResponse, UpdateRequestPayload, ApiError } from '@/types';
+import { RequestItem, RequestStatus, Role, PaginatedResponse, ApiError } from '@/types';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { Modal } from '@/components/ui/Modal';
-import { RequestStatusBadge, RequestPriorityBadge } from '@/components/requests/RequestStatusBadge';
-import { RequestThread, RequestThreadHandle } from '@/components/requests/RequestThread';
+import { RequestStatusBadge, RequestPriorityBadge, getRequestRowClassName } from '@/components/requests/RequestStatusBadge';
+import { RequestDetailsModal } from '@/components/requests/RequestDetailsModal';
 import { NewRequestModal } from '@/components/requests/NewRequestModal';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useSocket } from '@/hooks/useSocket';
 import { getPublicUrl } from '@/lib/utils';
 import { Loading } from '@/components/ui/Loading';
@@ -29,12 +27,8 @@ export default function RequestsPage() {
     const searchParams = useSearchParams();
 
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<RequestItem> | null>(null);
-    const [selectedRequest, setSelectedRequest] = useState<RequestDetail | null>(null);
-    const [threadModalOpen, setThreadModalOpen] = useState(false);
+    const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
     const [newRequestOpen, setNewRequestOpen] = useState(false);
-    const [confirmOpen, setConfirmOpen] = useState(false);
-    const [pendingStatus, setPendingStatus] = useState<RequestStatus | null>(null);
-    const threadRef = useRef<RequestThreadHandle>(null);
 
     // Global UI states alias
     const fetching = state.ui.isLoading;
@@ -108,106 +102,24 @@ export default function RequestsPage() {
         }
     }, [authLoading, user, token, fetchRequests]);
 
-    // Real-time updates
     useEffect(() => {
         const unsubs = [
             subscribe('unread:update', () => fetchRequests()),
-            subscribe('request:new', () => fetchRequests())
+            subscribe('request:new', () => fetchRequests()),
+            subscribe('request:message', () => fetchRequests()),
+            subscribe('request:update', () => fetchRequests())
         ];
         return () => unsubs.forEach(u => u());
     }, [subscribe, fetchRequests]);
 
-    useEffect(() => {
-        if (!selectedRequest?.id) return;
-        joinRoom(`request:${selectedRequest.id}`);
-        const unsubs = [
-            subscribe('request:message', async (data: unknown) => {
-                const payload = data as { requestId: string };
-                if (payload.requestId === selectedRequest.id && token) {
-                    const updated = await api.requests.getRequest(selectedRequest.id, token);
-                    setSelectedRequest(updated);
-                    fetchRequests();
-                }
-            }),
-            subscribe('request:update', (data: unknown) => {
-                const updated = data as RequestDetail;
-                if (updated.id === selectedRequest.id) {
-                    setSelectedRequest(updated);
-                    fetchRequests();
-                }
-            })
-        ];
-        return () => {
-            unsubs.forEach(u => u());
-            leaveRoom(`request:${selectedRequest.id}`);
-        };
-    }, [selectedRequest?.id, subscribe, joinRoom, leaveRoom, token, fetchRequests]);
-
-    const handleViewRequest = async (item: RequestItem) => {
-        if (!token) return;
-        try {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
-            const detail = await api.requests.getRequest(item.id, token);
-            setSelectedRequest(detail);
-            setThreadModalOpen(true);
-        } catch (error: unknown) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load request', type: 'error' } });
-        } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
-        }
-    };
-
-    const handleReply = async (content: string, files?: File[]) => {
-        if (!selectedRequest || !token) return;
-        try {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
-            await api.requests.addMessage(selectedRequest.id, { content }, token, files);
-            const updated = await api.requests.getRequest(selectedRequest.id, token);
-            setSelectedRequest(updated);
-            fetchRequests();
-        } catch (error: unknown) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to send reply', type: 'error' } });
-        } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
-        }
-    };
-
-    const handleScrollToReply = () => {
-        threadRef.current?.scrollToReply();
+    const handleViewRequest = (item: RequestItem) => {
+        setSelectedRequestId(item.id);
     };
 
     const handlePageSizeChange = (newSize: number) => {
         setPageSize(newSize);
         localStorage.setItem('edu-admin-mail-limit', String(newSize));
         updateQueryParams({ page: 1 });
-    };
-
-    const handleStatusUpdate = async (newStatus: RequestStatus) => {
-        if (!token || !selectedRequest || isProcessing) return;
-        if (newStatus === RequestStatus.RESOLVED || newStatus === RequestStatus.CLOSED) {
-            setPendingStatus(newStatus);
-            setConfirmOpen(true);
-            return;
-        }
-        await executeStatusUpdate(newStatus);
-    };
-
-    const executeStatusUpdate = async (newStatus: RequestStatus) => {
-        if (!token || !selectedRequest) return;
-        try {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
-            const payload: UpdateRequestPayload = { status: newStatus };
-            const updated = await api.requests.updateRequest(selectedRequest.id, payload, token);
-            setSelectedRequest(updated);
-            dispatch({ type: 'TOAST_ADD', payload: { message: `Status updated to ${newStatus.replace('_', ' ')}`, type: 'success' } });
-            fetchRequests();
-        } catch (error: unknown) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to update status', type: 'error' } });
-        } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
-            setConfirmOpen(false);
-            setPendingStatus(null);
-        }
     };
 
     const requests = paginatedData?.data || [];
@@ -362,8 +274,6 @@ export default function RequestsPage() {
         return <Loading fullScreen text="Preparing Mailbox..." size="lg" />;
     }
 
-    const isClosed = selectedRequest?.status === RequestStatus.CLOSED || selectedRequest?.status === RequestStatus.RESOLVED;
-
     return (
         <div className="flex flex-col h-full w-full">
             <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
@@ -416,124 +326,17 @@ export default function RequestsPage() {
                         onPageSizeChange={handlePageSizeChange}
                         sortConfig={{ key: sortBy, direction: sortOrder }}
                         onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
-                        getRowClassName={(row) => {
-                            if (row.status === RequestStatus.OPEN) return '!bg-blue-50/40 border-l-4 border-l-blue-500 shadow-sm transition-colors';
-                            if (row.status === RequestStatus.IN_PROGRESS) return '!bg-amber-50/40 border-l-4 border-l-amber-400 transition-colors';
-                            if (row.status === RequestStatus.AWAITING_RESPONSE) return '!bg-indigo-50/40 border-l-4 border-l-indigo-400 transition-colors';
-                            if (row.status === RequestStatus.RESOLVED) return '!bg-emerald-50/40 border-l-4 border-l-emerald-500 transition-colors';
-                            if (row.status === RequestStatus.CLOSED) return '!bg-slate-50/40 border-l-4 border-l-slate-400 opacity-80 transition-colors';
-                            return 'transition-colors';
-                        }}
+                        getRowClassName={(row: RequestItem) => getRequestRowClassName(row.status)}
                         maxHeight="100%"
                     />
                 </div>
             </div>
 
-            <Modal
-                isOpen={threadModalOpen}
-                onClose={() => { setThreadModalOpen(false); setSelectedRequest(null); }}
-                title={
-                    selectedRequest ? (
-                        <div className="flex items-center justify-between w-full pr-12">
-                            <span className="text-xl font-black text-gray-900">{selectedRequest.subject}</span>
-                            {!isClosed && (
-                                <div className="flex items-center gap-2 ml-4">
-                                    {selectedRequest.status === RequestStatus.OPEN && (
-                                        <Button
-                                            onClick={() => handleStatusUpdate(RequestStatus.IN_PROGRESS)}
-                                            variant="secondary"
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all border-none shadow-sm"
-                                        >
-                                            <ArrowUpRight className="w-3 h-3" />
-                                            In Progress
-                                        </Button>
-                                    )}
-                                    <Button
-                                        onClick={() => handleStatusUpdate(RequestStatus.RESOLVED)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-green-700 transition-all border-none shadow-sm"
-                                    >
-                                        <CheckCircle2 className="w-3 h-3" />
-                                        Resolve
-                                    </Button>
-                                    <Button
-                                        onClick={() => handleStatusUpdate(RequestStatus.CLOSED)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-500 text-white rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-gray-600 transition-all border-none shadow-sm"
-                                    >
-                                        <XCircle className="w-3 h-3" />
-                                        Close Thread
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    ) : undefined
-                }
-                subtitle={
-                    selectedRequest ? (
-                        <div className="flex items-center gap-3 flex-wrap">
-                            <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{selectedRequest.category.replace('_', ' ')}</span>
-                            <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{selectedRequest.id.slice(0, 8)}</span>
-                            <span className="flex items-center gap-1"><UserIcon className="w-3 h-3" />{selectedRequest.creator?.name || selectedRequest.creator?.email || 'Unknown'}</span>
-                            {selectedRequest.organization && (
-                                <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{selectedRequest.organization.name}</span>
-                            )}
-                        </div>
-                    ) : undefined
-                }
-                maxWidth="max-w-5xl"
-                footer={
-                    selectedRequest ? (
-                        <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-2">
-                                {!isClosed ? (
-                                    <Button
-                                        onClick={handleScrollToReply}
-                                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-50 text-indigo-600 rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all border border-indigo-200/50"
-                                    >
-                                        <MessageSquare className="w-3.5 h-3.5" />
-                                        Reply to Thread
-                                    </Button>
-                                ) : (
-                                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                        Thread is {selectedRequest.status}
-                                    </div>
-                                )}
-                            </div>
-                            <button
-                                onClick={() => { setThreadModalOpen(false); setSelectedRequest(null); }}
-                                className="px-6 py-2.5 text-gray-600 bg-gray-200 hover:bg-gray-300 hover:text-gray-900 text-[10px] font-black uppercase tracking-widest transition-all"
-                            >
-                                Close Window
-                            </button>
-                        </div>
-                    ) : undefined
-                }
-            >
-                {selectedRequest && (
-                    <div className="flex flex-col h-full overflow-hidden">
-                        <div className="flex items-center gap-3 mb-6 shrink-0 flex-wrap">
-                            <RequestStatusBadge status={selectedRequest.status} />
-                            <RequestPriorityBadge priority={selectedRequest.priority} />
-                        </div>
-                        <div className="flex-1 overflow-hidden">
-                            <RequestThread
-                                ref={threadRef}
-                                request={selectedRequest}
-                                currentUserId={user?.id || ''}
-                                currentUserRole={user?.role}
-                                onReply={handleReply}
-                                isClosed={isClosed}
-                            />
-                        </div>
-                    </div>
-                )}
-            </Modal>
-
-            <ConfirmDialog
-                isOpen={confirmOpen}
-                onClose={() => { setConfirmOpen(false); setPendingStatus(null); }}
-                onConfirm={() => pendingStatus && executeStatusUpdate(pendingStatus)}
-                title="Status Update"
-                description={`Are you sure you want to ${pendingStatus?.replace('_', ' ')} this mail thread?`}
+            <RequestDetailsModal
+                isOpen={!!selectedRequestId}
+                requestId={selectedRequestId}
+                onClose={() => setSelectedRequestId(null)}
+                onUpdate={fetchRequests}
             />
 
             <NewRequestModal
