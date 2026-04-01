@@ -322,6 +322,7 @@ export class RequestService {
                     where: {
                         requestId: req.id,
                         senderId: { not: user.id },
+                        deletedAt: null,
                         ...(lastViewedAt ? { createdAt: { gt: lastViewedAt } } : {}),
                     },
                 });
@@ -794,6 +795,10 @@ export class RequestService {
                     { assigneeId: user.id },
                     { assignees: { some: { id: user.id } } },
                     { targetRole: user.role },
+                    ...(user.role === Role.SUPER_ADMIN ? [
+                        { targetRole: Role.PLATFORM_ADMIN as const },
+                        { targetRole: Role.SUPER_ADMIN as const } 
+                    ] : []),
                 ],
             }
             : {
@@ -844,7 +849,8 @@ export class RequestService {
                 where: {
                     requestId: req.id,
                     createdAt: lastViewed ? { gt: lastViewed } : undefined,
-                    senderId: { not: user.id } // Don't count own messages as unread
+                    senderId: { not: user.id }, // Don't count own messages as unread
+                    deletedAt: null
                 },
                 take: 1
             });

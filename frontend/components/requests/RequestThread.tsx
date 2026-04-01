@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Send, Clock, Paperclip, X, FileText, ImageIcon, Download, MessageSquare, User as UserIcon } from 'lucide-react';
+import { Send, Clock, Paperclip, X, FileText, ImageIcon, Download, MessageSquare } from 'lucide-react';
 import { RequestDetail, RequestMessage as RequestMessageType, RequestActionLog, Attachment } from '@/types';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { MarkdownEditor, MarkdownEditorHandle } from '@/components/ui/MarkdownEditor';
 import { getPublicUrl } from '@/lib/utils';
 import Image from 'next/image';
+import { BrandIcon } from '@/components/ui/Brand';
 import { ADMIN_REPLY_TEMPLATES } from './MailTemplates';
 import { Button } from '@/components/ui/Button';
 
@@ -31,14 +32,14 @@ function AttachmentPreview({ file }: { file: Attachment }) {
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 p-2 bg-white/50 border border-black/5 rounded-sm hover:bg-white hover:shadow-sm transition-all group max-w-sm"
+            className="flex items-center gap-2 p-2 bg-white/50 border border-black/5 rounded-full hover:bg-white hover:shadow-sm transition-all group max-w-sm"
         >
             {isImage ? (
-                <div className="w-10 h-10 rounded-sm overflow-hidden shrink-0 border border-black/5 relative">
+                <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-black/5 relative shadow-sm hover:scale-105 transition-transform duration-300">
                     <Image src={url} alt={file.filename} fill className="object-cover" unoptimized />
                 </div>
             ) : (
-                <div className="w-10 h-10 bg-indigo-50 rounded-sm flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center shrink-0 border border-indigo-100 shadow-sm">
                     <FileText className="w-5 h-5 text-indigo-500" />
                 </div>
             )}
@@ -54,13 +55,7 @@ function AttachmentPreview({ file }: { file: Attachment }) {
 function MessageBubble({ message, isOwn }: { message: RequestMessageType; isOwn: boolean }) {
     return (
         <div className="flex gap-3">
-            <div className={`w-8 h-8 rounded-full ${isOwn ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'} flex items-center justify-center shrink-0 text-xs font-black uppercase shadow-sm overflow-hidden relative`}>
-                {message.sender?.avatarUrl ? (
-                    <Image src={getPublicUrl(message.sender.avatarUrl)} alt="" fill className="object-cover" unoptimized />
-                ) : (
-                    <UserIcon className="w-4 h-4" />
-                )}
-            </div>
+            <BrandIcon variant="user" size="sm" user={message.sender} className={`w-8 h-8 ${isOwn ? 'ring-2 ring-indigo-500/20' : ''}`} />
             <div className="flex-1 max-w-[90%]">
                 <div className="flex items-center gap-2 mb-1">
                     <span className="text-[11px] font-black text-gray-700">
@@ -196,14 +191,10 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
                 <div className="px-6 py-2 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-4">
                         <div className="flex -space-x-2">
-                            <div className="w-8 h-8 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-indigo-600 text-[10px] font-black uppercase shadow-sm">
-                                {(request.creator.name || request.creator.email || '?')[0]}
-                            </div>
+                            <BrandIcon variant="user" size="sm" user={request.creator} className="border-2 border-white/80 shadow-sm" />
                             {request.assignees.length > 0 ? (
                                 request.assignees.slice(0, 2).map((a) => (
-                                    <div key={a.id} className="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-orange-600 text-[10px] font-black uppercase shadow-sm">
-                                        {(a.name || a.email || '?')[0]}
-                                    </div>
+                                    <BrandIcon key={a.id} variant="user" size="sm" user={a} className="border-2 border-white/80 shadow-sm" />
                                 ))
                             ) : (
                                 <div className="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-orange-600 text-[10px] font-black uppercase shadow-sm font-mono">
@@ -222,7 +213,7 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
                                         : request.assignees.map(a => a.name || a.email).join(', ')
                                 ) : request.targetRole === 'ORG_STAFF' ? 'All Employees' :
                                     request.targetRole === 'PLATFORM_ADMIN' || request.targetRole === 'SUPER_ADMIN' ? 'Platform Administrative Team' :
-                                    (request.targetRole?.replace('_', ' ') || 'Platform Support Team')}
+                                        (request.targetRole?.replace('_', ' ') || 'Platform Support Team')}
                             </p>
                         </div>
                     </div>
@@ -259,7 +250,7 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
                     {!isClosed && <div ref={replyAreaRef} className="pt-4 mt-8 border-t border-gray-100">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Post a Reply</h3>
-                            
+
                             <div className="flex items-center gap-4">
                                 <button
                                     type="button"

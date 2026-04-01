@@ -228,8 +228,8 @@ export default function PlatformAdminsPage() {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
-                <div className="px-6 md:px-8 pt-3 pb-3 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gray-50/50 shrink-0">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="p-1 flex items-center justify-between gap-4">
                     <div className="flex-1 max-w-xl">
                         <SearchBar
                             value={searchQuery}
@@ -246,7 +246,7 @@ export default function PlatformAdminsPage() {
                     </button>
                 </div>
 
-                <div className="p-2 md:p-3 bg-gray-50/10 flex-1 min-h-0">
+                <div className="flex-1 min-h-0">
                     <DataTable
                         columns={columns}
                         data={platformAdmins}

@@ -36,6 +36,49 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
     
     const [contactableUsers, setContactableUsers] = useState<MultiSelectOption[]>([]);
     const [isFetchingUsers, setIsFetchingUsers] = useState(false);
+    
+    // For Teachers: Quick add from Section
+    const [sections, setSections] = useState<{ value: string; label: string }[]>([]);
+    const [selectedSectionId, setSelectedSectionId] = useState('');
+    const [isFetchingSections, setIsFetchingSections] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen || !token || user?.role !== Role.TEACHER) return;
+        
+        const fetchSections = async () => {
+            setIsFetchingSections(true);
+            try {
+                const res = await api.org.getSections(token, { my: true });
+                setSections(res.data.map(s => ({ value: s.id, label: s.name })));
+            } catch (err) {
+                console.error('Failed to fetch sections', err);
+            } finally {
+                setIsFetchingSections(false);
+            }
+        };
+        fetchSections();
+    }, [isOpen, token, user?.role]);
+
+    const handleSectionSelect = async (sectionId: string) => {
+        setSelectedSectionId(sectionId);
+        if (!sectionId || !token) return;
+        
+        setIsFetchingUsers(true);
+        try {
+            const section = await api.org.getSection(sectionId, token);
+            if (section.students) {
+                const studentIds = section.students.map(s => s.userId);
+                // Merge with existing
+                setParticipantIds(prev => Array.from(new Set([...prev, ...studentIds])));
+                dispatch({ type: 'TOAST_ADD', payload: { message: `Added ${section.students.length} students from ${section.name}`, type: 'success' } });
+            }
+        } catch (err) {
+            console.error('Failed to fetch section students', err);
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to add section students', type: 'error' } });
+        } finally {
+            setIsFetchingUsers(false);
+        }
+    };
 
     useEffect(() => {
         if (!isOpen || !token) return;
@@ -46,9 +89,15 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
                 // Fetch explicitly from chat endpoint instead of mail contacts
                 const users = await api.chat.searchUsers(token);
                 // Filter out existing participants if in add mode
-                const filteredUsers = mode === 'ADD_PARTICIPANTS' 
+                let filteredUsers = mode === 'ADD_PARTICIPANTS' 
                     ? users.filter(u => !existingParticipantIds.includes(u.id))
                     : users;
+
+                // POLICY: No 1-to-1 chats with students. 
+                // Exclude students if we are in DIRECT mode
+                if (type === 'DIRECT') {
+                    filteredUsers = filteredUsers.filter(u => u.role !== Role.STUDENT);
+                }
 
                 setContactableUsers(filteredUsers.map(u => ({
                     value: u.id,
@@ -64,7 +113,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
         };
 
         fetchUsers();
-    }, [isOpen, token, dispatch, mode, existingParticipantIds]);
+    }, [isOpen, token, dispatch, mode, existingParticipantIds, type]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -161,6 +210,23 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
 
                 <div>
                     <Label>{type === 'DIRECT' ? 'Recipient' : 'Participants'} <span className="text-red-500">*</span></Label>
+                    
+                    {type === 'GROUP' && user?.role === Role.TEACHER && sections.length > 0 && (
+                        <div className="mb-4">
+                            <Label className="text-[10px] text-primary/60 font-black uppercase mb-1.5 flex items-center">
+                                <Users className="w-3 h-3 mr-1" />
+                                Add whole section
+                            </Label>
+                            <CustomSelect
+                                options={sections}
+                                value={selectedSectionId}
+                                onChange={handleSectionSelect}
+                                placeholder="Select section to add all students..."
+                                icon={Users}
+                            />
+                        </div>
+                    ) }
+
                     {type === 'DIRECT' ? (
                         <CustomSelect
                             value={recipientId}

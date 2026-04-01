@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function AdminChatPage() {
     return (
-        <div className="h-[calc(100vh-4rem)] p-4 md:p-6 overflow-hidden">
+        <div className="h-[calc(100vh-4rem)] overflow-hidden">
             <ChatLayout />
         </div>
     );

@@ -1,22 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { UserPlus, BadgeCheck } from 'lucide-react';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Teacher, Role, PaginatedResponse } from '@/types';
+import { Teacher, Role } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { TableActions } from '@/components/ui/TableActions';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
-import { getPublicUrl } from '@/lib/utils';
 import { Loading } from '@/components/ui/Loading';
 import { NewRequestModal } from '@/components/requests/NewRequestModal';
+import { BrandIcon } from '@/components/ui/Brand';
 
 type TeacherParams = BasePaginationParams;
 
@@ -118,15 +117,11 @@ export default function TeachersPage() {
             sortKey: 'name',
             accessor: (row: Teacher) => (
                 <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 ${row.user.avatarUrl ? 'bg-transparent' : 'bg-indigo-50'} rounded-sm flex items-center justify-center text-indigo-600 shrink-0 relative`}>
-                        {row.user.avatarUrl ? (
-                            <Image src={getPublicUrl(row.user.avatarUrl)} alt={`${row.user.name} photo`} width={40} height={40} className="w-10 h-10 bg-transparent rounded-full object-cover" unoptimized />
-                        ) : (
-                            row.user.name.charAt(0).toUpperCase()
-                        )}
+                    <div className="relative shrink-0 flex items-center justify-center">
+                        <BrandIcon variant="user" size="sm" user={row.user} className="w-10 h-10 shadow-sm" />
                         {(row.user.role === Role.ORG_ADMIN || row.user.role === Role.ORG_MANAGER) && (
                             <div
-                                className={`absolute -bottom-1 -right-1 p-0.5 rounded-full bg-white shadow-sm border ${row.user.role === Role.ORG_ADMIN
+                                className={`absolute -bottom-1 -right-1 p-0.5 rounded-full bg-white shadow-sm border z-20 ${row.user.role === Role.ORG_ADMIN
                                     ? 'text-amber-500 border-amber-200'
                                     : 'text-blue-500 border-blue-200'
                                     }`}

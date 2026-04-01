@@ -4,14 +4,15 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
+import { useUI } from '@/context/UIContext';
 import { useSocket } from '@/hooks/useSocket';
 import { api } from '@/lib/api';
-import { getPublicUrl } from '@/lib/utils';
+import { BrandIcon } from '../ui/Brand';
 import { Chat, ChatMessage, ChatType, Role, User } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import {
-    Search, Plus, Send, MoreVertical, X, Loader2, Image as ImageIcon,
-    UserPlus, UserMinus, Trash2, Shield, Info
+    Search, Plus, MessageSquarePlus, Send, MoreVertical, X, Loader2, Image as ImageIcon,
+    UserPlus, UserMinus, Trash2, Shield, Info, ChevronLeft, Check, CheckCheck
 } from 'lucide-react';
 import { MarkdownEditor } from '../ui/MarkdownEditor';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
@@ -19,10 +20,12 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { NewChatModal } from './NewChatModal';
+import { ChatSettingsModal } from './ChatSettingsModal';
 
 export function ChatLayout() {
     const { token, user } = useAuth();
     const { dispatch } = useGlobal();
+    const { isDesktop, mounted } = useUI();
     const { socket, subscribe, joinRoom, leaveRoom } = useSocket({ token, userId: user?.id, enabled: !!token });
     const searchParams = useSearchParams();
     const initialChatId = searchParams.get('id');
@@ -38,6 +41,7 @@ export function ChatLayout() {
     const [isUploading, setIsUploading] = useState(false);
     const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [showParticipants, setShowParticipants] = useState(false);
 
     // Modal state for image preview
@@ -82,9 +86,7 @@ export function ChatLayout() {
     }, [showParticipants]);
 
     // Helper: Get avatar with fallback
-    const UserAvatar = ({ targetUser, className = "w-8 h-8", groupIcon = false }: { targetUser?: { id?: string; name?: string | null; avatarUrl?: string | null; role?: Role }, className?: string, groupIcon?: boolean }) => {
-        const avatarColor = targetUser?.id ? `hsl(${parseInt(targetUser.id.substring(0, 8), 16) % 360}, 70%, 50%)` : '#10b981';
-
+    const UserAvatar = ({ targetUser, className = "w-8 h-8", groupIcon = false }: { targetUser?: { id?: string; name?: string | null; avatarUrl?: string | null; role?: Role; orgName?: string; orgLogoUrl?: string | null; avatarUpdatedAt?: string | null; userName?: string }, className?: string, groupIcon?: boolean }) => {
         if (groupIcon) {
             return (
                 <div className={`${className} rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 shadow-sm shrink-0`}>
@@ -94,15 +96,12 @@ export function ChatLayout() {
         }
 
         return (
-            <div className={`${className} rounded-full flex items-center justify-center text-white font-bold overflow-hidden border border-gray-100 shadow-sm shrink-0 bg-gray-200`} style={{ backgroundColor: targetUser?.avatarUrl ? 'transparent' : avatarColor }}>
-                {targetUser?.avatarUrl ? (
-                    <img src={getPublicUrl(targetUser.avatarUrl)} alt="" className="w-full h-full object-cover" />
-                ) : (targetUser?.role === Role.ORG_ADMIN || targetUser?.role === Role.ORG_MANAGER) && user?.orgLogoUrl ? (
-                    <img src={getPublicUrl(user.orgLogoUrl)} alt="" className="w-full h-full object-cover opacity-90" />
-                ) : (
-                    <span className="text-[10px] uppercase">{targetUser?.name?.charAt(0) || '?'}</span>
-                )}
-            </div>
+            <BrandIcon 
+                variant="user" 
+                size="sm" 
+                user={targetUser} 
+                className={className} 
+            />
         );
     };
 
@@ -169,12 +168,14 @@ export function ChatLayout() {
                     const updatedChat = {
                         ...prevChats[chatIndex],
                         updatedAt: new Date().toISOString(),
-                        messages: [message]
+                        messages: [message],
+                        unreadCount: (message.chatId !== activeChatId && message.senderId !== user.id)
+                            ? (prevChats[chatIndex].unreadCount || 0) + 1
+                            : 0
                     };
                     const newChats = [...prevChats];
                     newChats.splice(chatIndex, 1);
-                    newChats.unshift(updatedChat);
-                    return newChats;
+                    return [updatedChat, ...newChats];
                 } else {
                     fetchChats();
                     return prevChats;
@@ -193,6 +194,14 @@ export function ChatLayout() {
                     return m;
                 }));
             }
+            if (readData.userId === user.id) {
+                setChats(prev => prev.map(c => {
+                    if (c.id === readData.chatId) {
+                        return { ...c, unreadCount: 0 };
+                    }
+                    return c;
+                }));
+            }
         });
 
         const unsubDelete = subscribe('chat:message:delete', (deletedMsg: unknown) => {
@@ -208,10 +217,16 @@ export function ChatLayout() {
             }));
         });
 
+        const unsubUpdate = subscribe('chat:update', (updatedChat: unknown) => {
+            const chat = updatedChat as Chat;
+            setChats(prev => prev.map(c => c.id === chat.id ? { ...c, ...chat } : c));
+        });
+
         return () => {
             unsubMessage();
             unsubRead();
             unsubDelete();
+            unsubUpdate();
         };
     }, [subscribe, activeChatId, token, user, dispatch]);
 
@@ -380,6 +395,7 @@ export function ChatLayout() {
     const handleEditorFocus = () => {
         if (token && activeChatId) {
             api.chat.markAsRead(activeChatId, '', token).catch(console.error);
+            setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, unreadCount: 0 } : c));
         }
     };
 
@@ -392,19 +408,22 @@ export function ChatLayout() {
     if (!user) return null;
 
     return (
-        <div className="flex h-full bg-white rounded-sm shadow-sm border border-gray-100 overflow-hidden">
+        <div className="flex h-full bg-white lg:rounded-sm lg:shadow-sm lg:border border-gray-100 overflow-hidden relative">
             {/* Sidebar List */}
-            <div className={`w-full max-w-xs md:max-w-sm border-r border-gray-100 flex flex-col bg-gray-50/50 ${activeChatId ? 'hidden md:flex' : 'flex'}`}>
+            <div className={`
+                ${activeChatId && !isDesktop ? 'hidden' : 'flex'} 
+                w-full lg:max-w-xs xl:max-w-sm border-r border-gray-100 flex-col bg-gray-50/50 h-full
+            `}>
                 <div className="p-4 border-b border-gray-100 bg-white flex justify-between items-center">
                     <h2 className="text-xl font-bold text-gray-800 tracking-tight">Chats</h2>
                     {user.role !== Role.STUDENT && (
                         <Button
                             onClick={() => setIsNewChatModalOpen(true)}
-                            variant="secondary"
+                            variant="primary"
                             px="px-3"
                             py="py-2"
-                            className="rounded-sm shadow-none border-none bg-transparent hover:bg-gray-100 text-primary" // rounded-sm instead of rounded-full
-                            icon={Plus}
+                            icon={MessageSquarePlus}
+                            title='New Chat'
                         />
                     )}
                 </div>
@@ -447,9 +466,16 @@ export function ChatLayout() {
                                                 {displayName}
                                             </h4>
                                             {lastMsg && (
-                                                <span className="text-[10px] text-gray-400 font-medium shrink-0">
-                                                    {formatDistanceToNow(new Date(lastMsg.createdAt), { addSuffix: false })}
-                                                </span>
+                                                <div className="flex flex-col items-end shrink-0 ml-2">
+                                                    <span className="text-[10px] text-gray-400 font-medium mb-1">
+                                                        {formatDistanceToNow(new Date(lastMsg.createdAt), { addSuffix: false })}
+                                                    </span>
+                                                    {chat.unreadCount !== undefined && chat.unreadCount > 0 && (
+                                                        <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 text-[10px] font-black text-white bg-green-500 rounded-full border border-white shadow-sm ring-2 ring-green-500/10">
+                                                            {chat.unreadCount}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                         <p className="text-xs text-gray-500 truncate mt-0.5">
@@ -471,14 +497,30 @@ export function ChatLayout() {
             </div>
 
             {/* Main Chat Area */}
-            <div className={`flex-1 flex flex-col bg-white ${!activeChatId ? 'hidden md:flex' : 'flex'}`}>
+            <div className={`
+                ${!activeChatId && !isDesktop ? 'hidden' : 'flex'} 
+                flex-1 flex-col bg-white h-full relative
+            `}>
                 {activeChat ? (
                     <>
                         {/* Header */}
-                        <div className="p-4 border-b border-gray-100 flex items-center justify-between shadow-sm z-20 bg-white/80 backdrop-blur-md">
+                        <div className="p-3 md:p-4 border-b border-gray-100 flex items-center justify-between shadow-sm z-20 bg-white/80 backdrop-blur-md">
                             <div className="flex items-center space-x-3">
-                                <button className="md:hidden p-2 -ml-2 text-gray-400" onClick={() => setActiveChatId(null)}><X size={20} /></button>
-                                <UserAvatar targetUser={activeChat.type === ChatType.GROUP ? { name: activeChat.name } : activeChat.participants?.find(p => p.userId !== user.id)?.user} className="w-10 h-10" />
+                                {!isDesktop && (
+                                    <button 
+                                        className="p-2 -ml-2 text-primary hover:bg-primary/5 rounded-full transition-colors" 
+                                        onClick={() => setActiveChatId(null)}
+                                    >
+                                        <ChevronLeft size={24} />
+                                    </button>
+                                )}
+                                <UserAvatar 
+                                    targetUser={activeChat.type === ChatType.GROUP 
+                                        ? { name: activeChat.name, avatarUrl: activeChat.avatarUrl } 
+                                        : activeChat.participants?.find(p => p.userId !== user.id)?.user
+                                    } 
+                                    className="w-10 h-10" 
+                                />
                                 <div>
                                     <div className="flex items-center">
                                         <h3 className="font-bold text-gray-800 leading-tight">
@@ -498,19 +540,15 @@ export function ChatLayout() {
                                 </div>
                             </div>
                             <div className="flex items-center space-x-1">
-                                {isGroupAdmin && activeChat.type === ChatType.GROUP && (
-                                    <Button
-                                        variant="secondary"
-                                        icon={UserPlus}
-                                        px="px-3"
-                                        py="py-2"
-                                        className="text-primary hover:bg-primary/5 border-none shadow-none rounded-sm" // added rounded-sm
-                                        onClick={() => setIsAddUserModalOpen(true)}
-                                    />
+                                {activeChat.type === ChatType.GROUP && (
+                                    <button 
+                                        onClick={() => setIsSettingsModalOpen(true)}
+                                        className="p-2 text-gray-400 hover:text-primary rounded-sm hover:bg-primary/5 transition-all"
+                                        title="Chat Settings"
+                                    >
+                                        <MoreVertical size={20} />
+                                    </button>
                                 )}
-                                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-sm hover:bg-gray-100 transition-colors"> {/* rounded-sm instead of rounded-full */}
-                                    <MoreVertical size={20} />
-                                </button>
                             </div>
                         </div>
 
@@ -538,87 +576,91 @@ export function ChatLayout() {
 
                                             const isMine = msg.senderId === user.id;
                                             const showAvatar = !isMine && (i === 0 || messages[i - 1].senderId !== msg.senderId || messages[i - 1].type === 'SYSTEM');
+                                            const isLastInGroup = i === messages.length - 1 || messages[i + 1].senderId !== msg.senderId || messages[i + 1].type === 'SYSTEM';
                                             const isDeleted = !!msg.deletedAt;
 
                                             return (
-                                                <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative`}>
+                                                <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-3' : 'mb-1'}`}>
                                                     {!isMine && (
-                                                        <div className="w-8 shrink-0 mr-2 flex flex-col justify-end pb-1">
+                                                        <div className="w-8 shrink-0 mr-2 flex flex-col justify-end pb-1 translate-y-2">
                                                             {showAvatar ? (
-                                                                <UserAvatar targetUser={msg.sender} className="w-8 h-8" />
+                                                                <UserAvatar targetUser={msg.sender} className="w-8 h-8 rounded-full border border-gray-100 shadow-sm" />
                                                             ) : <div className="w-8 h-8" />}
                                                         </div>
                                                     )}
 
-                                                    <div className={`flex flex-col max-w-[80%] md:max-w-[70%] ${isMine ? 'items-end' : 'items-start'}`}>
+                                                    <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] ${isMine ? 'items-end' : 'items-start'}`}>
                                                         {activeChat.type === ChatType.GROUP && !isMine && showAvatar && (
-                                                            <span className="text-[10px] font-semibold text-gray-500 mb-1 ml-1 truncate">
-                                                                {msg.sender?.name}
+                                                            <span className="text-[10px] font-bold text-primary mb-1 ml-2 tracking-wide uppercase">
+                                                                {msg.sender?.name?.split(' ')[0]}
                                                             </span>
                                                         )}
-                                                        <div className="relative">
-                                                            <div className={`px-4 py-2.5 rounded-sm shadow-sm text-sm ${isMine ? 'bg-primary text-white rounded-br-none' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'} ${isDeleted ? 'bg-gray-50 text-gray-400 border-dashed border-gray-300 shadow-none' : ''}`}>
+                                                        <div className="relative group/content">
+                                                            <div className={`
+                                                                px-3 py-2 rounded-2xl shadow-sm text-[14px] leading-relaxed relative
+                                                                ${isMine 
+                                                                    ? 'bg-primary text-white rounded-tr-none' 
+                                                                    : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
+                                                                } 
+                                                                ${isDeleted ? 'bg-gray-50/50 text-gray-400 border-dashed border-gray-200 shadow-none' : ''}
+                                                            `}>
+                                                                {/* Optional tail for the first message in a group */}
+                                                                {showAvatar && !isMine && (
+                                                                    <div className="absolute top-0 -left-1.5 w-3 h-3 bg-white border-l border-t border-gray-100 transform -rotate-45" style={{ borderRadius: '2px 0 0 0' }} />
+                                                                )}
+
                                                                 {isDeleted ? (
-                                                                    <div className="flex items-center space-x-2 italic text-[13px]">
-                                                                        <Trash2 size={14} className="opacity-50" />
-                                                                        <span>Message deleted by {msg.deletedBy?.name || 'author'}</span>
+                                                                    <div className="flex items-center space-x-2 italic text-[12px] py-1">
+                                                                        <Trash2 size={12} className="opacity-40" />
+                                                                        <span>Message deleted</span>
                                                                     </div>
                                                                 ) : (
-                                                                    <div className={`prose prose-sm max-w-none ${isMine ? 'prose-invert' : ''} message-content`}>
+                                                                    <div className={`prose prose-sm max-w-none ${isMine ? 'prose-invert prose-p:text-white' : 'prose-p:text-gray-800'} message-content`}>
                                                                         <MarkdownRenderer content={msg.content} />
-                                                                        {/* Add custom styling for images inside the message */}
                                                                         <style jsx>{`
-                                      .message-content img {
-                                        max-width: 200px;
-                                        max-height: 200px;
-                                        object-fit: cover;
-                                        border-radius: 0.125rem; /* rounded-sm */
-                                        cursor: pointer;
-                                        box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);
-                                        transition: transform 0.1s ease;
-                                      }
-                                      .message-content img:hover {
-                                        transform: scale(1.02);
-                                      }
-                                    `}</style>
+                                                                            .message-content img {
+                                                                                max-width: 100%;
+                                                                                max-height: 300px;
+                                                                                object-fit: contain;
+                                                                                border-radius: 8px;
+                                                                                cursor: pointer;
+                                                                                margin: 8px 0;
+                                                                                transition: opacity 0.2s;
+                                                                            }
+                                                                            .message-content img:hover { opacity: 0.9; }
+                                                                        `}</style>
                                                                     </div>
                                                                 )}
-                                                            </div>
 
-                                                            {/* Delete button: always visible on mobile, visible on hover on desktop */}
-                                                            {(isMine || user.role === Role.ORG_ADMIN) && !isDeleted && (
-                                                                <button
-                                                                    onClick={() => handleDeleteMessage(msg.id)}
-                                                                    className={`absolute top-0 ${isMine ? '-left-8' : '-right-8'} p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all
-                                    opacity-100 sm:opacity-0 sm:group-hover/msg:opacity-100`}
-                                                                    title="Delete message"
-                                                                >
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="flex items-center mt-1 space-x-2">
-                                                            <span className="text-[10px] text-gray-400 font-medium">
-                                                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                            </span>
-
-                                                            {/* Read Receipts */}
-                                                            {isMine && msg.readBy && msg.readBy.length > 0 && (
-                                                                <div className="flex -space-x-1.5 overflow-hidden p-0.5">
-                                                                    {msg.readBy.slice(0, 3).map(uid => {
-                                                                        const pUser = activeChat.participants?.find(p => p.userId === uid)?.user;
-                                                                        return (
-                                                                            <div key={uid} className="w-3.5 h-3.5 rounded-full border border-white overflow-hidden shadow-xs" title={`Read by ${pUser?.name}`}>
-                                                                                <UserAvatar targetUser={pUser} className="w-full h-full" />
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                    {msg.readBy.length > 3 && (
-                                                                        <div className="w-3.5 h-3.5 rounded-full bg-gray-200 border border-white flex items-center justify-center text-[7px] font-bold text-gray-600">
-                                                                            +{msg.readBy.length - 3}
+                                                                {/* Timestamp overlay inside bubble - bottom right */}
+                                                                <div className={`flex items-center justify-end mt-1 -mr-1 space-x-1 ${isMine ? 'text-blue-100' : 'text-gray-400'} text-[9px] font-medium`}>
+                                                                    <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                    
+                                                                    {isMine && (
+                                                                        <div className="flex">
+                                                                            {msg.readBy && msg.readBy.length > 0 ? (
+                                                                                <CheckCheck className="w-3.5 h-3.5 text-blue-500" strokeWidth={3} />
+                                                                            ) : (
+                                                                                <Check className={`w-3.5 h-3.5 ${isMine ? 'text-blue-100' : 'text-gray-400'}`} strokeWidth={3} />
+                                                                            )}
                                                                         </div>
                                                                     )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Actions bar - Hover only */}
+                                                            {(isMine || user.role === Role.ORG_ADMIN) && !isDeleted && (
+                                                                <div className={`
+                                                                    absolute top-1/2 -translate-y-1/2 ${isMine ? '-left-10' : '-right-10'}
+                                                                    flex space-x-1 opacity-0 group-hover/msg:opacity-100 transition-opacity
+                                                                `}>
+                                                                    <button
+                                                                        onClick={() => handleDeleteMessage(msg.id)}
+                                                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                                                                        title="Delete"
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </button>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -780,6 +822,18 @@ export function ChatLayout() {
                 onClose={() => setIsNewChatModalOpen(false)}
                 onChatCreated={handleChatCreated}
             />
+
+            {activeChat && (
+                <ChatSettingsModal
+                    isOpen={isSettingsModalOpen}
+                    onClose={() => setIsSettingsModalOpen(false)}
+                    chat={activeChat}
+                    currentUser={user as any}
+                    token={token!}
+                    onUpdate={fetchChats}
+                    onAddParticipants={() => setIsAddUserModalOpen(true)}
+                />
+            )}
 
             {/* Add Participant Modal */}
             {isAddUserModalOpen && activeChatId && (

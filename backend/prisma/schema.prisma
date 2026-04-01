@@ -378,6 +378,7 @@ model Chat {
   id             String   @id @default(uuid())
   type           ChatType
   name           String? // For group chats
+  avatarUrl      String? // Group picture URL
   organizationId String? // Null if platform-level chat
   creatorId      String // User who created the group
 

@@ -16,7 +16,7 @@ export default function AdminChangePasswordPage() {
     };
 
     return (
-        <div className="flex flex-col w-full max-w-4xl mx-auto p-4 md:p-8">
+        <div className="flex flex-col w-full max-w-4xl mx-auto">
             <ChangePasswordForm
                 title={user?.isFirstLogin ? 'Security Required' : 'Security Settings'}
                 description={user?.isFirstLogin

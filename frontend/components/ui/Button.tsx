@@ -5,7 +5,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
     isLoading?: boolean
     loadingText?: string
     loadingId?: string
-    variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning'
+    variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'black'
     icon?: React.ElementType
     iconPosition?: 'start' | 'end'
     px?: string
@@ -13,13 +13,13 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, isLoading: localIsLoading, loadingId, loadingText = "LOADING...", variant = 'primary', children, disabled, icon, iconPosition = 'start', px = 'px-6', py = 'py-3', ...props }, ref) => {
+    ({ className, isLoading: localIsLoading, loadingId, loadingText, variant = 'primary', children, disabled, icon, iconPosition = 'start', px = 'px-6', py = 'py-3', ...props }, ref) => {
         const { state } = useGlobal();
 
         // Determine effective loading/disabled state
         const isGlobalBusy = state.ui.isProcessing || state.ui.isLoading;
         const effectiveDisabled = disabled || isGlobalBusy || localIsLoading;
-        
+
         // Only show spinner if:
         // 1. Local loading is true
         // 2. Global processing is true AND (no specific ID was tracked OR the ID matches this button)
@@ -36,6 +36,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             variantClasses = "bg-green-600 text-white hover:bg-green-700 hover:shadow-2xl hover:-translate-y-1 focus:ring-green-500/20 disabled:bg-green-300 disabled:hover:translate-y-0";
         } else if (variant === 'warning') {
             variantClasses = "bg-yellow-600 text-white hover:bg-yellow-700 hover:shadow-2xl hover:-translate-y-1 focus:ring-yellow-500/20 disabled:bg-yellow-300 disabled:hover:translate-y-0";
+        } else if (variant === 'black') {
+            variantClasses = "bg-black text-white hover:bg-black/80 hover:shadow-2xl hover:-translate-y-1 focus:ring-black/20 disabled:bg-black/30 disabled:hover:translate-y-0";
         }
 
         return (
@@ -59,7 +61,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span>{loadingText}</span>
+                        {loadingText && <span>{loadingText}</span>}
                     </>
                 ) : (
                     <>
@@ -68,7 +70,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                                 {React.createElement(icon, { className: "w-full h-full" })}
                             </div>
                         )}
-                        <span>{children}</span>
+                        {children && <span>{children}</span>}
                     </>
                 )}
             </button>

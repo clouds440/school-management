@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { api, setUnauthorizedHandler } from '@/lib/api';
 import { Role } from '@/types';
 import { useGlobal, JwtPayload } from './GlobalContext';
+import { PLATFORM_NAME, DASHBOARD_MODULES } from '@/lib/constants';
 
 export type { JwtPayload };
 
@@ -65,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logout();
         }
     }, [logout, dispatch]);
-    
+
     // Register global 401 handler
     useEffect(() => {
         setUnauthorizedHandler(() => {
@@ -80,10 +81,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (!loading) {
-            const isAdminPath = pathname?.startsWith('/admin');
-            const isGuestPath = ['/login', '/register'].includes(pathname || '');
-            const isHomePage = pathname === '/';
-            const isUserPath = pathname && !isAdminPath && !isGuestPath && !isHomePage;
+            const segments = pathname?.split('/').filter(Boolean) || [];
+
+            const isAdminPath = segments[0] === 'admin';
+            const isGuestPath = segments.length === 1 && (segments[0] === 'login' || segments[0] === 'register');
+            const isHomePage = segments.length === 0;
+
+            // A path is considered a "User/Dashboard" path if:
+            // 1. It starts with /admin (Platform Admin)
+            // 2. It has at least 2 segments and the second segment is a known dashboard module
+            const isUserPath = isAdminPath || (segments.length >= 2 && DASHBOARD_MODULES.includes(segments[1]));
+
+            // All other root-level paths are treated as public by default
+            const isPublicSharedPath = !isUserPath && !isGuestPath && !isHomePage;
 
             if (user) {
                 if ((user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && user.isFirstLogin && pathname !== '/admin/change-password') {
@@ -108,8 +118,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 if (isUserPath && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN)) {
-                    router.replace('/admin');
-                    return;
+                    // Only redirect if they are NOT on an admin path (meaning they are on an org path)
+                    if (!isAdminPath) {
+                        router.replace('/admin');
+                        return;
+                    }
                 }
 
                 if (isUserPath && user.orgSlug) {
@@ -148,11 +161,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (loading) return;
-        if (!user) { document.title = 'EduManage'; return; }
-        const orgSuffix = user.orgName || 'EduManage';
+        if (!user) { document.title = PLATFORM_NAME; return; }
+        const orgSuffix = user.orgName || PLATFORM_NAME;
         switch (user.role) {
             case Role.SUPER_ADMIN:
-            case Role.PLATFORM_ADMIN: document.title = `Admin – EduManage`; break;
+            case Role.PLATFORM_ADMIN: document.title = `Admin – ${PLATFORM_NAME}`; break;
             case Role.ORG_ADMIN: document.title = `Admin – ${orgSuffix}`; break;
             case Role.ORG_MANAGER: document.title = `${user.name || 'Manager'} – ${orgSuffix}`; break;
             case Role.TEACHER: document.title = `${user.name || 'Teacher'} – ${orgSuffix}`; break;

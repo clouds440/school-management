@@ -142,11 +142,15 @@ export class AnnouncementsService {
             }
         }
 
-        if (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) {
-             conditions.push({ creatorId: user.id }); // Can always see their own
-        }
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const where: Prisma.AnnouncementWhereInput = { OR: conditions };
+        const where: Prisma.AnnouncementWhereInput = { 
+            AND: [
+                { OR: conditions },
+                { createdAt: { gte: thirtyDaysAgo } }
+            ]
+        };
 
         const skip = (page - 1) * limit;
 

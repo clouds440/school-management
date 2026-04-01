@@ -17,7 +17,6 @@ export const metadata: Metadata = {
 };
 
 import Navbar from "@/components/Navbar";
-import { ClientFooter } from "@/components/ClientFooter";
 import { Providers } from "@/components/Providers";
 import DashboardMainWrapper from "@/components/DashboardMainWrapper";
 
@@ -27,9 +26,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="min-h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full flex flex-col bg-theme-bg transition-colors duration-500 overflow-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col bg-theme-bg transition-colors duration-500 overflow-hidden`}
       >
         <Providers>
           <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
@@ -47,7 +46,6 @@ export default function RootLayout({
           <DashboardMainWrapper>
             {children}
           </DashboardMainWrapper>
-          <ClientFooter />
         </Providers>
       </body>
     </html>

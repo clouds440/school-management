@@ -62,6 +62,7 @@ export interface GlobalState {
         org: OrgStats | null;
         orgData: Organization | null;
         mail: { unread: number; total: number; countsByStatus?: Record<string, number> } | null;
+        chat: { unread: number } | null;
     };
     toasts: ToastItem[];
     ui: {
@@ -90,6 +91,7 @@ type Action =
     | { type: 'STATS_SET_ORG'; payload: OrgStats }
     | { type: 'STATS_SET_ORG_DATA'; payload: Organization }
     | { type: 'STATS_SET_MAIL'; payload: { unread: number; total: number; countsByStatus?: Record<string, number> } }
+    | { type: 'STATS_SET_CHAT'; payload: { unread: number } }
     | { type: 'TOAST_ADD'; payload: Omit<ToastItem, 'id'> }
     | { type: 'TOAST_REMOVE'; payload: string }
     | { type: 'UI_TOGGLE_SIDEBAR' }
@@ -115,6 +117,7 @@ const initialState: GlobalState = {
         org: null,
         orgData: null,
         mail: null,
+        chat: null,
     },
     toasts: [],
     ui: {
@@ -148,7 +151,7 @@ function globalReducer(state: GlobalState, action: Action): GlobalState {
             return {
                 ...state,
                 auth: { user: null, token: null, loading: false, userProfile: null },
-                stats: { admin: null, org: null, orgData: null, mail: null }
+                stats: { admin: null, org: null, orgData: null, mail: null, chat: null }
             };
         case 'AUTH_UPDATE_USER':
             return {
@@ -177,6 +180,8 @@ function globalReducer(state: GlobalState, action: Action): GlobalState {
             return { ...state, stats: { ...state.stats, orgData: action.payload } };
         case 'STATS_SET_MAIL':
             return { ...state, stats: { ...state.stats, mail: action.payload } };
+        case 'STATS_SET_CHAT':
+            return { ...state, stats: { ...state.stats, chat: action.payload } };
         case 'TOAST_ADD':
             const id = Math.random().toString(36).substring(2, 9);
             return { ...state, toasts: [...state.toasts, { ...action.payload, id }] };

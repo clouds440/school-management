@@ -3,6 +3,7 @@ import { ChatService } from './chat.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateDirectChatDto } from './dto/create-direct-chat.dto';
 import { CreateGroupChatDto } from './dto/create-group.dto';
+import { UpdateChatDto } from './dto/update-chat.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { AddParticipantsDto } from './dto/add-participants.dto';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
@@ -11,6 +12,28 @@ import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-requ
 @Controller('chat')
 export class ChatController {
     constructor(private readonly chatService: ChatService) { }
+
+    @Patch(':id')
+    async updateChat(
+        @Param('id') id: string,
+        @Body() dto: UpdateChatDto,
+        @Request() req: AuthenticatedRequest
+    ) {
+        return this.chatService.updateChat(id, dto, {
+            id: req.user.id,
+            role: req.user.role,
+            organizationId: req.user.organizationId
+        });
+    }
+
+    @Get('unread-count')
+    async getUnreadCount(@Request() req: AuthenticatedRequest) {
+        return this.chatService.getUnreadCount({
+            id: req.user.id,
+            role: req.user.role,
+            organizationId: req.user.organizationId
+        });
+    }
 
     @Get('users')
     async searchUsers(@Query('search') search: string, @Request() req: AuthenticatedRequest) {
