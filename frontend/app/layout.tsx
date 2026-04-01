@@ -14,6 +14,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   description: "Manage your school efficiently",
+  icons: {
+    icon: [{ url: '/assets/eduverse-icon.png' }],
+    shortcut: [{ url: '/assets/eduverse-icon.png' }]
+  }
 };
 
 import Navbar from "@/components/Navbar";

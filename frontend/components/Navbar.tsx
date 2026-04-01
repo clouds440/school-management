@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { LogIn, UserPlus, Menu, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
-import { Brand } from './ui/Brand';
+import { Brand, BrandIcon } from './ui/Brand';
 import { NotificationDropdown } from './notifications/NotificationDropdown';
 import { AnnouncementDropdown } from './announcements/AnnouncementDropdown';
 import { ChatDropdown } from './chat/ChatDropdown';
@@ -41,7 +41,7 @@ export default function Navbar() {
                         {isDesktop ? (<Menu className="w-6 h-6" />) : (isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />)}
                     </button>
                 )}
-                <Brand size="md" />
+                <Brand size="md" showName={isDesktop} />
             </div>
 
             <div className="flex items-center space-x-2 md:space-x-4">

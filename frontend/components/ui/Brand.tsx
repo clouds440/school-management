@@ -75,7 +75,7 @@ export function BrandIcon({
           />
         </div>
       ) : (
-        <div className={`w-full h-full ${variant === 'brand' ? 'bg-primary rotate-3 group-hover:rotate-0' : 'bg-primary/10'} flex items-center justify-center rounded-full shadow-lg shadow-primary/5 transition-transform group-hover:scale-110`}>
+        <div className={`w-full h-full ${variant === 'brand' ? 'rotate-3 group-hover:rotate-0' : 'bg-primary/10'} flex items-center justify-center rounded-full shadow-lg shadow-primary/5 transition-transform group-hover:scale-110`}>
           <FallbackIcon className={`${iconSizes[size]} ${variant === 'brand' ? 'text-white' : 'text-primary opacity-60'}`} />
         </div>
       )}
@@ -88,6 +88,7 @@ interface BrandProps extends BrandIconProps {
   showLogo?: boolean;
   useGradient?: boolean;
   linkHref?: string;
+  showNameOnly?: boolean;
 }
 
 export function Brand({
@@ -99,7 +100,7 @@ export function Brand({
   forcePlatform = false,
   size = 'md',
   linkHref,
-  user
+  user,
 }: BrandProps) {
   const { user: sessionUser } = useAuth();
   const pathname = usePathname();
@@ -138,9 +139,13 @@ export function Brand({
       )}
 
       {showName && (
-        <span className={`font-black tracking-tighter ${nameStyles} ${sizeTextClasses[size]} transition-all duration-300`}>
-          {displayName}
-        </span>
+        isOrgBrandingActive ? (
+          <span className={`font-black tracking-tighter ${nameStyles} ${sizeTextClasses[size]} transition-all duration-300`}>
+            {displayName}
+          </span>
+        ) : (
+          <img src="/assets/eduverse.png" alt={PLATFORM_NAME} className={`object-contain transition-all duration-300 ${size === 'sm' ? 'h-5' : size === 'md' ? 'h-7' : size === 'lg' ? 'h-8' : size === 'xl' ? 'h-10' : 'h-16 md:h-28'}`} />
+        )
       )}
     </div>
   );
@@ -157,11 +162,10 @@ export function Brand({
 /**
  * Our new custom platform logo icon
  */
-export function BrandLogoIcon({ className = "w-6 h-6" }: { className?: string }) {
+export function BrandLogoIcon() {
   return (
-    <div className={`relative ${className} flex items-center justify-center`}>
-      <Sparkles className="w-full h-full text-white animate-pulse" />
-      <div className="absolute inset-0 bg-white/20 blur-xl rounded-full" />
+    <div className={`relative flex items-center justify-center`}>
+      <img src="/assets/eduverse-icon.png" alt="Eduverse" className="w-full h-full object-contain" />
     </div>
   )
 }

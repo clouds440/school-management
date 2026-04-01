@@ -41,6 +41,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
     const [sections, setSections] = useState<{ value: string; label: string }[]>([]);
     const [selectedSectionId, setSelectedSectionId] = useState('');
     const [isFetchingSections, setIsFetchingSections] = useState(false);
+    const [isApplyingPreset, setIsApplyingPreset] = useState(false);
 
     useEffect(() => {
         if (!isOpen || !token || user?.role !== Role.TEACHER) return;
@@ -114,6 +115,35 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
 
         fetchUsers();
     }, [isOpen, token, dispatch, mode, existingParticipantIds, type]);
+
+    const applyPresetGroup = async (preset: { label: string; role?: string; source?: 'TEACHERS' | 'STUDENTS' }) => {
+        if (!token) return;
+        setIsApplyingPreset(true);
+        try {
+            let ids: string[] = [];
+
+            if (preset.source === 'TEACHERS') {
+                const res = await api.org.getTeachers(token, { page: 1, limit: 1000 });
+                ids = res.data.map(t => t.user.id);
+            } else if (preset.source === 'STUDENTS') {
+                const res = await api.org.getStudents(token, { page: 1, limit: 1000 });
+                ids = res.data.map(s => s.userId || s.user?.id).filter(Boolean) as string[];
+            } else if (preset.role) {
+                const users = await api.chat.searchUsers(token);
+                ids = users.filter(u => u.role === preset.role).map(u => u.id);
+            }
+
+            // Merge into participants
+            setParticipantIds(prev => Array.from(new Set([...prev, ...ids])));
+            dispatch({ type: 'TOAST_ADD', payload: { message: `Added ${ids.length} users to the group`, type: 'success' } });
+            setGroupName(prev => prev || preset.label.replace('[GROUP] ', ''));
+        } catch (err) {
+            console.error('Failed to apply group preset', err);
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to add preset members', type: 'error' } });
+        } finally {
+            setIsApplyingPreset(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -205,6 +235,26 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
                             placeholder={user?.role === Role.PLATFORM_ADMIN || user?.role === Role.SUPER_ADMIN ? "e.g. Platform Announcement" : "e.g. Study Group"}
                             icon={Users}
                         />
+                        {/* Quick group presets based on role/permissions */}
+                        <div className="mt-3">
+                            <Label className="text-[10px] uppercase font-black text-primary/70 mb-2">Quick Groups</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {/* Org-level presets for admins/managers */}
+                                {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
+                                    <>
+                                        <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] All Teachers', source: 'TEACHERS' })} className="px-3 py-1 bg-gray-100 rounded-sm text-sm font-bold">[GROUP] All Teachers</button>
+                                        <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] All Students', source: 'STUDENTS' })} className="px-3 py-1 bg-gray-100 rounded-sm text-sm font-bold">[GROUP] All Students</button>
+                                        <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] Org Managers', role: Role.ORG_MANAGER })} className="px-3 py-1 bg-gray-100 rounded-sm text-sm font-bold">[GROUP] Org Managers</button>
+                                        <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] Org Admins', role: Role.ORG_ADMIN })} className="px-3 py-1 bg-gray-100 rounded-sm text-sm font-bold">[GROUP] Org Admins</button>
+                                    </>
+                                )}
+
+                                {/* Platform admins can message other platform admins */}
+                                {(user?.role === Role.PLATFORM_ADMIN || user?.role === Role.SUPER_ADMIN) && (
+                                    <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] Platform Admins', role: Role.PLATFORM_ADMIN })} className="px-3 py-1 bg-gray-100 rounded-sm text-sm font-bold">[GROUP] Platform Admins</button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
 

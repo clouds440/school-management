@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { Mail, Lock, LogIn } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { useGlobal } from '@/context/GlobalContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { PLATFORM_NAME } from '@/lib/constants';
+import { Brand, BrandLogoIcon } from '@/components/ui/Brand';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -96,10 +97,10 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-12">
           {/* Mobile Header Branding (Visible only on mobile) */}
           <div className="lg:hidden text-center mb-8">
-            <div className="mx-auto bg-primary/5 w-16 h-16 rounded-sm flex items-center justify-center mb-4 border border-primary/10">
-              <LogIn className="w-8 h-8 text-primary shadow-sm" />
+            <div className="mx-auto w-16 h-16 rounded-sm flex items-center justify-center mb-4">
+              <BrandLogoIcon />
             </div>
-            <h2 className="text-2xl font-black text-gray-900 italic uppercase tracking-tighter">{PLATFORM_NAME}</h2>
+            <Brand showLogo={false} size="lg"/>
           </div>
 
           <div className="space-y-2">
@@ -179,10 +180,10 @@ export default function LoginPage() {
             <div className="space-y-4 pt-4">
               <Button
                 type="submit"
-                loadingText="Securing access..."
-                className="w-full h-16 shadow-lg shadow-primary/20"
+                loadingText="Loggin In..."
+                className="w-full h-14"
               >
-                <span className="font-black uppercase tracking-[0.2em] italic text-xs">Enter Portal</span>
+                <span className="font-black uppercase">Log In</span>
               </Button>
 
               <p className="text-center text-xs text-gray-400 font-bold tracking-tight">

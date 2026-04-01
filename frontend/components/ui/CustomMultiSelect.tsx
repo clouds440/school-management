@@ -33,7 +33,7 @@ export function CustomMultiSelect({
 }: CustomMultiSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
+    const [coords, setCoords] = useState<{ top: number; left: number; width: number; isMobile?: boolean } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -50,11 +50,22 @@ export function CustomMultiSelect({
     const updateCoords = () => {
         if (containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
-            setCoords({
-                top: rect.bottom + window.scrollY,
-                left: rect.left + window.scrollX,
-                width: rect.width
-            });
+            const isMobile = window.innerWidth <= 640;
+            if (isMobile) {
+                const margin = 16;
+                setCoords({
+                    top: rect.bottom + window.scrollY,
+                    left: margin + window.scrollX,
+                    width: window.innerWidth - margin * 2,
+                    isMobile: true
+                });
+            } else {
+                setCoords({
+                    top: rect.bottom + window.scrollY,
+                    left: rect.left + window.scrollX,
+                    width: rect.width,
+                });
+            }
         }
     };
 
@@ -104,7 +115,7 @@ export function CustomMultiSelect({
     };
 
     return (
-        <div className={`relative group ${className}`} ref={containerRef}>
+        <div className={`relative group ${className}`} ref={containerRef} >
             <div
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={`
@@ -117,6 +128,18 @@ export function CustomMultiSelect({
                     text-card-text font-bold
                 `}
             >
+                <div
+                    onClick={() => !disabled && setIsOpen(!isOpen)}
+                    className={`
+                        flex flex-wrap items-center w-full min-h-[48px] px-3 py-2 rounded-md border transition-colors duration-150 outline-none
+                        ${isOpen
+                            ? 'border-primary bg-white shadow-md'
+                            : 'border-gray-200 bg-gray-50 hover:bg-white'
+                        }
+                        ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
+                        text-sm text-card-text
+                    `}
+                >
                 {Icon && (
                     <Icon className={`h-5 w-5 mr-3 shrink-0 transition-colors ${isOpen ? 'text-primary' : 'text-card-text/40'}`} />
                 )}
@@ -133,6 +156,7 @@ export function CustomMultiSelect({
                                     type="button"
                                     onClick={(e) => removeOption(opt.value, e)}
                                     className="ml-1.5 hover:text-primary-hover p-0.5 rounded-full transition-colors"
+                                    title="Remove option"
                                 >
                                     <X className="h-3 w-3" />
                                 </button>
@@ -149,6 +173,7 @@ export function CustomMultiSelect({
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onChange([]); }}
                             className="mr-2 text-card-text/30 hover:text-red-500 transition-colors"
+                            title="Clear all"
                         >
                             <X className="h-4 w-4" />
                         </button>
@@ -161,15 +186,15 @@ export function CustomMultiSelect({
                 <div 
                     ref={dropdownRef}
                     style={{
-                        position: 'absolute',
+                        position: 'fixed',
                         top: coords.top + 8,
                         left: coords.left,
                         width: coords.width,
                         zIndex: 9999
                     }}
-                    className="py-2 bg-card border border-white/10 rounded-sm shadow-2xl max-h-80 flex flex-col animate-in fade-in zoom-in duration-100"
+                    className={`py-2 bg-white border border-gray-100 rounded-md shadow-xl max-h-[60vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-100 ${coords.isMobile ? 'left-4 right-4 rounded-lg' : ''}`}
                 >
-                    <div className="px-3 pb-2 border-b border-white/5">
+                    <div className="px-3 pb-2 border-b border-gray-100">
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <svg className="h-4 w-4 text-card-text/40" viewBox="0 0 20 20" fill="currentColor">
@@ -178,7 +203,7 @@ export function CustomMultiSelect({
                             </div>
                             <input
                                 type="text"
-                                className="block w-full pl-9 pr-3 py-2 border border-white/10 rounded-sm text-xs bg-primary/5 text-card-text placeholder-card-text/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                className="block w-full pl-9 pr-3 py-2 border border-gray-100 rounded-md text-sm bg-gray-50 text-card-text placeholder-card-text/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
                                 placeholder="Search..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -188,7 +213,7 @@ export function CustomMultiSelect({
                         </div>
                     </div>
 
-                    <div className="overflow-y-auto flex-1 custom-scrollbar">
+                    <div className="min-h-0 overflow-y-auto custom-scrollbar">
                         {filteredOptions.length === 0 ? (
                             <div className="px-4 py-3 text-sm text-card-text/40 italic text-center">No options found</div>
                         ) : (
@@ -209,8 +234,8 @@ export function CustomMultiSelect({
                                         `}
                                     >
                                         <div className="flex items-center truncate">
-                                            {option.icon && <option.icon className="h-4 w-4 mr-2" />}
-                                            {option.label}
+                                            {option.icon && <option.icon className="h-4 w-4 mr-2 text-card-text/60" />}
+                                            <span className="truncate">{option.label}</span>
                                         </div>
                                         {isSelected && <Check className="h-4 w-4 text-primary shrink-0 ml-2" />}
                                     </button>
@@ -222,5 +247,6 @@ export function CustomMultiSelect({
                 document.body
             )}
         </div>
+    </div>
     );
 }

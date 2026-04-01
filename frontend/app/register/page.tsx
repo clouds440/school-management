@@ -131,23 +131,13 @@ export default function RegisterPage() {
                             }}
                         />
                     </div>
-
-                    <div className="space-y-2 border-l-4 border-primary pl-6 py-2 bg-primary/5 rounded-r-lg">
-                        <p className="text-sm font-black text-gray-800 tracking-tight italic">"The most intuitive management system we've ever used."</p>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">— St. Mary's Academy</p>
-                    </div>
                 </div>
             </div>
 
             {/* Right Column: Registration Form */}
             <div className="w-full lg:w-[60%] xl:w-[65%] flex items-center justify-center p-6 sm:p-12 md:p-16 bg-white relative overflow-y-auto custom-scrollbar animate-in fade-in duration-700">
-                <div className="w-full max-w-2xl">
+                <div className="w-full max-w-2xl mt-auto">
                     <div className="flex flex-col space-y-2 mb-10">
-                        <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary italic mb-2">
-                            <span>Step 01</span>
-                            <div className="h-px w-12 bg-primary"></div>
-                            <span className="text-gray-300 uppercase not-italic">Organization Setup</span>
-                        </div>
                         <h2 className="text-4xl font-black text-gray-900 tracking-tighter leading-tight italic">
                             Register Organization
                         </h2>
@@ -337,10 +327,10 @@ export default function RegisterPage() {
                         <div className="pt-6">
                             <Button 
                                 type="submit" 
-                                className="w-full h-18 shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all rounded-sm" 
-                                loadingText="Creating secure account..."
+                                className="w-full h-14" 
+                                loadingText="Creating account..."
                             >
-                                <span className="font-black uppercase tracking-[0.3em] text-sm italic">Create Organization Account</span>
+                                <span className="font-black uppercase text-sm">Create Organization Account</span>
                             </Button>
                             <p className="mt-6 text-center text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] leading-relaxed max-w-sm mx-auto">
                                 By registering, you agree to our <Link href="/terms" className="text-gray-500 hover:text-primary underline italic">Terms of Service</Link> and <Link href="/privacy" className="text-gray-500 hover:text-primary underline italic">Privacy Policy</Link>.
