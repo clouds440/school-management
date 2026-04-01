@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { DashboardLayout, SidebarLink } from '@/components/ui/DashboardLayout';
-import { Building, Mail, Users } from 'lucide-react';
+import { Building, Mail, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { AdminStats, Role } from '@/types';
+import { Role } from '@/types';
 import { useSocket } from '@/hooks/useSocket';
 import { useGlobal } from '@/context/GlobalContext';
 
@@ -25,6 +25,10 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
             api.admin.getAdminStats(token)
                 .then(data => dispatch({ type: 'STATS_SET_ADMIN', payload: data }))
                 .catch(err => console.error('Failed to fetch stats:', err));
+
+            api.chat.getUnreadCount(token)
+                .then(data => dispatch({ type: 'STATS_SET_CHAT', payload: data }))
+                .catch(err => console.error('Failed to fetch chat stats:', err));
         }
     }, [token, dispatch]);
 
@@ -34,10 +38,12 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
     // WebSocket: Refresh stats on mail activity
     useEffect(() => {
-        const unsubscribe = subscribe('unread:update', () => {
-            fetchStats();
-        });
-        return () => unsubscribe();
+        const unsubs = [
+            subscribe('unread:update', () => fetchStats()),
+            subscribe('chat:message', () => fetchStats()),
+            subscribe('chat:read', () => fetchStats())
+        ];
+        return () => unsubs.forEach(u => u());
     }, [subscribe, fetchStats]);
 
     // Memoize links to avoid re-calculation on every render
@@ -69,20 +75,28 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
             label: 'Mail',
             href: '/admin/mail',
             icon: Mail,
-            // Show [Unread / Total] in the badge or just Total? 
-            // The user said "that count needs to show total count too, not just unread/new"
-            // We'll show "Unread / Total" if unread > 0, otherwise just Total?
-            // Actually usually a badge is just a number. We'll show Total as requested.
-            badge: stats ? `${stats.UNREAD_MAIL} New / ${stats.TOTAL_MAIL} Total` : undefined
+            badge: stats?.UNREAD_MAIL ? `${stats.UNREAD_MAIL} New` : undefined
+        });
+
+        // Add Chat/Messages link
+        adminLinks.push({
+            id: 'CHAT',
+            label: 'Messages',
+            href: '/admin/chat',
+            icon: MessageSquare,
+            badge: undefined
         });
 
         return adminLinks;
-    }, [stats, user?.role]);
+    }, [stats, user?.role, state.stats.chat?.unread]);
 
     const bottomLinks: SidebarLink[] = [];
 
     return (
-        <DashboardLayout links={links} bottomLinks={bottomLinks}>
+        <DashboardLayout
+            links={links}
+            bottomLinks={bottomLinks}
+        >
             {children}
         </DashboardLayout>
     );

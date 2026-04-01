@@ -8,8 +8,7 @@ import { useGlobal } from '@/context/GlobalContext';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { getPublicUrl } from '@/lib/utils';
-import Image from 'next/image';
+import { BrandIcon } from '@/components/ui/Brand';
 
 interface BulkGradingModalProps {
     isOpen: boolean;
@@ -149,25 +148,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                                 <tr key={student.id} className="hover:bg-white/5 transition-colors">
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-black text-xs border border-primary/20 overflow-hidden shrink-0 relative">
-                                                {student.user.avatarUrl ? (
-                                                    <Image
-                                                        src={getPublicUrl(student.user.avatarUrl)}
-                                                        alt={student.user.name}
-                                                        fill
-                                                        className="object-cover"
-                                                        onError={(e) => {
-                                                            const target = e.currentTarget as HTMLImageElement;
-                                                            target.style.display = 'none';
-                                                            if (target.parentElement) {
-                                                                target.parentElement.innerText = student.user.name.charAt(0).toUpperCase();
-                                                            }
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    student.user.name.charAt(0).toUpperCase()
-                                                )}
-                                            </div>
+                                            <BrandIcon variant="user" size="sm" user={student.user} className="w-8 h-8 shadow-sm" />
                                             <span className="font-bold text-sm text-card-text truncate max-w-[150px]">{student.user.name}</span>
                                         </div>
                                     </td>

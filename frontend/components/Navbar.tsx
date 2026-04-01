@@ -5,57 +5,50 @@ import { usePathname } from 'next/navigation';
 import { LogIn, UserPlus, Menu, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
-import { Role } from '@/types';
-import { OrgLogoOrIcon } from './ui/OrgLogoOrIcon';
+import { Brand } from './ui/Brand';
 import { NotificationDropdown } from './notifications/NotificationDropdown';
 import { AnnouncementDropdown } from './announcements/AnnouncementDropdown';
 import { ChatDropdown } from './chat/ChatDropdown';
+import { useGlobal } from '@/context/GlobalContext';
 
 
 export default function Navbar() {
     const { token, user } = useAuth();
-    const { toggleMobileSidebar, isMobileOpen } = useUI();
+    const { toggleMobileSidebar, toggleSidebar, isMobileOpen, isExpanded, isDesktop, mounted } = useUI();
     const pathname = usePathname();
+    const { state } = useGlobal();
+    const orgData = state.stats.orgData;
+    const isApproved = !user?.orgSlug || orgData?.status === 'APPROVED';
 
     const isDashboard = pathname?.startsWith('/admin/') ||
         pathname?.split('/').length > 2; // Matches /[orgSlug]/something OR /admin/something
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-100 flex items-center justify-between px-4 py-3 md:px-10 backdrop-blur-xl bg-white/80 border-b border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.03)] h-16 transition-all duration-300">
-            <div className="flex items-center space-x-2 md:space-x-4">
+        <nav className="fixed top-0 left-0 right-0 z-100 flex items-center justify-between pl-2 pr-4 py-3 md:pr-10 backdrop-blur-xl bg-white/80 border-b border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.03)] h-16 transition-all duration-300">
+            <div className="flex space-x-2">
                 {isDashboard && (
                     <button
-                        onClick={toggleMobileSidebar}
-                        className="lg:hidden p-2 hover:bg-gray-100 rounded-sm transition-colors text-gray-600 outline-none focus-visible:ring-2 ring-primary"
-                        title={isMobileOpen ? "Close Menu" : "Open Menu"}
+                        onClick={() => {
+                            if (isDesktop) {
+                                toggleSidebar();
+                            } else {
+                                toggleMobileSidebar();
+                            }
+                        }}
+                        className="p-2 hover:bg-gray-100 rounded-sm transition-colors text-gray-600 outline-none focus-visible:ring-2 ring-primary"
+                        title={mounted ? (isDesktop ? (isExpanded ? "Collapse Sidebar" : "Expand Sidebar") : (isMobileOpen ? "Close Menu" : "Open Menu")) : "Menu"}
                     >
-                        {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                        {isDesktop ? (<Menu className="w-6 h-6" />) : (isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />)}
                     </button>
                 )}
-                <Link
-                    href={
-                        user?.orgSlug
-                            ? user.role === Role.ORG_ADMIN
-                                ? `/${user.orgSlug}/admin`
-                                : user.role === Role.TEACHER || user.role === Role.ORG_MANAGER
-                                    ? `/${user.orgSlug}/teachers/${user.userName}`
-                                    : `/${user.orgSlug}/students/${user.userName}`
-                            : '/'
-                    }
-                    className="flex items-center space-x-3 group outline-none"
-                >
-                    <OrgLogoOrIcon logoUrl={user?.orgLogoUrl} orgName={user?.orgName} />
-                    <span className="text-lg md:text-2xl font-bold text-primary tracking-tight truncate max-w-[120px] sm:max-w-none">
-                        {user?.orgName || 'EduManage'}
-                    </span>
-                </Link>
+                <Brand size="md" />
             </div>
 
             <div className="flex items-center space-x-2 md:space-x-4">
                 {token && user ? (
                     <div className="flex items-center space-x-1 md:space-x-3 pr-2">
                         <AnnouncementDropdown />
-                        <ChatDropdown />
+                        {isApproved && <ChatDropdown />}
                         <NotificationDropdown />
                     </div>
                 ) : (

@@ -19,6 +19,7 @@ export interface User {
     orgSlug?: string;
     avatarUrl?: string | null;
     avatarUpdatedAt?: string | null;
+    organizationId?: string | null;
 }
 
 export interface Teacher {
@@ -488,6 +489,7 @@ export interface Chat {
     id: string;
     type: ChatType;
     name: string | null;
+    avatarUrl?: string | null;
     organizationId: string | null;
     creatorId: string;
     createdAt: string;
@@ -495,6 +497,7 @@ export interface Chat {
     participants?: ChatParticipant[];
     messages?: ChatMessage[];
     _count?: { messages: number };
+    unreadCount?: number;
 }
 
 export interface Notification {

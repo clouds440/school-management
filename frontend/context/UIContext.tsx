@@ -9,6 +9,8 @@ export type { DataField };
 interface UIContextType {
     isExpanded: boolean;
     isMobileOpen: boolean;
+    isDesktop: boolean;
+    mounted: boolean;
     toggleSidebar: () => void;
     toggleMobileSidebar: () => void;
     setIsMobileOpen: (open: boolean) => void;
@@ -24,6 +26,17 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     const { isSidebarExpanded: isExpanded, isMobileSidebarOpen: isMobileOpen, viewModal: modalConfig } = state.ui;
     
     const pathname = usePathname();
+    const [isDesktop, setIsDesktop] = React.useState(false);
+    const [mounted, setMounted] = React.useState(false);
+
+    // Handle viewport tracking and hydration
+    React.useEffect(() => {
+        setMounted(true);
+        const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Handle route change reset
     React.useEffect(() => {
@@ -50,6 +63,8 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         <UIContext.Provider value={{
             isExpanded,
             isMobileOpen,
+            isDesktop,
+            mounted,
             toggleSidebar,
             toggleMobileSidebar,
             setIsMobileOpen,

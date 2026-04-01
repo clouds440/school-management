@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
-import { Search, Plus, Filter, MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Hash, Building2, Calendar, User, Clock } from 'lucide-react';
+import { Filter, MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Hash, Calendar, Clock, MailPlus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { RequestItem, RequestStatus, Role, PaginatedResponse, ApiError } from '@/types';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -14,10 +14,9 @@ import { RequestStatusBadge, RequestPriorityBadge, getRequestRowClassName } from
 import { RequestDetailsModal } from '@/components/requests/RequestDetailsModal';
 import { NewRequestModal } from '@/components/requests/NewRequestModal';
 import { useSocket } from '@/hooks/useSocket';
-import { getPublicUrl } from '@/lib/utils';
 import { Loading } from '@/components/ui/Loading';
 import { Button } from '@/components/ui/Button';
-import Image from 'next/image';
+import { BrandIcon } from '@/components/ui/Brand';
 
 export default function RequestsPage() {
     const { user, token, loading: authLoading } = useAuth();
@@ -157,35 +156,32 @@ export default function RequestsPage() {
         {
             header: 'Sender',
             accessor: (row: RequestItem) => {
-                const orgLogo = row.organization?.logoUrl ? getPublicUrl(row.organization.logoUrl) : null;
-                const userAvatar = row.creator?.avatarUrl ? getPublicUrl(row.creator.avatarUrl) : null;
                 return (
                     <div className="flex items-center gap-3">
                         {row.organization ? (
                             <div className="relative">
-                                <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 overflow-hidden shrink-0 flex items-center justify-center relative">
-                                    {orgLogo ? (
-                                        <Image src={orgLogo} alt={row.organization.name} fill className="object-cover rounded-sm" unoptimized />
-                                    ) : (
-                                        <Building2 className="w-4 h-4 text-indigo-400" />
-                                    )}
-                                </div>
+                                <BrandIcon
+                                    variant="brand"
+                                    size="sm"
+                                    user={{ ...row.creator, orgLogoUrl: row.organization.logoUrl, orgName: row.organization.name }}
+                                    className="w-8 h-8 border border-indigo-100"
+                                />
                                 <div className="absolute bottom-0 -right-1 w-4 h-4 rounded-full bg-white border border-gray-100 flex items-center justify-center overflow-hidden">
-                                    {userAvatar ? (
-                                        <Image src={userAvatar} alt={row.creator?.name || ''} fill className="object-cover rounded-full" unoptimized />
-                                    ) : (
-                                        <span className="text-[8px] font-black text-gray-400 uppercase">{(row.creator?.name || '?')[0]}</span>
-                                    )}
+                                    <BrandIcon
+                                        variant="user"
+                                        size="sm"
+                                        user={row.creator}
+                                        className="w-full h-full"
+                                    />
                                 </div>
                             </div>
                         ) : (
-                            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center relative">
-                                {userAvatar ? (
-                                    <Image src={userAvatar} alt={row.creator?.name || ''} fill className="object-cover rounded-full" unoptimized />
-                                ) : (
-                                    <User className="w-4 h-4 text-gray-400" />
-                                )}
-                            </div>
+                            <BrandIcon
+                                variant="user"
+                                size="sm"
+                                user={row.creator}
+                                className="w-8 h-8"
+                            />
                         )}
                         <div className="min-w-0">
                             <p className="text-xs font-black text-gray-700 truncate max-w-[120px]">{row.creator?.name || row.creator?.email || 'Unknown'}</p>
@@ -203,12 +199,8 @@ export default function RequestsPage() {
                         <>
                             <div className="flex -space-x-2 mr-1">
                                 {row.assignees.slice(0, 2).map((a) => (
-                                    <div key={a.id} className="w-7 h-7 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-indigo-600 text-[9px] font-black uppercase shadow-sm overflow-hidden relative">
-                                        {a.avatarUrl ? (
-                                            <Image src={getPublicUrl(a.avatarUrl)} alt={a.name || ''} fill className="object-cover rounded-full" unoptimized />
-                                        ) : (
-                                            (a.name || a.email || '?')[0]
-                                        )}
+                                    <div key={a.id} className="w-7 h-7 border-2 border-white rounded-full bg-indigo-100 shadow-sm">
+                                        <BrandIcon variant="user" size="sm" user={a} className="w-full h-full" />
                                     </div>
                                 ))}
                             </div>
@@ -283,8 +275,8 @@ export default function RequestsPage() {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
-                <div className="px-6 md:px-8 pt-2 pb-2 border-b border-gray-100 flex flex-col gap-4 bg-gray-50/50 shrink-0">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="p-1">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
                             <CustomSelect
@@ -310,7 +302,7 @@ export default function RequestsPage() {
                         </div>
                         <Button
                             onClick={() => setNewRequestOpen(true)}
-                            icon={Plus}
+                            icon={MailPlus}
                             className="flex items-center gap-2 px-8 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-200 shrink-0 border-none"
                         >
                             NEW MAIL
@@ -318,7 +310,7 @@ export default function RequestsPage() {
                     </div>
                 </div>
 
-                <div className="p-1 md:p-2 bg-gray-50/10 flex-1 min-h-0 overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-hidden">
                     <DataTable
                         columns={columns}
                         data={requests}

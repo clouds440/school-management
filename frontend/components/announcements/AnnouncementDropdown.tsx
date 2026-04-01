@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Megaphone, Loader2, Plus, Globe, Building2, Shield, Layout, User } from 'lucide-react';
+import { Megaphone, Loader2, Plus, Globe, Building2, Shield, Layout } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useSocket } from '@/hooks/useSocket';
-import { api, getPublicUrl } from '@/lib/api';
+import { api } from '@/lib/api';
 import { Announcement, Role, TargetType } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { useGlobal } from '@/context/GlobalContext';
 import Link from 'next/link';
 import { CreateAnnouncementModal } from './CreateAnnouncementModal';
-import Image from 'next/image';
+import { BrandIcon } from '@/components/ui/Brand';
 
 export function AnnouncementDropdown() {
     const { token, user } = useAuth();
@@ -48,14 +48,16 @@ export function AnnouncementDropdown() {
 
                 // Auto-open for High/Urgent unread if not yet auto-opened this session
                 if (!hasAutoOpened.current && count > 0) {
-                    const hasUrgent = res.data.some(a => {
+                    const unreadUrgent = res.data.filter(a => {
                         const isUnread = lsTime === 0 || new Date(a.createdAt).getTime() > lsTime + 1000;
                         return isUnread && (a.priority === 'URGENT' || a.priority === 'HIGH');
                     });
 
-                    if (hasUrgent) {
+                    if (unreadUrgent.length > 0) {
                         setIsOpen(true);
                         hasAutoOpened.current = true;
+                        // Mark as seen immediately so it doesn't re-open on refresh
+                        markAllAsSeen(res.data);
                     }
                 }
             } catch (err) {
@@ -76,9 +78,11 @@ export function AnnouncementDropdown() {
             dispatch({ type: 'TOAST_ADD', payload: { message: announcement.title, type: 'info' } });
 
             // Auto-open if Urgent
-            if (announcement.priority === 'URGENT') {
+            if (announcement.priority === 'URGENT' && !isOpen) {
                 setIsOpen(true);
                 hasAutoOpened.current = true;
+                // We'll update the "lastSeen" only if they interact or if we want to be aggressive.
+                // For live ones, let's keep the badge so they notice.
             }
         });
 
@@ -98,15 +102,20 @@ export function AnnouncementDropdown() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const markAllAsSeen = (currentAnnouncements: Announcement[]) => {
+        setUnreadCount(0);
+        const now = new Date().getTime();
+        setLastSeen(now);
+        if (currentAnnouncements.length > 0) {
+            localStorage.setItem(`announcements_heard_${user?.id}`, now.toString());
+        }
+    };
+
     const toggleOpen = () => {
-        setIsOpen(!isOpen);
-        if (!isOpen && unreadCount > 0) {
-            setUnreadCount(0);
-            const now = new Date().getTime();
-            setLastSeen(now);
-            if (announcements.length > 0) {
-                localStorage.setItem(`announcements_heard_${user?.id}`, now.toString());
-            }
+        const nextState = !isOpen;
+        setIsOpen(nextState);
+        if (nextState && unreadCount > 0) {
+            markAllAsSeen(announcements);
         }
     };
 
@@ -175,20 +184,7 @@ export function AnnouncementDropdown() {
                                         >
                                             {/* Creator Info */}
                                             <div className="flex items-center gap-3 mb-3 pb-2 border-b border-gray-50">
-                                                <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shadow-sm shrink-0">
-                                                    {creator?.avatarUrl ? (
-                                                        <Image
-                                                            src={getPublicUrl(creator.avatarUrl)}
-                                                            alt={creator.name || 'User'}
-                                                            fill
-                                                            className="object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                                            <User className="w-4 h-4" />
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                <BrandIcon variant="user" size="sm" user={creator} className="w-8 h-8" />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center justify-between gap-2">
                                                         <p className="text-xs font-black text-gray-900 truncate">
@@ -212,9 +208,14 @@ export function AnnouncementDropdown() {
                                             </div>
 
                                             <div className="flex justify-between items-start mb-2">
-                                                <h4 className="text-sm font-black text-gray-900 leading-tight pr-4">
-                                                    {announcement.title}
-                                                </h4>
+                                                <div className="flex items-start gap-2 pr-4">
+                                                    {(lastSeen === 0 || new Date(announcement.createdAt).getTime() > lastSeen + 1000) && (
+                                                        <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                                                    )}
+                                                    <h4 className="text-sm font-black text-gray-900 leading-tight">
+                                                        {announcement.title}
+                                                    </h4>
+                                                </div>
                                                 <div className="shrink-0 flex items-center gap-1.5 text-[9px] font-black text-gray-400 uppercase tracking-widest bg-white border border-gray-100 px-2 py-1 rounded-sm shadow-sm group-hover:border-blue-100 group-hover:text-blue-500 transition-colors">
                                                     {targetIcons[announcement.targetType] || <Megaphone className="w-3 h-3" />}
                                                     <span>{announcement.targetType}</span>

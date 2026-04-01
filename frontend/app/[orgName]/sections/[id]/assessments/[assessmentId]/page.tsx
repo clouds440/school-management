@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Trophy, Users, Calendar, CheckCircle2, Link as LinkIcon, Download } from 'lucide-react';
-import Image from 'next/image';
 import { api } from '@/lib/api';
 import { Assessment, Section, Grade, Submission, Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
@@ -12,6 +11,7 @@ import { formatDate, getPublicUrl } from '@/lib/utils';
 import { Modal } from '@/components/ui/Modal';
 import GradingForm from '@/components/forms/GradingForm';
 import { BulkGradingModal } from '@/components/forms/BulkGradingModal';
+import { BrandIcon } from '@/components/ui/Brand';
 
 export default function AssessmentDetailPage() {
     const { token, user } = useAuth();
@@ -192,19 +192,12 @@ export default function AssessmentDetailPage() {
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-black text-xs border border-primary/20 overflow-hidden relative">
-                                                        {student.user.avatarUrl ? (
-                                                            <Image
-                                                                src={getPublicUrl(student.user.avatarUrl, student.user.avatarUpdatedAt)}
-                                                                alt={student.user.name}
-                                                                fill
-                                                                className="object-cover rounded-full"
-                                                                unoptimized
-                                                            />
-                                                        ) : (
-                                                            student.user.name.charAt(0).toUpperCase()
-                                                        )}
-                                                    </div>
+                                                    <BrandIcon
+                                                        variant="user"
+                                                        size="sm"
+                                                        user={student.user}
+                                                        className="w-8 h-8 shadow-sm"
+                                                    />
                                                     <div className="font-bold text-sm text-card-text">{student.user.name}</div>
                                                 </div>
                                             </td>

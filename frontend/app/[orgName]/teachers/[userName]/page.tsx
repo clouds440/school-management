@@ -5,13 +5,13 @@ import {
     Users, BookOpen, CheckCircle, FileText, PlusCircle, ShieldCheck,
     TrendingUp, Award, Clock, ChevronRight
 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { Teacher, ApiError, Role, Section, Assessment } from '@/types';
-import { getPublicUrl, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
+import { BrandIcon } from '@/components/ui/Brand';
 
 
 export default function TeacherLandingPage() {
@@ -62,8 +62,6 @@ export default function TeacherLandingPage() {
     // Use fetched profile if available, fallback to JWT payload
     const displayUser = teacher?.user || payload;
     const displayName = displayUser.name || displayUser.email;
-    const avatarUrl = teacher?.user?.avatarUrl || payload.avatarUrl;
-    const avatarUpdatedAt = teacher?.user?.avatarUpdatedAt || (payload as { avatarUpdatedAt?: string }).avatarUpdatedAt;
 
     const totalStudents = sections.reduce((acc, s) => acc + (s.studentsCount || s.students?.length || 0), 0);
     const upcomingAssessments = assessments
@@ -79,21 +77,12 @@ export default function TeacherLandingPage() {
                 <div className="relative p-6 md:p-8 bg-card text-card-text backdrop-blur-3xl rounded-sm shadow-2xl border border-white/40 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
                         <div className="relative">
-                            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border-2 border-primary/20 shadow-2xl overflow-hidden bg-primary/5 flex items-center justify-center">
-                                {(avatarUrl || payload.orgLogoUrl) ? (
-                                    <Image
-                                        src={getPublicUrl(avatarUrl || payload.orgLogoUrl, avatarUpdatedAt)}
-                                        alt={displayName || 'User Avatar'}
-                                        fill
-                                        className="object-cover rounded-full"
-                                        unoptimized
-                                    />
-                                ) : (
-                                    <span className="text-3xl md:text-4xl font-black text-primary uppercase italic">
-                                        {displayName?.charAt(0)}
-                                    </span>
-                                )}
-                            </div>
+                            <BrandIcon 
+                                variant="user" 
+                                size="hero" 
+                                user={displayUser} 
+                                className="w-20 h-20 md:w-24 md:h-24"
+                            />
                         </div>
 
                         <div>

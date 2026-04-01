@@ -15,6 +15,7 @@ import { useGlobal } from '@/context/GlobalContext';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, RegisterFormData } from '@/lib/schemas';
+import { PLATFORM_NAME } from '@/lib/constants';
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -99,190 +100,254 @@ export default function RegisterPage() {
     }, []);
 
     return (
-        <div className="flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-y-auto min-h-full">
-            {/* Background decoration */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-4xl pointer-events-none">
-                <div className="absolute top-0 right-0 w-80 h-80 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-                <div className="absolute top-0 left-0 w-80 h-80 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-                <div className="absolute -bottom-8 left-40 w-80 h-80 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-            </div>
-
-            <div className="w-full max-w-2xl space-y-10 bg-white/70 backdrop-blur-2xl p-12 sm:p-16 rounded-sm shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50 relative z-10 mx-auto transition-all duration-500">
-                <div className="text-center">
-                    <div className="mx-auto bg-primary/10 w-20 h-20 rounded-sm flex items-center justify-center mb-8 shadow-inner border border-white/20">
-                        <UserPlus className="w-10 h-10 text-primary drop-shadow-sm" />
+        <div className="flex min-h-full h-screen bg-white overflow-hidden font-sans">
+            {/* Left Column: Vision & Branding (Hidden on mobile) */}
+            <div className="hidden lg:flex lg:w-[40%] xl:w-[35%] relative flex-col items-center justify-center p-12 overflow-hidden bg-primary/5">
+                {/* Decorative background elements */}
+                <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+                <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-secondary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse delay-1000"></div>
+                
+                <div className="relative z-10 w-full max-w-sm space-y-10 animate-in fade-in slide-in-from-left duration-1000">
+                    <div className="space-y-4">
+                        <div className="w-16 h-16 bg-white rounded-sm shadow-sm flex items-center justify-center border border-primary/10 mb-8">
+                             <UserPlus className="w-8 h-8 text-primary" />
+                        </div>
+                        <h1 className="text-4xl xl:text-5xl font-black text-gray-900 leading-[1.1] tracking-tighter italic">
+                            Grow your <br />
+                            <span className="text-primary not-italic">Community.</span>
+                        </h1>
+                        <p className="text-base text-gray-500 font-medium leading-relaxed">
+                            Join hundreds of modern educational institutions managing their future with {PLATFORM_NAME}.
+                        </p>
                     </div>
-                    <h2 className="mt-2 text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-gray-900 to-gray-700 tracking-tight">
-                        Register Organization
-                    </h2>
-                    <p className="mt-3 text-sm text-gray-500 font-medium tracking-tight">
-                        Already have an account?{' '}
-                        <Link href="/login" className="font-bold text-primary hover:text-primary/80 transition-colors">
-                            Sign in here
-                        </Link>
-                    </p>
-                </div>
 
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
-                    {/* Logo picker */}
-                    <div className="flex flex-col items-center pb-2">
-                        <Label className="mb-3">
-                            Organization Logo <span className="text-gray-400 font-normal">(optional)</span>
-                        </Label>
-                        <PhotoUploadPicker
-                            onFileReady={handleLogoReady}
-                            type="org"
-                            hint="Square image, PNG or JPG, max 5 MB"
+                    <div className="relative w-full aspect-square drop-shadow-2xl">
+                        <img 
+                            src="/_next/static/media/auth_register_bg_1775044037475.png" 
+                            alt="Growth Illustration" 
+                            className="w-full h-full object-contain animate-float"
+                            onError={(e) => {
+                                e.currentTarget.src = "/api/placeholder/600/600";
+                            }}
                         />
                     </div>
 
-                    <div className="space-y-5">
-                        <div>
-                            <Label htmlFor="name">Organization Name</Label>
-                            <Input
-                                id="name"
-                                {...register('name')}
-                                error={!!errors.name}
-                                icon={School}
-                                placeholder="EduPulse Academy"
-                            />
-                            {errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{errors.name.message}</p>}
-                        </div>
+                    <div className="space-y-2 border-l-4 border-primary pl-6 py-2 bg-primary/5 rounded-r-lg">
+                        <p className="text-sm font-black text-gray-800 tracking-tight italic">"The most intuitive management system we've ever used."</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">— St. Mary's Academy</p>
+                    </div>
+                </div>
+            </div>
 
-                        <div>
-                            <Label htmlFor="adminName">Administrator Full Name</Label>
-                            <Input
-                                id="adminName"
-                                {...register('adminName')}
-                                error={!!errors.adminName}
-                                icon={BookOpen}
-                                placeholder="John Doe"
-                            />
-                            {errors.adminName && <p className="mt-1 text-xs text-red-500 font-bold">{errors.adminName.message}</p>}
+            {/* Right Column: Registration Form */}
+            <div className="w-full lg:w-[60%] xl:w-[65%] flex items-center justify-center p-6 sm:p-12 md:p-16 bg-white relative overflow-y-auto custom-scrollbar animate-in fade-in duration-700">
+                <div className="w-full max-w-2xl">
+                    <div className="flex flex-col space-y-2 mb-10">
+                        <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary italic mb-2">
+                            <span>Step 01</span>
+                            <div className="h-px w-12 bg-primary"></div>
+                            <span className="text-gray-300 uppercase not-italic">Organization Setup</span>
                         </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <div>
-                                <Label htmlFor="type">Organization Type</Label>
-                                <CustomSelect
-                                    options={[
-                                        { value: OrganizationType.KINDERGARTEN, label: 'Kindergarten', icon: Pencil },
-                                        { value: OrganizationType.PRE_SCHOOL, label: 'Pre-School', icon: Pencil },
-                                        { value: OrganizationType.PRIMARY_SCHOOL, label: 'Primary School', icon: BookOpen },
-                                        { value: OrganizationType.MIDDLE_SCHOOL, label: 'Middle School', icon: BookOpen },
-                                        { value: OrganizationType.HIGH_SCHOOL, label: 'High School', icon: School },
-                                        { value: OrganizationType.COLLEGE, label: 'College', icon: Library },
-                                        { value: OrganizationType.UNIVERSITY, label: 'University', icon: GraduationCap },
-                                        { value: OrganizationType.VOCATIONAL_SCHOOL, label: 'Vocational School', icon: Building },
-                                        { value: OrganizationType.INSTITUTE, label: 'Institute', icon: Building },
-                                        { value: OrganizationType.ACADEMY, label: 'Academy', icon: Building },
-                                        { value: OrganizationType.TUTORING_CENTER, label: 'Tutoring Center', icon: BookOpen },
-                                        { value: OrganizationType.ONLINE_SCHOOL, label: 'Online School', icon: MonitorPlay },
-                                        { value: OrganizationType.OTHER, label: 'Other', icon: Building },
-                                    ]}
-                                    value={formData.type}
-                                    onChange={(val) => {
-                                        setValue('type', val as OrganizationType);
-                                        trigger('type');
-                                    }}
-                                    error={!!errors.type}
-                                    placeholder="Select Type"
-                                />
-                                {errors.type && <p className="mt-1 text-xs text-red-500 font-bold">{errors.type.message}</p>}
-                            </div>
-                            <div>
-                                <Label htmlFor="location">Location</Label>
-                                <Input
-                                    id="location"
-                                    {...register('location')}
-                                    error={!!errors.location}
-                                    icon={MapPin}
-                                    placeholder="New York, USA"
-                                />
-                                {errors.location && <p className="mt-1 text-xs text-red-500 font-bold">{errors.location.message}</p>}
-                            </div>
-                        </div>
-
-                        <div>
-                            <Label htmlFor="email">Admin Login Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                {...register('email')}
-                                error={!!errors.email}
-                                icon={Mail}
-                                placeholder="admin@school.com"
-                            />
-                            {errors.email && <p className="mt-1 text-xs text-red-500 font-bold">{errors.email.message}</p>}
-                            <p className="mt-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                                This will be used for your administrator login account.
-                            </p>
-                        </div>
-
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <Label htmlFor="contactEmail">Organization Contact Email</Label>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const next = !sameAsLoginEmail;
-                                        setSameAsLoginEmail(next);
-                                        if (next) {
-                                            setValue('contactEmail', formData.email);
-                                            trigger('contactEmail');
-                                        }
-                                    }}
-                                    className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline"
-                                >
-                                    {sameAsLoginEmail ? 'Use different email' : 'Same as login email'}
-                                </button>
-                            </div>
-                            <Input
-                                id="contactEmail"
-                                type="email"
-                                {...register('contactEmail')}
-                                error={!!errors.contactEmail}
-                                disabled={sameAsLoginEmail}
-                                icon={Mail}
-                                placeholder="info@school.com"
-                                className={sameAsLoginEmail ? 'bg-gray-50/50 opacity-60' : ''}
-                            />
-                            {errors.contactEmail && !sameAsLoginEmail && (
-                                <p className="mt-1 text-xs text-red-500 font-bold">{errors.contactEmail.message}</p>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <div>
-                                <Label htmlFor="phone">Phone Number</Label>
-                                <Input
-                                    id="phone"
-                                    {...register('phone')}
-                                    error={!!errors.phone}
-                                    icon={Phone}
-                                    placeholder="+1 (555) 000-0000"
-                                />
-                                {errors.phone && <p className="mt-1 text-xs text-red-500 font-bold">{errors.phone.message}</p>}
-                            </div>
-                            <div>
-                                <Label htmlFor="password">Login Password</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    {...register('password')}
-                                    error={!!errors.password}
-                                    icon={Lock}
-                                    placeholder="••••••••"
-                                />
-                                {errors.password && <p className="mt-1 text-xs text-red-500 font-bold">{errors.password.message}</p>}
-                            </div>
-                        </div>
+                        <h2 className="text-4xl font-black text-gray-900 tracking-tighter leading-tight italic">
+                            Register Organization
+                        </h2>
+                        <p className="text-sm text-gray-500 font-medium tracking-tight">
+                            Start your digital transformation journey today with {PLATFORM_NAME}. Already have an account?{' '}
+                            <Link href="/login" className="text-primary font-black hover:underline underline-offset-4 decoration-2 italic">
+                                Sign in
+                            </Link>
+                        </p>
                     </div>
 
-                    <Button type="submit" className="w-full h-14" loadingText="Registering...">
-                        <span className="font-black uppercase tracking-widest text-xs italic">Create Organization Account</span>
-                    </Button>
-                </form>
+                    <form className="space-y-10" onSubmit={handleSubmit(onSubmit)} noValidate>
+                        {/* Logo & Core Info Section */}
+                        <div className="bg-gray-50/50 p-8 rounded-sm border border-gray-100 flex flex-col md:flex-row items-center md:items-start gap-10">
+                            <div className="flex flex-col items-center shrink-0">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 block">Organization Logo</Label>
+                                <PhotoUploadPicker
+                                    onFileReady={handleLogoReady}
+                                    type="org"
+                                    hint="Square PNG/JPG, max 5MB"
+                                />
+                            </div>
+
+                            <div className="flex-1 w-full space-y-6">
+                                <div>
+                                    <Label htmlFor="name" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Official School Name</Label>
+                                    <Input
+                                        id="name"
+                                        {...register('name')}
+                                        error={!!errors.name}
+                                        icon={School}
+                                        placeholder="EduPulse Academy"
+                                        className="h-14 font-bold border-gray-100 bg-white"
+                                    />
+                                    {errors.name && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.name.message}</p>}
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="adminName" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Administrator Full Name</Label>
+                                    <Input
+                                        id="adminName"
+                                        {...register('adminName')}
+                                        error={!!errors.adminName}
+                                        icon={BookOpen}
+                                        placeholder="John Doe"
+                                        className="h-14 font-bold border-gray-100 bg-white"
+                                    />
+                                    {errors.adminName && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.adminName.message}</p>}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Metadata Grid */}
+                        <div className="space-y-8 px-4">
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 italic border-l-4 border-gray-200 pl-4 mb-8">Metadata & Location</h3>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div>
+                                    <Label htmlFor="type" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Category</Label>
+                                    <CustomSelect
+                                        options={[
+                                            { value: OrganizationType.KINDERGARTEN, label: 'Kindergarten', icon: Pencil },
+                                            { value: OrganizationType.PRE_SCHOOL, label: 'Pre-School', icon: Pencil },
+                                            { value: OrganizationType.PRIMARY_SCHOOL, label: 'Primary School', icon: BookOpen },
+                                            { value: OrganizationType.MIDDLE_SCHOOL, label: 'Middle School', icon: BookOpen },
+                                            { value: OrganizationType.HIGH_SCHOOL, label: 'High School', icon: School },
+                                            { value: OrganizationType.COLLEGE, label: 'College', icon: Library },
+                                            { value: OrganizationType.UNIVERSITY, label: 'University', icon: GraduationCap },
+                                            { value: OrganizationType.VOCATIONAL_SCHOOL, label: 'Vocational School', icon: Building },
+                                            { value: OrganizationType.INSTITUTE, label: 'Institute', icon: Building },
+                                            { value: OrganizationType.ACADEMY, label: 'Academy', icon: Building },
+                                            { value: OrganizationType.TUTORING_CENTER, label: 'Tutoring Center', icon: BookOpen },
+                                            { value: OrganizationType.ONLINE_SCHOOL, label: 'Online School', icon: MonitorPlay },
+                                            { value: OrganizationType.OTHER, label: 'Other', icon: Building },
+                                        ]}
+                                        value={formData.type}
+                                        onChange={(val) => {
+                                            setValue('type', val as OrganizationType);
+                                            trigger('type');
+                                        }}
+                                        error={!!errors.type}
+                                        placeholder="Select Type"
+                                        className="h-14 font-bold border-gray-100"
+                                    />
+                                    {errors.type && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.type.message}</p>}
+                                </div>
+                                <div>
+                                    <Label htmlFor="location" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Location</Label>
+                                    <Input
+                                        id="location"
+                                        {...register('location')}
+                                        error={!!errors.location}
+                                        icon={MapPin}
+                                        placeholder="New York, USA"
+                                        className="h-14 font-bold border-gray-100"
+                                    />
+                                    {errors.location && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.location.message}</p>}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Security & Access Section */}
+                        <div className="space-y-8 px-4">
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 italic border-l-4 border-gray-200 pl-4 mb-8">Security & Access</h3>
+                            
+                            <div className="space-y-8">
+                                <div>
+                                    <Label htmlFor="email" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Admin Login Email</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        {...register('email')}
+                                        error={!!errors.email}
+                                        icon={Mail}
+                                        placeholder="admin@school.com"
+                                        className="h-14 font-bold border-gray-100"
+                                    />
+                                    {errors.email && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.email.message}</p>}
+                                    <p className="mt-3 text-[10px] text-gray-400 font-bold uppercase tracking-wider ml-1 italic opacity-60">
+                                        Primary credentials used for administrator console access.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <div className="flex items-center justify-between mb-2 ml-1">
+                                        <Label htmlFor="contactEmail" className="text-[11px] font-black uppercase tracking-widest text-gray-400">Public Contact Email</Label>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const next = !sameAsLoginEmail;
+                                                setSameAsLoginEmail(next);
+                                                if (next) {
+                                                    setValue('contactEmail', formData.email);
+                                                    trigger('contactEmail');
+                                                }
+                                            }}
+                                            className="text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:text-primary-hover italic transition-all"
+                                        >
+                                            {sameAsLoginEmail ? 'Different email' : 'Sync with Login'}
+                                        </button>
+                                    </div>
+                                    <Input
+                                        id="contactEmail"
+                                        type="email"
+                                        {...register('contactEmail')}
+                                        error={!!errors.contactEmail}
+                                        disabled={sameAsLoginEmail}
+                                        icon={Mail}
+                                        placeholder="info@school.com"
+                                        className={`h-14 font-bold border-gray-100 transition-all ${sameAsLoginEmail ? 'bg-gray-50 opacity-40 grayscale pointer-events-none' : ''}`}
+                                    />
+                                    {errors.contactEmail && !sameAsLoginEmail && (
+                                        <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.contactEmail.message}</p>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div>
+                                        <Label htmlFor="phone" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Phone Number</Label>
+                                        <Input
+                                            id="phone"
+                                            {...register('phone')}
+                                            error={!!errors.phone}
+                                            icon={Phone}
+                                            placeholder="+1 (555) 000-0000"
+                                            className="h-14 font-bold border-gray-100"
+                                        />
+                                        {errors.phone && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.phone.message}</p>}
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="password" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Login Password</Label>
+                                        <Input
+                                            id="password"
+                                            type="password"
+                                            {...register('password')}
+                                            error={!!errors.password}
+                                            icon={Lock}
+                                            placeholder="••••••••"
+                                            className="h-14 font-bold border-gray-100"
+                                        />
+                                        {errors.password && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.password.message}</p>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-6">
+                            <Button 
+                                type="submit" 
+                                className="w-full h-18 shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all rounded-sm" 
+                                loadingText="Creating secure account..."
+                            >
+                                <span className="font-black uppercase tracking-[0.3em] text-sm italic">Create Organization Account</span>
+                            </Button>
+                            <p className="mt-6 text-center text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] leading-relaxed max-w-sm mx-auto">
+                                By registering, you agree to our <Link href="/terms" className="text-gray-500 hover:text-primary underline italic">Terms of Service</Link> and <Link href="/privacy" className="text-gray-500 hover:text-primary underline italic">Privacy Policy</Link>.
+                            </p>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );

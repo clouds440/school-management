@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Tag, Calendar, User, Filter, Clock } from 'lucide-react';
+import { MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Tag, Calendar, Filter, Clock, MailPlus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { RequestItem, RequestStatus, PaginatedResponse } from '@/types';
 import { DataTable, Column } from '@/components/ui/DataTable';
@@ -13,10 +13,9 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { getPublicUrl } from '@/lib/utils';
 import { useSocket } from '@/hooks/useSocket';
 import { Button } from '@/components/ui/Button';
-import Image from 'next/image';
+import { BrandIcon } from '@/components/ui/Brand';
 
 export default function OrgRequestsPage() {
     const { user, token, loading: authLoading } = useAuth();
@@ -129,16 +128,14 @@ export default function OrgRequestsPage() {
         {
             header: 'Sender',
             accessor: (row: RequestItem) => {
-                const userAvatar = row.creator?.avatarUrl ? getPublicUrl(row.creator.avatarUrl) : null;
                 return (
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center relative">
-                            {userAvatar ? (
-                                <Image src={userAvatar} alt={row.creator?.name || ''} fill className="object-cover rounded-full" unoptimized />
-                            ) : (
-                                <User className="w-4 h-4 text-gray-400" />
-                            )}
-                        </div>
+                        <BrandIcon
+                            variant="user"
+                            size="sm"
+                            user={row.creator}
+                            className="w-8 h-8 rounded-full shadow-sm"
+                        />
                         <div className="min-w-0">
                             <p className="text-xs font-black text-gray-700 truncate max-w-[120px]">{row.creator?.name || row.creator?.email || 'Unknown'}</p>
                             <p className="text-[10px] font-bold text-gray-400 uppercase">{row.creatorRole?.replace('_', ' ') || 'N/A'}</p>
@@ -221,7 +218,7 @@ export default function OrgRequestsPage() {
                     </div>
                     <Button
                         onClick={() => setNewRequestOpen(true)}
-                        icon={Plus}
+                        icon={MailPlus}
                         className="flex items-center justify-center gap-2 px-8 bg-primary text-primary-text rounded-sm text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 shrink-0 border-none"
                     >
                         New Request
@@ -250,7 +247,14 @@ export default function OrgRequestsPage() {
             <RequestDetailsModal
                 isOpen={!!selectedRequestId}
                 requestId={selectedRequestId}
-                onClose={() => setSelectedRequestId(null)}
+                onClose={() => {
+                    setSelectedRequestId(null);
+                    // Clear the requestId from the URL
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.delete('requestId');
+                    const query = params.toString();
+                    router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
+                }}
                 onUpdate={fetchRequests}
             />
 

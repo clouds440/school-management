@@ -18,7 +18,7 @@ export class ChatService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly events: EventsGateway,
-    ) {}
+    ) { }
 
     async searchUsers(query: string, user: CurrentUser) {
         if (user.role === Role.STUDENT) {
@@ -26,16 +26,21 @@ export class ChatService {
         }
 
         const searchQuery = query.trim();
-        if (!searchQuery) return [];
 
         let whereClause: Prisma.UserWhereInput = {
-            OR: [
-                { name: { contains: searchQuery, mode: 'insensitive' } },
-                { email: { contains: searchQuery, mode: 'insensitive' } },
-            ],
             id: { not: user.id }, // don't return self
             organizationId: user.organizationId,
         };
+
+        if (searchQuery) {
+            whereClause = {
+                ...whereClause,
+                OR: [
+                    { name: { contains: searchQuery, mode: 'insensitive' } },
+                    { email: { contains: searchQuery, mode: 'insensitive' } },
+                ],
+            };
+        }
 
         // Strict Role-Based Search Filters
         if (user.role === Role.TEACHER) {
@@ -65,8 +70,18 @@ export class ChatService {
                     }
                 ]
             };
+        } else if (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER) {
+            // Org Admins/Managers can see everyone EXCEPT Students for chat
+            whereClause = {
+                ...whereClause,
+                role: { not: Role.STUDENT }
+            };
         } else if (user.role !== Role.SUPER_ADMIN && user.role !== Role.PLATFORM_ADMIN) {
-            // General Org Users (Manager/Admin) can see anyone in their org (restricted by organizationId above)
+            // General Org Users (if any other roles exist) - exclude students by default
+            whereClause = {
+                ...whereClause,
+                role: { not: Role.STUDENT }
+            };
         } else if (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) {
             // Platform Admins can only see other platform admins/super admins
             whereClause = {
@@ -74,6 +89,15 @@ export class ChatService {
                 role: { in: [Role.SUPER_ADMIN, Role.PLATFORM_ADMIN] }
             };
             delete whereClause.organizationId;
+        }
+
+        // If no search query, limit to a smaller initial set of relevant users (e.g., admins/colleagues)
+        if (!searchQuery && user.role !== Role.SUPER_ADMIN && user.role !== Role.PLATFORM_ADMIN) {
+            // For org users, prioritize admins and managers in the initial list
+            // For admins/managers, also include students to make group creation easier
+            const defaultRoles = [Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER];
+            // @ts-ignore
+            whereClause.role = { in: defaultRoles };
         }
 
         const usersList = await this.prisma.user.findMany({
@@ -104,6 +128,11 @@ export class ChatService {
         const targetUser = await this.prisma.user.findUnique({ where: { id: dto.participantId } });
         if (!targetUser) throw new NotFoundException('User not found.');
 
+        // STRICT POLICY: No 1-to-1 chats are allowed with students at all.
+        if (targetUser.role === Role.STUDENT) {
+            throw new ForbiddenException('Direct messaging with students is not allowed. Please use the Announcement system for official correspondence.');
+        }
+
         // Restriction: Platform Admins can only chat with other Platform Admins
         const isPlatformUser = (role: Role) => role === Role.SUPER_ADMIN || role === Role.PLATFORM_ADMIN;
         const curUserIsPlatform = isPlatformUser(user.role);
@@ -122,32 +151,11 @@ export class ChatService {
                 throw new ForbiddenException('Cannot chat outside your organization.');
             }
 
-            // Teacher Restrictions: Can only 1:1 with Org Admin, Org Manager, or their Section Students
+            // Teacher Restrictions: Can only 1:1 with Org Admin or Org Manager
             if (user.role === Role.TEACHER) {
                 const allowedRoles: Role[] = [Role.ORG_ADMIN, Role.ORG_MANAGER];
                 if (!allowedRoles.includes(targetUser.role as Role)) {
-                    // If target is a student, check if they are in the teacher's section
-                    if (targetUser.role === Role.STUDENT) {
-                        const teacher = await this.prisma.teacher.findUnique({
-                            where: { userId: user.id },
-                            include: { sections: { select: { id: true } } }
-                        });
-                        const sectionIds = teacher?.sections.map(s => s.id) || [];
-                        
-                        const isEnrolled = await this.prisma.enrollment.findFirst({
-                            where: {
-                                student: { userId: targetUser.id },
-                                sectionId: { in: sectionIds }
-                            }
-                        });
-
-                        if (!isEnrolled) {
-                            throw new ForbiddenException('Teachers can only initiate 1:1 chats with students in their assigned sections.');
-                        }
-                    } else {
-                        // Target is another teacher? Not allowed as per rules ("Org managers, Org admins, Students in their assigned sections")
-                        throw new ForbiddenException('Teachers cannot initiate 1:1 chats with other teachers.');
-                    }
+                    throw new ForbiddenException('Teachers can only initiate 1:1 chats with Org Admins or Org Managers.');
                 }
             }
         }
@@ -161,7 +169,7 @@ export class ChatService {
                     { participants: { some: { userId: dto.participantId } } }
                 ]
             },
-            include: { 
+            include: {
                 participants: {
                     include: {
                         user: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } }
@@ -231,6 +239,14 @@ export class ChatService {
             if (externalUsers.length > 0) {
                 throw new ForbiddenException('Cannot include users outside your organization or Platform Administrators in organization group chats.');
             }
+
+            // Organization Policy: Students can only participate in section-based chats initiated by THEIR teachers.
+            const studentsInGroup = usersList.filter(u => u.role === Role.STUDENT);
+            if (studentsInGroup.length > 0) {
+                if (user.role !== Role.TEACHER) {
+                    throw new ForbiddenException('Only teachers can create group chats involving students.');
+                }
+            }
         }
 
         // If Teacher, enforce they only add students from their sections (and ONLY students)
@@ -258,7 +274,7 @@ export class ChatService {
                         sectionId: { in: teacherSectionIds }
                     }
                 });
-                
+
                 // Comparing unique students enrolled in teacher's sections vs unique students they're adding
                 if (enrolledStudentsCount.length < targetStudentUserIds.length) {
                     throw new ForbiddenException('Teachers can only add students from their assigned sections.');
@@ -335,6 +351,34 @@ export class ChatService {
 
         if (newUsersList.length !== dto.participantIds.length) {
             throw new BadRequestException('One or more users not found or outside organization.');
+        }
+
+        // Organization Policy: Only teachers can add students to groups
+        const studentsToAdd = newUsersList.filter(u => u.role === Role.STUDENT);
+        if (studentsToAdd.length > 0) {
+            if (user.role !== Role.TEACHER) {
+                throw new ForbiddenException('Only teachers can add students to group chats.');
+            }
+
+            // Verify they are from the teacher's sections
+            const teacher = await this.prisma.teacher.findUnique({
+                where: { userId: user.id },
+                include: { sections: true }
+            });
+            const teacherSectionIds = teacher?.sections.map(s => s.id) || [];
+
+            const targetStudentUserIds = studentsToAdd.map(u => u.id);
+            const enrolledStudentsCount = await this.prisma.enrollment.groupBy({
+                by: ['studentId'],
+                where: {
+                    student: { userId: { in: targetStudentUserIds } },
+                    sectionId: { in: teacherSectionIds }
+                }
+            });
+
+            if (enrolledStudentsCount.length < targetStudentUserIds.length) {
+                throw new ForbiddenException('Teachers can only add students from their assigned sections.');
+            }
         }
 
         const adminUser = await this.prisma.user.findUnique({ where: { id: user.id } });
@@ -437,6 +481,80 @@ export class ChatService {
         return { message: 'Participant removed successfully.' };
     }
 
+    async updateChat(chatId: string, dto: { name?: string; avatarUrl?: string }, user: CurrentUser) {
+        const chat = await this.prisma.chat.findUnique({
+            where: { id: chatId },
+            include: { participants: true }
+        });
+
+        if (!chat) throw new NotFoundException('Chat not found.');
+        if (chat.type !== ChatType.GROUP) throw new BadRequestException('Only group chats can be updated.');
+
+        // Permission check: Creator or Org Admin
+        const isCreator = chat.creatorId === user.id;
+        const isOrgAdmin = user.role === Role.ORG_ADMIN;
+        if (!isCreator && !isOrgAdmin) {
+            throw new ForbiddenException('Only the group creator or an org admin can update chat settings.');
+        }
+
+        const data: Prisma.ChatUpdateInput = {};
+        const systemMessages: string[] = [];
+        const userRec = await this.prisma.user.findUnique({ where: { id: user.id } });
+        const actorName = userRec?.name || 'Admin';
+
+        if (dto.name && dto.name !== chat.name) {
+            data.name = dto.name;
+            systemMessages.push(`${actorName} changed the group name to "${dto.name}"`);
+        }
+        if (dto.avatarUrl !== undefined && dto.avatarUrl !== chat.avatarUrl) {
+            data.avatarUrl = dto.avatarUrl;
+            systemMessages.push(`${actorName} updated the group picture`);
+        }
+
+        if (Object.keys(data).length === 0) return chat;
+
+        const updatedChat = await this.prisma.chat.update({
+            where: { id: chatId },
+            data,
+            include: {
+                participants: {
+                    include: {
+                        user: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } }
+                    }
+                }
+            }
+        });
+
+        // Log system messages & Emit
+        for (const content of systemMessages) {
+            const msg = await this.prisma.chatMessage.create({
+                data: {
+                    chatId,
+                    senderId: user.id,
+                    organizationId: user.organizationId,
+                    content,
+                    type: ChatMessageType.SYSTEM
+                },
+                include: { sender: { select: { id: true, name: true } } }
+            });
+
+            this.events.emitToRoom(`chat:${chatId}`, 'chat:message', msg);
+            const activeParticipants = updatedChat.participants.filter(p => p.isActive);
+            for (const p of activeParticipants) {
+                this.events.emitToRoom(`user:${p.userId}`, 'chat:message', msg);
+            }
+        }
+
+        // Emit chat update event
+        this.events.emitToRoom(`chat:${chatId}`, 'chat:update', updatedChat);
+        const activeParticipants = updatedChat.participants.filter(p => p.isActive);
+        for (const p of activeParticipants) {
+            this.events.emitToRoom(`user:${p.userId}`, 'chat:update', updatedChat);
+        }
+
+        return updatedChat;
+    }
+
     async deleteMessage(chatId: string, messageId: string, user: CurrentUser) {
         await this.verifyChatAccess(chatId, user.id, true);
 
@@ -457,7 +575,7 @@ export class ChatService {
 
         const updated = await this.prisma.chatMessage.update({
             where: { id: messageId },
-            data: { 
+            data: {
                 deletedAt: new Date(),
                 deletedById: user.id
             },
@@ -477,7 +595,7 @@ export class ChatService {
     }
 
     async getUserChats(user: CurrentUser) {
-        return this.prisma.chat.findMany({
+        const chats = await this.prisma.chat.findMany({
             where: {
                 participants: { some: { userId: user.id, isActive: true } }
             },
@@ -501,6 +619,32 @@ export class ChatService {
                 updatedAt: 'desc'
             }
         });
+
+        // Add unread count for each chat based on user's lastReadMessageId
+        const chatsWithUnread = await Promise.all(chats.map(async (chat) => {
+            const myParticipant = chat.participants.find(p => p.userId === user.id);
+            
+            let lastReadAt: Date | undefined;
+            if (myParticipant?.lastReadMessageId) {
+                const lastMsg = await this.prisma.chatMessage.findUnique({
+                    where: { id: myParticipant.lastReadMessageId },
+                    select: { createdAt: true }
+                });
+                lastReadAt = lastMsg?.createdAt;
+            }
+
+            const unreadCount = await this.prisma.chatMessage.count({
+                where: {
+                    chatId: chat.id,
+                    createdAt: lastReadAt ? { gt: lastReadAt } : undefined,
+                    senderId: { not: user.id },
+                    deletedAt: null
+                }
+            });
+            return { ...chat, unreadCount };
+        }));
+
+        return chatsWithUnread;
     }
 
     async getChatMessages(chatId: string, user: CurrentUser, page: number = 1, limit: number = 20) {
@@ -571,6 +715,9 @@ export class ChatService {
 
         this.events.emitToRoom(`chat:${chatId}`, 'chat:message', newMessage);
 
+        // Mark as read for the sender automatically
+        await this.markAsRead(chatId, newMessage.id, user);
+
         for (const p of activeParticipants) {
             this.events.emitToRoom(`user:${p.userId}`, 'chat:message', newMessage);
         }
@@ -586,7 +733,7 @@ export class ChatService {
         if (!participant || !participant.isActive) throw new ForbiddenException('Not an active participant.');
 
         let finalReadMessageId = messageId;
-        
+
         if (!finalReadMessageId) {
             const lastMsg = await this.prisma.chatMessage.findFirst({
                 where: { chatId },
@@ -606,10 +753,45 @@ export class ChatService {
             where: { id: participant.id },
             data: { lastReadMessageId: finalReadMessageId }
         });
-        
+
         this.events.emitToRoom(`chat:${chatId}`, 'chat:read', { chatId, userId: user.id, messageId: finalReadMessageId });
-        
+        this.events.emitToRoom(`user:${user.id}`, 'chat:read', { chatId, userId: user.id, messageId: finalReadMessageId });
+
         return updatedParticipant;
+    }
+
+    async getUnreadCount(user: CurrentUser) {
+        const chats = await this.prisma.chatParticipant.findMany({
+            where: { userId: user.id, isActive: true },
+            select: {
+                chatId: true,
+                lastReadMessageId: true
+            }
+        });
+
+        let totalUnread = 0;
+        for (const chat of chats) {
+            let lastReadAt: Date | undefined;
+            if (chat.lastReadMessageId) {
+                const lastMsg = await this.prisma.chatMessage.findUnique({
+                    where: { id: chat.lastReadMessageId },
+                    select: { createdAt: true }
+                });
+                lastReadAt = lastMsg?.createdAt;
+            }
+
+            const count = await this.prisma.chatMessage.count({
+                where: {
+                    chatId: chat.chatId,
+                    createdAt: lastReadAt ? { gt: lastReadAt } : undefined,
+                    senderId: { not: user.id },
+                    deletedAt: null
+                }
+            });
+            totalUnread += count;
+        }
+
+        return { unread: totalUnread };
     }
 
     private async verifyChatAccess(chatId: string, userId: string, allowInactive = false) {

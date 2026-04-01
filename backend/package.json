@@ -88,7 +88,5 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
   },
-  "prisma": {
-    "seed": "npx ts-node --transpile-only prisma/seed.ts"
-  }
+  "prisma": {}
 }

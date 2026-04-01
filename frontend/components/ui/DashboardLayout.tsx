@@ -2,17 +2,15 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight, LogOut, X, Key, User as UserIcon, Mail } from 'lucide-react';
-import { useSocket } from '@/hooks/useSocket';
+import { ChevronLeft, ChevronRight, LogOut, X, Key, Mail, MessageCircleQuestionMark } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { Role } from '@/types';
 import { BackButton } from './BackButton';
 import { DataViewModal } from './DataViewModal';
-import { getPublicUrl } from '@/lib/utils';
+import { BrandIcon } from './Brand';
 
 export interface SidebarLink {
     id: string;
@@ -26,27 +24,18 @@ interface DashboardLayoutProps {
     children: React.ReactNode;
     links: SidebarLink[];
     bottomLinks?: SidebarLink[];
-    brandHref?: string;
+    showPadding?: boolean;
 }
 
-export function DashboardLayout({ children, links, bottomLinks = [], brandHref }: DashboardLayoutProps) {
+export function DashboardLayout({ children, links, bottomLinks = [], showPadding = false }: DashboardLayoutProps) {
     const { logout, user } = useAuth();
-    const { state, dispatch } = useGlobal();
-    const { isExpanded, isMobileOpen, toggleSidebar, setIsMobileOpen, modalConfig, closeViewModal } = useUI();
+    const { state } = useGlobal();
+    const { isExpanded, isMobileOpen, isDesktop, mounted, toggleSidebar, setIsMobileOpen, modalConfig, closeViewModal } = useUI();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
 
     const mailCount = state.stats.mail || { unread: 0, total: 0 };
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
-    const { subscribe } = useSocket({
-        token: token,
-        userId: user?.id || undefined,
-        userRole: user?.role || undefined,
-        orgId: user?.orgId || undefined
-    });
-
 
     const activeLink = React.useMemo(() => {
         const allLinks = [...links, ...bottomLinks];
@@ -83,6 +72,8 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
         logout();
     };
 
+    const effectiveExpanded = !mounted || (isDesktop ? isExpanded : true);
+
     return (
         <div className="flex w-full bg-theme-bg h-full overflow-hidden relative select-none">
             {/* Global View Modal */}
@@ -109,46 +100,20 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
                     fixed lg:relative inset-y-0 left-0 z-90 transform transition-all duration-300 ease-in-out
                     flex flex-col bg-sidebar text-sidebar-text border-r border-sidebar-text/10 shadow-[4px_0_24px_var(--shadow-color)]
                     ${isMobileOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0'}
-                    ${isExpanded ? 'lg:w-72' : 'lg:w-20'}
+                    ${effectiveExpanded ? 'lg:w-72' : 'lg:w-20'}
                     h-full shrink-0 overflow-hidden
                 `}
             >
                 {/* Sidebar Header - Branded */}
-                <div className={`h-14 flex items-center px-4 border-b border-sidebar-text/10 bg-sidebar-text/5 shrink-0 ${!isExpanded ? 'justify-center' : 'justify-between'} gap-2 overflow-hidden`}>
-                    <div className="flex items-center gap-2 min-w-0 group cursor-pointer">
-                        {pathname !== '/admin' && !pathname.endsWith('/admin') && (
+                <div className={`h-16 mt-14 lg:mt-0 flex items-center px-4 border-b border-sidebar-text/10 shrink-0 ${!effectiveExpanded ? 'justify-center' : 'justify-between'} gap-2 overflow-hidden relative group`}>
+                    <div className="flex items-center gap-2 min-w-0">
+                        <div className="ml-auto opacity-40 hover:opacity-100 transition-opacity">
                             <BackButton
-                                label=""
-                                className="p-1.5! bg-transparent! border-none! shadow-none! text-sidebar-text/40! group-hover:text-sidebar-text! backdrop-blur-none! py-0! px-0!"
+                                {...(effectiveExpanded ? { label: activeLink?.label } : { label: "" })}
+                                className="bg-transparent! border-none! shadow-none! text-black! py-1.5! px-2.5! outline-none! focus:outline-none!"
                             />
-                        )}
-                        {isExpanded && (
-                            <Link
-                                href={brandHref || '#'}
-                                className="font-black text-[11px] uppercase tracking-[0.2em] text-sidebar-text truncate transition-all animate-in fade-in duration-500 hover:text-primary-hover"
-                            >
-                                {activeLink?.label || 'Dashboard'}
-                            </Link>
-                        )}
+                        </div>
                     </div>
-                    <button
-                        onClick={() => setIsMobileOpen(false)}
-                        className="lg:hidden p-2 text-sidebar-text opacity-70 hover:opacity-100 rounded-sm transition-colors"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
-
-                    {/* Floating Toggle Button - Desktop */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSidebar();
-                        }}
-                        className={`hidden lg:flex absolute ${isExpanded ? 'right-3' : 'right-5'} top-4 p-2 rounded-sm cursor-pointer bg-primary text-primary-text hover:bg-primary-hover shadow-lg transition-all z-100 hover:scale-110 active:scale-90 border-2 border-white/20`}
-                        title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
-                    >
-                        {isExpanded ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
                 </div>
 
                 {/* Branded Sidebar Links */}
@@ -170,17 +135,26 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
                                         ? 'bg-sidebar-active text-sidebar-active-text shadow-[0_8px_16px_var(--shadow-color)]'
                                         : 'text-sidebar-text/70 hover:bg-sidebar-text/10 hover:text-sidebar-text'
                                     }
-                                    ${!isExpanded ? 'lg:justify-center p-3' : 'px-4 py-3 space-x-3'}
+                                    ${!effectiveExpanded ? 'lg:justify-center p-3' : 'px-4 py-3 space-x-3'}
                                 `}
-                                title={!isExpanded ? link.label : undefined}
+                                title={!effectiveExpanded ? link.label : undefined}
                             >
                                 <link.icon className={`w-5 h-5 shrink-0 transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
-                                <span className={`font-bold text-sm tracking-wide ${!isExpanded ? 'lg:hidden' : 'block'}`}>
+                                <span className={`font-bold text-sm tracking-wide ml-2 ${!effectiveExpanded ? 'lg:hidden' : 'block'}`}>
                                     {link.label}
                                 </span>
                                 {link.badge !== undefined && (
-                                    <span className={`${!isExpanded ? 'absolute top-0 -right-[8px]' : 'ml-auto bg-sidebar-active-text/20'} px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter text-sidebar-text`}>
-                                        {isExpanded ? link.badge : typeof link.badge === 'string' ? (<span className='bg-red-500 px-2 py-0.5 rounded-full'>{link.badge.split(' ')[0]}</span>) : null}
+                                    <span className={`${!effectiveExpanded ? 'absolute top-0 -right-[8px]' : 'ml-auto bg-sidebar-active-text/20'} px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter text-sidebar-text animate-in fade-in duration-300`}>
+                                        {effectiveExpanded ? (
+                                            link.badge
+                                        ) : (
+                                            (() => {
+                                                const badgeStr = String(link.badge);
+                                                const count = parseInt(badgeStr.split(' ')[0]);
+                                                if (isNaN(count) || count <= 0) return null;
+                                                return <span className='bg-red-500 text-white px-2 py-0.5 rounded-full shadow-sm'>{count > 99 ? '99+' : count}</span>;
+                                            })()
+                                        )}
                                     </span>
                                 )}
                             </Link>
@@ -191,21 +165,11 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
                 {/* Branded Sidebar Footer */}
                 <div className="p-4 border-t border-sidebar-text/10 shrink-0">
                     {user && (
-                        <div className={`flex items-center ${!isExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
-                            <div className={`w-9 h-9 rounded-sm ${user.avatarUrl || user.orgLogoUrl ? 'bg-transparent' : 'bg-primary'} flex items-center justify-center text-sidebar-active-text font-bold shrink-0 shadow-inner overflow-hidden relative`}>
-                                {user.avatarUrl || user.orgLogoUrl ? (
-                                    <Image
-                                        src={getPublicUrl(user.avatarUrl || user.orgLogoUrl, user.avatarUpdatedAt)}
-                                        alt={user.name!}
-                                        fill
-                                        className="object-cover rounded-full"
-                                        unoptimized
-                                    />
-                                ) : (
-                                    <UserIcon className="w-5 h-5" />
-                                )}
+                        <div className={`flex items-center ${!effectiveExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
+                            <div className={`w-9 h-9 flex items-center justify-center shrink-0 shadow-inner relative`}>
+                                <BrandIcon variant="user" size="sm" className="w-9 h-9" />
                             </div>
-                            <div className={`overflow-hidden transition-all ${!isExpanded ? 'lg:hidden lg:w-0' : 'w-auto'}`}>
+                            <div className={`overflow-hidden transition-all ml-2 ${!effectiveExpanded ? 'lg:hidden lg:w-0' : 'w-auto'}`}>
                                 <div className="text-xs font-black text-sidebar-text truncate max-w-[120px]">{user.name || user.email}</div>
                                 <div className="text-[9px] font-bold text-sidebar-text/60 uppercase tracking-tighter leading-none mt-0.5">{user.designation || user.role?.replace('_', ' ')}</div>
                             </div>
@@ -220,13 +184,13 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
                                     e.preventDefault();
                                     router.push(`/${user.orgSlug}/mail`);
                                 }}
-                                className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-sidebar-active' : 'bg-sidebar hover:bg-sidebar-text/30'} transition-all py-3 border border-transparent shadow-sm relative`}
+                                className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-sidebar-active' : 'bg-sidebar hover:bg-sidebar-text/30'} transition-all py-3 border border-transparent shadow-sm relative`}
                                 title="Mail"
                             >
                                 <Mail className="w-4 h-4 shrink-0" />
-                                {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Mail</span>}
+                                {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Mail</span>}
                                 {mailCount.unread > 0 && (
-                                    <span className={`ml-auto bg-red-500 text-white ${!isExpanded ? 'absolute -top-1 right-0' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
+                                    <span className={`ml-auto bg-red-500 text-white ${!effectiveExpanded ? 'absolute -top-1 right-0' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
                                         {mailCount.unread > 99 ? '99+' : mailCount.unread}
                                     </span>
                                 )}
@@ -238,20 +202,33 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
                                 e.preventDefault();
                                 router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : `/${user?.orgSlug}/change-password`);
                             }}
-                            className={`flex items-center ${!isExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-sidebar-active' : 'bg-sidebar hover:bg-sidebar-text/30'}  transition-all py-3 border border-transparent shadow-sm`}
+                            className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-sidebar-active' : 'bg-sidebar hover:bg-sidebar-text/30'}  transition-all py-3 border border-transparent shadow-sm`}
                             title="Change Password"
                         >
                             <Key className="w-4 h-4 shrink-0" />
-                            {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Change Password</span>}
+                            {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Change Password</span>}
+                        </Link>
+
+                        <Link
+                            href="/contact"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                router.push('/contact');
+                            }}
+                            className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname === '/contact' ? 'bg-sidebar-active' : 'bg-sidebar hover:bg-sidebar-text/30'}  transition-all py-3 border border-transparent shadow-sm`}
+                            title="Contact Us"
+                        >
+                            <MessageCircleQuestionMark className="w-4 h-4 shrink-0" />
+                            {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Contact Us</span>}
                         </Link>
 
                         <button
                             onClick={handleLogout}
-                            className={`flex items-center cursor-pointer ${!isExpanded ? 'justify-center' : 'justify-start px-3'} w-full rounded-sm text-red-500 bg-red-500/10 hover:bg-red-500/30 transition-all py-3 border border-transparent shadow-sm`}
+                            className={`flex items-center cursor-pointer ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} w-full rounded-sm text-red-500 bg-red-500/10 hover:bg-red-500/30 transition-all py-3 border border-transparent shadow-sm`}
                             title="Log out"
                         >
                             <LogOut className="w-4 h-4 shrink-0" />
-                            {isExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Log out</span>}
+                            {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Log out</span>}
                         </button>
                     </div>
                 </div>
@@ -267,7 +244,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], brandHref }
                 </button>
 
                 {/* Universal Content Wrapper - This is the ONLY scrollable area */}
-                <div className="flex-1 min-h-0 w-full px-[3px] md:px-2 py-1 md:py-2 bg-slate-300 overflow-y-auto custom-scrollbar flex flex-col">
+                <div className={`flex-1 min-h-0 w-full ${showPadding ? 'px-[3px] md:px-2 py-1 md:py-2 bg-slate-100' : 'p-0 bg-white'} overflow-y-auto custom-scrollbar flex flex-col`}>
                     {children}
                 </div>
             </main>
