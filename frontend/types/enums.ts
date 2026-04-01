@@ -94,3 +94,33 @@ export enum RequestCategory {
     GENERAL_INQUIRY = 'GENERAL_INQUIRY',
     OTHER = 'OTHER',
 }
+
+// ── Communication System Enums ────────────────────────────────────────────────
+export enum ChatType {
+    DIRECT = 'DIRECT',
+    GROUP = 'GROUP',
+}
+
+export enum ChatParticipantRole {
+    ADMIN = 'ADMIN',
+    MEMBER = 'MEMBER',
+}
+
+export enum ChatMessageType {
+    TEXT = 'TEXT',
+    SYSTEM = 'SYSTEM',
+}
+
+export enum TargetType {
+    GLOBAL = 'GLOBAL',
+    ORG = 'ORG',
+    ROLE = 'ROLE',
+    SECTION = 'SECTION',
+}
+
+export enum AnnouncementPriority {
+    LOW = 'LOW',
+    NORMAL = 'NORMAL',
+    HIGH = 'HIGH',
+    URGENT = 'URGENT'
+}

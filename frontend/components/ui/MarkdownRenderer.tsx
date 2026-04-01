@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { marked } from 'marked';
+import { getPublicUrl } from '@/lib/utils';
 
 interface MarkdownRendererProps {
     content: string;
@@ -11,10 +12,19 @@ interface MarkdownRendererProps {
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className = '' }) => {
     const htmlContent = useMemo(() => {
         try {
+            const renderer = new marked.Renderer();
+            
+            // Override image rendering to use getPublicUrl
+            renderer.image = ({ href, title, text }) => {
+                const url = getPublicUrl(href);
+                return `<img src="${url}" alt="${text}" title="${title || ''}" class="max-w-full h-auto rounded-lg shadow-sm my-2 border border-gray-100" />`;
+            };
+
             // Configure marked for safe and simple rendering
             marked.setOptions({
                 breaks: true, // Support single line breaks
                 gfm: true,   // GitHub Flavored Markdown
+                renderer,
             });
             return marked.parse(content || '');
         } catch (error) {

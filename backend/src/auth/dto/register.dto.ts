@@ -8,6 +8,10 @@ export class RegisterDto {
 
     @IsString()
     @IsNotEmpty()
+    adminName!: string;
+
+    @IsString()
+    @IsNotEmpty()
     location!: string;
 
     @IsEnum(OrganizationType)

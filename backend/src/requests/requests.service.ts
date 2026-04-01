@@ -7,7 +7,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
-import { RequestStatus, Role } from '../common/enums';
+import { RequestStatus, Role, OrgStatus } from '../common/enums';
 import { getPaginationOptions, formatPaginatedResponse, PaginationOptions } from '../common/utils';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestDto } from './dto/update-request.dto';
@@ -30,16 +30,31 @@ export interface ContactTarget {
     description?: string;
 }
 
+import { NotificationsService } from '../notifications/notifications.service';
+
 @Injectable()
 export class RequestService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly events: EventsGateway,
+        private readonly notifications: NotificationsService,
     ) {}
 
     // ──────────────────────────────── Create ─────────────────────────────────
 
     async createRequest(dto: CreateRequestDto, user: RequestUser, noReply: boolean = false) {
+        // --- Org Status Enforcement ---
+        if (user.organizationId) {
+            const org = await this.prisma.organization.findUnique({
+                where: { id: user.organizationId },
+                select: { status: true }
+            });
+            const status = org?.status as OrgStatus | undefined;
+            if (status && status !== OrgStatus.APPROVED && dto.targetRole !== Role.PLATFORM_ADMIN && dto.targetRole !== Role.SUPER_ADMIN) {
+                throw new ForbiddenException('Your organization is not active. You can only contact the platform administrative team.');
+            }
+        }
+
         if (user.role === Role.STUDENT) {
             throw new ForbiddenException('Students are not allowed to submit requests.');
         }
@@ -52,16 +67,16 @@ export class RequestService {
         }
 
         if (user.role === Role.TEACHER) {
-            if (dto.targetRole === Role.ORG_ADMIN) {
-                 throw new ForbiddenException('Teachers are not authorized to send mail to Organization Admins.');
+            if (dto.targetRole === Role.ORG_ADMIN || dto.targetRole === Role.PLATFORM_ADMIN || dto.targetRole === Role.SUPER_ADMIN) {
+                 throw new ForbiddenException(`Teachers are not authorized to send mail to ${dto.targetRole.replace('_', ' ')}s.`);
             }
             if (dto.assigneeIds?.length) {
                 const recipients = await this.prisma.user.findMany({
                     where: { id: { in: dto.assigneeIds } },
                     select: { role: true }
                 });
-                if (recipients.some(r => r.role === Role.ORG_ADMIN)) {
-                    throw new ForbiddenException('Teachers are not authorized to send mail to Organization Admins.');
+                if (recipients.some(r => r.role === Role.ORG_ADMIN || r.role === Role.PLATFORM_ADMIN || r.role === Role.SUPER_ADMIN)) {
+                    throw new ForbiddenException('Teachers are not authorized to send mail to Organization or Platform Admins.');
                 }
             }
         }
@@ -73,6 +88,16 @@ export class RequestService {
                 status: { notIn: [RequestStatus.RESOLVED, RequestStatus.CLOSED] },
             },
         });
+
+        // --- Role Enum Consistency Enforcement (Backend Only) ---
+        if (dto.targetRole && dto.targetRole !== 'ORG_STAFF') {
+            if (!Object.values(Role).includes(dto.targetRole as Role)) {
+                throw new BadRequestException(`Invalid target role provided. Must be a valid system role.`);
+            }
+        }
+        if (!Object.values(Role).includes(user.role as Role)) {
+            throw new BadRequestException(`Invalid creator role context.`);
+        }
 
         if (activeCount >= MAX_ACTIVE_REQUESTS) {
             throw new BadRequestException(
@@ -87,10 +112,10 @@ export class RequestService {
                     subject: dto.subject,
                     category: dto.category,
                     priority: dto.priority || 'NORMAL',
-                    status: noReply ? RequestStatus.NO_REPLY : (dto as any).status || RequestStatus.OPEN,
+                    status: dto.noReply ? RequestStatus.NO_REPLY : (dto.status || RequestStatus.OPEN),
                     creatorId: user.id,
                     creatorRole: user.role,
-                    organizationId: user.organizationId || (user as any).organizationId,
+                    organizationId: user.organizationId,
                     targetRole: dto.targetRole,
                     assigneeId: dto.assigneeIds?.[0], // For legacy compatibility/single field
                     assignees: dto.assigneeIds?.length ? {
@@ -131,18 +156,28 @@ export class RequestService {
 
         // Fetch the full request with relations for the response & event
         const fullRequest = await this.getRequestByIdInternal(request.id);
-
+        const transformed = this.transformRequest(fullRequest, user.role as Role);
+        
         // Emit to targeted role, assignee, or platform admins
         let targetRoom = `role:${Role.PLATFORM_ADMIN}`;
         if (dto.assigneeIds?.length) {
             targetRoom = `user:${dto.assigneeIds[0]}`;
+
+            // Notify all participants using the new consolidated helper
+            await this.notifyParticipants(request, {
+                title: 'New Request Assigned',
+                body: `A new request "${dto.subject}" has been assigned to you.`,
+                type: 'REQUEST_ASSIGNED'
+            }, user.id);
         } else if (dto.targetRole) {
             targetRoom = `role:${dto.targetRole}`;
         }
         
-        this.events.emitToRoom(targetRoom, 'request:new', fullRequest);
+        // Use transformed for potentially organization-level rooms
+        const isOrgTarget = targetRoom.startsWith('user:') || (dto.targetRole && !ADMIN_ROLES.has(dto.targetRole as Role));
+        this.events.emitToRoom(targetRoom, 'request:new', isOrgTarget ? transformed : fullRequest);
 
-        // Also emit to super admins if not already targeted
+        // Also emit to super admins if not already targeted (always untransformed for admins)
         if (targetRoom !== `role:${Role.SUPER_ADMIN}`) {
             this.events.emitToRole(Role.SUPER_ADMIN, 'request:new', fullRequest);
         }
@@ -154,7 +189,7 @@ export class RequestService {
             targetRole: dto.targetRole ?? null,
         }, user.id);
 
-        return fullRequest;
+        return transformed;
     }
 
     // ───────────────────────────────── List ──────────────────────────────────
@@ -181,11 +216,16 @@ export class RequestService {
                 ...(user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN
                     ? [{
                         OR: [
-                            { organizationId: null },
                             { creatorId: user.id },
                             { assigneeId: user.id },
                             { assignees: { some: { id: user.id } } },
                             { targetRole: user.role as Role },
+                            ...(user.role === Role.SUPER_ADMIN ? [
+                                { targetRole: Role.PLATFORM_ADMIN },
+                                { targetRole: Role.SUPER_ADMIN } 
+                            ] : []),
+                            // Super admins also see any mail where organizationId is null (system level)
+                            ...(user.role === Role.SUPER_ADMIN ? [{ organizationId: null }] : []),
                         ]
                     }]
                     : [{
@@ -289,7 +329,10 @@ export class RequestService {
             }),
         );
 
-        return { ...result, data: requestsWithUnread };
+        return { 
+            ...result, 
+            data: requestsWithUnread.map(r => this.transformRequest(r, user.role as Role)) 
+        };
     }
 
     // ──────────────────────────── Get Single ─────────────────────────────────
@@ -387,7 +430,7 @@ export class RequestService {
         // Mark as read when viewed
         await this.markAsRead(requestId, user.id);
 
-        return request;
+        return this.transformRequest(request, user.role as Role);
     }
 
     // ──────────────────────────── Update ─────────────────────────────────────
@@ -453,11 +496,11 @@ export class RequestService {
         }
 
         if (Object.keys(updateData).length === 0) {
-            return this.getRequestByIdInternal(requestId);
+            return this.transformRequest(await this.getRequestByIdInternal(requestId), user.role as Role);
         }
 
-        await this.prisma.$transaction(async (tx) => {
-            await tx.request.update({
+        const updatedRequest = await this.prisma.$transaction(async (tx) => {
+            const req = await tx.request.update({
                 where: { id: requestId },
                 data: updateData,
             });
@@ -476,17 +519,36 @@ export class RequestService {
                     details: logDetails as Prisma.InputJsonValue,
                 },
             });
+            return req;
         });
 
-        const updated = await this.getRequestByIdInternal(requestId);
-
-        // Emit update event (only if request still exists)
-        if (updated) {
-            this.events.emitToRoom(`request:${requestId}`, 'request:update', updated);
-            this.events.emitToUser(existing.creatorId, 'request:update', updated);
+        // --- Persistent Notifications for Updates ---
+        if (dto.status && dto.status !== existing.status) {
+            await this.notifyParticipants(updatedRequest, {
+                title: 'Request Status Updated',
+                body: `The status of "${existing.subject}" is now ${dto.status}.`,
+                type: 'REQUEST_STATUS_CHANGE',
+                metadata: { status: dto.status }
+            }, user.id);
         }
-        
-        return updated;
+
+        if (dto.assigneeId && dto.assigneeId !== existing.assigneeId) {
+            await this.notifyParticipants(updatedRequest, {
+                title: 'Request Assigned',
+                body: `You have been assigned to request "${existing.subject}".`,
+                type: 'REQUEST_ASSIGNED',
+            }, user.id, [dto.assigneeId]);
+        }
+
+        const fullRequest = await this.getRequestByIdInternal(requestId);
+        const transformed = this.transformRequest(fullRequest, user.role as Role);
+
+        // Emit update to appropriate rooms
+        this.events.emitToRoom(`request:${requestId}`, 'request:update', transformed);
+        this.events.emitToRoom(`role:${Role.PLATFORM_ADMIN}`, 'request:update', fullRequest);
+        this.events.emitToRole(Role.SUPER_ADMIN, 'request:update', fullRequest);
+
+        return transformed;
     }
 
     // ──────────────────────────── Add Message ────────────────────────────────
@@ -501,6 +563,26 @@ export class RequestService {
         });
 
         if (!request) throw new NotFoundException('Request not found');
+
+        // --- Org Status Enforcement for Replies ---
+        if (user.organizationId) {
+            const org = await this.prisma.organization.findUnique({
+                where: { id: user.organizationId },
+                select: { status: true }
+            });
+            const status = org?.status as OrgStatus | undefined;
+            if (status && status !== OrgStatus.APPROVED) {
+                 // Only allow if this is a support thread (to/from platform admin)
+                 const isSupportThread = request.targetRole === Role.PLATFORM_ADMIN || 
+                                        request.targetRole === Role.SUPER_ADMIN || 
+                                        request.creatorRole === Role.PLATFORM_ADMIN || 
+                                        request.creatorRole === Role.SUPER_ADMIN;
+                 if (!isSupportThread) {
+                    throw new ForbiddenException('Your organization is not active. You can only reply to platform support threads.');
+                 }
+            }
+        }
+
         if (request.status === RequestStatus.CLOSED || request.status === RequestStatus.RESOLVED || request.status === RequestStatus.NO_REPLY) {
             throw new BadRequestException('This thread is closed or does not allow replies.');
         }
@@ -568,17 +650,27 @@ export class RequestService {
             return [msg];
         });
 
-        // Emit message event to users watching this request thread
-        this.events.emitToRoom(`request:${requestId}`, 'request:message', {
-            ...message,
-            requestId,
-        });
+        const fullRequest = await this.getRequestByIdInternal(requestId);
+        const transformed = this.transformRequest(fullRequest, user.role as Role);
 
-        // Notify all participants that their unread count changed.
-        // Use a single consolidated approach instead of multiple redundant queries.
+        // --- Persistent Notifications for Replies ---
+        const bodyContent = `${user.name || user.email} replied to "${request.subject}".`;
+        await this.notifyParticipants(request, {
+            title: 'New Message in Request',
+            body: bodyContent,
+            type: 'REQUEST_MESSAGE'
+        }, user.id);
+
+        // Notify rooms (real-time)
+        this.events.emitToRoom(`request:${requestId}`, 'request:message', {
+            requestId,
+            message: transformed.messages[transformed.messages.length - 1],
+        });
+        
+        // Notify total unread count changes
         this.emitUnreadUpdateToParticipants(request, user.id);
 
-        return message;
+        return transformed;
     }
 
     // ────────────────────────── Contactable Users ─────────────────────────────
@@ -624,6 +716,24 @@ export class RequestService {
             });
         };
 
+        const isOrgStaff = role === Role.TEACHER || role === Role.ORG_MANAGER;
+        
+        // --- Org Status Enforcement for Contacts ---
+        let organizationStatus: OrgStatus = OrgStatus.APPROVED;
+        if (user.organizationId) {
+            const org = await this.prisma.organization.findUnique({
+                where: { id: user.organizationId },
+                select: { status: true }
+            });
+            organizationStatus = (org?.status as OrgStatus) || OrgStatus.APPROVED;
+        }
+
+        if (organizationStatus !== OrgStatus.APPROVED) {
+            // Suspended/Rejected/Pending orgs can ONLY see platform administrative team
+            targets.push({ id: `ROLE:${Role.PLATFORM_ADMIN}`, label: 'Platform Administrative Team', type: 'ROLE', role: Role.PLATFORM_ADMIN });
+            return targets;
+        }
+
         if (role === Role.SUPER_ADMIN) {
             // Super Admin -> All/Single Platform Admin, All/Single Org Admin
             targets.push({ id: `ROLE:${Role.PLATFORM_ADMIN}`, label: 'All Platform Admins', type: 'ROLE', role: Role.PLATFORM_ADMIN });
@@ -636,7 +746,8 @@ export class RequestService {
             await addUsers({ role: { in: [Role.SUPER_ADMIN, Role.ORG_ADMIN] } });
         }
         else if (role === Role.ORG_ADMIN || role === Role.ORG_MANAGER) {
-            // Org Admin/Manager -> All/Single Teachers, All/Single Managers, All Employees
+            // Org Admin/Manager -> All/Single Teachers, All/Single Managers, All Employees, PLUS PLATFORM ADMIN
+            targets.push({ id: `ROLE:${Role.PLATFORM_ADMIN}`, label: 'Platform Administrative Team', type: 'ROLE', role: Role.PLATFORM_ADMIN });
             targets.push({ id: `ROLE:${Role.TEACHER}`, label: 'All Teachers', type: 'ROLE', role: Role.TEACHER });
             targets.push({ id: `ROLE:${Role.ORG_MANAGER}`, label: 'All Org Managers', type: 'ROLE', role: Role.ORG_MANAGER });
             targets.push({ id: `ROLE:ORG_STAFF`, label: 'All Employees (Teachers & Managers)', type: 'ROLE', role: 'ORG_STAFF' });
@@ -647,9 +758,6 @@ export class RequestService {
             }
             
             await addUsers({ organizationId: user.organizationId, role: { in: [Role.TEACHER, Role.ORG_MANAGER] } });
-            
-            // Can also contact platform support
-            targets.push({ id: 'ROLE:PLATFORM_ADMIN', label: 'Platform Administrative Team', type: 'ROLE', role: 'PLATFORM_ADMIN', description: 'Global Support & Administration' });
         }
         else if (role === Role.TEACHER) {
             // Teachers -> Single Org Manager, Single Fellow Teacher
@@ -775,5 +883,113 @@ export class RequestService {
         // 4. Platform admins & super admins always see all requests
         this.events.emitToRole(Role.SUPER_ADMIN, 'unread:update', null);
         this.events.emitToRole(Role.PLATFORM_ADMIN, 'unread:update', null);
+    }
+
+    /**
+     * Helper to send notifications to participants while filtering for admin noise and role-based URLs.
+     */
+    private async notifyParticipants(
+        request: { id: string; subject: string; creatorId: string; assigneeId?: string | null; targetRole?: string | null; organizationId?: string | null },
+        notification: { title: string; body: string; type: string; metadata?: any },
+        senderId: string,
+        forceTargetIds?: string[]
+    ) {
+        const requestId = request.id;
+        const participantIds = new Set<string>(forceTargetIds || []);
+        
+        if (!participantIds.size) {
+            if (request.creatorId !== senderId) participantIds.add(request.creatorId);
+            if (request.assigneeId && request.assigneeId !== senderId) participantIds.add(request.assigneeId);
+            
+            // M2M Assignees
+            const m2m = await this.prisma.user.findMany({
+                where: { assignedRequests: { some: { id: requestId } }, id: { not: senderId } },
+                select: { id: true }
+            });
+            m2m.forEach(a => participantIds.add(a.id));
+        }
+
+        if (!participantIds.size && !request.targetRole) return;
+
+        // Fetch roles and org details for participants and sender
+        const sender = await this.prisma.user.findUnique({ where: { id: senderId }, select: { role: true } });
+        const isOrgSender = sender?.role !== Role.SUPER_ADMIN && sender?.role !== Role.PLATFORM_ADMIN;
+
+        const recipients = await this.prisma.user.findMany({
+            where: { id: { in: Array.from(participantIds) } },
+            select: { id: true, role: true, organization: { select: { name: true } } }
+        });
+
+        for (const recipient of recipients) {
+            const isAdminRecipient = recipient.role === Role.SUPER_ADMIN || recipient.role === Role.PLATFORM_ADMIN;
+
+            // --- FILTER: Admins don't receive notifications from Org Users (User requirement) ---
+            if (isAdminRecipient && isOrgSender) continue;
+
+            // --- URL Logic ---
+            let actionUrl = `/mail?requestId=${requestId}`;
+            if (isAdminRecipient) {
+                actionUrl = `/admin/mail?requestId=${requestId}`;
+            } else {
+                // Get organization from the recipient OR the request itself as fallback
+                const org = recipient.organization || (request.organizationId ? await this.prisma.organization.findUnique({ where: { id: request.organizationId } }) : null);
+                if (org?.name) {
+                    const slug = org.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                    actionUrl = `/${slug}/mail?requestId=${requestId}`;
+                }
+            }
+
+            await this.notifications.createNotification({
+                userId: recipient.id,
+                title: notification.title,
+                body: notification.body,
+                type: notification.type,
+                actionUrl,
+                metadata: { ...(notification.metadata || {}), requestId }
+            });
+        }
+    }
+
+    /**
+     * Anonymizes Super Admin / Platform Admin sender info for non-admin viewers.
+     */
+    private anonymizeUser(user: any, viewerRole: Role) {
+        if (!user) return user;
+        const isAdminSender = user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN;
+        const isNonAdminViewer = !ADMIN_ROLES.has(viewerRole);
+
+        if (isAdminSender && isNonAdminViewer) {
+            return {
+                ...user,
+                name: 'EduManage Team',
+                email: user.role === Role.SUPER_ADMIN ? 'System Admin' : 'Platform Admin',
+                avatarUrl: null,
+            };
+        }
+        return user;
+    }
+
+    /**
+     * Transforms a request object by anonymizing administrative identities if the viewer is a non-admin.
+     */
+    private transformRequest(request: any, viewerRole: Role) {
+        if (!request) return request;
+
+        const anonymized = {
+            ...request,
+            creator: this.anonymizeUser(request.creator, viewerRole),
+            assignee: this.anonymizeUser(request.assignee, viewerRole),
+            assignees: request.assignees?.map(u => this.anonymizeUser(u, viewerRole)),
+            messages: request.messages?.map(m => ({
+                ...m,
+                sender: this.anonymizeUser(m.sender, viewerRole),
+            })),
+            actionLogs: request.actionLogs?.map(log => ({
+                ...log,
+                performer: this.anonymizeUser(log.performer, viewerRole),
+            })),
+        };
+
+        return anonymized;
     }
 }

@@ -1,5 +1,5 @@
 import { UnauthorizedException, NotFoundException, Injectable } from '@nestjs/common';
-import { Prisma, User as UserEntity } from '@prisma/client';
+import { Prisma, User as UserEntity, Organization } from '@prisma/client';
 import { OrgStatus, Role, RequestStatus, RequestCategory } from '../common/enums';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth/auth.service';
@@ -19,6 +19,14 @@ export class AdminService {
         private readonly prisma: PrismaService,
         private readonly requestService: RequestService
     ) { }
+    
+    private orgWithAdminInclude = Prisma.validator<Prisma.OrganizationInclude>()({
+        users: {
+            where: { role: Role.ORG_ADMIN },
+            select: { id: true },
+            take: 1
+        }
+    });
 
     async getOrganizations(options: PaginationOptions & {
         status?: OrgStatus;
@@ -69,7 +77,7 @@ export class AdminService {
                         take: 1
                     }
                 }
-            }),
+            }) as unknown as (Organization & { users: { id: string }[] })[],
             this.prisma.organization.count({ where }),
             this.prisma.organization.groupBy({
                 by: ['status'],
@@ -91,7 +99,7 @@ export class AdminService {
             createdAt: org.createdAt,
             phone: org.phone,
             email: org.contactEmail,
-            adminUserId: (org as any).users?.[0]?.id
+            adminUserId: (org as (Organization & { users: { id: string }[] })).users?.[0]?.id
         }));
 
         const response = formatPaginatedResponse(mappedData, totalRecords, options.page, options.limit);
@@ -124,20 +132,43 @@ export class AdminService {
             }
         });
 
-        // Find the admin user to send the welcome mail
+        // Instant Revocation: Force logout all users to refresh their tokens with the new status
+        await this.prisma.user.updateMany({
+            where: { organizationId: id },
+            data: { tokenVersion: { increment: 1 } }
+        });
+
+        // Find the admin user to send the welcome/re-approval mail
         const orgAdmin = await this.prisma.user.findFirst({
             where: { organizationId: id, role: Role.ORG_ADMIN }
         });
 
         if (orgAdmin) {
-            // Send NO_REPLY welcome mail
+            let subject = `Welcome to EduManage: ${org.name}`;
+            let message = `Congratulations! Your organization **${org.name}** has been approved. You now have full access to your dashboard.\n\nWelcome to the EduManage community!`;
+            
+            if (org.status === OrgStatus.REJECTED) {
+                subject = `Re-approval of Your Organization: ${org.name}`;
+                message = `Great news! Your organization **${org.name}** has been re-approved after your application was revised. You now have full access back to your dashboard.`;
+            } else if (org.status === OrgStatus.SUSPENDED) {
+                subject = `Account Unsuspended: ${org.name}`;
+                message = `Your organization **${org.name}** has been unsuspended. You can now resume your activities on the platform.`;
+            }
+
+            // Send NO_REPLY mail
             await this.requestService.createRequest({
-                subject: `Welcome to EduManage: ${org.name}`,
+                subject,
                 category: RequestCategory.PLATFORM_NOTICE,
                 priority: 'NORMAL',
-                message: `Congratulations! Your organization **${org.name}** has been approved. You now have full access to your dashboard.\n\nWelcome to the EduManage community!`,
+                message,
                 assigneeIds: [orgAdmin.id],
-            }, { id: admin.id, role: admin.role, name: admin.name, email: admin.email, organizationId: undefined } as any, true); // true for noReply
+            }, { 
+                id: admin.id, 
+                role: admin.role, 
+                name: admin.name || null, 
+                email: admin.email, 
+                organizationId: null 
+            }, true); // true for noReply
         }
 
         return result;
@@ -170,18 +201,24 @@ export class AdminService {
                 }
             });
 
-            // 2. Find any admin user of this organization to be the target of the mail
+            // 2. Instant Revocation for all Org users
+            await tx.user.updateMany({
+                where: { organizationId: id },
+                data: { tokenVersion: { increment: 1 } }
+            });
+
+            // 3. Find any admin user of this organization to be the target of the mail
             const orgAdmin = await tx.user.findFirst({
                 where: { organizationId: id, role: Role.ORG_ADMIN }
             });
 
-            // 3. Create a Request thread (Notice)
+            // 4. Create a Request thread (Notice) - No Reply
             const request = await tx.request.create({
                 data: {
                     subject: 'Application Status Update: REJECTED',
                     category: 'System Notice',
                     priority: 'URGENT',
-                    status: RequestStatus.OPEN,
+                    status: RequestStatus.NO_REPLY,
                     creatorId: admin.id,
                     creatorRole: admin.role,
                     organizationId: id,
@@ -190,7 +227,7 @@ export class AdminService {
                 }
             });
 
-            // 4. Initial Message
+            // 5. Initial Message
             await tx.requestMessage.create({
                 data: {
                     requestId: request.id,
@@ -240,18 +277,24 @@ export class AdminService {
                 },
             });
 
-            // 2. Find any admin user of this organization to be the target of the mail
+            // 2. Instant Revocation for all Org users
+            await tx.user.updateMany({
+                where: { organizationId: id },
+                data: { tokenVersion: { increment: 1 } }
+            });
+
+            // 3. Find any admin user of this organization to be the target of the mail
             const orgAdmin = await tx.user.findFirst({
                 where: { organizationId: id, role: Role.ORG_ADMIN }
             });
 
-            // 3. Create a Request thread (Notice)
+            // 4. Create a Request thread (Notice) - No Reply
             const request = await tx.request.create({
                 data: {
                     subject: 'Organization Status Update: SUSPENDED',
                     category: 'Security/Admin Notice',
                     priority: 'URGENT',
-                    status: RequestStatus.OPEN,
+                    status: RequestStatus.NO_REPLY,
                     creatorId: admin.id,
                     creatorRole: admin.role,
                     organizationId: id,
@@ -260,7 +303,7 @@ export class AdminService {
                 }
             });
 
-            // 4. Initial Message
+            // 5. Initial Message
             await tx.requestMessage.create({
                 data: {
                     requestId: request.id,

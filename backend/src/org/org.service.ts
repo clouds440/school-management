@@ -19,19 +19,23 @@ import { FilesService } from '../files/files.service';
 import { getPaginationOptions, formatPaginatedResponse, handleFileUpdate, extractUpdateFields, PaginationOptions } from '../common/utils';
 import { UpdateGradeDto } from './dto/update-grade.dto';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 interface JwtPayload {
     name: string | null | undefined;
     id: string;
     role?: Role | string;
     email?: string;
+    orgSlug?: string | null;
+    organizationId?: string | null;
 }
 
 @Injectable()
 export class OrgService {
     constructor(
         private readonly filesService: FilesService,
-        private readonly prisma: PrismaService
+        private readonly prisma: PrismaService,
+        private readonly notifications: NotificationsService
     ) { }
 
     // --- Settings ---
@@ -338,7 +342,7 @@ export class OrgService {
             }
         }
 
-        return this.prisma.$transaction(async (tx) => {
+        const updatedTeacher = await this.prisma.$transaction(async (tx) => {
             if (Object.keys(userData).length > 0) {
                 await tx.user.update({
                     where: { id: teacher.userId },
@@ -356,11 +360,36 @@ export class OrgService {
             return tx.teacher.findUnique({
                 where: { id },
                 include: {
-                    user: { select: { email: true, name: true, phone: true, role: true, avatarUrl: true, avatarUpdatedAt: true } },
+                    user: { select: { id: true, email: true, name: true, phone: true, role: true, avatarUrl: true, avatarUpdatedAt: true } },
                     sections: { include: { course: true } }
                 }
             });
         });
+
+        // --- Persistent Notifications ---
+        if (data.status && data.status !== teacher.status) {
+            await this.notifications.createNotification({
+                userId: teacher.userId,
+                title: 'Account Status Updated',
+                body: `Your account status has been changed to ${data.status.toLowerCase()}.`,
+                type: 'USER_STATUS_CHANGE',
+                actionUrl: '/profile',
+                metadata: { oldStatus: teacher.status, newStatus: data.status }
+            });
+        }
+
+        if (data.isManager !== undefined && (data.isManager ? Role.ORG_MANAGER : Role.TEACHER) !== teacher.user.role) {
+            await this.notifications.createNotification({
+                userId: teacher.userId,
+                title: 'Role Updated',
+                body: `Your administrative role has been updated to ${data.isManager ? 'Manager' : 'Teacher'}.`,
+                type: 'USER_ROLE_CHANGE',
+                actionUrl: '/profile',
+                metadata: { oldRole: teacher.user.role, newRole: data.isManager ? Role.ORG_MANAGER : Role.TEACHER }
+            });
+        }
+
+        return updatedTeacher;
     }
 
     async deleteTeacher(orgId: string, id: string, userContext: { id: string, role: string }) {
@@ -822,7 +851,7 @@ export class OrgService {
             }
         }
 
-        return this.prisma.$transaction(async (tx) => {
+        const updatedStudent = await this.prisma.$transaction(async (tx) => {
             if (Object.keys(userData).length > 0) {
                 await tx.user.update({
                     where: { id: student.userId },
@@ -850,11 +879,25 @@ export class OrgService {
             return tx.student.findUnique({
                 where: { id },
                 include: {
-                    user: { select: { email: true, name: true, phone: true, avatarUrl: true, avatarUpdatedAt: true } },
+                    user: { select: { id: true, email: true, name: true, phone: true, avatarUrl: true, avatarUpdatedAt: true } },
                     enrollments: { include: { section: true } }
                 },
             });
         });
+
+        // --- Persistent Notifications ---
+        if (data.status && data.status !== student.status) {
+            await this.notifications.createNotification({
+                userId: student.userId,
+                title: 'Account Status Updated',
+                body: `Your account status has been changed to ${data.status.toLowerCase()}.`,
+                type: 'USER_STATUS_CHANGE',
+                actionUrl: '/profile',
+                metadata: { oldStatus: student.status, newStatus: data.status }
+            });
+        }
+
+        return updatedStudent;
     }
 
     async deleteStudent(orgId: string, id: string) {
@@ -952,7 +995,7 @@ export class OrgService {
     }
 
     // --- Assessments ---
-    async createAssessment(orgId: string, data: CreateAssessmentDto, user: JwtPayload) {
+    async createAssessment(orgId: string, data: CreateAssessmentDto, user: JwtPayload, orgSlug?: string) {
         // Org Admins cannot create assessments (only view)
         if (user.role === Role.ORG_ADMIN) {
             throw new ForbiddenException('Organization Admins are not authorized to create assessments.');
@@ -981,13 +1024,30 @@ export class OrgService {
             throw new BadRequestException(`Total weightage for this section cannot exceed 100%. Current total: ${totalWeightage}%`);
         }
 
-        return this.prisma.assessment.create({
+        const assessment = await this.prisma.assessment.create({
             data: {
                 ...data,
                 organizationId: orgId,
                 dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
             }
         });
+
+        const enrollments = await this.prisma.enrollment.findMany({
+            where: { sectionId: data.sectionId },
+            include: { student: { select: { userId: true } } }
+        });
+
+        for (const e of enrollments) {
+            await this.notifications.createNotification({
+                userId: e.student.userId,
+                title: 'New Assessment Created',
+                body: `A new assessment "${assessment.title}" has been added.`,
+                actionUrl: `/${orgSlug || user.orgSlug || orgId}/sections/${data.sectionId}/assessments/${assessment.id}`,
+                type: 'ASSESSMENT_CREATED'
+            });
+        }
+
+        return assessment;
     }
 
     async getAssessments(orgId: string, user: { id: string, role: string | Role }, filters: { sectionId?: string, courseId?: string }) {
@@ -1140,7 +1200,7 @@ export class OrgService {
         });
     }
 
-    async updateGrade(orgId: string, assessmentId: string, studentId: string, data: UpdateGradeDto, userId: string, userRole: Role) {
+    async updateGrade(orgId: string, assessmentId: string, studentId: string, data: UpdateGradeDto, userId: string, userRole: Role, orgSlug?: string) {
         const assessment = await this.prisma.assessment.findUnique({ where: { id: assessmentId } });
         if (!assessment || assessment.organizationId !== orgId) {
             throw new NotFoundException('Assessment not found');
@@ -1171,7 +1231,7 @@ export class OrgService {
             throw new BadRequestException(`Marks obtained (${data.marksObtained}) cannot exceed total marks (${assessment.totalMarks})`);
         }
 
-        return this.prisma.grade.upsert({
+        const result = await this.prisma.grade.upsert({
             where: { assessmentId_studentId: { assessmentId, studentId } },
             create: {
                 assessmentId,
@@ -1188,6 +1248,21 @@ export class OrgService {
                 updatedBy: userId,
             }
         });
+
+        if (data.status === 'PUBLISHED' || data.status === 'FINALIZED') {
+            const student = await this.prisma.student.findUnique({ where: { id: studentId } });
+            if (student) {
+                await this.notifications.createNotification({
+                    userId: student.userId,
+                    title: 'Assessment Graded',
+                    body: `Your grade for "${assessment.title}" has been ${data.status.toLowerCase()}.`,
+                    actionUrl: `/${orgSlug || orgId}/sections/${assessment.sectionId}/assessments/${assessment.id}`,
+                    type: 'ASSESSMENT_GRADED'
+                });
+            }
+        }
+
+        return result;
     }
 
     async publishGrades(orgId: string, assessmentId: string) {
@@ -1223,7 +1298,7 @@ export class OrgService {
     }
 
     // --- Submissions ---
-    async createSubmission(orgId: string, studentId: string, data: CreateSubmissionDto & { assessmentId: string }) {
+    async createSubmission(orgId: string, studentId: string, data: CreateSubmissionDto & { assessmentId: string }, orgSlug?: string) {
         const assessment = await this.prisma.assessment.findUnique({ where: { id: data.assessmentId } });
         if (!assessment || assessment.organizationId !== orgId) {
             throw new NotFoundException('Assessment not found');
@@ -1233,12 +1308,57 @@ export class OrgService {
             throw new BadRequestException('Submission deadline has passed');
         }
 
-        return this.prisma.submission.create({
+        const submission = await this.prisma.submission.create({
             data: {
                 ...data,
                 studentId,
             }
         });
+
+        // 1. Notify teachers of the new submission
+        const section = await this.prisma.section.findUnique({
+            where: { id: assessment.sectionId },
+            include: { 
+                teachers: { select: { userId: true } },
+                enrollments: { select: { studentId: true } }
+            }
+        });
+
+        const studentData = await this.prisma.student.findUnique({
+            where: { id: studentId },
+            include: { user: { select: { name: true } } }
+        });
+
+        if (section && studentData) {
+            for (const teacher of section.teachers) {
+                await this.notifications.createNotification({
+                    userId: teacher.userId,
+                    title: 'New Submission',
+                    body: `${studentData.user.name} has submitted their work for "${assessment.title}".`,
+                    type: 'SUBMISSION_CREATED',
+                    actionUrl: `/${orgSlug || orgId}/sections/${assessment.sectionId}/assessments/${assessment.id}`
+                });
+            }
+
+            // 2. Check if ALL students in the section have submitted
+            const submissionCount = await this.prisma.submission.count({
+                where: { assessmentId: assessment.id }
+            });
+
+            if (submissionCount === section.enrollments.length) {
+                for (const teacher of section.teachers) {
+                    await this.notifications.createNotification({
+                        userId: teacher.userId,
+                        title: 'Assessment Complete',
+                        body: `All students in "${section.name}" have submitted their work for "${assessment.title}".`,
+                        type: 'ASSESSMENT_COMPLETED_ALL',
+                        actionUrl: `/${orgSlug || orgId}/sections/${assessment.sectionId}/assessments/${assessment.id}`
+                    });
+                }
+            }
+        }
+
+        return submission;
     }
 
     async getSubmissions(orgId: string, assessmentId: string, user?: JwtPayload) {

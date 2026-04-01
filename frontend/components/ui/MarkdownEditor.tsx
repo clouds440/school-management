@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Bold, Link as LinkIcon, Eye, Type, Zap, ChevronDown, User, Hash, Mail, Calendar, PenTool, ShieldCheck, Building2 } from 'lucide-react';
+import { useState, useRef, forwardRef, useImperativeHandle, useId } from 'react';
+import { Bold, Link as LinkIcon, Eye, Type, Zap, User, Hash, Mail, Calendar, PenTool, ShieldCheck } from 'lucide-react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { CustomSelect } from './CustomSelect';
 
@@ -11,21 +11,38 @@ interface MarkdownEditorProps {
     className?: string;
     templates?: { label: string; content: string }[];
     orgData?: Record<string, string>;
+    onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+    onFocus?: () => void;
 }
 
-export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
+export interface MarkdownEditorHandle {
+    focus: () => void;
+}
+
+export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(({
     value,
     onChange,
     placeholder = 'Enter message (Markdown supported)...',
     rows = 6,
     className = '',
     templates = [],
-    orgData = {}
-}) => {
+    orgData = {},
+    onKeyDown,
+    onFocus
+}, ref) => {
     const [previewMode, setPreviewMode] = useState(false);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const editorId = useId();
+
+    useImperativeHandle(ref, () => ({
+        focus: () => {
+            if (previewMode) setPreviewMode(false);
+            setTimeout(() => textareaRef.current?.focus(), 0);
+        }
+    }));
 
     const insertText = (before: string, after: string = '') => {
-        const textarea = document.getElementById('md-editor-textarea') as HTMLTextAreaElement;
+        const textarea = textareaRef.current;
         if (!textarea) return;
 
         const start = textarea.selectionStart;
@@ -84,7 +101,12 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
                             {templates.length > 0 && (
                                 <CustomSelect
-                                    options={templates.map((t, i) => ({ value: i.toString(), label: t.label, icon: Zap }))}
+                                    options={templates.map((t, i) => ({
+                                        value: i.toString(),
+                                        label: t.label,
+                                        icon: Zap,
+                                        iconClassName: 'text-amber-500'
+                                    }))}
                                     value=""
                                     onChange={(val: string) => {
                                         const index = parseInt(val);
@@ -92,7 +114,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                                     }}
                                     placeholder="Templates"
                                     icon={Zap}
-                                    className="w-32 py-0!"
+                                    className="w-auto py-0!"
                                 />
                             )}
 
@@ -102,12 +124,14 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                                         ...['name', 'id', 'email'].filter(k => orgData[k]).map(key => ({
                                             value: `org-${key}`,
                                             label: key.toUpperCase(),
-                                            icon: key === 'name' ? User : key === 'id' ? Hash : Mail
+                                            icon: key === 'name' ? User : key === 'id' ? Hash : Mail,
+                                            iconClassName: key === 'name' ? 'text-indigo-500' : key === 'id' ? 'text-rose-500' : 'text-blue-500'
                                         })),
                                         ...['admin', 'role', 'date', 'signature'].filter(k => orgData[k]).map(key => ({
                                             value: `gen-${key}`,
                                             label: key.toUpperCase(),
-                                            icon: key === 'admin' ? PenTool : key === 'role' ? ShieldCheck : key === 'date' ? Calendar : Zap
+                                            icon: key === 'admin' ? PenTool : key === 'role' ? ShieldCheck : key === 'date' ? Calendar : Zap,
+                                            iconClassName: key === 'admin' ? 'text-emerald-500' : key === 'role' ? 'text-teal-500' : key === 'date' ? 'text-orange-500' : 'text-amber-500'
                                         }))
                                     ]}
                                     value=""
@@ -118,7 +142,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                                     }}
                                     placeholder="Insert Data"
                                     icon={Hash}
-                                    className="w-36 py-0!"
+                                    className="w-auto py-0!"
                                 />
                             )}
                         </>
@@ -147,7 +171,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 </button>
             </div>
 
-            <div className="relative min-h-[180px]">
+            <div className="relative min-h-auto">
                 {previewMode ? (
                     <div className="p-5 overflow-y-auto max-h-[400px] bg-white">
                         {value ? (
@@ -161,12 +185,15 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                     </div>
                 ) : (
                     <textarea
-                        id="md-editor-textarea"
+                        id={editorId}
+                        ref={textareaRef}
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
+                        onKeyDown={onKeyDown}
+                        onFocus={onFocus}
                         placeholder={placeholder}
                         rows={rows}
-                        className="w-full p-5 text-sm outline-none resize-y border-none focus:ring-0 bg-transparent font-medium leading-relaxed text-gray-800 placeholder:text-gray-300"
+                        className="w-full p-5 text-sm outline-none resize-y border-none focus:ring-0 bg-transparent custom-scrollbar max-h-96 min-h-16 font-medium leading-relaxed text-gray-800 placeholder:text-gray-300"
                     />
                 )}
             </div>
@@ -183,4 +210,6 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             )}
         </div>
     );
-};
+});
+
+MarkdownEditor.displayName = 'MarkdownEditor';

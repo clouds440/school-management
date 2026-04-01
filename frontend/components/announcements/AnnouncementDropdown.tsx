@@ -1,0 +1,260 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { Megaphone, Loader2, Plus, Globe, Building2, Shield, Layout, User } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useSocket } from '@/hooks/useSocket';
+import { api, getPublicUrl } from '@/lib/api';
+import { Announcement, Role, TargetType } from '@/types';
+import { formatDistanceToNow } from 'date-fns';
+import { useGlobal } from '@/context/GlobalContext';
+import Link from 'next/link';
+import { CreateAnnouncementModal } from './CreateAnnouncementModal';
+import Image from 'next/image';
+
+export function AnnouncementDropdown() {
+    const { token, user } = useAuth();
+    const { socket, subscribe } = useSocket({ token, userId: user?.id, enabled: !!token });
+    const { dispatch } = useGlobal();
+
+    const [isOpen, setIsOpen] = useState(false);
+    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [lastSeen, setLastSeen] = useState<number>(0);
+
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const hasAutoOpened = useRef(false);
+
+    // Fetch announcements initially
+    useEffect(() => {
+        if (!token) return;
+        const fetchAnnouncements = async () => {
+            try {
+                const res = await api.announcements.getAnnouncements(token, { limit: 10 });
+                setAnnouncements(res.data);
+
+                // Compare with localStorage to see if there are new ones
+                const ls = localStorage.getItem(`announcements_heard_${user?.id}`);
+                const lsTime = ls ? parseInt(ls, 10) : 0;
+                setLastSeen(lsTime);
+
+                const count = res.data.filter(a => {
+                    return lsTime === 0 || new Date(a.createdAt).getTime() > lsTime + 1000;
+                }).length;
+
+                setUnreadCount(count);
+
+                // Auto-open for High/Urgent unread if not yet auto-opened this session
+                if (!hasAutoOpened.current && count > 0) {
+                    const hasUrgent = res.data.some(a => {
+                        const isUnread = lsTime === 0 || new Date(a.createdAt).getTime() > lsTime + 1000;
+                        return isUnread && (a.priority === 'URGENT' || a.priority === 'HIGH');
+                    });
+
+                    if (hasUrgent) {
+                        setIsOpen(true);
+                        hasAutoOpened.current = true;
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch announcements', err);
+            }
+        };
+        fetchAnnouncements();
+    }, [token, user?.id]);
+
+    // Setup socket listeners
+    useEffect(() => {
+        if (!subscribe) return;
+
+        const unsubNew = subscribe('announcement:new', (newAnnouncement: unknown) => {
+            const announcement = newAnnouncement as Announcement;
+            setAnnouncements(prev => [announcement, ...prev].slice(0, 10)); // Keep top 10
+            setUnreadCount(prev => prev + 1);
+            dispatch({ type: 'TOAST_ADD', payload: { message: announcement.title, type: 'info' } });
+
+            // Auto-open if Urgent
+            if (announcement.priority === 'URGENT') {
+                setIsOpen(true);
+                hasAutoOpened.current = true;
+            }
+        });
+
+        return () => {
+            unsubNew();
+        };
+    }, [subscribe, dispatch]);
+
+    // Handle outside click to close dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const toggleOpen = () => {
+        setIsOpen(!isOpen);
+        if (!isOpen && unreadCount > 0) {
+            setUnreadCount(0);
+            const now = new Date().getTime();
+            setLastSeen(now);
+            if (announcements.length > 0) {
+                localStorage.setItem(`announcements_heard_${user?.id}`, now.toString());
+            }
+        }
+    };
+
+    if (!token || !user) return null;
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button
+                onClick={toggleOpen}
+                title="Announcements"
+                className="relative p-2 text-gray-600 hover:text-primary hover:bg-primary/5 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
+                aria-label="Announcements"
+            >
+                <Megaphone className="w-5 h-5" />
+                {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex items-center justify-center w-[22px] h-[22px] text-[12px] font-bold text-white bg-blue-500 rounded-full border-2 border-white shadow-sm animate-in zoom-in">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                )}
+            </button>
+
+            {isOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-100/80 overflow-hidden transform origin-top-right animate-in fade-in slide-in-from-top-2 z-50">
+                    <div className="flex items-center justify-between px-4 py-3 bg-blue-50/80 border-b border-blue-100/50 backdrop-blur-sm">
+                        <h3 className="font-semibold text-blue-900">Announcements</h3>
+                        {user.role !== Role.STUDENT && (
+                            <button
+                                onClick={() => { setIsOpen(false); setIsCreateModalOpen(true); }}
+                                className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center space-x-1 transition-colors"
+                            >
+                                <Plus className="w-3 h-3" />
+                                <span>Create</span>
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                        {isLoading ? (
+                            <div className="flex justify-center items-center py-8">
+                                <Loader2 className="w-6 h-6 animate-spin text-blue-500 opacity-50" />
+                            </div>
+                        ) : announcements.length > 0 ? (
+                            <div className="divide-y divide-gray-50">
+                                {announcements.map((announcement) => {
+                                    const priorityColors = {
+                                        LOW: 'bg-gray-50/50 hover:bg-gray-100/80 border-l-gray-300',
+                                        NORMAL: 'bg-white hover:bg-gray-50/80 border-l-blue-400',
+                                        HIGH: 'bg-orange-50/50 hover:bg-orange-100/80 border-l-orange-500',
+                                        URGENT: 'bg-red-50/50 hover:bg-red-100/80 border-l-red-600',
+                                    };
+
+                                    const targetIcons = {
+                                        [TargetType.GLOBAL]: <Globe className="w-3 h-3" />,
+                                        [TargetType.ORG]: <Building2 className="w-3 h-3" />,
+                                        [TargetType.ROLE]: <Shield className="w-3 h-3" />,
+                                        [TargetType.SECTION]: <Layout className="w-3 h-3" />,
+                                    };
+
+                                    const bgClass = priorityColors[announcement.priority || 'NORMAL'] || priorityColors.NORMAL;
+                                    const creator = announcement.creator;
+
+                                    return (
+                                        <div
+                                            key={announcement.id}
+                                            className={`p-4 transition-all border-l-4 ${bgClass} group`}
+                                        >
+                                            {/* Creator Info */}
+                                            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-gray-50">
+                                                <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shadow-sm shrink-0">
+                                                    {creator?.avatarUrl ? (
+                                                        <Image
+                                                            src={getPublicUrl(creator.avatarUrl)}
+                                                            alt={creator.name || 'User'}
+                                                            fill
+                                                            className="object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                            <User className="w-4 h-4" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <p className="text-xs font-black text-gray-900 truncate">
+                                                            {creator?.name || 'Unknown User'}
+                                                        </p>
+                                                        {(lastSeen === 0 || new Date(announcement.createdAt).getTime() > lastSeen + 1000) && (
+                                                            <span className="shrink-0 text-[8px] font-black bg-blue-500 text-white px-1.5 py-0.5 rounded-full animate-pulse uppercase tracking-[0.2em] shadow-sm">
+                                                                New
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center justify-between mt-0.5">
+                                                        <span className="text-[9px] font-black text-blue-600/70 uppercase tracking-widest bg-blue-50/50 border border-blue-100/30 px-1.5 py-0.5 rounded-sm">
+                                                            {creator?.role?.replace('_', ' ') || 'SYSTEM'}
+                                                        </span>
+                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">
+                                                            {formatDistanceToNow(new Date(announcement.createdAt), { addSuffix: true })}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h4 className="text-sm font-black text-gray-900 leading-tight pr-4">
+                                                    {announcement.title}
+                                                </h4>
+                                                <div className="shrink-0 flex items-center gap-1.5 text-[9px] font-black text-gray-400 uppercase tracking-widest bg-white border border-gray-100 px-2 py-1 rounded-sm shadow-sm group-hover:border-blue-100 group-hover:text-blue-500 transition-colors">
+                                                    {targetIcons[announcement.targetType] || <Megaphone className="w-3 h-3" />}
+                                                    <span>{announcement.targetType}</span>
+                                                </div>
+                                            </div>
+
+                                            <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-medium">
+                                                {announcement.body}
+                                            </p>
+
+                                            {announcement.actionUrl && (
+                                                <div className="mt-4 pt-3 border-t border-gray-50 flex justify-end">
+                                                    <Link
+                                                        href={announcement.actionUrl}
+                                                        className="text-[10px] font-black text-blue-600 hover:text-blue-800 uppercase tracking-widest flex items-center gap-1 group/link"
+                                                    >
+                                                        <span>View Full Details</span>
+                                                        <Plus className="w-3 h-3 group-hover/link:rotate-90 transition-transform" />
+                                                    </Link>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                                <Megaphone className="w-10 h-10 text-gray-200 mb-3" />
+                                <p className="text-sm font-medium text-gray-500">No recent announcements</p>
+                                <p className="text-xs text-gray-400 mt-1">Check back later.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            <CreateAnnouncementModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+            />
+        </div>
+    );
+}

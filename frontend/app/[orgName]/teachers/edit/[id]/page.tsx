@@ -6,7 +6,7 @@ import { useRouter, usePathname, useParams } from 'next/navigation';
 import { UserPlus, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import TeacherForm from '@/components/forms/TeacherForm';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { Teacher, Role } from '@/types';
 
 export default function EditTeacherPage() {
@@ -14,12 +14,12 @@ export default function EditTeacherPage() {
     const router = useRouter();
     const pathname = usePathname();
     const params = useParams();
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
     const teacherId = params.id as string;
 
     const [teacherData, setTeacherData] = useState<Teacher | null>(null);
-    const [dataLoading, setDataLoading] = useState(true);
+    const dataLoading = state.ui.isLoading;
 
     useEffect(() => {
         let isMounted = true;
@@ -29,6 +29,7 @@ export default function EditTeacherPage() {
 
         // Fetch the teacher data now that we have a valid token
         const fetchTeacher = async () => {
+            dispatch({ type: 'UI_SET_LOADING', payload: true });
             // Role guard: only ORG_ADMIN and ORG_MANAGER can edit teachers
             if (!user || (user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER)) {
                 if (isMounted) router.replace(`/${orgSlug}`);
@@ -44,10 +45,10 @@ export default function EditTeacherPage() {
                 // Ignore errors if component unmounted (e.g. strict mode remount)
                 if (!isMounted) return;
 
-                showToast(error instanceof Error ? error.message : 'Failed to load teacher.', 'error');
+                dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to load teacher.', type: 'error' } });
                 router.replace(`/${orgSlug}/teachers`);
             } finally {
-                if (isMounted) setDataLoading(false);
+                if (isMounted) dispatch({ type: 'UI_SET_LOADING', payload: false });
             }
         };
 
@@ -56,7 +57,7 @@ export default function EditTeacherPage() {
         return () => {
             isMounted = false;
         };
-    }, [authLoading, user, token, teacherId, orgSlug, router, showToast]);
+    }, [authLoading, user, token, teacherId, orgSlug, router, dispatch]);
 
     // Show a spinner while auth is loading or data is being fetched
     if (authLoading || dataLoading) {
@@ -73,8 +74,8 @@ export default function EditTeacherPage() {
     if (!teacherData) return null;
 
     return (
-        <>
-            <div className="mb-6">
+        <div className="flex flex-col">
+            <div className="mb-6 shrink-0">
                 <div className="flex items-center gap-5">
                     <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm md:rounded-sm border border-white/30 shadow-xl shrink-0">
                         <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-white" />
@@ -86,9 +87,9 @@ export default function EditTeacherPage() {
                 </div>
             </div>
 
-            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-6 md:p-12 mb-10 overflow-hidden">
+            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-6 md:p-12 mb-10">
                 <TeacherForm orgSlug={orgSlug} teacherId={teacherId} initialData={teacherData} />
             </div>
-        </>
+        </div>
     );
 }

@@ -1,17 +1,12 @@
-import { Role, TeacherStatus, StudentStatus, RequestStatus, OrganizationType, OrgStatus, AssessmentType, GradeStatus } from './enums';
-export { Role, TeacherStatus, StudentStatus, RequestStatus, OrganizationType, OrgStatus, AssessmentType, GradeStatus, RequestCategory } from './enums';
+import { Role, TeacherStatus, StudentStatus, RequestStatus, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority } from './enums';
+export { Role, TeacherStatus, StudentStatus, RequestStatus, OrganizationType, OrgStatus, AssessmentType, GradeStatus, RequestCategory, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority } from './enums';
 
 export interface PaginatedResponse<T> {
     data: T[];
     totalRecords: number;
     totalPages: number;
     currentPage: number;
-    counts?: {
-        PENDING: number;
-        APPROVED: number;
-        REJECTED: number;
-        SUSPENDED: number;
-    };
+    counts?: Record<string, number>;
 }
 
 export interface User {
@@ -130,6 +125,7 @@ export interface Organization {
 
 export interface RegisterRequest {
     name: string;
+    adminName: string;
     location: string;
     type: OrganizationType;
     email: string;
@@ -271,6 +267,7 @@ export interface CreateRequestPayload {
     targetRole?: string;
     assigneeIds?: string[];
     metadata?: Record<string, unknown>;
+    noReply?: boolean;
 }
 
 export interface UpdateRequestPayload {
@@ -456,4 +453,73 @@ export interface ApiError {
             message?: string | string[];
         };
     };
+}
+
+// ─── Communication System Types ──────────────────────────────────────────────
+
+export interface ChatParticipant {
+    id: string;
+    chatId: string;
+    userId: string;
+    role: ChatParticipantRole;
+    isActive: boolean;
+    lastReadMessageId: string | null;
+    joinedAt: string;
+    user?: User;
+}
+
+export interface ChatMessage {
+    id: string;
+    chatId: string;
+    senderId: string;
+    organizationId?: string | null;
+    content: string;
+    type: ChatMessageType;
+    createdAt: string;
+    updatedAt: string;
+    deletedAt?: string | null;
+    deletedById?: string | null;
+    sender?: User;
+    deletedBy?: User;
+    chat?: Partial<Chat>;
+}
+
+export interface Chat {
+    id: string;
+    type: ChatType;
+    name: string | null;
+    organizationId: string | null;
+    creatorId: string;
+    createdAt: string;
+    updatedAt: string;
+    participants?: ChatParticipant[];
+    messages?: ChatMessage[];
+    _count?: { messages: number };
+}
+
+export interface Notification {
+    id: string;
+    userId: string;
+    title: string;
+    body: string | null;
+    actionUrl: string | null;
+    type: string | null;
+    metadata: Record<string, any> | null;
+    isRead: boolean;
+    createdAt: string;
+}
+
+export interface Announcement {
+    id: string;
+    title: string;
+    body: string;
+    targetType: TargetType;
+    targetId: string | null;
+    actionUrl: string | null;
+    priority: AnnouncementPriority;
+    creatorId: string;
+    organizationId: string | null;
+    createdAt: string;
+    creator?: User;
+    organization?: Organization;
 }

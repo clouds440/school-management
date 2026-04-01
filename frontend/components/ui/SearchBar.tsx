@@ -41,7 +41,7 @@ export function SearchBar({ value, onChange, placeholder = 'Search...', delay = 
         <div className={cn("relative group w-full max-w-sm", className)}>
             <input
                 type="text"
-                className="block w-full pl-11 pr-4 h-12 bg-white/50 backdrop-blur-md border border-slate-200 rounded-xl text-sm font-bold text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary focus:bg-white transition-all duration-300 shadow-sm"
+                className="block w-full pl-11 pr-4 h-12 bg-white/50 backdrop-blur-md border border-slate-200 rounded-sm text-sm font-bold text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary focus:bg-white transition-all duration-300 shadow-sm"
                 placeholder={placeholder}
                 value={localValue}
                 onChange={(e) => setLocalValue(e.target.value)}

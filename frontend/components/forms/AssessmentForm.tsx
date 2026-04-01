@@ -6,7 +6,6 @@ import { BookOpen, Calendar, Type, FileText, Percent, UploadCloud, Link as LinkI
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { Assessment, AssessmentType, CreateAssessmentRequest, UpdateAssessmentRequest, ApiError } from '@/types';
-import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
@@ -33,7 +32,6 @@ export default function AssessmentForm({
     onCancel
 }: AssessmentFormProps) {
     const { token } = useAuth();
-    const { showToast } = useToast();
     const { state, dispatch } = useGlobal();
     const isProcessing = state.ui.isProcessing;
 
@@ -71,7 +69,7 @@ export default function AssessmentForm({
     const formData = watch();
 
     const onSubmit = async (data: AssessmentFormData) => {
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'assessment-submit' } });
         try {
             const payload: CreateAssessmentRequest = {
                 ...data,
@@ -101,17 +99,17 @@ export default function AssessmentForm({
                     await api.files.uploadFile(orgId, 'ASSESSMENT', savedAssessment.id, selectedFile, token!);
                 } catch (err: unknown) {
                     const message = err instanceof Error ? err.message : 'Assessment saved but file upload failed';
-                    showToast(message, 'error');
+                    dispatch({ type: 'TOAST_ADD', payload: { message: String(message), type: 'error' } });
                 }
             }
 
             window.dispatchEvent(new Event('stats-updated'));
-            showToast(`Assessment ${assessmentId ? 'updated' : 'created'} successfully.`, 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: `Assessment ${assessmentId ? 'updated' : 'created'} successfully.`, type: 'success' } });
             onSuccess?.(savedAssessment);
         } catch (error: unknown) {
             const apiError = error as ApiError;
             const message = apiError?.response?.data?.message || 'Failed to save assessment';
-            showToast(Array.isArray(message) ? message[0] : message, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
             dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
@@ -273,18 +271,11 @@ export default function AssessmentForm({
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
-                <Button type="button" variant="secondary" onClick={onCancel} disabled={isProcessing}>
+                <Button type="button" variant="secondary" onClick={onCancel}>
                     Cancel
                 </Button>
-                <Button type="submit" disabled={isProcessing}>
-                    {isProcessing ? (
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            <span>Saving...</span>
-                        </div>
-                    ) : (
-                        assessmentId ? 'Update Assessment' : 'Create Assessment'
-                    )}
+                <Button type="submit" loadingId="assessment-submit" loadingText="SAVING...">
+                    {assessmentId ? 'Update Assessment' : 'Create Assessment'}
                 </Button>
             </div>
         </form>

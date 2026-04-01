@@ -31,6 +31,7 @@ export class RequestController {
             role: req.user.role,
             organizationId: req.user.organizationId,
             name: req.user.name,
+            email: req.user.email,
         });
     }
 
@@ -41,6 +42,7 @@ export class RequestController {
             role: req.user.role,
             organizationId: req.user.organizationId,
             name: req.user.name,
+            email: req.user.email,
         });
     }
 
@@ -61,6 +63,7 @@ export class RequestController {
                 role: req.user.role,
                 organizationId: req.user.organizationId,
                 name: req.user.name,
+                email: req.user.email,
             },
             {
                 page: page ? parseInt(page, 10) : 1,
@@ -85,6 +88,7 @@ export class RequestController {
                 role: req.user.role,
                 organizationId: req.user.organizationId,
                 name: req.user.name,
+                email: req.user.email,
             },
             search,
         );
@@ -100,6 +104,7 @@ export class RequestController {
             role: req.user.role,
             organizationId: req.user.organizationId,
             name: req.user.name,
+            email: req.user.email,
         });
     }
 
@@ -114,6 +119,7 @@ export class RequestController {
             role: req.user.role,
             organizationId: req.user.organizationId,
             name: req.user.name,
+            email: req.user.email,
         });
     }
 
@@ -128,6 +134,7 @@ export class RequestController {
             role: req.user.role,
             organizationId: req.user.organizationId,
             name: req.user.name,
+            email: req.user.email,
         });
     }
 }

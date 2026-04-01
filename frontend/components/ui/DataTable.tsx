@@ -8,6 +8,7 @@ export interface Column<T> {
     sortable?: boolean;
     sortKey?: string; // Key to send to backend for sorting
     width?: number;
+    sticky?: 'left' | 'right';
 }
 
 interface DataTableProps<T> {
@@ -23,6 +24,7 @@ interface DataTableProps<T> {
     totalResults: number;
     pageSize: number;
     onPageChange: (page: number) => void;
+    onPageSizeChange?: (size: number) => void;
     sortConfig?: { key: string; direction: 'asc' | 'desc' } | null;
     onSort?: (key: string, direction: 'asc' | 'desc') => void;
     getRowClassName?: (row: T) => string;
@@ -41,6 +43,7 @@ export function DataTable<T>({
     totalResults,
     pageSize,
     onPageChange,
+    onPageSizeChange,
     sortConfig,
     onSort,
     getRowClassName,
@@ -112,7 +115,7 @@ export function DataTable<T>({
     }, [resizingIndex]);
 
     return (
-        <div 
+        <div
             className="w-full overflow-hidden rounded-sm border border-gray-200/20 bg-card shadow-[0_8px_30px_var(--shadow-color)] ring-1 ring-gray-900/5 relative flex flex-col"
             style={maxHeight ? { height: maxHeight } : {}}
         >
@@ -122,22 +125,28 @@ export function DataTable<T>({
                     className="w-full text-left text-sm text-card-text table-fixed"
                     style={{ minWidth: '100%', width: columnWidths.reduce((a, b) => a + b, 0) }}
                 >
-                    <thead className="bg-primary/5 text-[11px] uppercase tracking-wider font-black opacity-90 border-b border-gray-200/50 select-none sticky top-0 z-10 backdrop-blur-md shadow-sm">
+                    <thead className="bg-primary/30 text-[11px] uppercase tracking-wider font-black opacity-95 border-b border-gray-200/50 select-none sticky top-0 z-100 backdrop-blur-3xl shadow-md">
                         <tr>
                             {columns.map((col, index) => {
                                 const key = col.sortKey || (typeof col.accessor === 'string' ? col.accessor : '');
                                 const isSorted = sortConfig?.key === key;
+
                                 return (
                                     <th
                                         key={index}
-                                        style={{ width: columnWidths[index] + (index === 0 ? 30 : 5) }}
-                                        className={`px-6 py-5 border-b border-b-gray-300 whitespace-nowrap relative group/th ${col.sortable ? 'cursor-pointer hover:bg-primary/10' : ''}`}
+                                        style={{
+                                            width: index === 0 ? columnWidths[index] + 30 : columnWidths[index]
+                                        }}
+                                        className={`
+                                            px-6 py-5 border-b border-b-gray-300 whitespace-nowrap relative group/th
+                                            ${col.sortable ? 'cursor-pointer hover:bg-primary/10' : ''}
+                                        `}
                                         onClick={() => handleSort(index)}
                                     >
                                         <div className="flex items-center gap-2 overflow-hidden">
                                             <span className="truncate">{col.header}</span>
                                             {col.sortable && (
-                                                <span className="opacity-40 group-hover/th:text-primary group-hover/th:opacity-100 transition-colors shrink-0">
+                                                <span className="opacity-60 group-hover/th:text-primary group-hover/th:opacity-100 transition-colors shrink-0">
                                                     {isSorted ? (
                                                         sortConfig?.direction === 'asc' ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-primary" />
                                                     ) : (
@@ -152,7 +161,7 @@ export function DataTable<T>({
                                             onClick={(e) => e.stopPropagation()}
                                             className="absolute right-0 top-0 h-full w-1 cursor-col-resize group-hover/th:bg-primary/20 transition-colors z-10"
                                         >
-                                            <div className="absolute right-0 top-1/4 h-1/2 w-[2px] bg-gray-300 group-hover/th:bg-primary/40 transition-colors" />
+                                            <div className="absolute right-0 top-1/4 h-1/2 w-[2px] bg-gray-300 group-hover/th:bg-primary/60 transition-colors" />
                                         </div>
                                     </th>
                                 );
@@ -179,15 +188,25 @@ export function DataTable<T>({
                                     `}
                                 >
                                     {columns.map((col, index) => {
+                                        const isActions = col.header === 'Actions';
                                         const content = typeof col.accessor === 'function'
                                             ? col.accessor(row)
                                             : (row[col.accessor as keyof T] as React.ReactNode);
 
                                         return (
-                                            <td key={index} className="px-6 py-2 align-middle overflow-hidden">
-                                                <div className="max-h-16 overflow-hidden line-clamp-2 wrap-break-word text-sm font-medium text-gray-700">
-                                                    {content}
-                                                </div>
+                                            <td
+                                                key={index}
+                                                className={`py-2 align-middle ${isActions ? 'overflow-visible px-auto' : 'overflow-hidden px-6 '}`}
+                                            >
+                                                {isActions ? (
+                                                    <div className="flex shrink-0 flex-nowrap w-max">
+                                                        {content}
+                                                    </div>
+                                                ) : (
+                                                    <div className="max-h-16 overflow-hidden line-clamp-2 wrap-break-word text-sm font-medium text-gray-700">
+                                                        {content}
+                                                    </div>
+                                                )}
                                             </td>
                                         );
                                     })}
@@ -214,8 +233,10 @@ export function DataTable<T>({
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
                 totalResults={totalResults}
                 pageSize={pageSize}
+                isLoading={isLoading}
             />
         </div>
     );

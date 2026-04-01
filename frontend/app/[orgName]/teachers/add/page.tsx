@@ -21,7 +21,7 @@ export default function AddTeacherPage() {
     }, [user, orgSlug, router]);
 
     return (
-        <>
+        <div className="flex flex-col">
             <div className="mb-6">
                 <div className="flex items-center gap-5">
                     <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm md:rounded-sm border border-white/30 shadow-xl shrink-0">
@@ -34,9 +34,9 @@ export default function AddTeacherPage() {
                 </div>
             </div>
 
-            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-6 md:p-12 mb-10 overflow-hidden">
+            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-6 md:p-12 mb-10">
                 <TeacherForm orgSlug={orgSlug} />
             </div>
-        </>
+        </div>
     );
 }

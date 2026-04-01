@@ -6,7 +6,7 @@ import { useRouter, usePathname, useParams } from 'next/navigation';
 import { Loader2, UserPlus } from 'lucide-react';
 import { api } from '@/lib/api';
 import StudentForm from '@/components/forms/StudentForm';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { Student, Role } from '@/types';
 
 export default function EditStudentPage() {
@@ -14,12 +14,12 @@ export default function EditStudentPage() {
     const router = useRouter();
     const pathname = usePathname();
     const params = useParams();
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
     const studentId = params.id as string;
 
     const [studentData, setStudentData] = useState<Student | null>(null);
-    const [dataLoading, setDataLoading] = useState(true);
+    const dataLoading = state.ui.isLoading;
 
     useEffect(() => {
         let isMounted = true;
@@ -27,6 +27,7 @@ export default function EditStudentPage() {
         if (authLoading) return;
 
         const fetchStudent = async () => {
+            dispatch({ type: 'UI_SET_LOADING', payload: true });
             if (!user || !token) return;
 
             if (user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER && user.role !== Role.TEACHER) {
@@ -42,7 +43,7 @@ export default function EditStudentPage() {
                         e.section?.teachers?.some(t => t.userId === user.id)
                     );
                     if (!isMyStudent) {
-                        showToast('You do not have permission to view this student record.', 'error');
+                        dispatch({ type: 'TOAST_ADD', payload: { message: 'You do not have permission to view this student record.', type: 'error' } });
                         router.replace(`/${orgSlug}/students`);
                         return;
                     }
@@ -54,10 +55,10 @@ export default function EditStudentPage() {
             } catch (error: unknown) {
                 if (!isMounted) return;
 
-                showToast(error instanceof Error ? error.message : 'Failed to load student.', 'error');
+                dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to load student.', type: 'error' } });
                 router.replace(`/${orgSlug}/students`);
             } finally {
-                if (isMounted) setDataLoading(false);
+                if (isMounted) dispatch({ type: 'UI_SET_LOADING', payload: false });
             }
         };
 
@@ -66,7 +67,7 @@ export default function EditStudentPage() {
         return () => {
             isMounted = false;
         };
-    }, [authLoading, user, token, studentId, orgSlug, router, showToast]);
+    }, [authLoading, user, token, studentId, orgSlug, router, dispatch]);
 
     if (authLoading || dataLoading) {
         return (
@@ -84,8 +85,8 @@ export default function EditStudentPage() {
     const isWatchMode = user?.role === Role.TEACHER;
 
     return (
-        <>
-            <div className="mb-6">
+        <div className="flex flex-col">
+            <div className="mb-6 shrink-0">
                 <div className="flex items-center gap-5">
                     <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl shrink-0">
                         <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-white" />
@@ -101,9 +102,9 @@ export default function EditStudentPage() {
                 </div>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-2xl border border-white/20 p-6 md:p-12 text-card-text">
+            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-2xl border border-white/20 p-6 md:p-12 text-card-text mb-10">
                 <StudentForm orgSlug={orgSlug} studentId={studentId} initialData={studentData} />
             </div>
-        </>
+        </div>
     );
 }

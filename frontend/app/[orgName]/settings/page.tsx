@@ -5,18 +5,18 @@ import { useAuth } from '@/context/AuthContext';
 import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School, RefreshCw, ShieldOff } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Organization } from '@/types';
-import { useToast } from '@/context/ToastContext';
+import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+import { useGlobal } from '@/context/GlobalContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
-import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
-import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 export default function SettingsPage() {
     const { token } = useAuth();
-    const { showToast } = useToast();
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+    const { state, dispatch } = useGlobal();
+    const loading = state.ui.isLoading;
+    const saving = state.ui.isProcessing;
     const [reapplying, setReapplying] = useState(false);
     const [orgData, setOrgData] = useState<Organization | null>(null);
     const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
@@ -35,6 +35,7 @@ export default function SettingsPage() {
     useEffect(() => {
         if (!token) return;
 
+        dispatch({ type: 'UI_SET_LOADING', payload: true });
         api.org.getOrgData(token)
             .then((data: Organization) => {
                 setOrgData(data);
@@ -48,15 +49,16 @@ export default function SettingsPage() {
                         secondary: data.accentColor?.secondary || '#ffffff'
                     }
                 });
-                setLoading(false);
             })
             .catch((err) => {
                 console.error('Failed to load settings', err);
                 const message = err instanceof Error ? err.message : 'Failed to load settings';
-                showToast(message, 'error');
-                setLoading(false);
+                dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
+            })
+            .finally(() => {
+                dispatch({ type: 'UI_SET_LOADING', payload: false });
             });
-    }, [token, showToast]);
+    }, [token, dispatch]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -79,7 +81,7 @@ export default function SettingsPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!token) return;
-        setSaving(true);
+        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             // 1. Save text settings
             await api.org.updateSettings(formData, token);
@@ -92,12 +94,12 @@ export default function SettingsPage() {
                 setPendingLogoFile(null);
             }
 
-            showToast('Settings updated successfully!', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Settings updated successfully!', type: 'success' } });
         } catch (error) {
-            showToast('Failed to update settings. Please try again.', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to update settings. Please try again.', type: 'error' } });
             console.error('Failed to update settings', error);
         } finally {
-            setSaving(false);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -106,11 +108,11 @@ export default function SettingsPage() {
         setReapplying(true);
         try {
             await api.org.reapply(token);
-            showToast('Your re-application has been submitted!', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Your re-application has been submitted!', type: 'success' } });
             const data = await api.org.getOrgData(token);
             setOrgData(data);
         } catch (error) {
-            showToast('Failed to re-apply', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to re-apply', type: 'error' } });
             console.error('Failed to re-apply', error);
         } finally {
             setReapplying(false);
@@ -306,8 +308,6 @@ export default function SettingsPage() {
                     <div className="pt-4 border-t border-white/10 flex justify-end">
                         <Button
                             type="submit"
-                            isLoading={saving}
-                            loadingText="SAVING CHANGES..."
                             className="px-10"
                             icon={Save}
                         >

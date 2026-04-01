@@ -33,9 +33,15 @@ export function useSocket(options: UseSocketOptions) {
         if (!enabled || !token) return;
 
         // Derive base URL for WebSocket (same origin as API, but at root)
-        const wsUrl = API_BASE_URL.replace(/\/api$/, '').replace(/\/$/, '');
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || API_BASE_URL.replace(/\/api$/, '').replace(/\/$/, '');
 
-        const newSocket = io(wsUrl, {
+        // Ensure we have a valid absolute URL for Socket.io
+        if (!socketUrl.startsWith('http')) {
+            console.warn('[WS] Invalid socket URL:', socketUrl);
+            return;
+        }
+
+        const newSocket = io(socketUrl, {
             auth: { token },
             transports: ['websocket', 'polling'],
             autoConnect: true,
@@ -45,7 +51,7 @@ export function useSocket(options: UseSocketOptions) {
         });
 
         newSocket.on('connect', () => {
-            console.log('[WS] Connected:', newSocket.id);
+            // console.log('[WS] Connected:', newSocket.id);
             setIsConnected(true);
             setSocket(newSocket);
 
@@ -56,12 +62,12 @@ export function useSocket(options: UseSocketOptions) {
         });
 
         newSocket.on('disconnect', (reason: string) => {
-            console.log('[WS] Disconnected:', reason);
+            // console.log('[WS] Disconnected:', reason);
             setIsConnected(false);
         });
 
         newSocket.on('connect_error', (err: Error) => {
-            console.warn('[WS] Connection error:', err.message);
+            // console.warn('[WS] Connection error:', err.message);
             setIsConnected(false);
         });
 
@@ -71,8 +77,15 @@ export function useSocket(options: UseSocketOptions) {
         });
 
         return () => {
-            newSocket.removeAllListeners();
-            newSocket.disconnect();
+            if (newSocket) {
+                newSocket.removeAllListeners();
+                // Only disconnect if established. 
+                // If it's still connecting, let it be - socket.io will handle the 
+                // underlying connection attempt without a manual close causing a browser warning.
+                if (newSocket.connected) {
+                    newSocket.disconnect();
+                }
+            }
             setSocket(null);
             setIsConnected(false);
         };

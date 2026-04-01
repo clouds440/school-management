@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Assessment, Section, Role, AssessmentType } from '@/types';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -32,13 +32,13 @@ interface AssessmentListProps {
 
 export default function AssessmentList({ section, role }: AssessmentListProps) {
     const { token } = useAuth();
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
     const params = useParams();
     const router = useRouter();
     const orgSlug = params.orgName as string;
 
     const [assessments, setAssessments] = useState<Assessment[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = state.ui.isLoading;
 
     // Modals
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -48,17 +48,17 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
 
     const fetchAssessments = useCallback(async () => {
         if (!token) return;
-        setIsLoading(true);
+        dispatch({ type: 'UI_SET_LOADING', payload: true });
         try {
             const data = await api.org.getAssessments(token, { sectionId: section.id });
             setAssessments(data);
         } catch (error) {
             console.error('Failed to fetch assessments:', error);
-            showToast('Failed to load assessments', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load assessments', type: 'error' } });
         } finally {
-            setIsLoading(false);
+            dispatch({ type: 'UI_SET_LOADING', payload: false });
         }
-    }, [token, section.id, showToast]);
+    }, [token, section.id, dispatch]);
 
     useEffect(() => {
         fetchAssessments();
@@ -68,11 +68,11 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
         if (!token || !deletingAssessment) return;
         try {
             await api.org.deleteAssessment(deletingAssessment.id, token);
-            showToast('Assessment deleted successfully', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Assessment deleted successfully', type: 'success' } });
             setAssessments(prev => prev.filter(a => a.id !== deletingAssessment.id));
             setDeletingAssessment(null);
         } catch (error) {
-            showToast('Failed to delete assessment', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to delete assessment', type: 'error' } });
             setDeletingAssessment(null);
             console.error('Failed to delete assessment:', error);
         }
@@ -80,7 +80,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
 
     const { user } = useAuth();
     const isAssigned = section.teachers?.some(t => t.user?.id === user?.id);
-    const canCreate = role === Role.TEACHER && isAssigned;
+    const canCreate = (role === Role.TEACHER || role === Role.ORG_MANAGER) && isAssigned;
     const canEdit = role === Role.TEACHER && isAssigned;
     const canDelete = role === Role.TEACHER && isAssigned;
     const canView = role === Role.ORG_ADMIN || role === Role.ORG_MANAGER || role === Role.TEACHER;
@@ -206,9 +206,9 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                                                         e.stopPropagation();
                                                         try {
                                                             await api.org.createSubmission(assessment.id, { assessmentId: assessment.id }, token!);
-                                                            showToast('Marked as done', 'success');
+                                                            dispatch({ type: 'TOAST_ADD', payload: { message: 'Marked as done', type: 'success' } });
                                                         } catch (e) {
-                                                            showToast('Failed to mark as done', 'error');
+                                                            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to mark as done', type: 'error' } });
                                                             console.error('Failed to mark as done:', e);
                                                         }
                                                     }}

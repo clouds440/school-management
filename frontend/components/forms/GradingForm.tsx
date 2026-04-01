@@ -6,7 +6,6 @@ import { Check, Edit3, MessageCircle, Star } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { Grade, GradeStatus, UpdateGradeRequest, ApiError, Student } from '@/types';
-import { useToast } from '@/context/ToastContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
@@ -36,7 +35,6 @@ export default function GradingForm({
     const isProcessing = state.ui.isProcessing;
 
     const { token } = useAuth();
-    const { showToast } = useToast();
 
     const {
         register,
@@ -61,11 +59,11 @@ export default function GradingForm({
 
     const onSubmit: SubmitHandler<GradeFormData> = async (data) => {
         if (Number(data.marksObtained) > totalMarks) {
-            showToast(`Marks obtained cannot exceed total marks (${totalMarks})`, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: `Marks obtained cannot exceed total marks (${totalMarks})`, type: 'error' } });
             return;
         }
 
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'grading-submit' } });
         try {
             const payload: UpdateGradeRequest = {
                 marksObtained: Number(data.marksObtained),
@@ -74,13 +72,12 @@ export default function GradingForm({
             };
 
             const savedGrade = await api.org.updateGrade(assessmentId, student.id, payload, token!);
-
-            showToast(`Grade updated for ${student.user.name}.`, 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: `Grade updated for ${student.user.name}.`, type: 'success' } });
             onSuccess?.(savedGrade);
         } catch (error: unknown) {
             const apiError = error as ApiError;
             const message = apiError?.response?.data?.message || 'Failed to save grade';
-            showToast(Array.isArray(message) ? message[0] : message, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
             dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
@@ -147,21 +144,12 @@ export default function GradingForm({
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
-                <Button type="button" variant="secondary" onClick={onCancel} disabled={isProcessing}>
+                <Button type="button" variant="secondary" onClick={onCancel}>
                     Cancel
                 </Button>
-                <Button type="submit" disabled={isProcessing}>
-                    {isProcessing ? (
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            <span>Saving...</span>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            <Check className="w-4 h-4" />
-                            <span>Save Grade</span>
-                        </div>
-                    )}
+                <Button type="submit" loadingId="grading-submit" loadingText="SAVING...">
+                    <Check className="w-4 h-4 mr-2" />
+                    Save Grade
                 </Button>
             </div>
         </form>

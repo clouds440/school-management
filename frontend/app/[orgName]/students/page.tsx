@@ -7,9 +7,9 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { Role, Student, PaginatedResponse, Section } from '@/types';
+import { Role, Student, Section } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { TableActions } from '@/components/ui/TableActions';
@@ -18,7 +18,6 @@ import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData
 import { getPublicUrl } from '@/lib/utils';
 import { Loading } from '@/components/ui/Loading';
 import { NewRequestModal } from '@/components/requests/NewRequestModal';
-import { Send } from 'lucide-react';
 
 interface StudentParams extends BasePaginationParams {
     my?: boolean;
@@ -31,7 +30,7 @@ export default function StudentsPage() {
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
-    const { showToast } = useToast();
+    const { state, dispatch } = useGlobal();
 
     // Redundant paginatedData state removed
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -48,10 +47,17 @@ export default function StudentsPage() {
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
     const showOnlyMyStudents = searchParams.get('my') === 'true';
     const sectionId = searchParams.get('sectionId') || '';
+    const [pageSize, setPageSize] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('edu-students-limit');
+            return saved ? parseInt(saved, 10) : 10;
+        }
+        return 10;
+    });
 
     const studentParams: StudentParams = {
         page,
-        limit: 10,
+        limit: pageSize,
         search: searchTerm,
         sortBy,
         sortOrder,
@@ -94,6 +100,12 @@ export default function StudentsPage() {
             }
         });
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    };
+
+    const handlePageSizeChange = (newSize: number) => {
+        setPageSize(newSize);
+        localStorage.setItem('edu-students-limit', String(newSize));
+        updateQueryParams({ page: 1 });
     };
 
     // Redundant students variable removed. Using fetchedData directly.
@@ -196,6 +208,7 @@ export default function StudentsPage() {
         },
         {
             header: 'Actions',
+            width: 150,
             accessor: (row: Student) => {
                 const isManagerOrAdmin = user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER;
                 return (
@@ -205,17 +218,6 @@ export default function StudentsPage() {
                         onDelete={isManagerOrAdmin ? () => handleDeleteClick(row.id) : undefined}
                         variant="user"
                         isViewAndEdit={isManagerOrAdmin}
-                        extraActions={[
-                            {
-                                variant: 'mail',
-                                title: 'Send Mail',
-                                onClick: () => {
-                                    setInitialTargetId(row.user.id);
-                                    setInitialSubject(`Inquiry regarding student: ${row.user.name}`);
-                                    setNewRequestOpen(true);
-                                }
-                            }
-                        ]}
                     />
                 );
             }
@@ -234,11 +236,11 @@ export default function StudentsPage() {
         if (!selectedStudent || !token) return;
         try {
             await api.org.deleteStudent(selectedStudent.id, token);
-            showToast('Student removed successfully', 'success');
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Student removed successfully', type: 'success' } });
             setIsDeleteDialogOpen(false);
             refresh();
         } catch (error: unknown) {
-            showToast(error instanceof Error ? error.message : 'Failed to delete student', 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to delete student', type: 'error' } });
         }
     };
 
@@ -247,28 +249,16 @@ export default function StudentsPage() {
     }
 
     return (
-        <div className="flex flex-col w-full">
-            <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
-                    <Button
-                        onClick={() => router.push(`/${orgSlug}/students/add`)}
-                        icon={Plus}
-                        className="px-8 py-4 w-full md:w-auto"
-                    >
-                        Add New Student
-                    </Button>
-                )}
-            </div>
-
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-2 md:p-4 mb-4 overflow-hidden">
-                <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col h-full w-full">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, reg, roll or major..." />
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3">
                         {(user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER) && (
-                            <div className="flex items-center gap-2 min-w-[200px]">
+                            <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold text-card-text/40 uppercase tracking-wider whitespace-nowrap">Section:</span>
                                 <CustomSelect
                                     value={sectionId}
@@ -278,30 +268,40 @@ export default function StudentsPage() {
                                         ...sections.map(sec => ({ value: sec.id, label: sec.name }))
                                     ]}
                                     placeholder="All My Sections"
-                                    className="flex-1 px-3"
+                                    className="flex-1 px-5"
                                 />
                             </div>
                         )}
 
                         {user?.role === Role.ORG_MANAGER && (
-                            <div className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10 self-start md:self-auto">
+                            <div
+                                onClick={() => updateQueryParams({ my: !showOnlyMyStudents, page: 1 })}
+                                className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all cursor-pointer group select-none"
+                            >
                                 <button
-                                    onClick={() => updateQueryParams({ my: !showOnlyMyStudents, page: 1 })}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMyStudents ? 'bg-primary' : 'bg-gray-200'
-                                        }`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMyStudents ? 'bg-primary' : 'bg-gray-200'}`}
                                 >
                                     <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showOnlyMyStudents ? 'translate-x-6' : 'translate-x-1'
-                                            }`}
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showOnlyMyStudents ? 'translate-x-6' : 'translate-x-1'}`}
                                     />
                                 </button>
                                 <span className="text-xs font-bold text-card-text uppercase tracking-wider">My Students</span>
                             </div>
                         )}
+
+                        {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
+                            <Button
+                                onClick={() => router.push(`/${orgSlug}/students/add`)}
+                                icon={Plus}
+                                className="px-8 w-full md:w-auto text-xs font-black uppercase tracking-widest"
+                            >
+                                Add New Student
+                            </Button>
+                        )}
                     </div>
                 </div>
 
-                <div className="relative overflow-x-hidden">
+                <div className="relative overflow-x-hidden flex-1 min-h-0">
                     <DataTable
                         data={fetchedData?.data || []}
                         columns={columns}
@@ -313,8 +313,10 @@ export default function StudentsPage() {
                         currentPage={page}
                         totalPages={fetchedData?.totalPages || 1}
                         totalResults={fetchedData?.totalRecords || 0}
-                        pageSize={10}
+                        pageSize={pageSize}
                         onPageChange={(p) => updateQueryParams({ page: p })}
+                        onPageSizeChange={handlePageSizeChange}
+                        maxHeight="100%"
                         sortConfig={{ key: sortBy, direction: sortOrder }}
                         onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                     />
@@ -342,7 +344,7 @@ export default function StudentsPage() {
                 initialTargetId={initialTargetId}
                 initialSubject={initialSubject}
                 onSuccess={() => {
-                    showToast('Mail sent successfully', 'success');
+                    dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent successfully', type: 'success' } });
                 }}
             />
         </div>

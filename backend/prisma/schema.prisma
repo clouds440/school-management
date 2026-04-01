@@ -8,16 +8,16 @@ datasource db {
 }
 
 model Organization {
-  id              String          @id @default(uuid())
+  id              String         @id @default(uuid())
   name            String
   location        String
   type            String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   contactEmail    String
   phone           String?
-  status          OrgStatus       @default(PENDING)
-  statusHistory   Json?           // Stores array of { status, message, adminName, adminRole, createdAt }
+  status          OrgStatus      @default(PENDING)
+  statusHistory   Json? // Stores array of { status, message, adminName, adminRole, createdAt }
   avatarUpdatedAt DateTime?
   logoUrl         String?
   accentColor     Json?
@@ -28,35 +28,41 @@ model Organization {
   assessments     Assessment[]
   requests        Request[]
   parentOrgId     String?
-  parentOrg       Organization?   @relation("ParentChildOrg", fields: [parentOrgId], references: [id])
-  subOrgs         Organization[]  @relation("ParentChildOrg")
+  parentOrg       Organization?  @relation("ParentChildOrg", fields: [parentOrgId], references: [id])
+  subOrgs         Organization[] @relation("ParentChildOrg")
+  chats           Chat[]
+  announcements   Announcement[]
 }
 
-
-
 model User {
-  id               String             @id @default(uuid())
-  email            String             @unique
-  password         String
-  role             Role               @default(SUPER_ADMIN)
-  isFirstLogin     Boolean            @default(true)
-  organizationId   String?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  name             String?
-  phone            String?
-  tokenVersion     Int                @default(0)
-  avatarUrl        String?
-  avatarUpdatedAt  DateTime?
-  studentProfile   Student?
-  teacherProfile   Teacher?
-  organization     Organization?      @relation(fields: [organizationId], references: [id])
-  createdRequests  Request[]          @relation("CreatedRequests")
-  assignedRequests Request[]          @relation("AssignedRequests")
-  participatingRequests Request[]     @relation("RequestParticipants")
-  sentMessages     RequestMessage[]   @relation("SentMessages")
-  performedActions RequestActionLog[] @relation("PerformedActions")
-  viewedRequests   RequestUserView[]
+  id                    String             @id @default(uuid())
+  email                 String             @unique
+  password              String
+  role                  Role               @default(SUPER_ADMIN)
+  isFirstLogin          Boolean            @default(true)
+  organizationId        String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  name                  String?
+  phone                 String?
+  tokenVersion          Int                @default(0)
+  avatarUrl             String?
+  avatarUpdatedAt       DateTime?
+  studentProfile        Student?
+  teacherProfile        Teacher?
+  organization          Organization?      @relation(fields: [organizationId], references: [id])
+  createdRequests       Request[]          @relation("CreatedRequests")
+  assignedRequests      Request[]          @relation("AssignedRequests")
+  participatingRequests Request[]          @relation("RequestParticipants")
+  sentMessages          RequestMessage[]   @relation("SentMessages")
+  performedActions      RequestActionLog[] @relation("PerformedActions")
+  viewedRequests        RequestUserView[]
+  createdChats          Chat[]             @relation("CreatedChats")
+  chatParticipations    ChatParticipant[]  @relation("ChatParticipations")
+  sentChatMessages      ChatMessage[]      @relation("SentChatMessages")
+  deletedChatMessages   ChatMessage[]      @relation("DeletedChatMessages")
+  userNotifications     Notification[]     @relation("UserNotifications")
+  createdAnnouncements  Announcement[]     @relation("CreatedAnnouncements")
 }
 
 model Teacher {
@@ -150,39 +156,39 @@ model Student {
 }
 
 model Assessment {
-  id          String         @id @default(uuid())
-  sectionId   String
-  courseId    String
-  title       String
-  type        AssessmentType
-  totalMarks     Float
-  weightage      Float          // percentage 0-100
-  dueDate        DateTime?
-  allowSubmissions Boolean      @default(true)
-  externalLink   String?
-  isVideoLink    Boolean        @default(false)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  section        Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String
-  grades      Grade[]
-  submissions Submission[]
+  id               String         @id @default(uuid())
+  sectionId        String
+  courseId         String
+  title            String
+  type             AssessmentType
+  totalMarks       Float
+  weightage        Float // percentage 0-100
+  dueDate          DateTime?
+  allowSubmissions Boolean        @default(true)
+  externalLink     String?
+  isVideoLink      Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  section          Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  course           Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId   String
+  grades           Grade[]
+  submissions      Submission[]
 }
 
 model Grade {
-  id             String      @id @default(uuid())
-  assessmentId   String
-  studentId      String
-  marksObtained  Float
-  feedback       String?
-  status         GradeStatus @default(DRAFT)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  updatedBy      String?      // userId
-  assessment     Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  student        Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id            String      @id @default(uuid())
+  assessmentId  String
+  studentId     String
+  marksObtained Float
+  feedback      String?
+  status        GradeStatus @default(DRAFT)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  updatedBy     String? // userId
+  assessment    Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  student       Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([assessmentId, studentId])
 }
@@ -200,36 +206,36 @@ model Submission {
 // ─── Request System ────────────────────────────────────────────────────────────
 
 model Request {
-  id              String          @id @default(uuid())
-  subject         String
-  category        String          // flexible string, not rigid enum
-  priority        String          @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
-  status          RequestStatus   @default(OPEN)
+  id       String        @id @default(uuid())
+  subject  String
+  category String // flexible string, not rigid enum
+  priority String        @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  status   RequestStatus @default(OPEN)
 
   // Creator context
-  creatorId       String
-  creatorRole     String
-  creator         User            @relation("CreatedRequests", fields: [creatorId], references: [id])
+  creatorId   String
+  creatorRole String
+  creator     User   @relation("CreatedRequests", fields: [creatorId], references: [id])
 
   // Organization context (nullable for platform-level requests)
-  organizationId  String?
-  organization    Organization?   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Targeting (who should handle it)
-  targetRole      String?         // e.g. "SUPER_ADMIN", "PLATFORM_ADMIN"
-  assigneeId      String?
-  assignee        User?           @relation("AssignedRequests", fields: [assigneeId], references: [id])
-  assignees       User[]          @relation("RequestParticipants")
+  targetRole String? // e.g. "SUPER_ADMIN", "PLATFORM_ADMIN"
+  assigneeId String?
+  assignee   User?   @relation("AssignedRequests", fields: [assigneeId], references: [id])
+  assignees  User[]  @relation("RequestParticipants")
 
   // Extensibility
-  metadata        Json?
+  metadata Json?
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  messages        RequestMessage[]
-  actionLogs      RequestActionLog[]
-  userViews       RequestUserView[]
+  messages   RequestMessage[]
+  actionLogs RequestActionLog[]
+  userViews  RequestUserView[]
 
   @@index([creatorId])
   @@index([organizationId])
@@ -238,27 +244,28 @@ model Request {
 }
 
 model RequestUserView {
-  userId        String
-  requestId     String
-  lastViewedAt  DateTime @default(now())
+  userId       String
+  requestId    String
+  lastViewedAt DateTime @default(now())
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  request       Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
   @@id([userId, requestId])
 }
 
 model RequestMessage {
-  id          String   @id @default(uuid())
-  requestId   String
-  senderId    String
-  content     String   // markdown supported
+  id        String @id @default(uuid())
+  requestId String
+  senderId  String
+  content   String // markdown supported
 
-  request     Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sender  User    @relation("SentMessages", fields: [senderId], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 
   // Files linked via existing File model (entityType: "REQUEST_MESSAGE", entityId: message.id)
 
@@ -267,17 +274,17 @@ model RequestMessage {
 }
 
 model RequestActionLog {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   requestId   String
   performedBy String
-  action      String   // "CREATED", "STATUS_CHANGED", "ASSIGNED", "MESSAGE_SENT", etc.
-  details     Json?    // e.g. { from: "OPEN", to: "IN_PROGRESS" }
+  action      String // "CREATED", "STATUS_CHANGED", "ASSIGNED", "MESSAGE_SENT", etc.
+  details     Json? // e.g. { from: "OPEN", to: "IN_PROGRESS" }
   note        String?
 
-  request     Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  performer   User     @relation("PerformedActions", fields: [performedBy], references: [id])
+  request   Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  performer User    @relation("PerformedActions", fields: [performedBy], references: [id])
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([requestId])
 }
@@ -312,8 +319,6 @@ enum OrgStatus {
   REJECTED
   SUSPENDED
 }
-
-
 
 enum RequestStatus {
   OPEN
@@ -350,4 +355,128 @@ enum GradeStatus {
   DRAFT
   PUBLISHED
   FINALIZED
+}
+
+// ─── CHAT SYSTEM ────────────────────────────────────────────────────────────
+
+enum ChatType {
+  DIRECT
+  GROUP
+}
+
+enum ChatParticipantRole {
+  ADMIN
+  MEMBER
+}
+
+enum ChatMessageType {
+  TEXT
+  SYSTEM
+}
+
+model Chat {
+  id             String   @id @default(uuid())
+  type           ChatType
+  name           String? // For group chats
+  organizationId String? // Null if platform-level chat
+  creatorId      String // User who created the group
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator      User              @relation("CreatedChats", fields: [creatorId], references: [id])
+  participants ChatParticipant[]
+  messages     ChatMessage[]
+
+  @@index([organizationId])
+}
+
+model ChatParticipant {
+  id                String              @id @default(uuid())
+  chatId            String
+  userId            String
+  role              ChatParticipantRole @default(MEMBER)
+  isActive          Boolean             @default(true)
+  lastReadMessageId String?
+  joinedAt          DateTime            @default(now())
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user User @relation("ChatParticipations", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId])
+}
+
+model ChatMessage {
+  id             String          @id @default(uuid())
+  chatId         String
+  senderId       String
+  organizationId String?
+  content        String // markdown supported
+  type           ChatMessageType @default(TEXT)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+  deletedById    String?
+
+  chat        Chat  @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender      User  @relation("SentChatMessages", fields: [senderId], references: [id])
+  deletedBy   User? @relation("DeletedChatMessages", fields: [deletedById], references: [id])
+
+  @@index([chatId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+// ─── NOTIFICATION SYSTEM ─────────────────────────────────────────────────────
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  body      String?
+  actionUrl String?
+  type      String?
+  metadata  Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ─── ANNOUNCEMENT SYSTEM ─────────────────────────────────────────────────────
+enum AnnouncementPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum TargetType {
+  GLOBAL
+  ORG
+  ROLE
+  SECTION
+}
+
+model Announcement {
+  id             String     @id @default(uuid())
+  title          String
+  body           String // Markdown
+  targetType     TargetType
+  targetId       String? // e.g. orgId, role name, or sectionId
+  actionUrl      String?
+  priority       AnnouncementPriority @default(NORMAL)
+  creatorId      String
+  organizationId String? // Scope to org if applicable
+  createdAt      DateTime   @default(now())
+
+  creator      User          @relation("CreatedAnnouncements", fields: [creatorId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([targetType, targetId])
 }

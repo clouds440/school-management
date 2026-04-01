@@ -1,42 +1,46 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
-import { MessageSquare, Plus, ArrowUpRight, Hash, User, Building2, Tag, User as UserIcon } from 'lucide-react';
+import { Search, Plus, Filter, MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Hash, Building2, Calendar, User, Clock } from 'lucide-react';
 import { api } from '@/lib/api';
-import { RequestItem, RequestDetail, RequestStatus, Role, PaginatedResponse, UpdateRequestPayload, ApiError } from '@/types';
+import { RequestItem, RequestStatus, Role, PaginatedResponse, ApiError } from '@/types';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { Modal } from '@/components/ui/Modal';
-import { RequestStatusBadge, RequestPriorityBadge } from '@/components/requests/RequestStatusBadge';
-import { RequestThread } from '@/components/requests/RequestThread';
+import { RequestStatusBadge, RequestPriorityBadge, getRequestRowClassName } from '@/components/requests/RequestStatusBadge';
+import { RequestDetailsModal } from '@/components/requests/RequestDetailsModal';
 import { NewRequestModal } from '@/components/requests/NewRequestModal';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useSocket } from '@/hooks/useSocket';
 import { getPublicUrl } from '@/lib/utils';
 import { Loading } from '@/components/ui/Loading';
+import { Button } from '@/components/ui/Button';
 import Image from 'next/image';
 
 export default function RequestsPage() {
-    const { user, token, loading } = useAuth();
+    const { user, token, loading: authLoading } = useAuth();
     const { state, dispatch } = useGlobal();
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { showToast } = useToast();
 
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<RequestItem> | null>(null);
-    const [fetching, setFetching] = useState(true);
-    const [selectedRequest, setSelectedRequest] = useState<RequestDetail | null>(null);
-    const [threadModalOpen, setThreadModalOpen] = useState(false);
+    const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
     const [newRequestOpen, setNewRequestOpen] = useState(false);
-    const [updatingStatus, setUpdatingStatus] = useState(false);
-    const [confirmOpen, setConfirmOpen] = useState(false);
-    const [pendingStatus, setPendingStatus] = useState<RequestStatus | null>(null);
+
+    // Global UI states alias
+    const fetching = state.ui.isLoading;
+    const isProcessing = state.ui.isProcessing;
+
+    const [pageSize, setPageSize] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('edu-admin-mail-limit');
+            return saved ? parseInt(saved, 10) : 10;
+        }
+        return 10;
+    });
 
     // URL State
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -60,11 +64,11 @@ export default function RequestsPage() {
     const fetchRequests = useCallback(async () => {
         if (!token) return;
         try {
-            setFetching(true);
+            dispatch({ type: 'UI_SET_LOADING', payload: true });
             const [data, stats] = await Promise.all([
                 api.requests.getRequests(token, {
                     page,
-                    limit: 10,
+                    limit: pageSize,
                     search: searchQuery,
                     sortBy,
                     sortOrder,
@@ -79,11 +83,11 @@ export default function RequestsPage() {
             const apiError = error as ApiError;
             const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to fetch requests';
             const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
-            showToast(message, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
         } finally {
-            setFetching(false);
+            dispatch({ type: 'UI_SET_LOADING', payload: false });
         }
-    }, [token, page, searchQuery, sortBy, sortOrder, statusFilter, showToast]);
+    }, [token, page, searchQuery, sortBy, sortOrder, statusFilter, pageSize, dispatch]);
 
     const { subscribe, joinRoom, leaveRoom } = useSocket({
         token: token,
@@ -93,130 +97,37 @@ export default function RequestsPage() {
     });
 
     useEffect(() => {
-        if (!loading && user && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && token) {
+        if (!authLoading && user && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && token) {
             fetchRequests();
         }
-    }, [loading, user, token, fetchRequests]);
+    }, [authLoading, user, token, fetchRequests]);
 
-    // Real-time: Refresh list on new/unread updates
+    useEffect(() => {
+        const rid = searchParams.get('requestId');
+        if (rid) {
+            setSelectedRequestId(rid);
+        }
+    }, [searchParams]);
+
     useEffect(() => {
         const unsubs = [
             subscribe('unread:update', () => fetchRequests()),
-            subscribe('request:new', () => fetchRequests())
+            subscribe('request:new', () => fetchRequests()),
+            subscribe('request:message', () => fetchRequests()),
+            subscribe('request:update', () => fetchRequests())
         ];
         return () => unsubs.forEach(u => u());
     }, [subscribe, fetchRequests]);
 
-    // Real-time: Refresh selected thread
-    useEffect(() => {
-        if (!selectedRequest?.id) return;
-
-        joinRoom(`request:${selectedRequest.id}`);
-
-        const unsubs = [
-            subscribe('request:message', async (data: unknown) => {
-                const payload = data as { requestId: string };
-                if (payload.requestId === selectedRequest.id) {
-                    const updated = await api.requests.getRequest(selectedRequest.id, token!);
-                    setSelectedRequest(updated);
-                    fetchRequests(); // Also refresh list to update message count/last update
-                }
-            }),
-            subscribe('request:update', (data: unknown) => {
-                const updated = data as RequestDetail;
-                if (updated.id === selectedRequest.id) {
-                    setSelectedRequest(updated);
-                    fetchRequests();
-                }
-            })
-        ];
-
-        return () => {
-            unsubs.forEach(u => u());
-            leaveRoom(`request:${selectedRequest.id}`);
-        };
-    }, [selectedRequest?.id, subscribe, joinRoom, leaveRoom, token, fetchRequests]);
-
-    const handleViewRequest = async (item: RequestItem) => {
-        if (!token) return;
-        try {
-            const detail = await api.requests.getRequest(item.id, token);
-            setSelectedRequest(detail);
-            setThreadModalOpen(true);
-        } catch (error: unknown) {
-            const apiError = error as ApiError;
-            const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to load request';
-            const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
-            showToast(message, 'error');
-        }
+    const handleViewRequest = (item: RequestItem) => {
+        setSelectedRequestId(item.id);
     };
 
-    const handleReply = async (content: string, files?: File[]) => {
-        if (!token || !selectedRequest) return;
-        try {
-            const response = await api.requests.addMessage(selectedRequest.id, { content }, token);
-
-            // Upload files if any
-            if (files && files.length > 0) {
-                const orgId = selectedRequest.organizationId || 'SYSTEM';
-                await Promise.all(
-                    files.map(file =>
-                        api.files.uploadFile(orgId, 'REQUEST_MESSAGE', response.id, file, token)
-                    )
-                );
-                // Refresh detail after file uploads
-                const updated = await api.requests.getRequest(selectedRequest.id, token);
-                setSelectedRequest(updated);
-            } else {
-                // If no files, we can just use the returned message to update local state if we want,
-                // but getRequest is safer to get the full updated thread
-                const updated = await api.requests.getRequest(selectedRequest.id, token);
-                setSelectedRequest(updated);
-            }
-
-            showToast('Reply sent', 'success');
-        } catch (error: unknown) {
-            const apiError = error as ApiError;
-            const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to send reply';
-            const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
-            showToast(message, 'error');
-        }
+    const handlePageSizeChange = (newSize: number) => {
+        setPageSize(newSize);
+        localStorage.setItem('edu-admin-mail-limit', String(newSize));
+        updateQueryParams({ page: 1 });
     };
-
-    const handleStatusUpdate = async (newStatus: RequestStatus) => {
-        if (!token || !selectedRequest || updatingStatus) return;
-
-        if (newStatus === RequestStatus.RESOLVED || newStatus === RequestStatus.CLOSED) {
-            setPendingStatus(newStatus);
-            setConfirmOpen(true);
-            return;
-        }
-
-        await executeStatusUpdate(newStatus);
-    };
-
-    const executeStatusUpdate = async (newStatus: RequestStatus) => {
-        if (!token || !selectedRequest) return;
-        try {
-            setUpdatingStatus(true);
-            const payload: UpdateRequestPayload = { status: newStatus };
-            const updated = await api.requests.updateRequest(selectedRequest.id, payload, token);
-            setSelectedRequest(updated);
-            showToast(`Status updated to ${newStatus.replace('_', ' ')}`, 'success');
-            fetchRequests(); // refresh list
-        } catch (error: unknown) {
-            const apiError = error as ApiError;
-            const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to update status';
-            const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
-            showToast(message, 'error');
-        } finally {
-            setUpdatingStatus(false);
-            setConfirmOpen(false);
-            setPendingStatus(null);
-        }
-    };
-
-    // handleCreateRequest is now handled internally by NewRequestModal
 
     const requests = paginatedData?.data || [];
 
@@ -225,7 +136,7 @@ export default function RequestsPage() {
             header: 'Mail',
             sortable: true,
             sortKey: 'subject',
-            accessor: (row) => (
+            accessor: (row: RequestItem) => (
                 <div className="flex items-start gap-3 min-w-0">
                     <div className="w-10 h-10 bg-indigo-50 rounded-sm flex items-center justify-center text-indigo-600 shrink-0">
                         <MessageSquare className="w-5 h-5" />
@@ -245,10 +156,9 @@ export default function RequestsPage() {
         },
         {
             header: 'Sender',
-            accessor: (row) => {
+            accessor: (row: RequestItem) => {
                 const orgLogo = row.organization?.logoUrl ? getPublicUrl(row.organization.logoUrl) : null;
                 const userAvatar = row.creator?.avatarUrl ? getPublicUrl(row.creator.avatarUrl) : null;
-
                 return (
                     <div className="flex items-center gap-3">
                         {row.organization ? (
@@ -278,10 +188,8 @@ export default function RequestsPage() {
                             </div>
                         )}
                         <div className="min-w-0">
-                            <p className="text-xs font-black text-gray-700 truncate max-w-[120px]">{row.creator?.name || row.creator.email}</p>
-                            <div className="flex items-center gap-1.5">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase">{row.creatorRole?.replace('_', ' ')}</p>
-                            </div>
+                            <p className="text-xs font-black text-gray-700 truncate max-w-[120px]">{row.creator?.name || row.creator?.email || 'Unknown'}</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase">{row.creatorRole?.replace('_', ' ') || 'N/A'}</p>
                         </div>
                     </div>
                 );
@@ -289,7 +197,7 @@ export default function RequestsPage() {
         },
         {
             header: 'Recipient',
-            accessor: (row) => (
+            accessor: (row: RequestItem) => (
                 <div className="flex items-center gap-2">
                     {row.assignees && row.assignees.length > 0 ? (
                         <>
@@ -335,15 +243,15 @@ export default function RequestsPage() {
             header: 'Status',
             sortable: true,
             sortKey: 'status',
-            accessor: (row) => <RequestStatusBadge status={row.status} />
+            accessor: (row: RequestItem) => <RequestStatusBadge status={row.status} />
         },
         {
             header: 'Priority',
-            accessor: (row) => <RequestPriorityBadge priority={row.priority} />
+            accessor: (row: RequestItem) => <RequestPriorityBadge priority={row.priority} />
         },
         {
             header: 'Messages',
-            accessor: (row) => (
+            accessor: (row: RequestItem) => (
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 min-w-[30px] justify-center">
                         <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
@@ -362,61 +270,55 @@ export default function RequestsPage() {
             sortable: true,
             sortKey: 'createdAt',
             accessor: (req: RequestItem) => (
-                <div className="flex items-center gap-3">
-                    <div className="relative inline-flex items-center">
-                        <div className="px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 min-w-[30px] text-center">
-                            {new Date(req.createdAt).toLocaleString()}
-                        </div>
-                    </div>
+                <div className="flex items-center text-xs font-medium text-card-text/60 gap-1.5">
+                    <Calendar className="w-3 h-3" /> {new Date(req.createdAt).toLocaleString()}
                 </div>
             )
         },
     ];
 
-    if (loading || (!user && !loading)) {
+    if (authLoading || (!user && !authLoading)) {
         return <Loading fullScreen text="Preparing Mailbox..." size="lg" />;
     }
 
-    const isClosed = selectedRequest?.status === RequestStatus.RESOLVED || selectedRequest?.status === RequestStatus.CLOSED;
-
     return (
-        <div className="flex flex-col h-full w-full animate-fade-in-up">
-            <div className="bg-white/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/50 flex flex-col w-full overflow-hidden flex-1 min-h-0">
-                <div className="px-8 pt-4 border-b border-gray-100 flex flex-col gap-6 bg-gray-50/50 shrink-0">
+        <div className="flex flex-col h-full w-full">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="px-6 md:px-8 pt-2 pb-2 border-b border-gray-100 flex flex-col gap-4 bg-gray-50/50 shrink-0">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
                             <CustomSelect
                                 value={statusFilter}
-                                onChange={(val) => updateQueryParams({ status: val, page: 1 })}
+                                onChange={(val: string) => updateQueryParams({ status: val, page: 1 })}
                                 options={[
                                     { value: 'ALL', label: 'All Statuses', badge: state.stats.mail?.total },
-                                    { value: RequestStatus.OPEN, label: 'Open', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.OPEN] },
-                                    { value: RequestStatus.IN_PROGRESS, label: 'In Progress', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.IN_PROGRESS] },
-                                    { value: RequestStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.AWAITING_RESPONSE] },
-                                    { value: RequestStatus.RESOLVED, label: 'Resolved', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.RESOLVED] },
-                                    { value: RequestStatus.CLOSED, label: 'Closed', badge: (state.stats.mail as any)?.countsByStatus?.[RequestStatus.CLOSED] },
+                                    { value: RequestStatus.OPEN, label: 'Open', badge: state.stats.mail?.countsByStatus?.[RequestStatus.OPEN], icon: Clock, iconClassName: 'text-blue-500' },
+                                    { value: RequestStatus.IN_PROGRESS, label: 'In Progress', badge: state.stats.mail?.countsByStatus?.[RequestStatus.IN_PROGRESS], icon: ArrowUpRight, iconClassName: 'text-amber-500' },
+                                    { value: RequestStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[RequestStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-indigo-500' },
+                                    { value: RequestStatus.RESOLVED, label: 'Resolved', badge: state.stats.mail?.countsByStatus?.[RequestStatus.RESOLVED], icon: CheckCircle2, iconClassName: 'text-green-500' },
+                                    { value: RequestStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[RequestStatus.CLOSED], icon: XCircle, iconClassName: 'text-gray-500' },
                                 ]}
                                 className="w-full sm:w-[240px]"
                                 placeholder="Status"
+                                icon={Filter}
                             />
-
                             <SearchBar
                                 value={searchQuery}
-                                onChange={(val) => updateQueryParams({ search: val, page: 1 })}
+                                onChange={(val: string) => updateQueryParams({ search: val, page: 1 })}
                                 placeholder="Search mail..."
                             />
                         </div>
-                        <button
+                        <Button
                             onClick={() => setNewRequestOpen(true)}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-200 shrink-0"
+                            icon={Plus}
+                            className="flex items-center gap-2 px-8 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-200 shrink-0 border-none"
                         >
-                            <Plus className="w-4 h-4" />
-                            SEND MAIL
-                        </button>
+                            NEW MAIL
+                        </Button>
                     </div>
                 </div>
 
-                <div className="p-4 bg-gray-50/10 flex-1 min-h-0 overflow-hidden">
+                <div className="p-1 md:p-2 bg-gray-50/10 flex-1 min-h-0 overflow-hidden">
                     <DataTable
                         columns={columns}
                         data={requests}
@@ -426,113 +328,28 @@ export default function RequestsPage() {
                         currentPage={paginatedData?.currentPage || 1}
                         totalPages={paginatedData?.totalPages || 1}
                         totalResults={paginatedData?.totalRecords || 0}
-                        pageSize={10}
-                        onPageChange={(p) => updateQueryParams({ page: p })}
+                        pageSize={pageSize}
+                        onPageChange={(p: number) => updateQueryParams({ page: p })}
+                        onPageSizeChange={handlePageSizeChange}
                         sortConfig={{ key: sortBy, direction: sortOrder }}
                         onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
-                        getRowClassName={(row) => {
-                            if (row.status === RequestStatus.OPEN) return '!bg-blue-50/40 border-l-4 border-l-blue-500 shadow-sm transition-colors';
-                            if (row.status === RequestStatus.IN_PROGRESS) return '!bg-amber-50/40 border-l-4 border-l-amber-400 transition-colors';
-                            if (row.status === RequestStatus.AWAITING_RESPONSE) return '!bg-indigo-50/40 border-l-4 border-l-indigo-400 transition-colors';
-                            if (row.status === RequestStatus.RESOLVED) return '!bg-emerald-50/40 border-l-4 border-l-emerald-500 transition-colors';
-                            if (row.status === RequestStatus.CLOSED) return '!bg-slate-50/40 border-l-4 border-l-slate-400 opacity-80 transition-colors';
-                            return 'transition-colors';
-                        }}
+                        getRowClassName={(row: RequestItem) => getRequestRowClassName(row.status)}
                         maxHeight="100%"
                     />
                 </div>
             </div>
 
-            {/* Thread Modal */}
-            <Modal
-                isOpen={threadModalOpen}
-                onClose={() => { setThreadModalOpen(false); setSelectedRequest(null); }}
-                title={selectedRequest?.subject}
-                subtitle={
-                    selectedRequest ? (
-                        <div className="flex items-center gap-3 flex-wrap">
-                            <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{selectedRequest.category.replace('_', ' ')}</span>
-                            <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{selectedRequest.id.slice(0, 8)}</span>
-                            <span className="flex items-center gap-1"><UserIcon className="w-3 h-3" />{selectedRequest.creator?.name || selectedRequest.creator?.email}</span>
-                            {selectedRequest.organization && (
-                                <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{selectedRequest.organization.name}</span>
-                            )}
-                        </div>
-                    ) : undefined
-                }
-                maxWidth="max-w-5xl"
-                className='mb-3'
-            >
-                {selectedRequest && (
-                    <div className="flex flex-col h-full" style={{ minHeight: '600px' }}>
-                        {/* Status controls */}
-                        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-gray-100 flex-wrap shrink-0">
-                            <RequestStatusBadge status={selectedRequest.status} />
-                            <RequestPriorityBadge priority={selectedRequest.priority} />
-
-                            {!isClosed && (
-                                <div className="flex items-center gap-2 ml-auto">
-                                    {selectedRequest.status === RequestStatus.OPEN && (
-                                        <button
-                                            onClick={() => handleStatusUpdate(RequestStatus.IN_PROGRESS)}
-                                            disabled={updatingStatus}
-                                            className="flex items-center gap-1 px-4 py-2 bg-amber-500 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all disabled:opacity-50 shadow-lg shadow-amber-500/20"
-                                        >
-                                            <ArrowUpRight className="w-3 h-3" />
-                                            Start Progress
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => handleStatusUpdate(RequestStatus.RESOLVED)}
-                                        disabled={updatingStatus}
-                                        className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all disabled:opacity-50 shadow-lg shadow-green-500/20"
-                                    >
-                                        Resolve
-                                    </button>
-                                    <button
-                                        onClick={() => handleStatusUpdate(RequestStatus.CLOSED)}
-                                        disabled={updatingStatus}
-                                        className="flex items-center gap-1 px-4 py-2 bg-gray-500 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-gray-600 transition-all disabled:opacity-50 shadow-lg shadow-gray-500/20"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Thread */}
-                        <div className="flex-1 overflow-hidden">
-                            <RequestThread
-                                request={selectedRequest}
-                                currentUserId={user?.id || ''}
-                                currentUserRole={user?.role}
-                                onReply={handleReply}
-                                isClosed={isClosed}
-                            />
-                        </div>
-                    </div>
-                )}
-            </Modal>
-
-            {/* Confirmation Dialog for status updates */}
-            <ConfirmDialog
-                isOpen={confirmOpen}
-                onClose={() => { setConfirmOpen(false); setPendingStatus(null); }}
-                onConfirm={() => pendingStatus && executeStatusUpdate(pendingStatus)}
-                title={`Mark as ${pendingStatus?.replace('_', ' ')}?`}
-                description={`Are you sure you want to change the status to ${pendingStatus?.replace('_', ' ')}? This action will be logged and notify participants.`}
-                confirmText={`Yes, ${pendingStatus?.replace('_', ' ')}`}
-                isDestructive={pendingStatus === RequestStatus.CLOSED}
+            <RequestDetailsModal
+                isOpen={!!selectedRequestId}
+                requestId={selectedRequestId}
+                onClose={() => setSelectedRequestId(null)}
+                onUpdate={fetchRequests}
             />
 
-            {/* New Request Modal */}
             <NewRequestModal
                 isOpen={newRequestOpen}
                 onClose={() => setNewRequestOpen(false)}
-                onSuccess={() => {
-                    fetchRequests();
-                    showToast('Mail sent', 'success');
-                }}
+                onSuccess={() => { fetchRequests(); dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent', type: 'success' } }); }}
             />
         </div>
     );

@@ -23,7 +23,7 @@ export default function AdminPage() {
     }
 
     return (
-        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full animate-fade-in-up">
+        <div className="flex flex-col px-1 md:px-2 py-2 md:py-4 w-full">
             <div className="space-y-8">
 
                 {/* Organization Profile Card */}

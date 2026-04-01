@@ -7,6 +7,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { Role } from '@/types';
 import { OrgLogoOrIcon } from './ui/OrgLogoOrIcon';
+import { NotificationDropdown } from './notifications/NotificationDropdown';
+import { AnnouncementDropdown } from './announcements/AnnouncementDropdown';
+import { ChatDropdown } from './chat/ChatDropdown';
 
 
 export default function Navbar() {
@@ -49,7 +52,13 @@ export default function Navbar() {
             </div>
 
             <div className="flex items-center space-x-2 md:space-x-4">
-                {token && user ? null : (
+                {token && user ? (
+                    <div className="flex items-center space-x-1 md:space-x-3 pr-2">
+                        <AnnouncementDropdown />
+                        <ChatDropdown />
+                        <NotificationDropdown />
+                    </div>
+                ) : (
                     <div className="flex items-center p-1 rounded-sm bg-secondary/20 shadow-inner border border-secondary/10">
                         <Link
                             href="/login"

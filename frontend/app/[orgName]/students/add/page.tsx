@@ -21,7 +21,7 @@ export default function AddStudentPage() {
     }, [user, orgSlug, router]);
 
     return (
-        <>
+        <div className="flex flex-col">
             <div className="mb-6">
                 <div className="flex items-center gap-5">
                     <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl shrink-0">
@@ -37,6 +37,6 @@ export default function AddStudentPage() {
             <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-2xl border border-white/20 p-6 md:p-12 text-card-text">
                 <StudentForm orgSlug={orgSlug} />
             </div>
-        </>
+        </div>
     );
 }

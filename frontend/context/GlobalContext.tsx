@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { AdminStats, OrgStats, Role, Organization, Teacher, Student } from '@/types';
-import { ToastType } from '@/components/ui/Toast';
+import { AdminStats, OrgStats, Role, Organization, Teacher, Student, Section, Course } from '@/types';
+import { Toast, ToastType } from '@/components/ui/Toast';
 
 // --- Types ---
 
@@ -11,6 +11,7 @@ export interface JwtPayload {
     id: string;
     email: string;
     orgId?: string | null;
+    organizationId?: string | null;
     name?: string;
     orgSlug?: string;
     orgName?: string;
@@ -60,7 +61,7 @@ export interface GlobalState {
         admin: AdminStats | null;
         org: OrgStats | null;
         orgData: Organization | null;
-        mail: { unread: number; total: number } | null;
+        mail: { unread: number; total: number; countsByStatus?: Record<string, number> } | null;
     };
     toasts: ToastItem[];
     ui: {
@@ -69,6 +70,11 @@ export interface GlobalState {
         viewModal: ModalConfig;
         isLoading: boolean;
         isProcessing: boolean;
+        processingId: string | null;
+    };
+    data: {
+        sections: Section[];
+        courses: Course[];
     };
 }
 
@@ -83,15 +89,17 @@ type Action =
     | { type: 'STATS_SET_ADMIN'; payload: AdminStats }
     | { type: 'STATS_SET_ORG'; payload: OrgStats }
     | { type: 'STATS_SET_ORG_DATA'; payload: Organization }
-    | { type: 'STATS_SET_MAIL'; payload: { unread: number; total: number } }
+    | { type: 'STATS_SET_MAIL'; payload: { unread: number; total: number; countsByStatus?: Record<string, number> } }
     | { type: 'TOAST_ADD'; payload: Omit<ToastItem, 'id'> }
     | { type: 'TOAST_REMOVE'; payload: string }
     | { type: 'UI_TOGGLE_SIDEBAR' }
     | { type: 'UI_SET_MOBILE_SIDEBAR'; payload: boolean }
     | { type: 'UI_SET_LOADING'; payload: boolean }
-    | { type: 'UI_SET_PROCESSING'; payload: boolean }
+    | { type: 'UI_SET_PROCESSING'; payload: boolean | { isProcessing: boolean; id: string } }
     | { type: 'UI_OPEN_VIEW_MODAL'; payload: Omit<ModalConfig, 'isOpen'> }
-    | { type: 'UI_CLOSE_VIEW_MODAL' };
+    | { type: 'UI_CLOSE_VIEW_MODAL' }
+    | { type: 'DATA_SET_SECTIONS'; payload: Section[] }
+    | { type: 'DATA_SET_COURSES'; payload: Course[] };
 
 // --- Initial State ---
 
@@ -114,11 +122,16 @@ const initialState: GlobalState = {
         isMobileSidebarOpen: false,
         isLoading: false,
         isProcessing: false,
+        processingId: null,
         viewModal: {
             isOpen: false,
             title: '',
             fields: [],
         },
+    },
+    data: {
+        sections: [],
+        courses: [],
     },
 };
 
@@ -176,11 +189,18 @@ function globalReducer(state: GlobalState, action: Action): GlobalState {
         case 'UI_SET_LOADING':
             return { ...state, ui: { ...state.ui, isLoading: action.payload } };
         case 'UI_SET_PROCESSING':
-            return { ...state, ui: { ...state.ui, isProcessing: action.payload } };
+            if (typeof action.payload === 'boolean') {
+                return { ...state, ui: { ...state.ui, isProcessing: action.payload, processingId: action.payload ? state.ui.processingId : null } };
+            }
+            return { ...state, ui: { ...state.ui, isProcessing: action.payload.isProcessing, processingId: action.payload.isProcessing ? action.payload.id : null } };
         case 'UI_OPEN_VIEW_MODAL':
             return { ...state, ui: { ...state.ui, viewModal: { ...action.payload, isOpen: true } } };
         case 'UI_CLOSE_VIEW_MODAL':
             return { ...state, ui: { ...state.ui, viewModal: { ...state.ui.viewModal, isOpen: false } } };
+        case 'DATA_SET_SECTIONS':
+            return { ...state, data: { ...state.data, sections: action.payload } };
+        case 'DATA_SET_COURSES':
+            return { ...state, data: { ...state.data, courses: action.payload } };
         default:
             return state;
     }
@@ -201,6 +221,15 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     // Initial auth sync
     useEffect(() => {
         const storedToken = localStorage.getItem('token');
+        const storedSidebarState = localStorage.getItem('edu-sidebar-expanded');
+
+        if (storedSidebarState !== null) {
+            const isExpanded = storedSidebarState === 'true';
+            if (isExpanded !== state.ui.isSidebarExpanded) {
+                dispatch({ type: 'UI_TOGGLE_SIDEBAR' });
+            }
+        }
+
         if (storedToken) {
             try {
                 const base64Url = storedToken.split('.')[1];
@@ -237,6 +266,18 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     return (
         <GlobalContext.Provider value={{ state, dispatch }}>
             {children}
+            <div className="fixed bottom-4 right-4 z-100 flex flex-col items-end pointer-events-none">
+                {state.toasts.map((toast) => (
+                    <Toast
+                        key={toast.id}
+                        id={toast.id}
+                        message={toast.message}
+                        type={toast.type}
+                        duration={toast.duration}
+                        onClose={(id) => dispatch({ type: 'TOAST_REMOVE', payload: id })}
+                    />
+                ))}
+            </div>
         </GlobalContext.Provider>
     );
 }

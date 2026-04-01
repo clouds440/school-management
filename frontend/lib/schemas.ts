@@ -26,6 +26,7 @@ const optionalPasswordRules = z
 // --- Registration Schema ---
 export const registerSchema = z.object({
     name: z.string().min(1, 'Organization Name is required'),
+    adminName: z.string().min(1, 'Full Name is required'),
     location: z.string().min(1, 'Location is required'),
     type: z.nativeEnum(OrganizationType),
     email: z.string().email('Invalid login email address'),

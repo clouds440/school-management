@@ -5,36 +5,34 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import Link from 'next/link';
-import { useToast } from '@/context/ToastContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const { showToast } = useToast();
+  const { state, dispatch } = useGlobal();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false,
   });
 
-  const [loading, setLoading] = useState(false);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (state.ui.isProcessing) return;
+    dispatch({ type: 'UI_SET_PROCESSING', payload: true });
 
     try {
       const res = await api.auth.login(formData);
       login(res.access_token || '');
-      showToast('Welcome back!', 'success');
+      dispatch({ type: 'TOAST_ADD', payload: { message: 'Welcome back!', type: 'success' } });
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed';
-      showToast(errorMessage, 'error');
+      dispatch({ type: 'TOAST_ADD', payload: { message: errorMessage, type: 'error' } });
     } finally {
-
-      setLoading(false);
+      dispatch({ type: 'UI_SET_PROCESSING', payload: false });
     }
   };
 
@@ -135,7 +133,6 @@ export default function LoginPage() {
           <div>
             <Button
               type="submit"
-              isLoading={loading}
               loadingText="Signing in..."
               className="w-full"
             >

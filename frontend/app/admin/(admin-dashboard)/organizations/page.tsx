@@ -7,12 +7,11 @@ import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { ShieldOff, ShieldAlert, ShieldCheck, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone, Info, Hash, Clock, GraduationCap, BookOpen, School, Library, MonitorPlay, Pencil, Send } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Organization, AdminStats, OrgStatus, PaginatedResponse } from '@/types';
+import { Organization, OrgStatus } from '@/types';
 import { getPublicUrl } from '@/lib/utils';
 import { TableActions, AdminAction } from '@/components/ui/TableActions';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { useToast } from '@/context/ToastContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { DataField, useUI } from '@/context/UIContext';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
@@ -32,20 +31,28 @@ export default function OrganizationsPage() {
     const { state, dispatch } = useGlobal();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { showToast } = useToast();
 
     const { openViewModal } = useUI();
-    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const actionLoading = state.ui.isProcessing;
+    const [processingId, setProcessingId] = useState<string | null>(null);
     const stats = state.stats.admin;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [operatingOrg, setOperatingOrg] = useState<{ id: string, name: string, email: string, statusHistory?: Organization['statusHistory'] } | null>(null);
+    const [operatingOrg, setOperatingOrg] = useState<{ id: string, name: string, email: string, adminUserId: string, statusHistory?: Organization['statusHistory'] } | null>(null);
     const [modalMode, setModalMode] = useState<'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE'>('REJECT');
     const [reason, setReason] = useState('');
 
     const [newRequestOpen, setNewRequestOpen] = useState(false);
     const [initialTargetId, setInitialTargetId] = useState<string | undefined>(undefined);
     const [initialSubject, setInitialSubject] = useState<string | undefined>(undefined);
+
+    const [pageSize, setPageSize] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('edu-admin-orgs-limit');
+            return saved ? parseInt(saved, 10) : 10;
+        }
+        return 10;
+    });
 
     // URL State
     const orgParams: AdminOrgParams = {
@@ -55,7 +62,7 @@ export default function OrganizationsPage() {
         sortBy: searchParams.get('sortBy') || 'name',
         sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc',
         type: searchParams.get('type') || 'ALL',
-        limit: 10
+        limit: pageSize
     };
 
     const {
@@ -76,11 +83,6 @@ export default function OrganizationsPage() {
     const sortOrder = orgParams.sortOrder || 'asc';
     const orgTypeFilter = orgParams.type || 'ALL';
 
-    // Sync is now direct via usePaginatedData data variable
-
-
-    // Stats are now managed globally via layout and dispatch
-
     const updateQueryParams = (updates: Record<string, string | number | undefined>) => {
         const params = new URLSearchParams(searchParams.toString());
         Object.entries(updates).forEach(([key, value]) => {
@@ -93,30 +95,34 @@ export default function OrganizationsPage() {
         router.push(`?${params.toString()}`, { scroll: false });
     };
 
-    // We no longer need fetchOrganizations locally as it's handled by the hook
+    const handlePageSizeChange = (newSize: number) => {
+        setPageSize(newSize);
+        localStorage.setItem('edu-admin-orgs-limit', String(newSize));
+        updateQueryParams({ page: 1 });
+    };
 
     const handleApprove = async (id: string, name: string) => {
         if (!token) return;
         try {
-            setActionLoading(`approve-${id}`);
+            setProcessingId(`approve-${id}`);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
             await api.admin.approveOrganization(id, token);
-            showToast(`${name} approved successfully`, 'success');
-            // Re-fetch to update the current page data
+            dispatch({ type: 'TOAST_ADD', payload: { message: `${name} approved successfully`, type: 'success' } });
             refresh();
-            // Also refresh stats globally
             api.admin.getAdminStats(token!).then(data => dispatch({ type: 'STATS_SET_ADMIN', payload: data })).catch(console.error);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Failed to approve organization';
-            showToast(message, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
         } finally {
-            setActionLoading(null);
+            setProcessingId(null);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
-    const handleOpenModal = (id: string, name: string, email: string, mode: 'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE', currentHistory?: Organization['statusHistory']) => {
-        setOperatingOrg({ id, name, email, statusHistory: currentHistory });
+    const handleOpenModal = (row: Organization, mode: 'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE') => {
+        setOperatingOrg({ id: row.id, name: row.name, email: row.email, adminUserId: row.adminUserId || '', statusHistory: row.statusHistory });
         setModalMode(mode);
-        const lastMessage = currentHistory && currentHistory.length > 0 ? currentHistory[currentHistory.length - 1].message : '';
+        const lastMessage = row.statusHistory && row.statusHistory.length > 0 ? row.statusHistory[row.statusHistory.length - 1].message : '';
         setReason(lastMessage || '');
         setIsModalOpen(true);
     };
@@ -126,14 +132,15 @@ export default function OrganizationsPage() {
         if (!operatingOrg || !token) return;
 
         try {
-            setActionLoading(`${modalMode.toLowerCase()}-${operatingOrg.id}`);
+            setProcessingId(`${modalMode.toLowerCase()}-${operatingOrg.id}`);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
             if (modalMode === 'REJECT') {
                 await api.admin.rejectOrganization(operatingOrg.id, reason, token);
-                showToast(`${operatingOrg.name} rejected`, 'info');
+                dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingOrg.name} rejected`, type: 'info' } });
                 refresh();
             } else if (modalMode === 'SUSPEND') {
                 await api.admin.suspendOrganization(operatingOrg.id, reason, token);
-                showToast(`${operatingOrg.name} suspended`, 'info');
+                dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingOrg.name} suspended`, type: 'info' } });
                 refresh();
             } else {
                 if (activeStatusTab === OrgStatus.REJECTED) {
@@ -141,8 +148,7 @@ export default function OrganizationsPage() {
                 } else {
                     await api.admin.suspendOrganization(operatingOrg.id, reason, token);
                 }
-                showToast(`Status message updated for ${operatingOrg.name}`, 'success');
-                // We fetch again to get the updated history from backend
+                dispatch({ type: 'TOAST_ADD', payload: { message: `Status message updated for ${operatingOrg.name}`, type: 'success' } });
                 refresh();
             }
             setIsModalOpen(false);
@@ -150,9 +156,10 @@ export default function OrganizationsPage() {
             setReason('');
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : `Failed to ${modalMode.toLowerCase()} organization`;
-            showToast(message, 'error');
+            dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
         } finally {
-            setActionLoading(null);
+            setProcessingId(null);
+            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };
 
@@ -162,8 +169,7 @@ export default function OrganizationsPage() {
         setNewRequestOpen(true);
     };
 
-    // Use dynamic counts from server if available, otherwise fallback to stats
-    const dynamicCounts = (fetchedData as (PaginatedResponse<Organization> & { counts: Record<string, number> }))?.counts || stats;
+    const dynamicCounts = fetchedData?.counts || stats;
 
     const statusTabs: { id: OrgStatus, label: string, icon: LucideIcon, color: string, bg: string, count?: number }[] = [
         { id: OrgStatus.PENDING, label: 'Pending', icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-600/10', count: dynamicCounts?.PENDING },
@@ -223,6 +229,7 @@ export default function OrganizationsPage() {
         },
         {
             header: 'Actions',
+            width: 250,
             accessor: (row: Organization) => {
                 const getActions = (): AdminAction[] => {
                     const actions: AdminAction[] = [];
@@ -231,31 +238,31 @@ export default function OrganizationsPage() {
                         actions.push({
                             variant: 'approve',
                             onClick: () => handleApprove(row.id, row.name),
-                            loading: actionLoading === `approve-${row.id}`
+                            loading: actionLoading && processingId === `approve-${row.id}`
                         });
                         actions.push({
                             variant: 'reject',
-                            onClick: () => handleOpenModal(row.id, row.name, row.email, 'REJECT'),
-                            loading: actionLoading === `reject-${row.id}`
+                            onClick: () => handleOpenModal(row, 'REJECT'),
+                            loading: actionLoading && processingId === `reject-${row.id}`
                         });
                     } else if (activeStatusTab === OrgStatus.APPROVED) {
                         actions.push({
                             variant: 'suspend',
-                            onClick: () => handleOpenModal(row.id, row.name, row.email, 'SUSPEND'),
-                            loading: actionLoading === `suspend-${row.id}`
+                            onClick: () => handleOpenModal(row, 'SUSPEND'),
+                            loading: actionLoading && processingId === `suspend-${row.id}`
                         });
                     } else if (activeStatusTab === OrgStatus.REJECTED) {
                         actions.push({
                             variant: 'reapprove',
                             onClick: () => handleApprove(row.id, row.name),
-                            loading: actionLoading === `approve-${row.id}`,
+                            loading: actionLoading && processingId === `approve-${row.id}`,
                             title: 'Re-approve'
                         });
                     } else if (activeStatusTab === OrgStatus.SUSPENDED) {
                         actions.push({
                             variant: 'unsuspend',
                             onClick: () => handleApprove(row.id, row.name),
-                            loading: actionLoading === `approve-${row.id}`,
+                            loading: actionLoading && processingId === `approve-${row.id}`,
                             title: 'Unsuspend'
                         });
                     }
@@ -263,7 +270,7 @@ export default function OrganizationsPage() {
                     if (row.status === OrgStatus.REJECTED || row.status === OrgStatus.SUSPENDED) {
                         actions.push({
                             variant: 'editMessage',
-                            onClick: () => handleOpenModal(row.id, row.name, row.email, 'EDIT_MESSAGE', row.statusHistory),
+                            onClick: () => handleOpenModal(row, 'EDIT_MESSAGE'),
                             title: 'Edit Status Message'
                         });
                     }
@@ -276,12 +283,15 @@ export default function OrganizationsPage() {
                         <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                             <button
                                 onClick={() => handleSendMail(row)}
-                                className="p-2 hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 rounded-sm transition-all"
+                                className="py-2 px-3 bg-indigo-100 hover:bg-indigo-200 text-gray-400 hover:text-indigo-600 rounded-sm transition-all"
                                 title="Send Mail"
                             >
                                 <Send className="w-4 h-4" />
                             </button>
-                            <TableActions extraActions={getActions()} showLabels={window.innerWidth > 1440} />
+                            <TableActions
+                                extraActions={getActions()}
+                                showLabels={window.innerWidth > 1440}
+                            />
                         </div>
                     </div>
                 );
@@ -308,7 +318,6 @@ export default function OrganizationsPage() {
                     <div className="space-y-4 mt-2 max-h-[500px] overflow-y-auto pr-6 custom-scrollbar -ml-2">
                         {[...org.statusHistory].reverse().map((entry, idx) => (
                             <div key={idx} className="relative pl-8 border-l-2 border-primary/10 last:border-l-0 pb-8 last:pb-2">
-                                {/* Timeline Dot */}
                                 <div className="absolute left-2 top-0.5 w-5 h-5 rounded-full bg-card border-4 border-primary/20 flex items-center justify-center shadow-sm">
                                     <div className={`w-2 h-2 rounded-full ${entry.status === 'APPROVED' ? 'bg-green-500' :
                                         entry.status === 'REJECTED' ? 'bg-red-500' :
@@ -316,7 +325,6 @@ export default function OrganizationsPage() {
                                         }`} />
                                 </div>
 
-                                {/* Content Card */}
                                 <div className="bg-card-text/5 rounded-sm p-6 border border-card-text/10 shadow-sm relative transition-all hover:bg-card-text/[0.07]">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                                         <div className="flex items-center gap-3">
@@ -370,9 +378,9 @@ export default function OrganizationsPage() {
     };
 
     return (
-        <div className="flex flex-col w-full animate-fade-in-up">
-            <div className="bg-white/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/50 flex flex-col w-full overflow-hidden">
-                <div className="px-6 md:px-8 pt-8 pb-6 border-b border-gray-100 flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-gray-50/50">
+        <div className="flex flex-col h-full w-full">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
                     <div className="flex overflow-x-auto mb-4 xl:mb-0 pb-2 gap-3 scrollbar-none sm:flex-wrap">
                         {statusTabs.map((tab) => (
                             <button
@@ -427,7 +435,7 @@ export default function OrganizationsPage() {
                     </div>
                 </div>
 
-                <div className="p-4 md:p-6 bg-gray-50/10">
+                <div className="p-2 md:p-4 bg-gray-50/10 flex-1 min-h-0">
                     <DataTable
                         columns={columns}
                         data={fetchedData?.data || []}
@@ -437,8 +445,10 @@ export default function OrganizationsPage() {
                         currentPage={page}
                         totalPages={fetchedData?.totalPages || 1}
                         totalResults={fetchedData?.totalRecords || 0}
-                        pageSize={10}
+                        pageSize={pageSize}
                         onPageChange={(p) => updateQueryParams({ page: p })}
+                        onPageSizeChange={handlePageSizeChange}
+                        maxHeight="100%"
                         sortConfig={{ key: sortBy, direction: sortOrder }}
                         onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
                     />
@@ -456,7 +466,7 @@ export default function OrganizationsPage() {
                 title={modalMode === 'REJECT' ? `Reject ${operatingOrg?.name}` : modalMode === 'SUSPEND' ? `Suspend ${operatingOrg?.name}` : 'Edit Status Message'}
                 submitText={modalMode === 'REJECT' ? 'Confirm Rejection' : modalMode === 'SUSPEND' ? 'Confirm Suspension' : 'Update Message'}
                 variant={modalMode === 'REJECT' ? 'danger' : modalMode === 'SUSPEND' ? 'warning' : 'info'}
-                isSubmitting={actionLoading !== null}
+                isSubmitting={actionLoading}
                 maxWidth="max-w-3xl"
             >
                 <div className="space-y-4 pt-2">
@@ -509,7 +519,6 @@ export default function OrganizationsPage() {
                     />
                 </div>
             </ModalForm>
-            {/* New Request Modal */}
             <NewRequestModal
                 isOpen={newRequestOpen}
                 onClose={() => {
@@ -520,7 +529,7 @@ export default function OrganizationsPage() {
                 initialTargetId={initialTargetId}
                 initialSubject={initialSubject}
                 onSuccess={() => {
-                    showToast('Mail sent successfully', 'success');
+                    dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent successfully', type: 'success' } });
                 }}
             />
         </div>

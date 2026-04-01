@@ -6,7 +6,7 @@ import { Settings } from 'lucide-react';
 
 export default function Profile({ profile, orgSlug }: { profile: Student | null; orgSlug: string }) {
     return (
-        <div className="bg-card rounded-sm border border-white/5 shadow-sm overflow-hidden animate-fade-in-up">
+        <div className="bg-card rounded-sm border border-white/5 shadow-sm overflow-hidden">
             <div className="p-8 border-b border-primary/10 bg-primary/5 flex items-center gap-4">
                 <div className="p-3 bg-primary/10 rounded-sm">
                     <Settings className="w-6 h-6 text-primary" />
