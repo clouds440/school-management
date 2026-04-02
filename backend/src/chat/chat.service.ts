@@ -190,8 +190,8 @@ export class ChatService {
                 creatorId: user.id,
                 participants: {
                     create: [
-                        { userId: user.id, role: ChatParticipantRole.ADMIN },
-                        { userId: dto.participantId, role: ChatParticipantRole.ADMIN }
+                        { userId: user.id, role: ChatParticipantRole.ADMIN, membershipHistory: { create: { activatedAt: new Date() } } },
+                        { userId: dto.participantId, role: ChatParticipantRole.ADMIN, membershipHistory: { create: { activatedAt: new Date() } } }
                     ]
                 }
             },
@@ -295,7 +295,8 @@ export class ChatService {
                 participants: {
                     create: participants.map(userId => ({
                         userId,
-                        role: userId === user.id ? ChatParticipantRole.ADMIN : ChatParticipantRole.MEMBER
+                        role: userId === user.id ? ChatParticipantRole.ADMIN : ChatParticipantRole.MEMBER,
+                        membershipHistory: { create: { activatedAt: new Date() } }
                     }))
                 }
             },
@@ -388,13 +389,22 @@ export class ChatService {
             const existing = chat.participants.find(p => p.userId === targetUser.id);
             if (existing) {
                 if (existing.isActive) continue; // Already active
-                await this.prisma.chatParticipant.update({
-                    where: { id: existing.id },
-                    data: { isActive: true }
-                });
+                await this.prisma.$transaction([
+                    this.prisma.chatParticipant.update({
+                        where: { id: existing.id },
+                        data: { isActive: true }
+                    }),
+                    this.prisma.chatMembershipHistory.create({
+                        data: { chatParticipantId: existing.id, activatedAt: new Date() }
+                    })
+                ]);
             } else {
                 await this.prisma.chatParticipant.create({
-                    data: { chatId, userId: targetUser.id }
+                    data: {
+                        chatId,
+                        userId: targetUser.id,
+                        membershipHistory: { create: { activatedAt: new Date() } }
+                    }
                 });
             }
             systemMessages.push(`${adminUser?.name || 'Admin'} added ${targetUser.name || targetUser.email} to the group`);
@@ -451,13 +461,12 @@ export class ChatService {
 
         const adminUserRecord = await this.prisma.user.findUnique({ where: { id: user.id } });
         const targetUserRecord = await this.prisma.user.findUnique({ where: { id: targetUserId } });
-
-        await this.prisma.chatParticipant.update({
-            where: { id: participant.id },
-            data: { isActive: false }
+        const lastHistory = await this.prisma.chatMembershipHistory.findFirst({
+            where: { chatParticipantId: participant.id, deactivatedAt: null },
+            orderBy: { activatedAt: 'desc' }
         });
 
-        // Log system message
+        // Log system message FIRST while user is still active so they can see it
         const content = `${adminUserRecord?.name || 'Admin'} removed ${targetUserRecord?.name || targetUserRecord?.email || 'someone'} from the group`;
         const msg = await this.prisma.chatMessage.create({
             data: {
@@ -471,15 +480,36 @@ export class ChatService {
         });
 
         this.events.emitToRoom(`chat:${chatId}`, 'chat:message', msg);
-        const remainingParticipants = await this.prisma.chatParticipant.findMany({ where: { chatId, isActive: true } });
-        for (const p of remainingParticipants) {
+        const activeParticipants = await this.prisma.chatParticipant.findMany({ where: { chatId, isActive: true } });
+        for (const p of activeParticipants) {
             this.events.emitToRoom(`user:${p.userId}`, 'chat:message', msg);
         }
-        // Also notify the removed user
-        this.events.emitToRoom(`user:${targetUserId}`, 'chat:message', msg);
+        // Explicitly notify the removed user if they weren't in the list
+        if (!activeParticipants.some(p => p.userId === targetUserId)) {
+            this.events.emitToRoom(`user:${targetUserId}`, 'chat:message', msg);
+        }
+
+        // NOW deactivate the participant
+        await this.prisma.$transaction([
+            this.prisma.chatParticipant.update({
+                where: { id: participant.id },
+                data: { isActive: false }
+            }),
+            ...(lastHistory ? [
+                this.prisma.chatMembershipHistory.update({
+                    where: { id: lastHistory.id },
+                    data: { deactivatedAt: new Date() }
+                })
+            ] : [])
+        ]);
+
+        // Terminate WebSocket subscription immediately
+        await this.events.forceLeaveRoom(targetUserId, `chat:${chatId}`);
 
         return { message: 'Participant removed successfully.' };
     }
+
+
 
     async updateChat(chatId: string, dto: { name?: string; avatarUrl?: string }, user: CurrentUser) {
         const chat = await this.prisma.chat.findUnique({
@@ -593,11 +623,10 @@ export class ChatService {
 
         return updated;
     }
-
     async getUserChats(user: CurrentUser) {
         const chats = await this.prisma.chat.findMany({
             where: {
-                participants: { some: { userId: user.id, isActive: true } }
+                participants: { some: { userId: user.id } }
             },
             include: {
                 participants: {
@@ -633,25 +662,61 @@ export class ChatService {
                 lastReadAt = lastMsg?.createdAt;
             }
 
+            const history = await this.prisma.chatMembershipHistory.findMany({
+                where: { chatParticipantId: myParticipant!.id }
+            });
+
+            const visibilityOR = history.map(h => ({
+                createdAt: {
+                    gte: h.activatedAt,
+                    ...(h.deactivatedAt ? { lte: h.deactivatedAt } : {})
+                }
+            }));
+
+            // Get last message visible to this user
+            const lastMessage = await this.prisma.chatMessage.findFirst({
+                where: {
+                    chatId: chat.id,
+                    OR: visibilityOR.length > 0 ? visibilityOR : [{ chatId: 'NONE' }] // Handle no history gracefully
+                },
+                orderBy: { createdAt: 'desc' },
+                include: { sender: { select: { id: true, name: true, email: true } } }
+            });
+
             const unreadCount = await this.prisma.chatMessage.count({
                 where: {
                     chatId: chat.id,
                     createdAt: lastReadAt ? { gt: lastReadAt } : undefined,
                     senderId: { not: user.id },
-                    deletedAt: null
+                    deletedAt: null,
+                    type: { not: ChatMessageType.SYSTEM },
+                    OR: visibilityOR.length > 0 ? visibilityOR : [{ chatId: 'NONE' }]
                 }
             });
-            return { ...chat, unreadCount };
+            return { ...chat, messages: lastMessage ? [lastMessage] : [], unreadCount };
         }));
 
         return chatsWithUnread;
     }
 
     async getChatMessages(chatId: string, user: CurrentUser, page: number = 1, limit: number = 20) {
-        await this.verifyChatAccess(chatId, user.id, true); // Allow inactive to see history
+        const participant = await this.verifyChatAccess(chatId, user.id, true); // Allow inactive to see history
+        const history = await this.prisma.chatMembershipHistory.findMany({
+            where: { chatParticipantId: participant.id }
+        });
+
+        const visibilityOR = history.map(h => ({
+            createdAt: {
+                gte: h.activatedAt,
+                ...(h.deactivatedAt ? { lte: h.deactivatedAt } : {})
+            }
+        }));
 
         const messagesList = await this.prisma.chatMessage.findMany({
-            where: { chatId },
+            where: {
+                chatId,
+                ...(visibilityOR.length > 0 ? { OR: visibilityOR } : {})
+            },
             orderBy: { createdAt: 'desc' },
             skip: (page - 1) * limit,
             take: limit,
@@ -661,19 +726,35 @@ export class ChatService {
             }
         });
 
-        const totalCount = await this.prisma.chatMessage.count({ where: { chatId } });
+        const totalCount = await this.prisma.chatMessage.count({
+            where: {
+                chatId,
+                ...(visibilityOR.length > 0 ? { OR: visibilityOR } : {})
+            }
+        });
 
-        // Include read receipts for active participants
+        // Include read receipts for active participants using timestamp comparison instead of UUID lexical order
         const activeParticipants = await this.prisma.chatParticipant.findMany({
-            where: { chatId, isActive: true },
+            where: { chatId, isActive: true, lastReadMessageId: { not: null } },
             select: { userId: true, lastReadMessageId: true }
         });
+
+        // Fetch timestamps for all lastReadMessageIds involved
+        const lastReadMsgIds = Array.from(new Set(activeParticipants.map(p => p.lastReadMessageId!)));
+        const readMessages = await this.prisma.chatMessage.findMany({
+            where: { id: { in: lastReadMsgIds } },
+            select: { id: true, createdAt: true }
+        });
+        const readMap = new Map(readMessages.map(m => [m.id, m.createdAt.getTime()]));
 
         return {
             data: messagesList.reverse().map(m => ({
                 ...m,
                 readBy: activeParticipants
-                    .filter(p => p.userId !== m.senderId && p.lastReadMessageId && p.lastReadMessageId >= m.id)
+                    .filter(p => {
+                        const readTime = readMap.get(p.lastReadMessageId!);
+                        return p.userId !== m.senderId && readTime && readTime >= m.createdAt.getTime();
+                    })
                     .map(p => p.userId)
             })),
             total: totalCount,
@@ -730,7 +811,8 @@ export class ChatService {
             where: { chatId_userId: { chatId, userId: user.id } }
         });
 
-        if (!participant || !participant.isActive) throw new ForbiddenException('Not an active participant.');
+        // Suppress "Not an active participant" error by returning early
+        if (!participant || !participant.isActive) return { message: 'Ignored for inactive participant' };
 
         let finalReadMessageId = messageId;
 
@@ -761,31 +843,45 @@ export class ChatService {
     }
 
     async getUnreadCount(user: CurrentUser) {
-        const chats = await this.prisma.chatParticipant.findMany({
+        const participants = await this.prisma.chatParticipant.findMany({
             where: { userId: user.id, isActive: true },
             select: {
+                id: true,
                 chatId: true,
                 lastReadMessageId: true
             }
         });
 
         let totalUnread = 0;
-        for (const chat of chats) {
+        for (const p of participants) {
             let lastReadAt: Date | undefined;
-            if (chat.lastReadMessageId) {
+            if (p.lastReadMessageId) {
                 const lastMsg = await this.prisma.chatMessage.findUnique({
-                    where: { id: chat.lastReadMessageId },
+                    where: { id: p.lastReadMessageId },
                     select: { createdAt: true }
                 });
                 lastReadAt = lastMsg?.createdAt;
             }
 
+            const history = await this.prisma.chatMembershipHistory.findMany({
+                where: { chatParticipantId: p.id }
+            });
+
+            const visibilityOR = history.map(h => ({
+                createdAt: {
+                    gte: h.activatedAt,
+                    ...(h.deactivatedAt ? { lte: h.deactivatedAt } : {})
+                }
+            }));
+
             const count = await this.prisma.chatMessage.count({
                 where: {
-                    chatId: chat.chatId,
+                    chatId: p.chatId,
                     createdAt: lastReadAt ? { gt: lastReadAt } : undefined,
                     senderId: { not: user.id },
-                    deletedAt: null
+                    deletedAt: null,
+                    type: { not: ChatMessageType.SYSTEM },
+                    ...(visibilityOR.length > 0 ? { OR: visibilityOR } : {})
                 }
             });
             totalUnread += count;
@@ -805,3 +901,4 @@ export class ChatService {
         return participant;
     }
 }
+

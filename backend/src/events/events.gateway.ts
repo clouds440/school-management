@@ -10,6 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { ConfigService } from '@nestjs/config';
 import { WsJwtGuard } from './ws-jwt.guard';
+import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * Authenticated user data attached to socket.data.user by WsJwtGuard.
@@ -46,6 +47,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     constructor(
         private readonly wsGuard: WsJwtGuard,
         private readonly configService: ConfigService,
+        private readonly prisma: PrismaService,
     ) {}
 
     // ──────────────────────────── Connection lifecycle ──────────────────────────
@@ -90,6 +92,23 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @MessageBody() data: { roomId: string },
     ): Promise<void> {
         if (!client.data.user || !data?.roomId) return;
+
+        const user = client.data.user as SocketUser;
+
+        // Security: For chat rooms, verify active participation
+        if (data.roomId.startsWith('chat:')) {
+            const chatId = data.roomId.replace('chat:', '');
+            const participant = await this.prisma.chatParticipant.findUnique({
+                where: { chatId_userId: { chatId, userId: user.id } }
+            });
+
+            if (!participant || !participant.isActive) {
+                // Silently ignore or emit error
+                client.emit('error', { message: 'Join room unauthorized' });
+                return;
+            }
+        }
+
         await client.join(data.roomId);
         client.emit('roomJoined', { roomId: data.roomId });
     }
@@ -105,6 +124,19 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (!client.data.user || !data?.roomId) return;
         await client.leave(data.roomId);
         client.emit('roomLeft', { roomId: data.roomId });
+    }
+
+    /**
+     * Force a specific user to leave a room (e.g., when they are removed from a chat).
+     */
+    async forceLeaveRoom(userId: string, roomId: string): Promise<void> {
+        const userRoom = `user:${userId}`;
+        const sockets = await this.server.in(userRoom).fetchSockets();
+
+        for (const socket of sockets) {
+            await socket.leave(roomId);
+            socket.emit('roomLeft', { roomId, forced: true });
+        }
     }
 
     // ──────────────────────────── Emit helpers (for services) ───────────────────

@@ -48,41 +48,29 @@ export default function LoginPage() {
 
 
   return (
-    <div className="flex min-h-full h-screen bg-gray-50 overflow-hidden">
+    <div className="flex min-h-full h-screen bg-gray-100 overflow-hidden">
       {/* Left Column: Branding Assets (Hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-12 overflow-hidden bg-gray-900">
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-10 overflow-hidden bg-gray-100">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-pulse"></div>
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-pulse delay-700"></div>
 
-        <div className="relative z-10 w-full max-w-lg text-center lg:text-left space-y-8 animate-in fade-in slide-in-from-left duration-1000">
-          <div className="inline-flex items-center space-x-3 px-4 py-2 bg-white/5 border border-white/10 rounded-full backdrop-blur-md">
-            <div className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_8px_rgba(var(--primary),0.8)]"></div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 italic">Enterprise Ready</span>
-          </div>
-
+        <div className="relative z-10 w-full max-w-lg text-center lg:text-left space-y-16 animate-in fade-in slide-in-from-left duration-1000">
           <div className="space-y-4">
-            <h1 className="text-5xl xl:text-6xl font-black text-white leading-tight tracking-tighter">
+            <h1 className="text-3xl xl:text-4xl font-black text-gray-900 leading-tight tracking-tighter">
               The <span className="text-primary italic animate-pulse group-hover:scale-110 transition-transform inline-block">Verse</span> <br />
               of Modern Education.
             </h1>
-            <p className="text-lg text-gray-400 font-medium leading-relaxed max-w-md">
+            <p className="text-lg text-gray-600 font-medium leading-relaxed max-w-md">
               Streamline your school's operations with the ultimate all-in-one management platform. Efficient, secure, and ready for the future.
             </p>
           </div>
-
-          <div className="pt-8">
-            <div className="relative w-full aspect-square max-w-md mx-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-              <img
-                src="/_next/static/media/auth_login_bg_1775044022007.png"
-                alt="Digital School Gateway"
-                className="w-full h-full object-contain animate-float"
-                onError={(e) => {
-                  // Fallback if the static path isn't mapped yet in dev server
-                  e.currentTarget.src = "/api/placeholder/800/800";
-                }}
-              />
-            </div>
+          <div className="relative w-full aspect-square max-w-md mx-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+            <img
+              src="/assets/eduverse-logo.png"
+              alt="Eduverse Logo"
+              className="w-full h-auto object-contain animate-float"
+            />
           </div>
         </div>
 
@@ -93,14 +81,14 @@ export default function LoginPage() {
       </div>
 
       {/* Right Column: Interaction Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 bg-white relative animate-in fade-in duration-700">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 bg-gray-200 relative animate-in fade-in duration-700">
         <div className="w-full max-w-md space-y-12">
           {/* Mobile Header Branding (Visible only on mobile) */}
           <div className="lg:hidden text-center mb-8">
             <div className="mx-auto w-16 h-16 rounded-sm flex items-center justify-center mb-4">
               <BrandLogoIcon />
             </div>
-            <Brand showLogo={false} size="lg"/>
+            <Brand showLogo={false} size="lg" />
           </div>
 
           <div className="space-y-2">

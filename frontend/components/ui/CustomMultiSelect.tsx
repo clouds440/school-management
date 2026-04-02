@@ -50,19 +50,24 @@ export function CustomMultiSelect({
     const updateCoords = () => {
         if (containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            const dropdownHeight = 350; // Estimated max height including search and 5 options
+            
             const isMobile = window.innerWidth <= 640;
+            const shouldFlip = !isMobile && (rect.bottom + dropdownHeight > windowHeight) && (rect.top > dropdownHeight);
+            
             if (isMobile) {
                 const margin = 16;
                 setCoords({
-                    top: rect.bottom + window.scrollY,
-                    left: margin + window.scrollX,
+                    top: rect.bottom,
+                    left: margin,
                     width: window.innerWidth - margin * 2,
                     isMobile: true
                 });
             } else {
                 setCoords({
-                    top: rect.bottom + window.scrollY,
-                    left: rect.left + window.scrollX,
+                    top: shouldFlip ? rect.top - dropdownHeight - 8 : rect.bottom,
+                    left: rect.left,
                     width: rect.width,
                 });
             }
@@ -119,32 +124,20 @@ export function CustomMultiSelect({
             <div
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={`
-                    flex flex-wrap items-center w-full min-h-[52px] px-4 py-2 rounded-sm border transition-all duration-200 outline-none
+                    flex items-center w-full min-h-[52px] px-4 py-2 rounded-sm border transition-all duration-200 outline-none
                     ${isOpen
-                        ? 'border-primary ring-4 ring-primary/10 bg-card'
+                        ? 'border-primary ring-4 ring-primary/10 bg-white shadow-md'
                         : 'border-white/10 bg-primary/5 hover:border-white/20'
                     }
                     ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                    text-card-text font-bold
+                    text-card-text
                 `}
             >
-                <div
-                    onClick={() => !disabled && setIsOpen(!isOpen)}
-                    className={`
-                        flex flex-wrap items-center w-full min-h-[48px] px-3 py-2 rounded-md border transition-colors duration-150 outline-none
-                        ${isOpen
-                            ? 'border-primary bg-white shadow-md'
-                            : 'border-gray-200 bg-gray-50 hover:bg-white'
-                        }
-                        ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
-                        text-sm text-card-text
-                    `}
-                >
                 {Icon && (
                     <Icon className={`h-5 w-5 mr-3 shrink-0 transition-colors ${isOpen ? 'text-primary' : 'text-card-text/40'}`} />
                 )}
 
-                <div className="flex flex-wrap gap-2 flex-1 items-center overflow-hidden">
+                <div className="flex flex-wrap gap-2 flex-1 items-center overflow-hidden py-1">
                     {selectedOptions.length > 0 ? (
                         selectedOptions.map(opt => (
                             <span
@@ -155,7 +148,7 @@ export function CustomMultiSelect({
                                 <button
                                     type="button"
                                     onClick={(e) => removeOption(opt.value, e)}
-                                    className="ml-1.5 hover:text-primary-hover p-0.5 rounded-full transition-colors"
+                                    className="ml-1.5 hover:bg-primary/20 p-0.5 rounded-sm transition-colors"
                                     title="Remove option"
                                 >
                                     <X className="h-3 w-3" />
@@ -163,7 +156,7 @@ export function CustomMultiSelect({
                             </span>
                         ))
                     ) : (
-                        <span className="text-card-text/40">{placeholder}</span>
+                        <span className="text-gray-400 font-medium">{placeholder}</span>
                     )}
                 </div>
 
@@ -172,13 +165,13 @@ export function CustomMultiSelect({
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onChange([]); }}
-                            className="mr-2 text-card-text/30 hover:text-red-500 transition-colors"
+                            className="mr-2 text-gray-300 hover:text-red-500 transition-colors p-1"
                             title="Clear all"
                         >
                             <X className="h-4 w-4" />
                         </button>
                     )}
-                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 text-card-text/40 ${isOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 text-gray-400 ${isOpen ? 'rotate-180' : ''}`} />
                 </div>
             </div>
 
@@ -213,7 +206,7 @@ export function CustomMultiSelect({
                         </div>
                     </div>
 
-                    <div className="min-h-0 overflow-y-auto custom-scrollbar">
+                    <div className="max-h-[225px] overflow-y-auto custom-scrollbar">
                         {filteredOptions.length === 0 ? (
                             <div className="px-4 py-3 text-sm text-card-text/40 italic text-center">No options found</div>
                         ) : (
@@ -247,6 +240,6 @@ export function CustomMultiSelect({
                 document.body
             )}
         </div>
-    </div>
     );
 }
+

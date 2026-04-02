@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Camera, UserPlus, UserMinus, Shield, Loader2, Save } from 'lucide-react';
+import { X, UserPlus, UserMinus, Shield, Loader2, Save } from 'lucide-react';
 import { Chat, User, Role } from '@/types';
-import { api, getPublicUrl } from '@/lib/api';
+import { api } from '@/lib/api';
 import { BrandIcon } from '../ui/Brand';
+import { PhotoUploadPicker } from '../ui/PhotoUploadPicker';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useGlobal } from '@/context/GlobalContext';
@@ -61,18 +62,26 @@ export function ChatSettingsModal({
         }
     };
 
-    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !currentUser.organizationId) return;
+    const handleAvatarUpload = async (file: File) => {
+        if (!currentUser.organizationId) return;
 
         try {
             setIsUploading(true);
+            // 1. Upload the file
             const res = await api.files.uploadFile(currentUser.organizationId, 'chat_avatar', chat.id, file, token);
-            setAvatarUrl(res.url || res.path);
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Image uploaded. Save to apply.', type: 'info' } });
+            const newAvatarUrl = res.url || res.path;
+            setAvatarUrl(newAvatarUrl);
+
+            // 2. Immediate live update to the group chat record
+            await api.chat.updateChat(chat.id, { avatarUrl: newAvatarUrl }, token);
+
+            // 3. Notify parent (optional since socket will also trigger it, but good for local snappiness)
+            onUpdate();
+
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Group picture updated successfully', type: 'success' } });
         } catch (err) {
             console.error(err);
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Upload failed', type: 'error' } });
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to update group picture', type: 'error' } });
         } finally {
             setIsUploading(false);
         }
@@ -108,24 +117,19 @@ export function ChatSettingsModal({
                     {/* Identification Section */}
                     <div className="space-y-6">
                         <div className="flex flex-col items-center">
-                            <div className="relative group/avatar">
-                                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-100 shadow-inner group-hover/avatar:border-primary/20 transition-all">
-                                    {avatarUrl ? (
-                                        <img src={getPublicUrl(avatarUrl)} alt={name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <BrandIcon variant="user" user={{ name }} size="lg" className="w-full h-full" />
-                                    )}
+                            <PhotoUploadPicker
+                                currentImageUrl={avatarUrl}
+                                onFileReady={handleAvatarUpload}
+                                type="org"
+                                disabled={!isGroupAdmin || isUploading}
+                                hint={isGroupAdmin ? "Click to change group picture (256x256 recommended)" : "Only admins can change picture"}
+                            />
+                            {isUploading && (
+                                <div className="mt-2 flex items-center text-[10px] text-primary font-bold animate-pulse">
+                                    <Loader2 size={12} className="mr-1.5 animate-spin" />
+                                    UPLOADING...
                                 </div>
-                                {isGroupAdmin && (
-                                    <label
-                                        className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full shadow-lg cursor-pointer transform hover:scale-110 active:scale-95 transition-all border-2 border-white"
-                                        title="Change Image"
-                                    >
-                                        <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} disabled={isUploading} />
-                                        {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
-                                    </label>
-                                )}
-                            </div>
+                            )}
                         </div>
 
                         <div className="space-y-4">

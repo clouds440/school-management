@@ -158,7 +158,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-12" noValidate>
             {/* Mandatory Information */}
-            <div className="bg-primary/5 p-6 rounded-sm border border-white/10">
+            <div className="bg-card p-6 rounded-sm border border-black/10">
                 <div className="flex flex-col md:flex-row gap-8 items-start mb-10">
                     <div className="shrink-0 group relative">
                         <PhotoUploadPicker
@@ -297,7 +297,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
             </div>
 
             {/* Workplace & Compensation */}
-            <div className="bg-card p-8 rounded-sm border border-white/5 shadow-sm">
+            <div className="bg-card p-8 rounded-sm border border-black/10 shadow-sm">
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
                     <div className="p-2 bg-primary/10 rounded-sm">
                         <ShieldCheck className="w-5 h-5 text-primary" />
@@ -373,7 +373,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
             </div>
 
             {/* Assignments */}
-            <div className="bg-card p-8 rounded-sm border border-white/5 shadow-sm">
+            <div className="bg-card p-8 rounded-sm border border-black/10 shadow-sm">
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
                     <div className="p-2 bg-primary/10 rounded-sm">
                         <Plus className="w-5 h-5 text-primary" />
@@ -406,7 +406,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
             </div>
 
             {/* Personal Details */}
-            <div className="bg-card p-8 rounded-sm border border-white/5 shadow-sm">
+            <div className="bg-card p-8 rounded-sm border border-black/10 shadow-sm">
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
                     <div className="p-2 bg-primary/10 rounded-sm">
                         <User className="w-5 h-5 text-primary" />
@@ -459,7 +459,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                             </div>
                             <textarea
                                 {...register('address')}
-                                className={`w-full pl-11 pr-4 py-3 rounded-sm border ${errors.address ? 'border-red-500 ring-4 ring-red-500/10' : 'border-white/10 ring-primary/10'} bg-primary/5 text-card-text placeholder:text-card-text/40 focus:bg-card focus:border-primary focus:ring-4 sm:text-sm transition-all duration-200 shadow-sm min-h-[160px] outline-none font-bold`}
+                                className={`w-full pl-11 pr-4 py-3 rounded-sm border ${errors.address ? 'border-red-500 ring-4 ring-red-500/10' : 'border-black/10 ring-primary/10'} bg-primary/5 text-card-text placeholder:text-card-text/40 focus:bg-card focus:border-primary focus:ring-4 sm:text-sm transition-all duration-200 shadow-sm min-h-[160px] outline-none font-bold`}
                                 placeholder="123 Education Lane, Learning City"
                             />
                         </div>

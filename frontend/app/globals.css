@@ -12,16 +12,16 @@
   --primary-rgb: 79, 70, 229;
   --primary-text: #ffffff;
 
-  --secondary: #ffffff;
+  --secondary: #ffece2;
   --secondary-hover: #f1f5f9;
   --secondary-rgb: 255, 255, 255;
   --secondary-text: #0f172a;
 
-  --card-bg: #ffffff;
+  --card-bg: #babadb;
   --card-text: #1e293b;
   /* slate-800 */
 
-  --navbar-bg: #ffffff;
+  --navbar-bg: rgb(179, 221, 255);
   --navbar-text: #0f172a;
 
   --sidebar-bg: #1e293b;
@@ -150,6 +150,76 @@ body {
     animation: scale-in 0.3s ease-out forwards;
   }
 
+  /* --- New Auth Animations --- */
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Entrance Animation Framework (Tailwind-Animate style) */
+  @keyframes enter {
+    from {
+      opacity: var(--tw-enter-opacity, 1);
+      transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0) scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), 1) rotate(var(--tw-enter-rotate, 0));
+    }
+  }
+
+  .animate-in {
+    --tw-enter-duration: 500ms;
+    animation-name: enter;
+    animation-duration: var(--tw-enter-duration);
+    animation-fill-mode: both;
+  }
+
+  .fade-in {
+    --tw-enter-opacity: 0;
+  }
+
+  .zoom-in {
+    --tw-enter-scale: 0.95;
+  }
+
+  .slide-in-from-left {
+    --tw-enter-translate-x: -20px;
+  }
+
+  .slide-in-from-top {
+    --tw-enter-translate-y: -20px;
+  }
+
+  .slide-in-from-bottom {
+    --tw-enter-translate-y: 20px;
+  }
+
+  .duration-300 {
+    --tw-enter-duration: 300ms;
+  }
+
+  .duration-500 {
+    --tw-enter-duration: 500ms;
+  }
+
+  .duration-700 {
+    --tw-enter-duration: 700ms;
+  }
+
+  .duration-1000 {
+    --tw-enter-duration: 1000ms;
+  }
+
+  /* --- End Auth Animations --- */
+
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
@@ -203,7 +273,7 @@ body {
   .glow-primary {
     transition: box-shadow 0.3s ease;
   }
-  
+
   .glow-primary:hover {
     box-shadow: 0 0 20px rgba(79, 70, 229, 0.3);
   }
@@ -217,21 +287,26 @@ body {
     width: 8px;
     height: 8px;
   }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+
   ::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.15);
     border-radius: 20px;
     border: 2px solid transparent;
     background-clip: content-box;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.25);
   }
+
   .dark ::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
   }
+
   .dark ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
   }
@@ -241,6 +316,7 @@ body {
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
   }
+
   .dark * {
     scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
   }
@@ -249,19 +325,24 @@ body {
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
+
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.1);
     border-radius: 10px;
   }
+
   .custom-scrollbar:hover::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.2);
   }
+
   .dark .custom-scrollbar::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
   }
+
   .dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
   }

@@ -214,6 +214,55 @@ export class OrgService {
         return formatPaginatedResponse(teachers, totalRecords, options.page, options.limit);
     }
 
+    async getManagers(orgId: string, options: PaginationOptions) {
+        const { skip, take, sortBy, sortOrder } = getPaginationOptions(options);
+
+        const where: Prisma.TeacherWhereInput = {
+            organizationId: orgId,
+            user: { role: Role.ORG_MANAGER }, 
+            status: { not: TeacherStatus.DELETED },
+            ...(options.search ? {
+                OR: [
+                    { user: { name: { contains: options.search, mode: 'insensitive' } } },
+                    { user: { email: { contains: options.search, mode: 'insensitive' } } },
+                ]
+            } : {})
+        };
+
+        let orderBy: Prisma.TeacherOrderByWithRelationInput = {};
+        if (sortBy.startsWith('user.')) {
+            const field = sortBy.split('.')[1];
+            orderBy = { user: { [field]: sortOrder } };
+        } else {
+            orderBy = { user: { name: sortOrder } };
+        }
+
+        const [managers, totalRecords] = await Promise.all([
+            this.prisma.teacher.findMany({
+                where,
+                skip,
+                take,
+                orderBy,
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            phone: true,
+                            role: true,
+                            avatarUrl: true,
+                            avatarUpdatedAt: true,
+                        },
+                    },
+                },
+            }),
+            this.prisma.teacher.count({ where })
+        ]);
+
+        return formatPaginatedResponse(managers, totalRecords, options.page, options.limit);
+    }
+
     async getTeacher(orgId: string, id: string) {
         const teacher = await this.prisma.teacher.findFirst({
             where: { id, organizationId: orgId, status: { not: TeacherStatus.DELETED } },

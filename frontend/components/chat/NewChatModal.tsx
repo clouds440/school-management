@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { CustomMultiSelect, MultiSelectOption } from '@/components/ui/CustomMultiSelect';
-import { User, Send, Users, Search, Shield, User as UserIcon } from 'lucide-react';
+import { User, Send, Users, Search, Shield, User as UserIcon, ChevronLeft } from 'lucide-react';
 import { useGlobal } from '@/context/GlobalContext';
 import { Role } from '@/types';
 
@@ -33,10 +33,10 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
     const [participantIds, setParticipantIds] = useState<string[]>([]);
     const [groupName, setGroupName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const [contactableUsers, setContactableUsers] = useState<MultiSelectOption[]>([]);
     const [isFetchingUsers, setIsFetchingUsers] = useState(false);
-    
+
     // For Teachers: Quick add from Section
     const [sections, setSections] = useState<{ value: string; label: string }[]>([]);
     const [selectedSectionId, setSelectedSectionId] = useState('');
@@ -45,7 +45,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
 
     useEffect(() => {
         if (!isOpen || !token || user?.role !== Role.TEACHER) return;
-        
+
         const fetchSections = async () => {
             setIsFetchingSections(true);
             try {
@@ -63,7 +63,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
     const handleSectionSelect = async (sectionId: string) => {
         setSelectedSectionId(sectionId);
         if (!sectionId || !token) return;
-        
+
         setIsFetchingUsers(true);
         try {
             const section = await api.org.getSection(sectionId, token);
@@ -90,7 +90,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
                 // Fetch explicitly from chat endpoint instead of mail contacts
                 const users = await api.chat.searchUsers(token);
                 // Filter out existing participants if in add mode
-                let filteredUsers = mode === 'ADD_PARTICIPANTS' 
+                let filteredUsers = mode === 'ADD_PARTICIPANTS'
                     ? users.filter(u => !existingParticipantIds.includes(u.id))
                     : users;
 
@@ -116,7 +116,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
         fetchUsers();
     }, [isOpen, token, dispatch, mode, existingParticipantIds, type]);
 
-    const applyPresetGroup = async (preset: { label: string; role?: string; source?: 'TEACHERS' | 'STUDENTS' }) => {
+    const applyPresetGroup = async (preset: { label: string; role?: string; source?: 'TEACHERS' | 'STUDENTS' | 'MANAGERS' }) => {
         if (!token) return;
         setIsApplyingPreset(true);
         try {
@@ -128,6 +128,9 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
             } else if (preset.source === 'STUDENTS') {
                 const res = await api.org.getStudents(token, { page: 1, limit: 1000 });
                 ids = res.data.map(s => s.userId || s.user?.id).filter(Boolean) as string[];
+            } else if (preset.source === 'MANAGERS') {
+                const res = await api.org.getManagers(token, { page: 1, limit: 1000 });
+                ids = res.data.map(m => m.user.id);
             } else if (preset.role) {
                 const users = await api.chat.searchUsers(token);
                 ids = users.filter(u => u.role === preset.role).map(u => u.id);
@@ -190,129 +193,159 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
             isOpen={isOpen}
             onClose={onClose}
             title={mode === 'ADD_PARTICIPANTS' ? "Add Participants" : "Start New Conversation"}
-            maxWidth="max-w-md"
+            maxWidth="max-w-2xl"
         >
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-8">
                 {mode === 'CREATE' && (
-                    <div>
-                        <Label>Chat Type</Label>
-                        <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div className="bg-gray-50/50 -mx-6 px-6 py-4 border-b border-gray-100">
+                        <Label className="text-[10px] uppercase font-black tracking-widest text-primary/70 mb-3 block">Conversation Type</Label>
+                        <div className="grid grid-cols-2 gap-4">
                             <button
                                 type="button"
                                 onClick={() => setType('DIRECT')}
-                                className={`flex flex-col items-center justify-center p-4 rounded-sm border transition-all ${
-                                    type === 'DIRECT' 
-                                        ? 'border-primary bg-primary/5 ring-2 ring-primary/10 text-primary' 
-                                        : 'border-white/10 bg-primary/5 text-card-text/40 hover:border-white/20'
-                                }`}
+                                className={`flex items-center p-4 rounded-xl border-2 transition-all group ${type === 'DIRECT'
+                                    ? 'border-primary bg-primary/5 ring-4 ring-primary/5'
+                                    : 'border-gray-100 bg-white hover:border-gray-200'
+                                    }`}
                             >
-                                <UserIcon className="w-6 h-6 mb-2" />
-                                <span className="text-xs font-black uppercase tracking-widest">Direct Message</span>
+                                <div className={`p-3 rounded-lg mr-4 transition-colors ${type === 'DIRECT' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200'}`}>
+                                    <UserIcon size={24} />
+                                </div>
+                                <div className="text-left">
+                                    <span className={`block text-sm font-bold ${type === 'DIRECT' ? 'text-primary' : 'text-gray-700'}`}>Direct Message</span>
+                                    <span className="text-[11px] text-gray-400 font-medium tracking-tight">1-on-1 private chat</span>
+                                </div>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setType('GROUP')}
-                                className={`flex flex-col items-center justify-center p-4 rounded-sm border transition-all ${
-                                    type === 'GROUP' 
-                                        ? 'border-primary bg-primary/5 ring-2 ring-primary/10 text-primary' 
-                                        : 'border-white/10 bg-primary/5 text-card-text/40 hover:border-white/20'
-                                }`}
+                                className={`flex items-center p-4 rounded-xl border-2 transition-all group ${type === 'GROUP'
+                                    ? 'border-primary bg-primary/5 ring-4 ring-primary/5'
+                                    : 'border-gray-100 bg-white hover:border-gray-200'
+                                    }`}
                             >
-                                <Users className="w-6 h-6 mb-2" />
-                                <span className="text-xs font-black uppercase tracking-widest">Group Chat</span>
+                                <div className={`p-3 rounded-lg mr-4 transition-colors ${type === 'GROUP' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200'}`}>
+                                    <Users size={24} />
+                                </div>
+                                <div className="text-left">
+                                    <span className={`block text-sm font-bold ${type === 'GROUP' ? 'text-primary' : 'text-gray-700'}`}>Group Chat</span>
+                                    <span className="text-[11px] text-gray-400 font-medium tracking-tight">Chat with multiple people</span>
+                                </div>
                             </button>
                         </div>
                     </div>
                 )}
 
-                {type === 'GROUP' && mode === 'CREATE' && (
-                    <div>
-                        <Label>Group Name <span className="text-red-500">*</span></Label>
-                        <Input
-                            required
-                            value={groupName}
-                            onChange={e => setGroupName(e.target.value)}
-                            placeholder={user?.role === Role.PLATFORM_ADMIN || user?.role === Role.SUPER_ADMIN ? "e.g. Platform Announcement" : "e.g. Study Group"}
-                            icon={Users}
-                        />
-                        {/* Quick group presets based on role/permissions */}
-                        <div className="mt-3">
-                            <Label className="text-[10px] uppercase font-black text-primary/70 mb-2">Quick Groups</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {/* Org-level presets for admins/managers */}
-                                {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
-                                    <>
-                                        <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] All Teachers', source: 'TEACHERS' })} className="px-3 py-1 bg-gray-100 rounded-sm text-sm font-bold">[GROUP] All Teachers</button>
-                                        <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] All Students', source: 'STUDENTS' })} className="px-3 py-1 bg-gray-100 rounded-sm text-sm font-bold">[GROUP] All Students</button>
-                                        <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] Org Managers', role: Role.ORG_MANAGER })} className="px-3 py-1 bg-gray-100 rounded-sm text-sm font-bold">[GROUP] Org Managers</button>
-                                        <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] Org Admins', role: Role.ORG_ADMIN })} className="px-3 py-1 bg-gray-100 rounded-sm text-sm font-bold">[GROUP] Org Admins</button>
-                                    </>
-                                )}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                    <div className={`${type === 'GROUP' && mode === 'CREATE' ? 'md:col-span-5' : 'md:col-span-12'} space-y-6`}>
+                        {type === 'GROUP' && mode === 'CREATE' && (
+                            <div className="animate-in fade-in slide-in-from-left duration-300">
+                                <Label className="text-xs font-bold text-gray-500 mb-1.5 block">Group Details</Label>
+                                <Input
+                                    required
+                                    value={groupName}
+                                    onChange={e => setGroupName(e.target.value)}
+                                    placeholder={user?.role === Role.PLATFORM_ADMIN || user?.role === Role.SUPER_ADMIN ? "e.g. Platform Announcement" : "e.g. Study Group"}
+                                    icon={Users}
+                                    className="h-12"
+                                />
 
-                                {/* Platform admins can message other platform admins */}
-                                {(user?.role === Role.PLATFORM_ADMIN || user?.role === Role.SUPER_ADMIN) && (
-                                    <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] Platform Admins', role: Role.PLATFORM_ADMIN })} className="px-3 py-1 bg-gray-100 rounded-sm text-sm font-bold">[GROUP] Platform Admins</button>
+                                {/* Quick group presets */}
+                                <div className="mt-4 pt-4 border-t border-gray-100">
+                                    <Label className="text-[10px] uppercase font-black text-gray-400 mb-3 block">Quick Templates</Label>
+                                    <div className="flex flex-col gap-2">
+                                        {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
+                                            <>
+                                                <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] All Teachers', source: 'TEACHERS' })} className="px-4 py-2 bg-white border border-gray-200 hover:border-primary hover:bg-primary/5 rounded-lg text-[12px] font-bold text-gray-600 transition-all text-left flex items-center justify-between group">
+                                                    <span>All Teachers</span>
+                                                    <ChevronLeft className="w-3 h-3 opacity-0 group-hover:opacity-40 rotate-180" />
+                                                </button>
+                                                <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] All Students', source: 'STUDENTS' })} className="px-4 py-2 bg-white border border-gray-200 hover:border-primary hover:bg-primary/5 rounded-lg text-[12px] font-bold text-gray-600 transition-all text-left flex items-center justify-between group">
+                                                    <span>All Students</span>
+                                                    <ChevronLeft className="w-3 h-3 opacity-0 group-hover:opacity-40 rotate-180" />
+                                                </button>
+                                                {user?.role === Role.ORG_ADMIN && (
+                                                    <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] All Managers', source: 'MANAGERS' })} className="px-4 py-2 bg-white border border-gray-200 hover:border-primary hover:bg-primary/5 rounded-lg text-[12px] font-bold text-gray-600 transition-all text-left flex items-center justify-between group">
+                                                        <span>All Managers</span>
+                                                        <ChevronLeft className="w-3 h-3 opacity-0 group-hover:opacity-40 rotate-180" />
+                                                    </button>
+                                                )}
+                                            </>
+                                        )}
+                                        {(user?.role === Role.PLATFORM_ADMIN || user?.role === Role.SUPER_ADMIN) && (
+                                            <button type="button" disabled={isApplyingPreset} onClick={() => applyPresetGroup({ label: '[GROUP] Platform Admins', role: Role.PLATFORM_ADMIN })} className="px-4 py-2 bg-white border border-gray-200 hover:border-primary hover:bg-primary/5 rounded-lg text-[12px] font-bold text-gray-600 transition-all text-left flex items-center justify-between group">
+                                                <span>Platform Admins</span>
+                                                <ChevronLeft className="w-3 h-3 opacity-0 group-hover:opacity-40 rotate-180" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={`${type === 'GROUP' && mode === 'CREATE' ? 'md:col-span-7' : 'md:col-span-12'} space-y-6`}>
+                        <div>
+                            <Label className="text-xs font-bold text-gray-500 mb-1.5 block">
+                                {type === 'DIRECT' ? 'Select Contact' : 'Invite Participants'}
+                            </Label>
+
+                            {type === 'GROUP' && user?.role === Role.TEACHER && sections.length > 0 && (
+                                <div className="mb-4 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                                    <Label className="text-[10px] text-primary font-black uppercase mb-2 flex items-center">
+                                        <Users className="w-3 h-3 mr-1.5" />
+                                        Smart Add
+                                    </Label>
+                                    <CustomSelect
+                                        options={sections}
+                                        value={selectedSectionId}
+                                        onChange={handleSectionSelect}
+                                        placeholder="Add whole section..."
+                                        icon={Users}
+                                    />
+                                </div>
+                            )}
+
+                            <div className="min-h-[120px]">
+                                {type === 'DIRECT' ? (
+                                    <CustomSelect
+                                        value={recipientId}
+                                        onChange={setRecipientId}
+                                        options={contactableUsers.map(u => ({ ...u, value: u.value }))}
+                                        placeholder={isFetchingUsers ? "Loading contacts..." : "Search and select a person..."}
+                                        searchable
+                                        disabled={isFetchingUsers}
+                                        required
+                                        icon={UserIcon}
+                                    />
+                                ) : (
+                                    <CustomMultiSelect
+                                        values={participantIds}
+                                        onChange={setParticipantIds}
+                                        options={contactableUsers}
+                                        placeholder={isFetchingUsers ? "Loading staff & students..." : "Select collaborators..."}
+                                        disabled={isFetchingUsers}
+                                        icon={Users}
+                                    />
                                 )}
+                            </div>
+                            <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-100 italic text-[11px] text-gray-400 font-medium leading-relaxed">
+                                {mode === 'ADD_PARTICIPANTS'
+                                    ? "Add more members to current group. Newly added members will see all future messages."
+                                    : type === 'DIRECT'
+                                        ? "Direct messages are end-to-end between you and the recipient."
+                                        : "Group participants can be managed later by the creator."}
                             </div>
                         </div>
                     </div>
-                )}
-
-                <div>
-                    <Label>{type === 'DIRECT' ? 'Recipient' : 'Participants'} <span className="text-red-500">*</span></Label>
-                    
-                    {type === 'GROUP' && user?.role === Role.TEACHER && sections.length > 0 && (
-                        <div className="mb-4">
-                            <Label className="text-[10px] text-primary/60 font-black uppercase mb-1.5 flex items-center">
-                                <Users className="w-3 h-3 mr-1" />
-                                Add whole section
-                            </Label>
-                            <CustomSelect
-                                options={sections}
-                                value={selectedSectionId}
-                                onChange={handleSectionSelect}
-                                placeholder="Select section to add all students..."
-                                icon={Users}
-                            />
-                        </div>
-                    ) }
-
-                    {type === 'DIRECT' ? (
-                        <CustomSelect
-                            value={recipientId}
-                            onChange={setRecipientId}
-                            options={contactableUsers.map(u => ({ ...u, value: u.value }))}
-                            placeholder={isFetchingUsers ? "Loading..." : "Select a person..."}
-                            searchable
-                            disabled={isFetchingUsers}
-                            required
-                            icon={UserIcon}
-                        />
-                    ) : (
-                        <CustomMultiSelect
-                            values={participantIds}
-                            onChange={setParticipantIds}
-                            options={contactableUsers}
-                            placeholder={isFetchingUsers ? "Loading..." : "Select people..."}
-                            disabled={isFetchingUsers}
-                            icon={Users}
-                        />
-                    )}
-                    <p className="text-[10px] text-card-header font-bold uppercase tracking-widest mt-2 ml-1">
-                        {mode === 'ADD_PARTICIPANTS'
-                            ? "Select collaborators to join the current group."
-                            : type === 'DIRECT' 
-                                ? "Start a private one-on-one conversation." 
-                                : "Create a group to chat with multiple people at once."}
-                    </p>
                 </div>
 
-                <div className="flex justify-end space-x-4 pt-6 border-t border-white/5 bg-gray-50/5 -mx-8 -mb-8 px-8 pb-8">
-                    <Button variant="secondary" onClick={onClose} type="button" px="px-8" py="py-2.5">
+                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-100 -mx-6 px-6 pb-2">
+                    <Button variant="secondary" onClick={onClose} type="button" className="px-8 bg-gray-50 border-gray-200">
                         Cancel
                     </Button>
-                    <Button type="submit" variant="primary" icon={mode === 'ADD_PARTICIPANTS' ? Users : Send} isLoading={isLoading} px="px-8" py="py-2.5">
-                        {mode === 'ADD_PARTICIPANTS' ? 'Add to Group' : 'Start Chat'}
+                    <Button type="submit" variant="primary" icon={mode === 'ADD_PARTICIPANTS' ? Users : Send} isLoading={isLoading} className="px-10 shadow-lg shadow-primary/20">
+                        {mode === 'ADD_PARTICIPANTS' ? 'Add Participants' : 'Create Conversation'}
                     </Button>
                 </div>
             </form>

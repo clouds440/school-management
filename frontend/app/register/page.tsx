@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { School, MapPin, Building, Mail, Lock, UserPlus, Phone, BookOpen, GraduationCap, Library, MonitorPlay, Pencil } from 'lucide-react';
+import { School, MapPin, Building, Mail, Lock, Phone, BookOpen, GraduationCap, Library, MonitorPlay, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { RegisterRequest, OrganizationType, ApiError } from '@/types';
 import { Input } from '@/components/ui/Input';
@@ -81,10 +81,10 @@ export default function RegisterPage() {
             router.push('/login');
         } catch (error: unknown) {
             const apiError = error as ApiError;
-            const message = error instanceof Error 
-                ? error.message 
+            const message = error instanceof Error
+                ? error.message
                 : (apiError?.response?.data?.message || 'Registration failed');
-            
+
             if (Array.isArray(message)) {
                 message.forEach((m: string) => dispatch({ type: 'TOAST_ADD', payload: { message: m, type: 'error' } }));
             } else {
@@ -106,12 +106,9 @@ export default function RegisterPage() {
                 {/* Decorative background elements */}
                 <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
                 <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-secondary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse delay-1000"></div>
-                
-                <div className="relative z-10 w-full max-w-sm space-y-10 animate-in fade-in slide-in-from-left duration-1000">
+
+                <div className="relative z-10 w-full max-w-sm space-y-16 animate-in fade-in slide-in-from-left duration-1000">
                     <div className="space-y-4">
-                        <div className="w-16 h-16 bg-white rounded-sm shadow-sm flex items-center justify-center border border-primary/10 mb-8">
-                             <UserPlus className="w-8 h-8 text-primary" />
-                        </div>
                         <h1 className="text-4xl xl:text-5xl font-black text-gray-900 leading-[1.1] tracking-tighter italic">
                             Grow your <br />
                             <span className="text-primary not-italic">Community.</span>
@@ -122,13 +119,10 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="relative w-full aspect-square drop-shadow-2xl">
-                        <img 
-                            src="/_next/static/media/auth_register_bg_1775044037475.png" 
-                            alt="Growth Illustration" 
-                            className="w-full h-full object-contain animate-float"
-                            onError={(e) => {
-                                e.currentTarget.src = "/api/placeholder/600/600";
-                            }}
+                        <img
+                            src="/assets/eduverse-logo.png"
+                            alt="Growth Illustration"
+                            className="w-full h-auto object-contain animate-float"
                         />
                     </div>
                 </div>
@@ -193,7 +187,7 @@ export default function RegisterPage() {
                         {/* Metadata Grid */}
                         <div className="space-y-8 px-4">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 italic border-l-4 border-gray-200 pl-4 mb-8">Metadata & Location</h3>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
                                     <Label htmlFor="type" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Category</Label>
@@ -242,7 +236,7 @@ export default function RegisterPage() {
                         {/* Security & Access Section */}
                         <div className="space-y-8 px-4">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 italic border-l-4 border-gray-200 pl-4 mb-8">Security & Access</h3>
-                            
+
                             <div className="space-y-8">
                                 <div>
                                     <Label htmlFor="email" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Admin Login Email</Label>
@@ -325,9 +319,9 @@ export default function RegisterPage() {
                         </div>
 
                         <div className="pt-6">
-                            <Button 
-                                type="submit" 
-                                className="w-full h-14" 
+                            <Button
+                                type="submit"
+                                className="w-full h-14"
                                 loadingText="Creating account..."
                             >
                                 <span className="font-black uppercase text-sm">Create Organization Account</span>

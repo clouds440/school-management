@@ -119,6 +119,25 @@ export class OrgController {
     }
 
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+    @Get('managers')
+    async getManagers(
+        @OrgId() orgId: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+        @Query('sortBy') sortBy?: string,
+        @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+    ) {
+        return this.orgService.getManagers(orgId, {
+            page: page ? parseInt(page, 10) : 1,
+            limit: limit ? parseInt(limit, 10) : 10,
+            search,
+            sortBy: sortBy || 'user.name',
+            sortOrder,
+        });
+    }
+
+    @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Get('teachers/:id')
     getTeacher(@OrgId() orgId: string, @Param('id') id: string) {
         return this.orgService.getTeacher(orgId, id);
@@ -342,6 +361,7 @@ export class OrgController {
 
     // --- Assessments ---
     @Roles(Role.ORG_MANAGER, Role.TEACHER)
+    @Post('assessments')
     createAssessment(@OrgId() orgId: string, @Body() dto: CreateAssessmentDto, @Request() req: AuthenticatedRequest) {
         const orgSlug = req.user.organization?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         return this.orgService.createAssessment(orgId, dto, req.user as AuthenticatedRequest['user'], orgSlug);

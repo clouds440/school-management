@@ -142,6 +142,8 @@ export const api = {
         updateTeacher: (id: string, data: UpdateTeacherRequest, token: string) =>
             request<Teacher>(`/org/teachers/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
         deleteTeacher: (id: string, token: string) => request<void>(`/org/teachers/${id}`, { method: 'DELETE', token }),
+        getManagers: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+            request<PaginatedResponse<Teacher>>(`/org/managers${buildQueryString(params)}`, { token }),
 
         getStudent: (id: string, token: string) => request<Student>(`/org/students/${id}`, { token }),
         getStudents: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean, sectionId?: string } = {}) =>

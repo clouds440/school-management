@@ -24,12 +24,12 @@ export default function AddTeacherPage() {
         <div className="flex flex-col">
             <div className="mb-6">
                 <div className="flex items-center gap-5">
-                    <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm md:rounded-sm border border-white/30 shadow-xl shrink-0">
-                        <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                    <div className="p-4 bg-primary/10 backdrop-blur-md ml-2 rounded-sm md:rounded-sm border border-white/30 shadow-xl shrink-0">
+                        <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg text-left">Add Teacher</h1>
-                        <p className="text-white/80 font-bold opacity-80 mt-1 text-sm md:text-base text-left uppercase tracking-widest text-[10px]">CREATE NEW FACULTY ACCOUNT</p>
+                        <h1 className="text-3xl md:text-5xl font-black text-primary/90 tracking-tight drop-shadow-lg text-left">Add Teacher</h1>
+                        <p className="text-gray-600 font-bold opacity-80 mt-1 text-sm md:text-base text-left uppercase tracking-widest text-[10px]">CREATE NEW FACULTY ACCOUNT</p>
                     </div>
                 </div>
             </div>

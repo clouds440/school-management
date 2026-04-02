@@ -13,7 +13,7 @@ interface ThemeContextType {
 }
 
 const DEFAULT_PRIMARY = '#4f46e5'; // indigo-600
-const DEFAULT_SECONDARY = '#ffffff';
+const DEFAULT_SECONDARY = '#f0f0f0';
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 

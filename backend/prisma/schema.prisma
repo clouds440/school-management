@@ -394,19 +394,32 @@ model Chat {
 }
 
 model ChatParticipant {
-  id                String              @id @default(uuid())
+  id                String                  @id @default(uuid())
   chatId            String
   userId            String
-  role              ChatParticipantRole @default(MEMBER)
-  isActive          Boolean             @default(true)
+  role              ChatParticipantRole     @default(MEMBER)
+  isActive          Boolean                  @default(true)
   lastReadMessageId String?
-  joinedAt          DateTime            @default(now())
+  joinedAt          DateTime                 @default(now())
+  membershipHistory ChatMembershipHistory[]
 
   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
   user User @relation("ChatParticipations", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([chatId, userId])
 }
+
+model ChatMembershipHistory {
+  id                String   @id @default(uuid())
+  chatParticipantId String
+  activatedAt       DateTime @default(now())
+  deactivatedAt     DateTime?
+
+  participant ChatParticipant @relation(fields: [chatParticipantId], references: [id], onDelete: Cascade)
+
+  @@index([chatParticipantId])
+}
+
 
 model ChatMessage {
   id             String          @id @default(uuid())

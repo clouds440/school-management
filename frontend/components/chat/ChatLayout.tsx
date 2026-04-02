@@ -96,11 +96,11 @@ export function ChatLayout() {
         }
 
         return (
-            <BrandIcon 
-                variant="user" 
-                size="sm" 
-                user={targetUser} 
-                className={className} 
+            <BrandIcon
+                variant="user"
+                size="sm"
+                user={targetUser}
+                className={className}
             />
         );
     };
@@ -222,13 +222,27 @@ export function ChatLayout() {
             setChats(prev => prev.map(c => c.id === chat.id ? { ...c, ...chat } : c));
         });
 
+        const unsubRoomLeft = subscribe('roomLeft', (data: unknown) => {
+            const leftData = data as { roomId: string; forced?: boolean };
+            if (leftData.forced && leftData.roomId === `chat:${activeChatId}`) {
+                dispatch({
+                    type: 'TOAST_ADD',
+                    payload: { message: 'You have been removed from this group.', type: 'info' }
+                });
+                setActiveChatId(null);
+                // Mark the chat as inactive locally so UI updates (optional but helpful)
+                setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, isActive: false } : c));
+            }
+        });
+
         return () => {
             unsubMessage();
             unsubRead();
             unsubDelete();
             unsubUpdate();
+            unsubRoomLeft();
         };
-    }, [subscribe, activeChatId, token, user, dispatch]);
+    }, [subscribe, activeChatId, token, user, dispatch, setActiveChatId]);
 
     // 4. Join/Leave rooms
     useEffect(() => {
@@ -259,7 +273,7 @@ export function ChatLayout() {
     }, []); // Attach once; images are re-rendered but container remains
 
     const activeChat = useMemo(() => chats.find(c => c.id === activeChatId), [chats, activeChatId]);
-    const activeChatParticipantIds = useMemo(() => activeChat?.participants?.map(p => p.userId) || [], [activeChat]);
+    const activeChatParticipantIds = useMemo(() => activeChat?.participants?.filter(p => p.isActive).map(p => p.userId) || [], [activeChat]);
 
     const handleSendMessage = async () => {
         if (!token || !activeChatId || (!messageDraft.trim() && stagedFiles.length === 0)) return;
@@ -481,7 +495,7 @@ export function ChatLayout() {
                                         <p className="text-xs text-gray-500 truncate mt-0.5">
                                             {lastMsg ? (
                                                 <>
-                                                    <span className="font-medium text-gray-400">{lastMsg.senderId === user.id ? 'You: ' : (chat.type === ChatType.GROUP ? `${lastMsg.sender?.name?.split(' ')[0]}: ` : '')}</span>
+                                                    <span className="font-medium text-gray-400">{lastMsg.senderId === user.id ? 'You: ' : (chat.type === ChatType.GROUP ? `${lastMsg.sender?.name}: ` : '')}</span>
                                                     {lastMsg.deletedAt ? <span className="italic text-gray-400 text-[11px]">Message deleted</span> : lastMsg.content}
                                                 </>
                                             ) : (
@@ -507,19 +521,19 @@ export function ChatLayout() {
                         <div className="p-3 md:p-4 border-b border-gray-100 flex items-center justify-between shadow-sm z-20 bg-white/80 backdrop-blur-md">
                             <div className="flex items-center space-x-3">
                                 {!isDesktop && (
-                                    <button 
-                                        className="p-2 -ml-2 text-primary hover:bg-primary/5 rounded-full transition-colors" 
+                                    <button
+                                        className="p-2 -ml-2 text-primary hover:bg-primary/5 rounded-full transition-colors"
                                         onClick={() => setActiveChatId(null)}
                                     >
                                         <ChevronLeft size={24} />
                                     </button>
                                 )}
-                                <UserAvatar 
-                                    targetUser={activeChat.type === ChatType.GROUP 
-                                        ? { name: activeChat.name, avatarUrl: activeChat.avatarUrl } 
+                                <UserAvatar
+                                    targetUser={activeChat.type === ChatType.GROUP
+                                        ? { name: activeChat.name, avatarUrl: activeChat.avatarUrl }
                                         : activeChat.participants?.find(p => p.userId !== user.id)?.user
-                                    } 
-                                    className="w-10 h-10" 
+                                    }
+                                    className="w-10 h-10"
                                 />
                                 <div>
                                     <div className="flex items-center">
@@ -541,7 +555,7 @@ export function ChatLayout() {
                             </div>
                             <div className="flex items-center space-x-1">
                                 {activeChat.type === ChatType.GROUP && (
-                                    <button 
+                                    <button
                                         onClick={() => setIsSettingsModalOpen(true)}
                                         className="p-2 text-gray-400 hover:text-primary rounded-sm hover:bg-primary/5 transition-all"
                                         title="Chat Settings"
@@ -582,9 +596,9 @@ export function ChatLayout() {
                                             return (
                                                 <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-3' : 'mb-1'}`}>
                                                     {!isMine && (
-                                                        <div className="w-8 shrink-0 mr-2 flex flex-col justify-end pb-1 translate-y-2">
-                                                            {showAvatar ? (
-                                                                <UserAvatar targetUser={msg.sender} className="w-8 h-8 rounded-full border border-gray-100 shadow-sm" />
+                                                        <div className="w-8 shrink-0 mr-2.5 flex flex-col justify-end mb-1">
+                                                            {isLastInGroup ? (
+                                                                <UserAvatar targetUser={msg.sender} className="w-8 h-8 rounded-full border border-gray-200 shadow-sm" />
                                                             ) : <div className="w-8 h-8" />}
                                                         </div>
                                                     )}
@@ -592,27 +606,22 @@ export function ChatLayout() {
                                                     <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] ${isMine ? 'items-end' : 'items-start'}`}>
                                                         {activeChat.type === ChatType.GROUP && !isMine && showAvatar && (
                                                             <span className="text-[10px] font-bold text-primary mb-1 ml-2 tracking-wide uppercase">
-                                                                {msg.sender?.name?.split(' ')[0]}
+                                                                {msg.sender?.name}
                                                             </span>
                                                         )}
                                                         <div className="relative group/content">
                                                             <div className={`
-                                                                px-3 py-2 rounded-2xl shadow-sm text-[14px] leading-relaxed relative
-                                                                ${isMine 
-                                                                    ? 'bg-primary text-white rounded-tr-none' 
-                                                                    : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
+                                                                px-4 py-2.5 rounded-2xl shadow-sm text-[14px] leading-relaxed relative
+                                                                ${isMine
+                                                                    ? 'bg-linear-to-br from-primary to-indigo-600 text-white rounded-br-none'
+                                                                    : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'
                                                                 } 
                                                                 ${isDeleted ? 'bg-gray-50/50 text-gray-400 border-dashed border-gray-200 shadow-none' : ''}
                                                             `}>
-                                                                {/* Optional tail for the first message in a group */}
-                                                                {showAvatar && !isMine && (
-                                                                    <div className="absolute top-0 -left-1.5 w-3 h-3 bg-white border-l border-t border-gray-100 transform -rotate-45" style={{ borderRadius: '2px 0 0 0' }} />
-                                                                )}
-
                                                                 {isDeleted ? (
                                                                     <div className="flex items-center space-x-2 italic text-[12px] py-1">
                                                                         <Trash2 size={12} className="opacity-40" />
-                                                                        <span>Message deleted</span>
+                                                                        <span>This message was deleted by {msg.sender?.name} at {new Date(msg.deletedAt ?? '').toLocaleTimeString()}</span>
                                                                     </div>
                                                                 ) : (
                                                                     <div className={`prose prose-sm max-w-none ${isMine ? 'prose-invert prose-p:text-white' : 'prose-p:text-gray-800'} message-content`}>
@@ -635,7 +644,7 @@ export function ChatLayout() {
                                                                 {/* Timestamp overlay inside bubble - bottom right */}
                                                                 <div className={`flex items-center justify-end mt-1 -mr-1 space-x-1 ${isMine ? 'text-blue-100' : 'text-gray-400'} text-[9px] font-medium`}>
                                                                     <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                                    
+
                                                                     {isMine && (
                                                                         <div className="flex">
                                                                             {msg.readBy && msg.readBy.length > 0 ? (
