@@ -76,7 +76,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     return (
         <div className={`flex flex-col border border-gray-200 rounded-sm overflow-hidden bg-white shadow-inner ${className}`}>
-            <div className="flex flex-wrap items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100 gap-2">
+            <div className="flex flex-wrap items-center justify-between px-3 bg-gray-50 border-b border-gray-100 gap-2">
                 <div className="flex items-center gap-1 flex-wrap">
                     {!previewMode && (
                         <>
@@ -174,7 +174,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             <div className="relative min-h-auto">
                 {previewMode ? (
                     <div className="p-5 overflow-y-auto max-h-[400px] bg-white">
-                        {value ? (
+                        {value.length > 0 ? (
                             <MarkdownRenderer content={value} />
                         ) : (
                             <div className="flex flex-col items-center justify-center py-10 opacity-30 select-none">
@@ -192,18 +192,18 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                         onKeyDown={onKeyDown}
                         onFocus={onFocus}
                         placeholder={placeholder}
-                        rows={rows}
-                        className="w-full p-5 text-sm outline-none resize-y border-none focus:ring-0 bg-transparent custom-scrollbar max-h-96 min-h-16 font-medium leading-relaxed text-gray-800 placeholder:text-gray-300"
+                        rows={rows + (value.length > 100 ? 3 : 0) + (value.length > 300 ? 3 : 0) + (value.length > 600 ? 3 : 0)}
+                        className="w-full p-2.5 outline-none resize-y border-none focus:ring-0 bg-transparent custom-scrollbar max-h-80 min-h-10 font-medium leading-relaxed text-gray-800 placeholder:text-gray-300"
                     />
                 )}
             </div>
 
             {!previewMode && (
-                <div className="px-4 py-2 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                <div className="px-4 py-0.5 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
                         Markdown Supported
                     </span>
-                    <span className="text-[10px] text-gray-300 font-black tracking-tighter">
+                    <span className="text-[10px] text-gray-500 font-black tracking-tighter">
                         {value.length} CHARS
                     </span>
                 </div>

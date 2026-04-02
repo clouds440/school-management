@@ -104,10 +104,16 @@ export function ChatDropdown() {
             });
         });
 
+        const unsubUpdate = subscribe('chat:update', (updatedChat: unknown) => {
+            const chat = updatedChat as Chat;
+            setChats(prev => prev.map(c => c.id === chat.id ? { ...c, ...chat } : c));
+        });
+
         return () => {
             unsubMessage();
             unsubRead();
             unsubDelete();
+            unsubUpdate();
         };
     }, [subscribe, user?.id, token]);
 
@@ -188,7 +194,10 @@ export function ChatDropdown() {
                                                 <BrandIcon
                                                     variant="user"
                                                     size="sm"
-                                                    user={otherParticipant}
+                                                    user={chat.type === 'GROUP' 
+                                                        ? { name: chat.name, avatarUrl: chat.avatarUrl, avatarUpdatedAt: chat.avatarUpdatedAt } 
+                                                        : otherParticipant
+                                                    }
                                                     className="w-10 h-10 shadow-sm"
                                                 />
                                             </div>

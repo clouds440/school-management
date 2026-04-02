@@ -538,6 +538,7 @@ export class ChatService {
         }
         if (dto.avatarUrl !== undefined && dto.avatarUrl !== chat.avatarUrl) {
             data.avatarUrl = dto.avatarUrl;
+            data.avatarUpdatedAt = new Date();
             systemMessages.push(`${actorName} updated the group picture`);
         }
 

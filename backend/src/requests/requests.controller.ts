@@ -10,16 +10,16 @@ import {
     Request,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RequestService } from './requests.service';
+import { MailService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestDto } from './dto/update-request.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 
 @UseGuards(JwtAuthGuard)
-@Controller('requests')
-export class RequestController {
-    constructor(private readonly requestService: RequestService) {}
+@Controller('mail')
+export class MailController {
+    constructor(private readonly requestService: MailService) {}
 
     @Post()
     async create(

@@ -63,12 +63,16 @@ export function ChatSettingsModal({
     };
 
     const handleAvatarUpload = async (file: File) => {
-        if (!currentUser.organizationId) return;
+        const uploadOrgId = currentUser.organizationId || chat.organizationId;
+        if (!uploadOrgId) {
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Cannot determine organization for upload', type: 'error' } });
+            return;
+        }
 
         try {
             setIsUploading(true);
             // 1. Upload the file
-            const res = await api.files.uploadFile(currentUser.organizationId, 'chat_avatar', chat.id, file, token);
+            const res = await api.files.uploadFile(uploadOrgId, 'chat_avatar', chat.id, file, token);
             const newAvatarUrl = res.url || res.path;
             setAvatarUrl(newAvatarUrl);
 

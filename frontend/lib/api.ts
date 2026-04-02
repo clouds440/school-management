@@ -3,9 +3,9 @@ import {
     UpdateOrgSettingsRequest, PlatformAdmin, AdminStats, OrgStats, Section, Course,
     CreateTeacherRequest, UpdateTeacherRequest, CreateStudentRequest, UpdateStudentRequest,
     CreateSectionRequest, UpdateSectionRequest, CreateCourseRequest, UpdateCourseRequest,
-    PaginatedResponse, OrgStatus, RequestItem, RequestDetail, CreateRequestPayload, UpdateRequestPayload,
+    PaginatedResponse, OrgStatus, MailItem, MailDetail, CreateMailPayload, UpdateMailPayload,
     Assessment, Grade, Submission, CreateAssessmentRequest, UpdateAssessmentRequest,
-    UpdateGradeRequest, CreateSubmissionRequest, FinalGradeResponse, RequestTarget,
+    UpdateGradeRequest, CreateSubmissionRequest, FinalGradeResponse, MailTarget,
     Chat, ChatMessage, Notification, Announcement, ChatType, TargetType, AnnouncementPriority, User
 } from '@/types';
 
@@ -255,22 +255,22 @@ export const api = {
         deleteFile: (id: string, token: string) => request<void>(`/files/${id}`, { method: 'DELETE', token }),
     },
 
-    requests: {
-        getRequests: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', status?: string, category?: string } = {}) =>
-            request<PaginatedResponse<RequestItem>>(`/requests${buildQueryString(params)}`, { token }),
-        getRequest: (id: string, token: string) =>
-            request<RequestDetail>(`/requests/${id}`, { token }),
-        createRequest: (data: CreateRequestPayload, token: string) =>
-            request<RequestDetail>('/requests', { method: 'POST', body: JSON.stringify(data), token }),
-        updateRequest: (id: string, data: UpdateRequestPayload, token: string) =>
-            request<RequestDetail>(`/requests/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-        addMessage: async (requestId: string, data: { content: string }, token: string, files?: File[]) => {
+    mail: {
+        getMails: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', status?: string, category?: string } = {}) =>
+            request<PaginatedResponse<MailItem>>(`/mail${buildQueryString(params)}`, { token }),
+        getMail: (id: string, token: string) =>
+            request<MailDetail>(`/mail/${id}`, { token }),
+        createMail: (data: CreateMailPayload, token: string) =>
+            request<MailDetail>('/mail', { method: 'POST', body: JSON.stringify(data), token }),
+        updateMail: (id: string, data: UpdateMailPayload, token: string) =>
+            request<MailDetail>(`/mail/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+        addMessage: async (mailId: string, data: { content: string }, token: string, files?: File[]) => {
             if (files && files.length > 0) {
                 const formData = new FormData();
                 formData.append('content', data.content);
                 files.forEach(file => formData.append('files', file));
 
-                const response = await fetch(`${API_BASE_URL}/requests/${requestId}/messages`, {
+                const response = await fetch(`${API_BASE_URL}/mail/${mailId}/messages`, {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${token}` },
                     body: formData,
@@ -283,12 +283,12 @@ export const api = {
                 if (!response.ok) throw new Error('Failed to send reply with files');
                 return response.json();
             }
-            return request<RequestDetail>(`/requests/${requestId}/messages`, { method: 'POST', body: JSON.stringify(data), token });
+            return request<MailDetail>(`/mail/${mailId}/messages`, { method: 'POST', body: JSON.stringify(data), token });
         },
         getContactableUsers: (token: string, search?: string) =>
-            request<RequestTarget[]>(`/requests/contacts${buildQueryString({ search })}`, { token }),
+            request<MailTarget[]>(`/mail/contacts${buildQueryString({ search })}`, { token }),
         getUnreadCount: (token: string) =>
-            request<{ unread: number; total: number; countsByStatus: Record<string, number> }>('/requests/unread-count', { token }),
+            request<{ unread: number; total: number; countsByStatus: Record<string, number> }>('/mail/unread-count', { token }),
     },
 
     chat: {

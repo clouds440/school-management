@@ -26,7 +26,7 @@ model Organization {
   teachers        Teacher[]
   users           User[]
   assessments     Assessment[]
-  requests        Request[]
+  mails           Mail[]
   parentOrgId     String?
   parentOrg       Organization?  @relation("ParentChildOrg", fields: [parentOrgId], references: [id])
   subOrgs         Organization[] @relation("ParentChildOrg")
@@ -51,12 +51,12 @@ model User {
   studentProfile        Student?
   teacherProfile        Teacher?
   organization          Organization?      @relation(fields: [organizationId], references: [id])
-  createdRequests       Request[]          @relation("CreatedRequests")
-  assignedRequests      Request[]          @relation("AssignedRequests")
-  participatingRequests Request[]          @relation("RequestParticipants")
-  sentMessages          RequestMessage[]   @relation("SentMessages")
-  performedActions      RequestActionLog[] @relation("PerformedActions")
-  viewedRequests        RequestUserView[]
+  createdMails         Mail[]         @relation("CreatedRequests")
+  assignedMails        Mail[]         @relation("AssignedRequests")
+  participatingMails   Mail[]         @relation("RequestParticipants")
+  sentMessages         MailMessage[]  @relation("SentMessages")
+  performedActions     MailActionLog[] @relation("PerformedActions")
+  viewedMails          MailUserView[]
   createdChats          Chat[]             @relation("CreatedChats")
   chatParticipations    ChatParticipant[]  @relation("ChatParticipations")
   sentChatMessages      ChatMessage[]      @relation("SentChatMessages")
@@ -203,9 +203,9 @@ model Submission {
   student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
-// ─── Request System ────────────────────────────────────────────────────────────
+// ─── Mail System ────────────────────────────────────────────────────────────────
 
-model Request {
+model Mail {
   id       String        @id @default(uuid())
   subject  String
   category String // flexible string, not rigid enum
@@ -217,7 +217,7 @@ model Request {
   creatorRole String
   creator     User   @relation("CreatedRequests", fields: [creatorId], references: [id])
 
-  // Organization context (nullable for platform-level requests)
+  // Organization context (nullable for platform-level mails)
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -233,35 +233,37 @@ model Request {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  messages   RequestMessage[]
-  actionLogs RequestActionLog[]
-  userViews  RequestUserView[]
+  messages   MailMessage[]
+  actionLogs MailActionLog[]
+  userViews  MailUserView[]
 
   @@index([creatorId])
   @@index([organizationId])
   @@index([status])
   @@index([assigneeId])
+  @@map("Request")
 }
 
-model RequestUserView {
+model MailUserView {
   userId       String
-  requestId    String
+  mailId       String  @map("requestId")
   lastViewedAt DateTime @default(now())
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mail Mail @relation(fields: [mailId], references: [id], onDelete: Cascade)
 
-  @@id([userId, requestId])
+  @@id([userId, mailId])
+  @@map("RequestUserView")
 }
 
-model RequestMessage {
-  id        String @id @default(uuid())
-  requestId String
-  senderId  String
-  content   String // markdown supported
+model MailMessage {
+  id     String @id @default(uuid())
+  mailId String @map("requestId")
+  senderId String
+  content  String // markdown supported
 
-  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  sender  User    @relation("SentMessages", fields: [senderId], references: [id])
+  mail   Mail @relation(fields: [mailId], references: [id], onDelete: Cascade)
+  sender User @relation("SentMessages", fields: [senderId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -269,24 +271,26 @@ model RequestMessage {
 
   // Files linked via existing File model (entityType: "REQUEST_MESSAGE", entityId: message.id)
 
-  @@index([requestId])
+  @@index([mailId])
   @@index([senderId])
+  @@map("RequestMessage")
 }
 
-model RequestActionLog {
+model MailActionLog {
   id          String  @id @default(uuid())
-  requestId   String
+  mailId      String  @map("requestId")
   performedBy String
   action      String // "CREATED", "STATUS_CHANGED", "ASSIGNED", "MESSAGE_SENT", etc.
   details     Json? // e.g. { from: "OPEN", to: "IN_PROGRESS" }
   note        String?
 
-  request   Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  performer User    @relation("PerformedActions", fields: [performedBy], references: [id])
+  mail      Mail @relation(fields: [mailId], references: [id], onDelete: Cascade)
+  performer User @relation("PerformedActions", fields: [performedBy], references: [id])
 
   createdAt DateTime @default(now())
 
-  @@index([requestId])
+  @@index([mailId])
+  @@map("RequestActionLog")
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
@@ -379,6 +383,7 @@ model Chat {
   type           ChatType
   name           String? // For group chats
   avatarUrl      String? // Group picture URL
+  avatarUpdatedAt DateTime?
   organizationId String? // Null if platform-level chat
   creatorId      String // User who created the group
 

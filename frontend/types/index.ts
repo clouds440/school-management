@@ -1,5 +1,5 @@
 import { Role, TeacherStatus, StudentStatus, RequestStatus, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority } from './enums';
-export { Role, TeacherStatus, StudentStatus, RequestStatus, OrganizationType, OrgStatus, AssessmentType, GradeStatus, RequestCategory, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority } from './enums';
+export { Role, TeacherStatus, StudentStatus, RequestStatus, MailStatus, RequestCategory, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority } from './enums';
 
 export interface PaginatedResponse<T> {
     data: T[];
@@ -186,9 +186,9 @@ export interface OrgStats {
     PENDING_ASSESSMENTS?: number;
 }
 
-// ─── Request System Types ────────────────────────────────────────────────────
+// ─── Mail System Types ────────────────────────────────────────────────────────
 
-export interface RequestUser {
+export interface MailUser {
     id: string;
     name: string | null;
     email: string;
@@ -196,24 +196,24 @@ export interface RequestUser {
     avatarUrl?: string | null;
 }
 
-export interface RequestOrg {
+export interface MailOrg {
     id: string;
     name: string;
     logoUrl?: string | null;
 }
 
-export interface RequestMessage {
+export interface MailMessage {
     id: string;
     requestId: string;
     senderId: string;
     content: string;
     createdAt: string;
     updatedAt: string;
-    sender: RequestUser;
+    sender: MailUser;
     files?: Attachment[];
 }
 
-export interface RequestActionLog {
+export interface MailActionLog {
     id: string;
     requestId: string;
     performedBy: string;
@@ -224,8 +224,14 @@ export interface RequestActionLog {
     performer: { id: string; name: string | null; role: string };
 }
 
+export interface MailUserView {
+    userId: string;
+    requestId: string;
+    lastViewedAt: string;
+}
+
 /** Summary item returned in list views */
-export interface RequestItem {
+export interface MailItem {
     id: string;
     subject: string;
     category: string;
@@ -239,28 +245,22 @@ export interface RequestItem {
     metadata: Record<string, unknown> | null;
     createdAt: string;
     updatedAt: string;
-    creator: RequestUser;
-    assignee: RequestUser | null;
-    assignees: RequestUser[];
-    organization: RequestOrg | null;
+    creator: MailUser;
+    assignee: MailUser | null;
+    assignees: MailUser[];
+    organization: MailOrg | null;
     _count: { messages: number };
     unreadCount: number;
 }
 
-export interface RequestUserView {
-    userId: string;
-    requestId: string;
-    lastViewedAt: string;
+/** Full detail returned when viewing a single mail thread */
+export interface MailDetail extends MailItem {
+    messages: MailMessage[];
+    actionLogs: MailActionLog[];
+    userViews: MailUserView[];
 }
 
-/** Full detail returned when viewing a single request */
-export interface RequestDetail extends RequestItem {
-    messages: RequestMessage[];
-    actionLogs: RequestActionLog[];
-    userViews: RequestUserView[];
-}
-
-export interface CreateRequestPayload {
+export interface CreateMailPayload {
     subject: string;
     category: string;
     priority?: string;
@@ -271,13 +271,13 @@ export interface CreateRequestPayload {
     noReply?: boolean;
 }
 
-export interface UpdateRequestPayload {
+export interface UpdateMailPayload {
     status?: RequestStatus;
     assigneeId?: string;
     priority?: string;
 }
 
-export interface RequestTarget {
+export interface MailTarget {
     id: string;
     label: string;
     email?: string;
@@ -286,6 +286,18 @@ export interface RequestTarget {
     avatarUrl?: string | null;
     description?: string;
 }
+
+// Backwards-compatibility aliases (deprecated — use Mail* instead)
+export type RequestUser = MailUser;
+export type RequestOrg = MailOrg;
+export type RequestMessage = MailMessage;
+export type RequestActionLog = MailActionLog;
+export type RequestUserView = MailUserView;
+export type RequestItem = MailItem;
+export type RequestDetail = MailDetail;
+export type CreateRequestPayload = CreateMailPayload;
+export type UpdateRequestPayload = UpdateMailPayload;
+export type RequestTarget = MailTarget;
 
 // Request Interfaces
 export interface CreateTeacherRequest {
@@ -490,6 +502,7 @@ export interface Chat {
     type: ChatType;
     name: string | null;
     avatarUrl?: string | null;
+    avatarUpdatedAt?: string | null;
     organizationId: string | null;
     creatorId: string;
     createdAt: string;

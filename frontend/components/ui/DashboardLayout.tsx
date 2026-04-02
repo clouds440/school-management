@@ -144,17 +144,8 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     {link.label}
                                 </span>
                                 {link.badge !== undefined && (
-                                    <span className={`${!effectiveExpanded ? 'absolute top-0 -right-[8px]' : 'ml-auto bg-sidebar-active-text/20'} px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter text-sidebar-text animate-in fade-in duration-300`}>
-                                        {effectiveExpanded ? (
-                                            link.badge
-                                        ) : (
-                                            (() => {
-                                                const badgeStr = String(link.badge);
-                                                const count = parseInt(badgeStr.split(' ')[0]);
-                                                if (isNaN(count) || count <= 0) return null;
-                                                return <span className='bg-red-500 text-white px-2 py-0.5 rounded-full shadow-sm'>{count > 99 ? '99+' : count}</span>;
-                                            })()
-                                        )}
+                                    <span className={`${!effectiveExpanded ? 'hidden' : 'ml-auto bg-sidebar-active-text/20'} px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter text-sidebar-text animate-in fade-in duration-300`}>
+                                        {link.badge}
                                     </span>
                                 )}
                             </Link>
@@ -190,7 +181,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                 <Mail className="w-4 h-4 shrink-0" />
                                 {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Mail</span>}
                                 {mailCount.unread > 0 && (
-                                    <span className={`ml-auto bg-red-500 text-white ${!effectiveExpanded ? 'absolute -top-1 right-0' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
+                                    <span className={`ml-auto bg-red-500 text-white ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
                                         {mailCount.unread > 99 ? '99+' : mailCount.unread}
                                     </span>
                                 )}

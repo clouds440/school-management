@@ -33,7 +33,7 @@ export interface ContactTarget {
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
-export class RequestService {
+export class MailService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly events: EventsGateway,
@@ -82,7 +82,7 @@ export class RequestService {
         }
 
         // Rate limiting: check active request count
-        const activeCount = await this.prisma.request.count({
+        const activeCount = await this.prisma.mail.count({
             where: {
                 creatorId: user.id,
                 status: { notIn: [RequestStatus.RESOLVED, RequestStatus.CLOSED] },
@@ -107,7 +107,7 @@ export class RequestService {
 
         // Create request + initial message + action log in a transaction
         const request = await this.prisma.$transaction(async (tx) => {
-            const req = await tx.request.create({
+            const req = await tx.mail.create({
                 data: {
                     subject: dto.subject,
                     category: dto.category,
@@ -126,18 +126,18 @@ export class RequestService {
             });
 
             // Initial message
-            await tx.requestMessage.create({
+            await tx.mailMessage.create({
                 data: {
-                    requestId: req.id,
+                    mailId: req.id,
                     senderId: user.id,
                     content: dto.message,
                 },
             });
 
             // Action log
-            await tx.requestActionLog.create({
+            await tx.mailActionLog.create({
                 data: {
-                    requestId: req.id,
+                    mailId: req.id,
                     performedBy: user.id,
                     action: 'CREATED',
                     details: { category: dto.category, priority: dto.priority || 'NORMAL' },
@@ -145,10 +145,10 @@ export class RequestService {
             });
 
             // Mark as read for the creator immediately
-            await tx.requestUserView.upsert({
-                where: { userId_requestId: { userId: user.id, requestId: req.id } },
+            await tx.mailUserView.upsert({
+                where: { userId_mailId: { userId: user.id, mailId: req.id } },
                 update: { lastViewedAt: new Date() },
-                create: { userId: user.id, requestId: req.id, lastViewedAt: new Date() }
+                create: { userId: user.id, mailId: req.id, lastViewedAt: new Date() }
             });
 
             return req;
@@ -165,8 +165,8 @@ export class RequestService {
 
             // Notify all participants using the new consolidated helper
             await this.notifyParticipants(request, {
-                title: 'New Request Assigned',
-                body: `A new request "${dto.subject}" has been assigned to you.`,
+                title: 'New Mail Received',
+                body: `A new mail "${dto.subject}" has been assigned to you.`,
                 type: 'REQUEST_ASSIGNED'
             }, user.id);
         } else if (dto.targetRole) {
@@ -175,11 +175,11 @@ export class RequestService {
         
         // Use transformed for potentially organization-level rooms
         const isOrgTarget = targetRoom.startsWith('user:') || (dto.targetRole && !ADMIN_ROLES.has(dto.targetRole as Role));
-        this.events.emitToRoom(targetRoom, 'request:new', isOrgTarget ? transformed : fullRequest);
+        this.events.emitToRoom(targetRoom, 'mail:new', isOrgTarget ? transformed : fullRequest);
 
         // Also emit to super admins if not already targeted (always untransformed for admins)
         if (targetRoom !== `role:${Role.SUPER_ADMIN}`) {
-            this.events.emitToRole(Role.SUPER_ADMIN, 'request:new', fullRequest);
+            this.events.emitToRole(Role.SUPER_ADMIN, 'mail:new', fullRequest);
         }
 
         // Notify all participants about unread count change
@@ -278,7 +278,7 @@ export class RequestService {
         };
 
         const [requests, totalRecords] = await Promise.all([
-            this.prisma.request.findMany({
+            this.prisma.mail.findMany({
                 where,
                 skip,
                 take,
@@ -303,14 +303,14 @@ export class RequestService {
                     },
                 },
             }),
-            this.prisma.request.count({ where }),
+            this.prisma.mail.count({ where }),
         ]);
 
         const result = formatPaginatedResponse(requests, totalRecords, options.page, options.limit);
 
         // Fetch unread count for each request efficiently
         const requestIds = requests.map((r) => r.id);
-        const userViews = await this.prisma.requestUserView.findMany({
+        const userViews = await this.prisma.mailUserView.findMany({
             where: { userId: user.id, requestId: { in: requestIds } },
         });
         const viewMap = new Map(userViews.map((v) => [v.requestId, v.lastViewedAt]));
@@ -318,9 +318,9 @@ export class RequestService {
         const requestsWithUnread = await Promise.all(
             requests.map(async (req) => {
                 const lastViewedAt = viewMap.get(req.id);
-                const unreadCount = await this.prisma.requestMessage.count({
+                const unreadCount = await this.prisma.mailMessage.count({
                     where: {
-                        requestId: req.id,
+                        mailId: req.id,
                         senderId: { not: user.id },
                         deletedAt: null,
                         ...(lastViewedAt ? { createdAt: { gt: lastViewedAt } } : {}),
@@ -339,7 +339,7 @@ export class RequestService {
     // ──────────────────────────── Get Single ─────────────────────────────────
 
     private async getRequestByIdInternal(requestId: string) {
-        const request = await this.prisma.request.findUnique({
+        const request = await this.prisma.mail.findUnique({
             where: { id: requestId },
             include: {
                 creator: {
@@ -441,7 +441,7 @@ export class RequestService {
         dto: UpdateRequestDto,
         user: RequestUser,
     ) {
-        const existing = await this.prisma.request.findUnique({
+        const existing = await this.prisma.mail.findUnique({
             where: { id: requestId },
         });
 
@@ -501,7 +501,7 @@ export class RequestService {
         }
 
         const updatedRequest = await this.prisma.$transaction(async (tx) => {
-            const req = await tx.request.update({
+            const req = await tx.mail.update({
                 where: { id: requestId },
                 data: updateData,
             });
@@ -512,7 +512,7 @@ export class RequestService {
                   ? 'ASSIGNED'
                   : 'UPDATED';
 
-            await tx.requestActionLog.create({
+            await tx.mailActionLog.create({
                 data: {
                     requestId,
                     performedBy: user.id,
@@ -526,8 +526,8 @@ export class RequestService {
         // --- Persistent Notifications for Updates ---
         if (dto.status && dto.status !== existing.status) {
             await this.notifyParticipants(updatedRequest, {
-                title: 'Request Status Updated',
-                body: `The status of "${existing.subject}" is now ${dto.status}.`,
+                title: 'Mail Status Updated',
+                body: `The status of mail "${existing.subject}" is now ${dto.status}.`,
                 type: 'REQUEST_STATUS_CHANGE',
                 metadata: { status: dto.status }
             }, user.id);
@@ -535,8 +535,8 @@ export class RequestService {
 
         if (dto.assigneeId && dto.assigneeId !== existing.assigneeId) {
             await this.notifyParticipants(updatedRequest, {
-                title: 'Request Assigned',
-                body: `You have been assigned to request "${existing.subject}".`,
+                title: 'Mail Assigned to You',
+                body: `You have been assigned to mail "${existing.subject}".`,
                 type: 'REQUEST_ASSIGNED',
             }, user.id, [dto.assigneeId]);
         }
@@ -545,9 +545,9 @@ export class RequestService {
         const transformed = this.transformRequest(fullRequest, user.role as Role);
 
         // Emit update to appropriate rooms
-        this.events.emitToRoom(`request:${requestId}`, 'request:update', transformed);
-        this.events.emitToRoom(`role:${Role.PLATFORM_ADMIN}`, 'request:update', fullRequest);
-        this.events.emitToRole(Role.SUPER_ADMIN, 'request:update', fullRequest);
+        this.events.emitToRoom(`request:${requestId}`, 'mail:update', transformed);
+        this.events.emitToRoom(`role:${Role.PLATFORM_ADMIN}`, 'mail:update', fullRequest);
+        this.events.emitToRole(Role.SUPER_ADMIN, 'mail:update', fullRequest);
 
         return transformed;
     }
@@ -559,7 +559,7 @@ export class RequestService {
         dto: CreateMessageDto,
         user: RequestUser,
     ) {
-        const request = await this.prisma.request.findUnique({
+        const request = await this.prisma.mail.findUnique({
             where: { id: requestId },
         });
 
@@ -598,7 +598,7 @@ export class RequestService {
         }
 
         const [message] = await this.prisma.$transaction(async (tx) => {
-            const msg = await tx.requestMessage.create({
+            const msg = await tx.mailMessage.create({
                 data: {
                     requestId,
                     senderId: user.id,
@@ -611,7 +611,7 @@ export class RequestService {
                 },
             });
 
-            await tx.requestActionLog.create({
+            await tx.mailActionLog.create({
                 data: {
                     requestId,
                     performedBy: user.id,
@@ -633,7 +633,7 @@ export class RequestService {
                 newStatus = RequestStatus.IN_PROGRESS;
             }
 
-            await tx.request.update({
+            await tx.mail.update({
                 where: { id: requestId },
                 data: { 
                     status: newStatus,
@@ -642,8 +642,8 @@ export class RequestService {
             });
 
             // Mark as read for the sender immediately
-            await tx.requestUserView.upsert({
-                where: { userId_requestId: { userId: user.id, requestId } },
+            await tx.mailUserView.upsert({
+                where: { userId_mailId: { userId: user.id, requestId } },
                 update: { lastViewedAt: new Date() },
                 create: { userId: user.id, requestId, lastViewedAt: new Date() }
             });
@@ -655,15 +655,15 @@ export class RequestService {
         const transformed = this.transformRequest(fullRequest, user.role as Role);
 
         // --- Persistent Notifications for Replies ---
-        const bodyContent = `${user.name || user.email} replied to "${request.subject}".`;
+        const bodyContent = `${user.name || user.email} replied to mail "${request.subject}".`;
         await this.notifyParticipants(request, {
-            title: 'New Message in Request',
+            title: 'New Reply in Mail Thread',
             body: bodyContent,
             type: 'REQUEST_MESSAGE'
         }, user.id);
 
         // Notify rooms (real-time)
-        this.events.emitToRoom(`request:${requestId}`, 'request:message', {
+        this.events.emitToRoom(`request:${requestId}`, 'mail:message', {
             requestId,
             message: transformed.messages[transformed.messages.length - 1],
         });
@@ -771,9 +771,9 @@ export class RequestService {
     // ─────────────────────────── Unread Tracking ─────────────────────────────
 
     async markAsRead(requestId: string, userId: string) {
-        await this.prisma.requestUserView.upsert({
+        await this.prisma.mailUserView.upsert({
             where: {
-                userId_requestId: { userId, requestId }
+                userId_mailId: { userId, requestId }
             },
             update: { lastViewedAt: new Date() },
             create: { userId, requestId, lastViewedAt: new Date() }
@@ -814,7 +814,7 @@ export class RequestService {
             };
 
         // Get status counts (all statuses)
-        const statusCounts = await this.prisma.request.groupBy({
+        const statusCounts = await this.prisma.mail.groupBy({
             by: ['status'],
             where: participationFilter,
             _count: { _all: true }
@@ -826,7 +826,7 @@ export class RequestService {
         }
 
         // 1. All relevant requests based on participation (including platform team mail)
-        const relevantRequests = await this.prisma.request.findMany({
+        const relevantRequests = await this.prisma.mail.findMany({
             where: participationFilter,
             select: {
                 id: true,
@@ -845,9 +845,9 @@ export class RequestService {
         for (const req of relevantRequests) {
             const lastViewed = req.userViews[0]?.lastViewedAt;
             
-            const hasUnread = await this.prisma.requestMessage.count({
+            const hasUnread = await this.prisma.mailMessage.count({
                 where: {
-                    requestId: req.id,
+                    mailId: req.id,
                     createdAt: lastViewed ? { gt: lastViewed } : undefined,
                     senderId: { not: user.id }, // Don't count own messages as unread
                     deletedAt: null
@@ -999,3 +999,4 @@ export class RequestService {
         return anonymized;
     }
 }
+

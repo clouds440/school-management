@@ -13,11 +13,34 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
     const htmlContent = useMemo(() => {
         try {
             const renderer = new marked.Renderer();
-            
+
             // Override image rendering to use getPublicUrl
             renderer.image = ({ href, title, text }) => {
                 const url = getPublicUrl(href);
                 return `<img src="${url}" alt="${text}" title="${title || ''}" class="max-w-full h-auto rounded-lg shadow-sm my-2 border border-gray-100" />`;
+            };
+
+            // Override link rendering for external/internal links
+            renderer.link = ({ href, title, text }) => {
+                if (!href) return `<a title="${title || ''}">${text}</a>`;
+
+                // Comprehensive external link detection
+                const isExternal = /^https?:\/\/|^\/\/|^www\.|^mailto:|^tel:/.test(href);
+                let url = href;
+
+                if (isExternal) {
+                    // Ensure 'www.' links have a protocol, otherwise they are treated as relative paths
+                    url = href.startsWith('www.') ? `https://${href}` : href;
+                } else if (href.startsWith('/uploads/') || href.startsWith('uploads/') || href.includes('/chat-files/') || href.includes('/mail-files/')) {
+                    // Only use getPublicUrl for known backend asset patterns
+                    url = getPublicUrl(href);
+                } else {
+                    // Regular platform internal links (e.g. /dashboard) should stay relative to the frontend
+                    url = href;
+                }
+
+                const targetAttr = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
+                return `<a href="${url}" title="${title || ''}" ${targetAttr}>${text}</a>`;
             };
 
             // Configure marked for safe and simple rendering
@@ -34,7 +57,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
     }, [content]);
 
     return (
-        <div 
+        <div
             className={`markdown-content ${className}`}
             dangerouslySetInnerHTML={{ __html: htmlContent }}
             dir="auto"

@@ -5,7 +5,7 @@ import { OrgModule } from './org/org.module';
 import { FilesModule } from './files/files.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { EventsModule } from './events/events.module';
-import { RequestsModule } from './requests/requests.module';
+import { MailModule } from './requests/requests.module';
 
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -26,10 +26,10 @@ import { ActiveOrgGuard } from './common/guards/active-org.guard';
     FilesModule,
     PrismaModule,
     EventsModule,
-    RequestsModule,
+    MailModule,
     ThrottlerModule.forRoot([{
       ttl: 60000,
-      limit: 60,
+      limit: 300,
     }]),
     ChatModule,
     NotificationsModule,

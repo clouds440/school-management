@@ -23,6 +23,9 @@ export enum RequestStatus {
     NO_REPLY = 'NO_REPLY',
 }
 
+/** Alias for RequestStatus — used in Mail system */
+export { RequestStatus as MailStatus };
+
 export enum TeacherStatus {
     ACTIVE = 'ACTIVE',
     SUSPENDED = 'SUSPENDED',

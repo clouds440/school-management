@@ -148,6 +148,13 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
         }
     };
 
+    const resetForm = () => {
+        setRecipientId('');
+        setParticipantIds([]);
+        setGroupName('');
+        setSelectedSectionId('');
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!token) return;
@@ -161,6 +168,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
                 await api.chat.addParticipants(chatId, participantIds, token);
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Participants added successfully', type: 'success' } });
                 onChatCreated?.(chatId);
+                resetForm();
                 onClose();
                 return;
             }
@@ -179,6 +187,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
 
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Chat created successfully', type: 'success' } });
             onChatCreated?.(newChatId);
+            resetForm();
             onClose();
         } catch (error) {
             const err = error as Error;
