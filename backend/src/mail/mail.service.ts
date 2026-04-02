@@ -7,18 +7,18 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
-import { RequestStatus, Role, OrgStatus } from '../common/enums';
+import { MailStatus, Role, OrgStatus } from '../common/enums';
 import { getPaginationOptions, formatPaginatedResponse, PaginationOptions } from '../common/utils';
-import { CreateRequestDto } from './dto/create-request.dto';
-import { UpdateRequestDto } from './dto/update-request.dto';
+import { CreateMailDto } from './dto/create-mail.dto';
+import { UpdateMailDto } from './dto/update-mail.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 
-/** Maximum active (non-resolved/closed) requests per user */
-const MAX_ACTIVE_REQUESTS = 10;
+/** Maximum active (non-resolved/closed) mails per user */
+const MAX_ACTIVE_MAILS = 10;
 
-/** Roles that can manage (view all, assign, change status) requests */
+/** Roles that can manage (view all, assign, change status) mails */
 const ADMIN_ROLES = new Set([Role.SUPER_ADMIN, Role.PLATFORM_ADMIN]);
-import { RequestUser } from './interfaces/request-user.interface';
+import { MailUser } from './interfaces/mail-user.interface';
 
 export interface ContactTarget {
     id: string;
@@ -42,7 +42,7 @@ export class MailService {
 
     // ──────────────────────────────── Create ─────────────────────────────────
 
-    async createRequest(dto: CreateRequestDto, user: RequestUser, noReply: boolean = false) {
+    async createMail(dto: CreateMailDto, user: MailUser, noReply: boolean = false) {
         // --- Org Status Enforcement ---
         if (user.organizationId) {
             const org = await this.prisma.organization.findUnique({
@@ -56,7 +56,7 @@ export class MailService {
         }
 
         if (user.role === Role.STUDENT) {
-            throw new ForbiddenException('Students are not allowed to submit requests.');
+            throw new ForbiddenException('Students are not allowed to submit mails.');
         }
 
         // --- Role-based Messaging Restrictions ---
@@ -81,11 +81,11 @@ export class MailService {
             }
         }
 
-        // Rate limiting: check active request count
+        // Rate limiting: check active mail count
         const activeCount = await this.prisma.mail.count({
             where: {
                 creatorId: user.id,
-                status: { notIn: [RequestStatus.RESOLVED, RequestStatus.CLOSED] },
+                status: { notIn: [MailStatus.RESOLVED, MailStatus.CLOSED] },
             },
         });
 
@@ -99,20 +99,20 @@ export class MailService {
             throw new BadRequestException(`Invalid creator role context.`);
         }
 
-        if (activeCount >= MAX_ACTIVE_REQUESTS) {
+        if (activeCount >= MAX_ACTIVE_MAILS) {
             throw new BadRequestException(
-                `You have reached the maximum of ${MAX_ACTIVE_REQUESTS} active requests. Please resolve or close existing requests first.`,
+                `You have reached the maximum of ${MAX_ACTIVE_MAILS} active mails. Please resolve or close existing mails first.`,
             );
         }
 
-        // Create request + initial message + action log in a transaction
-        const request = await this.prisma.$transaction(async (tx) => {
+        // Create mail + initial message + action log in a transaction
+        const mail = await this.prisma.$transaction(async (tx) => {
             const req = await tx.mail.create({
                 data: {
                     subject: dto.subject,
                     category: dto.category,
                     priority: dto.priority || 'NORMAL',
-                    status: dto.noReply ? RequestStatus.NO_REPLY : (dto.status || RequestStatus.OPEN),
+                    status: dto.noReply ? MailStatus.NO_REPLY : (dto.status || MailStatus.OPEN),
                     creatorId: user.id,
                     creatorRole: user.role,
                     organizationId: user.organizationId,
@@ -154,9 +154,9 @@ export class MailService {
             return req;
         });
 
-        // Fetch the full request with relations for the response & event
-        const fullRequest = await this.getRequestByIdInternal(request.id);
-        const transformed = this.transformRequest(fullRequest, user.role as Role);
+        // Fetch the full mail with relations for the response & event
+        const fullMail = await this.getMailByIdInternal(mail.id);
+        const transformed = this.transformMail(fullMail, user.role as Role);
         
         // Emit to targeted role, assignee, or platform admins
         let targetRoom = `role:${Role.PLATFORM_ADMIN}`;
@@ -164,10 +164,10 @@ export class MailService {
             targetRoom = `user:${dto.assigneeIds[0]}`;
 
             // Notify all participants using the new consolidated helper
-            await this.notifyParticipants(request, {
+            await this.notifyParticipants(mail, {
                 title: 'New Mail Received',
                 body: `A new mail "${dto.subject}" has been assigned to you.`,
-                type: 'REQUEST_ASSIGNED'
+                type: 'MAIL_ASSIGNED'
             }, user.id);
         } else if (dto.targetRole) {
             targetRoom = `role:${dto.targetRole}`;
@@ -175,11 +175,11 @@ export class MailService {
         
         // Use transformed for potentially organization-level rooms
         const isOrgTarget = targetRoom.startsWith('user:') || (dto.targetRole && !ADMIN_ROLES.has(dto.targetRole as Role));
-        this.events.emitToRoom(targetRoom, 'mail:new', isOrgTarget ? transformed : fullRequest);
+        this.events.emitToRoom(targetRoom, 'mail:new', isOrgTarget ? transformed : fullMail);
 
         // Also emit to super admins if not already targeted (always untransformed for admins)
         if (targetRoom !== `role:${Role.SUPER_ADMIN}`) {
-            this.events.emitToRole(Role.SUPER_ADMIN, 'mail:new', fullRequest);
+            this.events.emitToRole(Role.SUPER_ADMIN, 'mail:new', fullMail);
         }
 
         // Notify all participants about unread count change
@@ -194,8 +194,8 @@ export class MailService {
 
     // ───────────────────────────────── List ──────────────────────────────────
 
-    async getRequests(
-        user: RequestUser,
+    async getMails(
+        user: MailUser,
         options: PaginationOptions & { status?: string; category?: string },
     ) {
         const { skip, take, search, sortBy, sortOrder } = getPaginationOptions({
@@ -206,10 +206,10 @@ export class MailService {
 
         const isAdmin = ADMIN_ROLES.has(user.role as Role);
  
-        const where: Prisma.RequestWhereInput = {
+        const where: Prisma.MailWhereInput = {
             AND: [
                 // Optional base filters
-                ...(options.status ? [{ status: options.status as RequestStatus }] : []),
+                ...(options.status ? [{ status: options.status as MailStatus }] : []),
                 ...(options.category ? [{ category: options.category }] : []),
                 
                 // Participation / Visibility Filter
@@ -234,9 +234,9 @@ export class MailService {
                             { assigneeId: user.id },
                             { assignees: { some: { id: user.id } } },
                             { targetRole: user.role as Role },
-                            // Organization admins see all requests in their Org
+                            // Organization admins see all mails in their Org
                             ...(user.role === Role.ORG_ADMIN ? [{ organizationId: user.organizationId }] : []),
-                            // Staff see requests targeted to ORG_STAFF
+                            // Staff see mails targeted to ORG_STAFF
                             ...(user.role === Role.TEACHER || user.role === Role.ORG_MANAGER 
                                 ? [{ targetRole: 'ORG_STAFF' }] 
                                 : [])
@@ -247,7 +247,7 @@ export class MailService {
                 ...(search ? (() => {
                     const normalizedSearch = search.trim().toUpperCase().replace(/\s+/g, '_');
                     
-                    const possibleStatuses = Object.values(RequestStatus) as string[];
+                    const possibleStatuses = Object.values(MailStatus) as string[];
                     const isStatusMatch = possibleStatuses.find(s => s === normalizedSearch || s.includes(normalizedSearch));
                     
                     // Also check for category matches
@@ -269,7 +269,7 @@ export class MailService {
                             { assignee: { email: { contains: search, mode: 'insensitive' as const } } },
                             { assignees: { some: { name: { contains: search, mode: 'insensitive' as const } } } },
                             { assignees: { some: { email: { contains: search, mode: 'insensitive' as const } } } },
-                            ...(isStatusMatch ? [{ status: isStatusMatch as RequestStatus }] : []),
+                            ...(isStatusMatch ? [{ status: isStatusMatch as MailStatus }] : []),
                             ...(isCategoryMatch ? [{ category: isCategoryMatch }] : []),
                         ]
                     }];
@@ -277,13 +277,13 @@ export class MailService {
             ]
         };
 
-        const [requests, totalRecords] = await Promise.all([
+        const [mails, totalRecords] = await Promise.all([
             this.prisma.mail.findMany({
                 where,
                 skip,
                 take,
                 orderBy: [
-                    { [sortBy]: sortOrder } as Prisma.RequestOrderByWithRelationInput,
+                    { [sortBy]: sortOrder } as Prisma.MailOrderByWithRelationInput,
                 ],
                 include: {
                     creator: {
@@ -306,17 +306,17 @@ export class MailService {
             this.prisma.mail.count({ where }),
         ]);
 
-        const result = formatPaginatedResponse(requests, totalRecords, options.page, options.limit);
+        const result = formatPaginatedResponse(mails, totalRecords, options.page, options.limit);
 
-        // Fetch unread count for each request efficiently
-        const requestIds = requests.map((r) => r.id);
+        // Fetch unread count for each mail efficiently
+        const mailIds = mails.map((r) => r.id);
         const userViews = await this.prisma.mailUserView.findMany({
-            where: { userId: user.id, requestId: { in: requestIds } },
+            where: { userId: user.id, mailId: { in: mailIds } },
         });
-        const viewMap = new Map(userViews.map((v) => [v.requestId, v.lastViewedAt]));
+        const viewMap = new Map(userViews.map((v) => [v.mailId, v.lastViewedAt]));
 
-        const requestsWithUnread = await Promise.all(
-            requests.map(async (req) => {
+        const mailsWithUnread = await Promise.all(
+            mails.map(async (req) => {
                 const lastViewedAt = viewMap.get(req.id);
                 const unreadCount = await this.prisma.mailMessage.count({
                     where: {
@@ -332,15 +332,15 @@ export class MailService {
 
         return { 
             ...result, 
-            data: requestsWithUnread.map(r => this.transformRequest(r, user.role as Role)) 
+            data: mailsWithUnread.map(r => this.transformMail(r, user.role as Role)) 
         };
     }
 
     // ──────────────────────────── Get Single ─────────────────────────────────
 
-    private async getRequestByIdInternal(requestId: string) {
-        const request = await this.prisma.mail.findUnique({
-            where: { id: requestId },
+    private async getMailByIdInternal(mailId: string) {
+        const mail = await this.prisma.mail.findUnique({
+            where: { id: mailId },
             include: {
                 creator: {
                     select: { id: true, name: true, email: true, role: true, avatarUrl: true },
@@ -374,13 +374,13 @@ export class MailService {
             },
         });
 
-        if (!request) return null;
+        if (!mail) return null;
 
-        // Optimized: Fetch all files for all messages in this request with a single query
-        const messageIds = request.messages.map(m => m.id);
+        // Optimized: Fetch all files for all messages in this mail with a single query
+        const messageIds = mail.messages.map(m => m.id);
         const allFiles = await this.prisma.file.findMany({
             where: {
-                entityType: 'REQUEST_MESSAGE',
+                entityType: 'MAIL_MESSAGE',
                 entityId: { in: messageIds },
             },
             select: {
@@ -401,52 +401,52 @@ export class MailService {
             return acc;
         }, {});
 
-        const messagesWithFiles = request.messages.map((msg) => ({
+        const messagesWithFiles = mail.messages.map((msg) => ({
             ...msg,
             files: filesMap[msg.id] || [],
         }));
 
-        return { ...request, messages: messagesWithFiles };
+        return { ...mail, messages: messagesWithFiles };
     }
 
-    async getRequestById(requestId: string, user: RequestUser) {
-        const request = await this.getRequestByIdInternal(requestId);
+    async getMailById(mailId: string, user: MailUser) {
+        const mail = await this.getMailByIdInternal(mailId);
 
-        if (!request) {
-            throw new NotFoundException('Request not found');
+        if (!mail) {
+            throw new NotFoundException('Mail not found');
         }
 
         // Permission check: creator, assignee (single or M2M), target role, or admin
         const isAdmin = ADMIN_ROLES.has(user.role as Role);
-        const isCreator = request.creatorId === user.id;
-        const isSingleAssignee = request.assigneeId === user.id;
-        const isM2MAssignee = request.assignees?.some(a => a.id === user.id) ?? false;
-        const isTargetRole = request.targetRole === user.role
-            || (request.targetRole === 'ORG_STAFF' && (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER));
+        const isCreator = mail.creatorId === user.id;
+        const isSingleAssignee = mail.assigneeId === user.id;
+        const isM2MAssignee = mail.assignees?.some(a => a.id === user.id) ?? false;
+        const isTargetRole = mail.targetRole === user.role
+            || (mail.targetRole === 'ORG_STAFF' && (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER));
 
         if (!isAdmin && !isCreator && !isSingleAssignee && !isM2MAssignee && !isTargetRole) {
-            throw new ForbiddenException('You do not have access to this request');
+            throw new ForbiddenException('You do not have access to this mail');
         }
 
         // Mark as read when viewed
-        await this.markAsRead(requestId, user.id);
+        await this.markAsRead(mailId, user.id);
 
-        return this.transformRequest(request, user.role as Role);
+        return this.transformMail(mail, user.role as Role);
     }
 
     // ──────────────────────────── Update ─────────────────────────────────────
 
-    async updateRequest(
-        requestId: string,
-        dto: UpdateRequestDto,
-        user: RequestUser,
+    async updateMail(
+        mailId: string,
+        dto: UpdateMailDto,
+        user: MailUser,
     ) {
         const existing = await this.prisma.mail.findUnique({
-            where: { id: requestId },
+            where: { id: mailId },
         });
 
         if (!existing) {
-            throw new NotFoundException('Request not found');
+            throw new NotFoundException('Mail not found');
         }
 
         // Permission: only admins or the assignee can update
@@ -455,24 +455,24 @@ export class MailService {
         const isCreator = existing.creatorId === user.id;
 
         if (!isAdmin && !isAssignee && !isCreator) {
-            throw new ForbiddenException('You do not have permission to update this request');
+            throw new ForbiddenException('You do not have permission to update this mail');
         }
 
-        // Non-admins can only close their own requests
+        // Non-admins can only close their own mails
         if (!isAdmin && !isAssignee && isCreator) {
-            if (dto.status && dto.status !== RequestStatus.CLOSED) {
-                throw new ForbiddenException('You can only close your own requests');
+            if (dto.status && dto.status !== MailStatus.CLOSED) {
+                throw new ForbiddenException('You can only close your own mails');
             }
             if (dto.assigneeId || dto.priority) {
                 throw new ForbiddenException('You do not have permission to change assignment or priority');
             }
         }
 
-        const updateData: Prisma.RequestUpdateInput = {};
+        const updateData: Prisma.MailUpdateInput = {};
         const logDetails: Record<string, unknown> = {};
 
         if (dto.status && dto.status !== existing.status) {
-            updateData.status = dto.status as RequestStatus;
+            updateData.status = dto.status as MailStatus;
             logDetails.statusFrom = existing.status;
             logDetails.statusTo = dto.status;
         }
@@ -497,12 +497,12 @@ export class MailService {
         }
 
         if (Object.keys(updateData).length === 0) {
-            return this.transformRequest(await this.getRequestByIdInternal(requestId), user.role as Role);
+            return this.transformMail(await this.getMailByIdInternal(mailId), user.role as Role);
         }
 
-        const updatedRequest = await this.prisma.$transaction(async (tx) => {
+        const updatedMail = await this.prisma.$transaction(async (tx) => {
             const req = await tx.mail.update({
-                where: { id: requestId },
+                where: { id: mailId },
                 data: updateData,
             });
 
@@ -514,7 +514,7 @@ export class MailService {
 
             await tx.mailActionLog.create({
                 data: {
-                    requestId,
+                    mailId,
                     performedBy: user.id,
                     action,
                     details: logDetails as Prisma.InputJsonValue,
@@ -525,29 +525,29 @@ export class MailService {
 
         // --- Persistent Notifications for Updates ---
         if (dto.status && dto.status !== existing.status) {
-            await this.notifyParticipants(updatedRequest, {
+            await this.notifyParticipants(updatedMail, {
                 title: 'Mail Status Updated',
                 body: `The status of mail "${existing.subject}" is now ${dto.status}.`,
-                type: 'REQUEST_STATUS_CHANGE',
+                type: 'MAIL_STATUS_CHANGE',
                 metadata: { status: dto.status }
             }, user.id);
         }
 
         if (dto.assigneeId && dto.assigneeId !== existing.assigneeId) {
-            await this.notifyParticipants(updatedRequest, {
+            await this.notifyParticipants(updatedMail, {
                 title: 'Mail Assigned to You',
                 body: `You have been assigned to mail "${existing.subject}".`,
-                type: 'REQUEST_ASSIGNED',
+                type: 'MAIL_ASSIGNED',
             }, user.id, [dto.assigneeId]);
         }
 
-        const fullRequest = await this.getRequestByIdInternal(requestId);
-        const transformed = this.transformRequest(fullRequest, user.role as Role);
+        const fullMail = await this.getMailByIdInternal(mailId);
+        const transformed = this.transformMail(fullMail, user.role as Role);
 
         // Emit update to appropriate rooms
-        this.events.emitToRoom(`request:${requestId}`, 'mail:update', transformed);
-        this.events.emitToRoom(`role:${Role.PLATFORM_ADMIN}`, 'mail:update', fullRequest);
-        this.events.emitToRole(Role.SUPER_ADMIN, 'mail:update', fullRequest);
+        this.events.emitToRoom(`mail:${mailId}`, 'mail:update', transformed);
+        this.events.emitToRoom(`role:${Role.PLATFORM_ADMIN}`, 'mail:update', fullMail);
+        this.events.emitToRole(Role.SUPER_ADMIN, 'mail:update', fullMail);
 
         return transformed;
     }
@@ -555,15 +555,15 @@ export class MailService {
     // ──────────────────────────── Add Message ────────────────────────────────
 
     async addMessage(
-        requestId: string,
+        mailId: string,
         dto: CreateMessageDto,
-        user: RequestUser,
+        user: MailUser,
     ) {
-        const request = await this.prisma.mail.findUnique({
-            where: { id: requestId },
+        const mail = await this.prisma.mail.findUnique({
+            where: { id: mailId },
         });
 
-        if (!request) throw new NotFoundException('Request not found');
+        if (!mail) throw new NotFoundException('Mail not found');
 
         // --- Org Status Enforcement for Replies ---
         if (user.organizationId) {
@@ -574,33 +574,33 @@ export class MailService {
             const status = org?.status as OrgStatus | undefined;
             if (status && status !== OrgStatus.APPROVED) {
                  // Only allow if this is a support thread (to/from platform admin)
-                 const isSupportThread = request.targetRole === Role.PLATFORM_ADMIN || 
-                                        request.targetRole === Role.SUPER_ADMIN || 
-                                        request.creatorRole === Role.PLATFORM_ADMIN || 
-                                        request.creatorRole === Role.SUPER_ADMIN;
+                 const isSupportThread = mail.targetRole === Role.PLATFORM_ADMIN || 
+                                        mail.targetRole === Role.SUPER_ADMIN || 
+                                        mail.creatorRole === Role.PLATFORM_ADMIN || 
+                                        mail.creatorRole === Role.SUPER_ADMIN;
                  if (!isSupportThread) {
                     throw new ForbiddenException('Your organization is not active. You can only reply to platform support threads.');
                  }
             }
         }
 
-        if (request.status === RequestStatus.CLOSED || request.status === RequestStatus.RESOLVED || request.status === RequestStatus.NO_REPLY) {
+        if (mail.status === MailStatus.CLOSED || mail.status === MailStatus.RESOLVED || mail.status === MailStatus.NO_REPLY) {
             throw new BadRequestException('This thread is closed or does not allow replies.');
         }
 
         // Permission: creator, assignee, or admin
         const isAdmin = ADMIN_ROLES.has(user.role as Role);
-        const isCreator = request.creatorId === user.id;
-        const isAssignee = request.assigneeId === user.id;
+        const isCreator = mail.creatorId === user.id;
+        const isAssignee = mail.assigneeId === user.id;
 
         if (!isAdmin && !isCreator && !isAssignee) {
-            throw new ForbiddenException('You do not have permission to reply to this request');
+            throw new ForbiddenException('You do not have permission to reply to this mail');
         }
 
         const [message] = await this.prisma.$transaction(async (tx) => {
             const msg = await tx.mailMessage.create({
                 data: {
-                    requestId,
+                    mailId,
                     senderId: user.id,
                     content: dto.content,
                 },
@@ -613,28 +613,28 @@ export class MailService {
 
             await tx.mailActionLog.create({
                 data: {
-                    requestId,
+                    mailId,
                     performedBy: user.id,
                     action: 'MESSAGE_SENT',
                 },
             });
 
-            // Auto-update status if needed AND always update request.updatedAt
-            let newStatus: RequestStatus | undefined;
+            // Auto-update status if needed AND always update mail.updatedAt
+            let newStatus: MailStatus | undefined;
             if (
-                request.status === RequestStatus.AWAITING_RESPONSE &&
-                request.creatorId !== user.id
+                mail.status === MailStatus.AWAITING_RESPONSE &&
+                mail.creatorId !== user.id
             ) {
-                newStatus = RequestStatus.IN_PROGRESS;
+                newStatus = MailStatus.IN_PROGRESS;
             } else if (
-                request.status === RequestStatus.OPEN &&
+                mail.status === MailStatus.OPEN &&
                 isAdmin
             ) {
-                newStatus = RequestStatus.IN_PROGRESS;
+                newStatus = MailStatus.IN_PROGRESS;
             }
 
             await tx.mail.update({
-                where: { id: requestId },
+                where: { id: mailId },
                 data: { 
                     status: newStatus,
                     updatedAt: new Date() 
@@ -643,40 +643,40 @@ export class MailService {
 
             // Mark as read for the sender immediately
             await tx.mailUserView.upsert({
-                where: { userId_mailId: { userId: user.id, requestId } },
+                where: { userId_mailId: { userId: user.id, mailId } },
                 update: { lastViewedAt: new Date() },
-                create: { userId: user.id, requestId, lastViewedAt: new Date() }
+                create: { userId: user.id, mailId, lastViewedAt: new Date() }
             });
 
             return [msg];
         });
 
-        const fullRequest = await this.getRequestByIdInternal(requestId);
-        const transformed = this.transformRequest(fullRequest, user.role as Role);
+        const fullMail = await this.getMailByIdInternal(mailId);
+        const transformed = this.transformMail(fullMail, user.role as Role);
 
         // --- Persistent Notifications for Replies ---
-        const bodyContent = `${user.name || user.email} replied to mail "${request.subject}".`;
-        await this.notifyParticipants(request, {
+        const bodyContent = `${user.name || user.email} replied to mail "${mail.subject}".`;
+        await this.notifyParticipants(mail, {
             title: 'New Reply in Mail Thread',
             body: bodyContent,
-            type: 'REQUEST_MESSAGE'
+            type: 'MAIL_MESSAGE'
         }, user.id);
 
         // Notify rooms (real-time)
-        this.events.emitToRoom(`request:${requestId}`, 'mail:message', {
-            requestId,
+        this.events.emitToRoom(`mail:${mailId}`, 'mail:message', {
+            mailId,
             message: transformed.messages[transformed.messages.length - 1],
         });
         
         // Notify total unread count changes
-        this.emitUnreadUpdateToParticipants(request, user.id);
+        this.emitUnreadUpdateToParticipants(mail, user.id);
 
         return transformed;
     }
 
     // ────────────────────────── Contactable Users ─────────────────────────────
 
-    async getContactableUsers(user: RequestUser, search?: string): Promise<ContactTarget[]> {
+    async getContactableUsers(user: MailUser, search?: string): Promise<ContactTarget[]> {
         const role = user.role as Role;
 
         const targets: ContactTarget[] = [];
@@ -770,34 +770,34 @@ export class MailService {
 
     // ─────────────────────────── Unread Tracking ─────────────────────────────
 
-    async markAsRead(requestId: string, userId: string) {
+    async markAsRead(mailId: string, userId: string) {
         await this.prisma.mailUserView.upsert({
             where: {
-                userId_mailId: { userId, requestId }
+                userId_mailId: { userId, mailId }
             },
             update: { lastViewedAt: new Date() },
-            create: { userId, requestId, lastViewedAt: new Date() }
+            create: { userId, mailId, lastViewedAt: new Date() }
         });
 
         // Emit trigger for frontend to refresh unread count
         this.events.emitToUser(userId, 'unread:update', null);
     }
 
-    async getUnreadCount(user: RequestUser): Promise<{ unread: number; total: number; countsByStatus: Record<string, number> }> {
+    async getUnreadCount(user: MailUser): Promise<{ unread: number; total: number; countsByStatus: Record<string, number> }> {
         const isOrgStaff = user.role === Role.TEACHER || user.role === Role.ORG_MANAGER;
 
-        // Build participation filter (same logic as getRequests)
-        const participationFilter: Prisma.RequestWhereInput = (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN)
+        // Build participation filter (same logic as getMails)
+        const participationFilter: Prisma.MailWhereInput = (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN)
             ? {
                 OR: [
                     { organizationId: null },
                     { creatorId: user.id },
                     { assigneeId: user.id },
                     { assignees: { some: { id: user.id } } },
-                    { targetRole: user.role },
+                    { targetRole: user.role as Role },
                     ...(user.role === Role.SUPER_ADMIN ? [
-                        { targetRole: Role.PLATFORM_ADMIN as const },
-                        { targetRole: Role.SUPER_ADMIN as const } 
+                        { targetRole: Role.PLATFORM_ADMIN as Role },
+                        { targetRole: Role.SUPER_ADMIN as Role } 
                     ] : []),
                 ],
             }
@@ -806,8 +806,8 @@ export class MailService {
                     { creatorId: user.id },
                     { assigneeId: user.id },
                     { assignees: { some: { id: user.id } } },
-                    { targetRole: user.role },
-                    ...(isOrgStaff ? [{ targetRole: 'ORG_STAFF' as const }] : []),
+                    { targetRole: user.role as Role },
+                    ...(isOrgStaff ? [{ targetRole: 'ORG_STAFF' as Role }] : []),
                     // Org admins see everything in their org
                     ...(user.role === Role.ORG_ADMIN ? [{ organizationId: user.organizationId }] : []),
                 ],
@@ -825,8 +825,8 @@ export class MailService {
             countsByStatus[s.status] = s._count._all;
         }
 
-        // 1. All relevant requests based on participation (including platform team mail)
-        const relevantRequests = await this.prisma.mail.findMany({
+        // 1. All relevant mails based on participation (including platform team mail)
+        const relevantMails = await this.prisma.mail.findMany({
             where: participationFilter,
             select: {
                 id: true,
@@ -837,17 +837,17 @@ export class MailService {
             }
         });
 
-        const totalActive = relevantRequests.length;
+        const totalActive = relevantMails.length;
 
-        // 2. Count requests with unread messages
-        let unreadRequestCount = 0;
+        // 2. Count mails with unread messages
+        let unreadMailCount = 0;
         
-        for (const req of relevantRequests) {
-            const lastViewed = req.userViews[0]?.lastViewedAt;
+        for (const mail of relevantMails) {
+            const lastViewed = mail.userViews[0]?.lastViewedAt;
             
             const hasUnread = await this.prisma.mailMessage.count({
                 where: {
-                    mailId: req.id,
+                    mailId: mail.id,
                     createdAt: lastViewed ? { gt: lastViewed } : undefined,
                     senderId: { not: user.id }, // Don't count own messages as unread
                     deletedAt: null
@@ -855,11 +855,11 @@ export class MailService {
                 take: 1
             });
             
-            if (hasUnread > 0) unreadRequestCount++;
+            if (hasUnread > 0) unreadMailCount++;
         }
 
         return { 
-            unread: unreadRequestCount, 
+            unread: unreadMailCount, 
             total: totalActive,
             countsByStatus
         };
@@ -868,25 +868,25 @@ export class MailService {
     // ─────────────────── WebSocket Notification Helpers ───────────────────────
 
     private emitUnreadUpdateToParticipants(
-        request: { creatorId: string; assigneeId: string | null; targetRole: string | null },
+        mail: { creatorId: string; assigneeId: string | null; targetRole: string | null },
         excludeUserId?: string,
     ) {
         // 1. Creator
-        if (request.creatorId !== excludeUserId) {
-            this.events.emitToUser(request.creatorId, 'unread:update', null);
+        if (mail.creatorId !== excludeUserId) {
+            this.events.emitToUser(mail.creatorId, 'unread:update', null);
         }
 
         // 2. Single assignee (legacy field)
-        if (request.assigneeId && request.assigneeId !== excludeUserId) {
-            this.events.emitToUser(request.assigneeId, 'unread:update', null);
+        if (mail.assigneeId && mail.assigneeId !== excludeUserId) {
+            this.events.emitToUser(mail.assigneeId, 'unread:update', null);
         }
 
         // 3. Target role group (covers M2M assignees who are in these role rooms)
-        if (request.targetRole) {
-            this.events.emitToRole(request.targetRole, 'unread:update', null);
+        if (mail.targetRole) {
+            this.events.emitToRole(mail.targetRole, 'unread:update', null);
         }
 
-        // 4. Platform admins & super admins always see all requests
+        // 4. Platform admins & super admins always see all mails
         this.events.emitToRole(Role.SUPER_ADMIN, 'unread:update', null);
         this.events.emitToRole(Role.PLATFORM_ADMIN, 'unread:update', null);
     }
@@ -895,27 +895,27 @@ export class MailService {
      * Helper to send notifications to participants while filtering for admin noise and role-based URLs.
      */
     private async notifyParticipants(
-        request: { id: string; subject: string; creatorId: string; assigneeId?: string | null; targetRole?: string | null; organizationId?: string | null },
+        mail: { id: string; subject: string; creatorId: string; assigneeId?: string | null; targetRole?: string | null; organizationId?: string | null },
         notification: { title: string; body: string; type: string; metadata?: any },
         senderId: string,
         forceTargetIds?: string[]
     ) {
-        const requestId = request.id;
+        const mailId = mail.id;
         const participantIds = new Set<string>(forceTargetIds || []);
         
         if (!participantIds.size) {
-            if (request.creatorId !== senderId) participantIds.add(request.creatorId);
-            if (request.assigneeId && request.assigneeId !== senderId) participantIds.add(request.assigneeId);
+            if (mail.creatorId !== senderId) participantIds.add(mail.creatorId);
+            if (mail.assigneeId && mail.assigneeId !== senderId) participantIds.add(mail.assigneeId);
             
             // M2M Assignees
             const m2m = await this.prisma.user.findMany({
-                where: { assignedRequests: { some: { id: requestId } }, id: { not: senderId } },
+                where: { assignedMails: { some: { id: mailId } }, id: { not: senderId } },
                 select: { id: true }
             });
             m2m.forEach(a => participantIds.add(a.id));
         }
 
-        if (!participantIds.size && !request.targetRole) return;
+        if (!participantIds.size && !mail.targetRole) return;
 
         // Fetch roles and org details for participants and sender
         const sender = await this.prisma.user.findUnique({ where: { id: senderId }, select: { role: true } });
@@ -933,15 +933,15 @@ export class MailService {
             if (isAdminRecipient && isOrgSender) continue;
 
             // --- URL Logic ---
-            let actionUrl = `/mail?requestId=${requestId}`;
+            let actionUrl = `/mail?mailId=${mailId}`;
             if (isAdminRecipient) {
-                actionUrl = `/admin/mail?requestId=${requestId}`;
+                actionUrl = `/admin/mail?mailId=${mailId}`;
             } else {
-                // Get organization from the recipient OR the request itself as fallback
-                const org = recipient.organization || (request.organizationId ? await this.prisma.organization.findUnique({ where: { id: request.organizationId } }) : null);
+                // Get organization from the recipient OR the mail itself as fallback
+                const org = recipient.organization || (mail.organizationId ? await this.prisma.organization.findUnique({ where: { id: mail.organizationId } }) : null);
                 if (org?.name) {
                     const slug = org.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                    actionUrl = `/${slug}/mail?requestId=${requestId}`;
+                    actionUrl = `/${slug}/mail?mailId=${mailId}`;
                 }
             }
 
@@ -951,7 +951,7 @@ export class MailService {
                 body: notification.body,
                 type: notification.type,
                 actionUrl,
-                metadata: { ...(notification.metadata || {}), requestId }
+                metadata: { ...(notification.metadata || {}), mailId }
             });
         }
     }
@@ -976,21 +976,21 @@ export class MailService {
     }
 
     /**
-     * Transforms a request object by anonymizing administrative identities if the viewer is a non-admin.
+     * Transforms a mail object by anonymizing administrative identities if the viewer is a non-admin.
      */
-    private transformRequest(request: any, viewerRole: Role) {
-        if (!request) return request;
+    private transformMail(mail: any, viewerRole: Role) {
+        if (!mail) return mail;
 
         const anonymized = {
-            ...request,
-            creator: this.anonymizeUser(request.creator, viewerRole),
-            assignee: this.anonymizeUser(request.assignee, viewerRole),
-            assignees: request.assignees?.map(u => this.anonymizeUser(u, viewerRole)),
-            messages: request.messages?.map(m => ({
+            ...mail,
+            creator: this.anonymizeUser(mail.creator, viewerRole),
+            assignee: this.anonymizeUser(mail.assignee, viewerRole),
+            assignees: mail.assignees?.map(u => this.anonymizeUser(u, viewerRole)),
+            messages: mail.messages?.map(m => ({
                 ...m,
                 sender: this.anonymizeUser(m.sender, viewerRole),
             })),
-            actionLogs: request.actionLogs?.map(log => ({
+            actionLogs: mail.actionLogs?.map(log => ({
                 ...log,
                 performer: this.anonymizeUser(log.performer, viewerRole),
             })),
@@ -999,4 +999,3 @@ export class MailService {
         return anonymized;
     }
 }
-

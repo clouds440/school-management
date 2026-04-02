@@ -15,7 +15,7 @@ import { TableActions } from '@/components/ui/TableActions';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 import { Loading } from '@/components/ui/Loading';
-import { NewRequestModal } from '@/components/requests/NewRequestModal';
+import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
 
 interface StudentParams extends BasePaginationParams {
@@ -35,7 +35,7 @@ export default function StudentsPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [sections, setSections] = useState<Section[]>([]);
-    const [newRequestOpen, setNewRequestOpen] = useState(false);
+    const [newMailOpen, setNewMailOpen] = useState(false);
     const [initialTargetId, setInitialTargetId] = useState<string | undefined>(undefined);
     const [initialSubject, setInitialSubject] = useState<string | undefined>(undefined);
 
@@ -327,10 +327,10 @@ export default function StudentsPage() {
                 isDestructive={true}
             />
 
-            <NewRequestModal
-                isOpen={newRequestOpen}
+            <NewMailModal
+                isOpen={newMailOpen}
                 onClose={() => {
-                    setNewRequestOpen(false);
+                    setNewMailOpen(false);
                     setInitialTargetId(undefined);
                     setInitialSubject(undefined);
                 }}

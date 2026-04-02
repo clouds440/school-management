@@ -3,10 +3,10 @@ import { AdminController } from './admin.controller';
 import { AdminAuthController } from './admin-auth.controller';
 import { AdminService } from './admin.service';
 import { AuthModule } from '../auth/auth.module';
-import { RequestsModule } from '../requests/requests.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
-    imports: [AuthModule, RequestsModule],
+    imports: [AuthModule, MailModule],
     controllers: [AdminController, AdminAuthController],
     providers: [AdminService]
 })

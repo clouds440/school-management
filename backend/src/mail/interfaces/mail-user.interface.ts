@@ -1,4 +1,4 @@
-export interface RequestUser {
+export interface MailUser {
     id: string;
     role: string;
     organizationId: string | null;

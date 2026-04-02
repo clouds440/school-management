@@ -5,7 +5,7 @@ import { OrgModule } from './org/org.module';
 import { FilesModule } from './files/files.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { EventsModule } from './events/events.module';
-import { MailModule } from './requests/requests.module';
+import { MailModule } from './mail/mail.module';
 
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';

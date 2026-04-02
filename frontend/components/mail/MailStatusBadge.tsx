@@ -1,15 +1,15 @@
 'use client';
 
 import React from 'react';
-import { RequestStatus } from '@/types';
+import { MailStatus } from '@/types';
 
-const STATUS_CONFIG: Record<RequestStatus, { label: string; bg: string; text: string; border: string }> = {
-    [RequestStatus.OPEN]: { label: 'Open', bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/20' },
-    [RequestStatus.IN_PROGRESS]: { label: 'In Progress', bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20' },
-    [RequestStatus.AWAITING_RESPONSE]: { label: 'Awaiting', bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/20' },
-    [RequestStatus.RESOLVED]: { label: 'Resolved', bg: 'bg-green-500/10', text: 'text-green-600', border: 'border-green-500/20' },
-    [RequestStatus.CLOSED]: { label: 'Closed', bg: 'bg-gray-500/10', text: 'text-gray-500', border: 'border-gray-500/20' },
-    [RequestStatus.NO_REPLY]: { label: 'Notice (No Reply)', bg: 'bg-neutral-500/10', text: 'text-neutral-600', border: 'border-neutral-500/20' },
+const STATUS_CONFIG: Record<MailStatus, { label: string; bg: string; text: string; border: string }> = {
+    [MailStatus.OPEN]: { label: 'Open', bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/20' },
+    [MailStatus.IN_PROGRESS]: { label: 'In Progress', bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20' },
+    [MailStatus.AWAITING_RESPONSE]: { label: 'Awaiting', bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/20' },
+    [MailStatus.RESOLVED]: { label: 'Resolved', bg: 'bg-green-500/10', text: 'text-green-600', border: 'border-green-500/20' },
+    [MailStatus.CLOSED]: { label: 'Closed', bg: 'bg-gray-500/10', text: 'text-gray-500', border: 'border-gray-500/20' },
+    [MailStatus.NO_REPLY]: { label: 'Notice (No Reply)', bg: 'bg-neutral-500/10', text: 'text-neutral-600', border: 'border-neutral-500/20' },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; bg: string; text: string; border: string }> = {
@@ -20,12 +20,12 @@ const PRIORITY_CONFIG: Record<string, { label: string; bg: string; text: string;
 };
 
 interface StatusBadgeProps {
-    status: RequestStatus;
+    status: MailStatus;
     className?: string;
 }
 
-export function RequestStatusBadge({ status, className = '' }: StatusBadgeProps) {
-    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG[RequestStatus.OPEN];
+export function MailStatusBadge({ status, className = '' }: StatusBadgeProps) {
+    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG[MailStatus.OPEN];
     return (
         <span className={`inline-flex items-center justify-center px-2 py-[3px] rounded-full text-[10px] uppercase font-black tracking-widest border leading-none ${cfg.bg} ${cfg.text} ${cfg.border} ${className}`}>
             {cfg.label}
@@ -38,7 +38,7 @@ interface PriorityBadgeProps {
     className?: string;
 }
 
-export function RequestPriorityBadge({ priority, className = '' }: PriorityBadgeProps) {
+export function MailPriorityBadge({ priority, className = '' }: PriorityBadgeProps) {
     const cfg = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.NORMAL;
     return (
         <span className={`inline-flex items-center justify-center px-2 py-[3px] rounded-full text-[10px] uppercase font-black tracking-widest border leading-none ${cfg.bg} ${cfg.text} ${cfg.border} ${className}`}>
@@ -47,17 +47,17 @@ export function RequestPriorityBadge({ priority, className = '' }: PriorityBadge
     );
 }
 
-export function getRequestRowClassName(status: RequestStatus) {
+export function getMailRowClassName(status: MailStatus) {
     switch (status) {
-        case RequestStatus.OPEN:
+        case MailStatus.OPEN:
             return '!bg-blue-50/40 border-l-4 border-l-blue-500 shadow-sm transition-colors';
-        case RequestStatus.IN_PROGRESS:
+        case MailStatus.IN_PROGRESS:
             return '!bg-amber-50/40 border-l-4 border-l-amber-400 transition-colors';
-        case RequestStatus.AWAITING_RESPONSE:
+        case MailStatus.AWAITING_RESPONSE:
             return '!bg-indigo-50/40 border-l-4 border-l-indigo-400 transition-colors';
-        case RequestStatus.RESOLVED:
+        case MailStatus.RESOLVED:
             return '!bg-emerald-50/40 border-l-4 border-l-emerald-500 transition-colors';
-        case RequestStatus.CLOSED:
+        case MailStatus.CLOSED:
             return '!bg-slate-50/40 border-l-4 border-l-slate-400 opacity-80 transition-colors';
         default:
             return 'transition-colors hover:bg-gray-50/50';

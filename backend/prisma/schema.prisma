@@ -51,12 +51,13 @@ model User {
   studentProfile        Student?
   teacherProfile        Teacher?
   organization          Organization?      @relation(fields: [organizationId], references: [id])
-  createdMails         Mail[]         @relation("CreatedRequests")
-  assignedMails        Mail[]         @relation("AssignedRequests")
-  participatingMails   Mail[]         @relation("RequestParticipants")
+  createdMails         Mail[]         @relation("CreatedMails")
+  assignedMails        Mail[]         @relation("AssignedMails")
+  participatingMails   Mail[]         @relation("MailParticipants")
   sentMessages         MailMessage[]  @relation("SentMessages")
   performedActions     MailActionLog[] @relation("PerformedActions")
   viewedMails          MailUserView[]
+
   createdChats          Chat[]             @relation("CreatedChats")
   chatParticipations    ChatParticipant[]  @relation("ChatParticipations")
   sentChatMessages      ChatMessage[]      @relation("SentChatMessages")
@@ -210,12 +211,12 @@ model Mail {
   subject  String
   category String // flexible string, not rigid enum
   priority String        @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
-  status   RequestStatus @default(OPEN)
+  status   MailStatus @default(OPEN)
 
   // Creator context
   creatorId   String
   creatorRole String
-  creator     User   @relation("CreatedRequests", fields: [creatorId], references: [id])
+  creator     User   @relation("CreatedMails", fields: [creatorId], references: [id])
 
   // Organization context (nullable for platform-level mails)
   organizationId String?
@@ -224,8 +225,8 @@ model Mail {
   // Targeting (who should handle it)
   targetRole String? // e.g. "SUPER_ADMIN", "PLATFORM_ADMIN"
   assigneeId String?
-  assignee   User?   @relation("AssignedRequests", fields: [assigneeId], references: [id])
-  assignees  User[]  @relation("RequestParticipants")
+  assignee   User?   @relation("AssignedMails", fields: [assigneeId], references: [id])
+  assignees  User[]  @relation("MailParticipants")
 
   // Extensibility
   metadata Json?
@@ -241,24 +242,22 @@ model Mail {
   @@index([organizationId])
   @@index([status])
   @@index([assigneeId])
-  @@map("Request")
 }
 
 model MailUserView {
   userId       String
-  mailId       String  @map("requestId")
+  mailId       String
   lastViewedAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   mail Mail @relation(fields: [mailId], references: [id], onDelete: Cascade)
 
   @@id([userId, mailId])
-  @@map("RequestUserView")
 }
 
 model MailMessage {
   id     String @id @default(uuid())
-  mailId String @map("requestId")
+  mailId String
   senderId String
   content  String // markdown supported
 
@@ -269,16 +268,15 @@ model MailMessage {
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
 
-  // Files linked via existing File model (entityType: "REQUEST_MESSAGE", entityId: message.id)
+  // Files linked via existing File model (entityType: "MAIL_MESSAGE", entityId: message.id)
 
   @@index([mailId])
   @@index([senderId])
-  @@map("RequestMessage")
 }
 
 model MailActionLog {
   id          String  @id @default(uuid())
-  mailId      String  @map("requestId")
+  mailId      String
   performedBy String
   action      String // "CREATED", "STATUS_CHANGED", "ASSIGNED", "MESSAGE_SENT", etc.
   details     Json? // e.g. { from: "OPEN", to: "IN_PROGRESS" }
@@ -290,7 +288,6 @@ model MailActionLog {
   createdAt DateTime @default(now())
 
   @@index([mailId])
-  @@map("RequestActionLog")
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
@@ -324,7 +321,7 @@ enum OrgStatus {
   SUSPENDED
 }
 
-enum RequestStatus {
+enum MailStatus {
   OPEN
   IN_PROGRESS
   AWAITING_RESPONSE

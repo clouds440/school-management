@@ -1,6 +1,6 @@
 import { IsString, IsOptional, IsIn, IsUUID } from 'class-validator';
 
-export class UpdateRequestDto {
+export class UpdateMailDto {
     @IsString()
     @IsOptional()
     @IsIn(['OPEN', 'IN_PROGRESS', 'AWAITING_RESPONSE', 'RESOLVED', 'CLOSED'])

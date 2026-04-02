@@ -6,11 +6,11 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { RequestTarget, Role, RequestCategory } from '@/types';
+import { MailTarget, Role, MailCategory } from '@/types';
 import { ADMIN_REPLY_TEMPLATES } from './MailTemplates';
 import { useGlobal } from '@/context/GlobalContext';
 
-interface NewRequestModalProps {
+interface NewMailModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess?: () => void;
@@ -21,39 +21,39 @@ interface NewRequestModalProps {
 // ── Category groups by communication context ─────────────────────────────────
 
 const PLATFORM_CATEGORIES = [
-    { value: RequestCategory.ACCOUNT_STATUS, label: 'Account Status' },
-    { value: RequestCategory.BUG_REPORT, label: 'Bug Report' },
-    { value: RequestCategory.FEATURE_REQUEST, label: 'Feature Request' },
-    { value: RequestCategory.BILLING, label: 'Billing' },
-    { value: RequestCategory.PLATFORM_SUPPORT, label: 'Platform Support' },
+    { value: MailCategory.ACCOUNT_STATUS, label: 'Account Status' },
+    { value: MailCategory.BUG_REPORT, label: 'Bug Report' },
+    { value: MailCategory.FEATURE_REQUEST, label: 'Feature Request' },
+    { value: MailCategory.BILLING, label: 'Billing' },
+    { value: MailCategory.PLATFORM_SUPPORT, label: 'Platform Support' },
 ];
 
 const PLATFORM_TO_ORG_CATEGORIES = [
-    { value: RequestCategory.ORG_COMPLIANCE, label: 'Org Compliance' },
-    { value: RequestCategory.ORG_ACCOUNT, label: 'Org Account' },
-    { value: RequestCategory.PLATFORM_NOTICE, label: 'Platform Notice' },
-    { value: RequestCategory.GENERAL_INQUIRY, label: 'General Inquiry' },
+    { value: MailCategory.ORG_COMPLIANCE, label: 'Org Compliance' },
+    { value: MailCategory.ORG_ACCOUNT, label: 'Org Account' },
+    { value: MailCategory.PLATFORM_NOTICE, label: 'Platform Notice' },
+    { value: MailCategory.GENERAL_INQUIRY, label: 'General Inquiry' },
 ];
 
 const ORG_ADMIN_TO_STAFF_CATEGORIES = [
-    { value: RequestCategory.TASK_ASSIGNMENT, label: 'Task Assignment' },
-    { value: RequestCategory.SCHEDULE_CHANGE, label: 'Schedule Change' },
-    { value: RequestCategory.POLICY_UPDATE, label: 'Policy Update' },
-    { value: RequestCategory.PERFORMANCE, label: 'Performance' },
-    { value: RequestCategory.GENERAL_NOTICE, label: 'General Notice' },
+    { value: MailCategory.TASK_ASSIGNMENT, label: 'Task Assignment' },
+    { value: MailCategory.SCHEDULE_CHANGE, label: 'Schedule Change' },
+    { value: MailCategory.POLICY_UPDATE, label: 'Policy Update' },
+    { value: MailCategory.PERFORMANCE, label: 'Performance' },
+    { value: MailCategory.GENERAL_NOTICE, label: 'General Notice' },
 ];
 
 const TEACHER_CATEGORIES = [
-    { value: RequestCategory.LEAVE_REQUEST, label: 'Leave Request' },
-    { value: RequestCategory.RESOURCE_REQUEST, label: 'Resource Request' },
-    { value: RequestCategory.SCHEDULE_CONFLICT, label: 'Schedule Conflict' },
-    { value: RequestCategory.COLLABORATION, label: 'Collaboration' },
-    { value: RequestCategory.GENERAL_INQUIRY, label: 'General Inquiry' },
+    { value: MailCategory.LEAVE_REQUEST, label: 'Leave Request' },
+    { value: MailCategory.RESOURCE_REQUEST, label: 'Resource Request' },
+    { value: MailCategory.SCHEDULE_CONFLICT, label: 'Schedule Conflict' },
+    { value: MailCategory.COLLABORATION, label: 'Collaboration' },
+    { value: MailCategory.GENERAL_INQUIRY, label: 'General Inquiry' },
 ];
 
 const UNIVERSAL_CATEGORIES = [
-    { value: RequestCategory.GENERAL_INQUIRY, label: 'General Inquiry' },
-    { value: RequestCategory.OTHER, label: 'Other' },
+    { value: MailCategory.GENERAL_INQUIRY, label: 'General Inquiry' },
+    { value: MailCategory.OTHER, label: 'Other' },
 ];
 
 /**
@@ -107,21 +107,21 @@ const PRIORITIES = [
     { value: 'URGENT', label: 'Urgent' },
 ];
 
-export function NewRequestModal({
+export function NewMailModal({
     isOpen,
     onClose,
     onSuccess,
     initialTargetId,
     initialSubject
-}: NewRequestModalProps) {
+}: NewMailModalProps) {
     const { token, user } = useAuth();
     const { dispatch } = useGlobal();
     const [subject, setSubject] = useState('');
-    const [category, setCategory] = useState<string>(RequestCategory.GENERAL_INQUIRY);
+    const [category, setCategory] = useState<string>(MailCategory.GENERAL_INQUIRY);
     const [priority, setPriority] = useState('NORMAL');
     const [message, setMessage] = useState('');
     const [targetIds, setTargetIds] = useState<string[]>([]);
-    const [targets, setTargets] = useState<RequestTarget[]>([]);
+    const [targets, setTargets] = useState<MailTarget[]>([]);
     const [searching, setSearching] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [noReply, setNoReply] = useState(false);
@@ -154,12 +154,12 @@ export function NewRequestModal({
     React.useEffect(() => {
         if (isOpen && token) {
             setSearching(true);
-            api.requests.getContactableUsers(token)
+            api.mail.getContactableUsers(token)
                 .then(data => {
                     setTargets(data);
                     if (initialTargetId) {
                         // Call the handler to ensure categories etc. are updated
-                        handleTargetChange([initialTargetId], data);
+                        handleTargetChange(initialTargetId, data);
                     }
                     if (initialSubject) setSubject(initialSubject);
                 })
@@ -167,6 +167,7 @@ export function NewRequestModal({
                 .finally(() => setSearching(false));
         }
     }, [isOpen, token, initialTargetId, initialSubject]);
+
     React.useEffect(() => {
         if (error || info) {
             const timer = setTimeout(() => {
@@ -184,10 +185,11 @@ export function NewRequestModal({
     );
 
     // When recipients change, auto-reset category to first valid option if needed
-    const handleTargetChange = (newTargetIds: string[], overrideTargets?: RequestTarget[]) => {
+    const handleTargetChange = (newTargetIds: string | string[], overrideTargets?: MailTarget[]) => {
         const currentTargets = overrideTargets || targets;
-        const addedIds = newTargetIds.filter(id => !targetIds.includes(id));
-        let finalIds = [...newTargetIds];
+        const incomingIds = typeof newTargetIds === 'string' ? [newTargetIds] : newTargetIds;
+        const addedIds = incomingIds.filter(id => !targetIds.includes(id));
+        let finalIds = [...incomingIds];
         let feedback = '';
 
         const MEGA_GROUPS = ['ROLE:ORG_STAFF', 'ROLE:PLATFORM_ADMIN'];
@@ -197,7 +199,7 @@ export function NewRequestModal({
             if (!addedTarget) continue;
 
             // 1. Mega Group Exclusivity (All Staff / Platform Team)
-            if (activeTargets(finalIds, currentTargets).length > 0 && MEGA_GROUPS.includes(addedId)) {
+            if (activeTargets(finalIds, currentTargets).length > 1 && MEGA_GROUPS.includes(addedId)) {
                 finalIds = [addedId];
                 feedback = `Targeting ${addedTarget.label} cancels all other selections.`;
                 break;
@@ -245,12 +247,12 @@ export function NewRequestModal({
         const newCategories = getCategoriesForContext(user?.role as Role | undefined, newTargets.map(t => t.role || ''));
 
         if (!newCategories.some(c => c.value === category)) {
-            setCategory(newCategories[0]?.value || RequestCategory.GENERAL_INQUIRY);
+            setCategory(newCategories[0]?.value || MailCategory.GENERAL_INQUIRY);
         }
     };
 
     // Helper for handleTargetChange
-    const activeTargets = (ids: string[], currentTargets: RequestTarget[]) => currentTargets.filter(t => ids.includes(t.id));
+    const activeTargets = (ids: string[], currentTargets: MailTarget[]) => currentTargets.filter(t => ids.includes(t.id));
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -295,9 +297,9 @@ export function NewRequestModal({
             const roleTarget = selectedTargets.find(t => t.type === 'ROLE');
             const individualIds = selectedTargets.filter(t => t.type === 'USER').map(t => t.id);
 
-            const response = await api.requests.createRequest({
+            const response = await api.mail.createMail({
                 subject,
-                category,
+                category: category as MailCategory,
                 priority,
                 message,
                 assigneeIds: individualIds.length > 0 ? individualIds : undefined,
@@ -312,14 +314,14 @@ export function NewRequestModal({
                 if (messageId) {
                     await Promise.all(
                         selectedFiles.map(file =>
-                            api.files.uploadFile(orgId, 'REQUEST_MESSAGE', messageId, file, token)
+                            api.files.uploadFile(orgId, 'MAIL_MESSAGE', messageId, file, token)
                         )
                     );
                 }
             }
 
             setSubject('');
-            setCategory(RequestCategory.GENERAL_INQUIRY);
+            setCategory(MailCategory.GENERAL_INQUIRY);
             setPriority('NORMAL');
             setMessage('');
             setTargetIds([]);
@@ -496,7 +498,7 @@ export function NewRequestModal({
                             <MarkdownEditor
                                 value={message}
                                 onChange={setMessage}
-                                placeholder="Describe your request in detail..."
+                                placeholder="Describe your issue in detail..."
                                 rows={8}
                                 templates={isPlatformAdmin ? ADMIN_REPLY_TEMPLATES.map(t => ({ label: t.name, content: t.content })) : []}
                                 orgData={orgData}

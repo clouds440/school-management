@@ -1,5 +1,5 @@
-import { Role, TeacherStatus, StudentStatus, RequestStatus, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority } from './enums';
-export { Role, TeacherStatus, StudentStatus, RequestStatus, MailStatus, RequestCategory, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority } from './enums';
+import { Role, TeacherStatus, StudentStatus, MailStatus, MailCategory, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority } from './enums';
+export { Role, TeacherStatus, StudentStatus, MailStatus, MailCategory, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority } from './enums';
 
 export interface PaginatedResponse<T> {
     data: T[];
@@ -204,7 +204,7 @@ export interface MailOrg {
 
 export interface MailMessage {
     id: string;
-    requestId: string;
+    mailId: string;
     senderId: string;
     content: string;
     createdAt: string;
@@ -215,7 +215,7 @@ export interface MailMessage {
 
 export interface MailActionLog {
     id: string;
-    requestId: string;
+    mailId: string;
     performedBy: string;
     action: string;
     details?: Record<string, unknown> | null;
@@ -226,7 +226,7 @@ export interface MailActionLog {
 
 export interface MailUserView {
     userId: string;
-    requestId: string;
+    mailId: string;
     lastViewedAt: string;
 }
 
@@ -234,9 +234,9 @@ export interface MailUserView {
 export interface MailItem {
     id: string;
     subject: string;
-    category: string;
+    category: MailCategory;
     priority: string;
-    status: RequestStatus;
+    status: MailStatus;
     creatorId: string;
     creatorRole: string;
     organizationId: string | null;
@@ -262,7 +262,7 @@ export interface MailDetail extends MailItem {
 
 export interface CreateMailPayload {
     subject: string;
-    category: string;
+    category: MailCategory;
     priority?: string;
     message: string;
     targetRole?: string;
@@ -272,7 +272,7 @@ export interface CreateMailPayload {
 }
 
 export interface UpdateMailPayload {
-    status?: RequestStatus;
+    status?: MailStatus;
     assigneeId?: string;
     priority?: string;
 }
@@ -286,18 +286,6 @@ export interface MailTarget {
     avatarUrl?: string | null;
     description?: string;
 }
-
-// Backwards-compatibility aliases (deprecated — use Mail* instead)
-export type RequestUser = MailUser;
-export type RequestOrg = MailOrg;
-export type RequestMessage = MailMessage;
-export type RequestActionLog = MailActionLog;
-export type RequestUserView = MailUserView;
-export type RequestItem = MailItem;
-export type RequestDetail = MailDetail;
-export type CreateRequestPayload = CreateMailPayload;
-export type UpdateRequestPayload = UpdateMailPayload;
-export type RequestTarget = MailTarget;
 
 // Request Interfaces
 export interface CreateTeacherRequest {

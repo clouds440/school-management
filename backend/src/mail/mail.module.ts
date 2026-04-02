@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { MailController } from './requests.controller';
-import { MailService } from './requests.service';
+import { MailController } from './mail.controller';
+import { MailService } from './mail.service';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({

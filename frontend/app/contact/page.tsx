@@ -11,13 +11,14 @@ import {
   BookOpen,
   ArrowRight,
   MessageSquare,
-  ShieldHalf
+  ShieldHalf,
 } from 'lucide-react';
 import Link from 'next/link';
 import { BackButton } from '@/components/ui/BackButton';
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
 import { Button } from '@/components/ui/Button';
 import { PLATFORM_NAME } from '@/lib/constants';
+import { MailCategory, Role } from '@/types';
 
 export default function ContactPage() {
   const { user, token } = useAuth();
@@ -40,12 +41,12 @@ export default function ContactPage() {
         return;
       }
 
-      await api.requests.createRequest({
+      await api.mail.createMail({
         subject: subject,
         message: message,
-        category: 'SUPPORT',
+        category: MailCategory.PLATFORM_SUPPORT,
         priority: 'NORMAL',
-        targetRole: 'PLATFORM_ADMIN', // Automatically target Platform Admin Role
+        targetRole: Role.PLATFORM_ADMIN, // Automatically target Platform Admin Role
       }, token);
 
       setIsSuccess(true);
@@ -136,7 +137,7 @@ export default function ContactPage() {
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900">Message Sent!</h2>
                 <p className="text-gray-600 text-lg">
-                  Thank you for reaching out. Your request has been logged and assigned to
+                  Thank you for reaching out. Your mail has been logged and assigned to
                   our administrative team. You will receive a notification when they reply.
                 </p>
                 <button

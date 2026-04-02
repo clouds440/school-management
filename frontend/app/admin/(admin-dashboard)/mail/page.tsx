@@ -5,29 +5,29 @@ import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { Filter, MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Hash, Calendar, Clock, MailPlus } from 'lucide-react';
 import { api } from '@/lib/api';
-import { RequestItem, RequestStatus, Role, PaginatedResponse, ApiError } from '@/types';
+import { MailItem, MailStatus, Role, PaginatedResponse, ApiError } from '@/types';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { RequestStatusBadge, RequestPriorityBadge, getRequestRowClassName } from '@/components/requests/RequestStatusBadge';
-import { RequestDetailsModal } from '@/components/requests/RequestDetailsModal';
-import { NewRequestModal } from '@/components/requests/NewRequestModal';
+import { MailStatusBadge, MailPriorityBadge, getMailRowClassName } from '@/components/mail/MailStatusBadge';
+import { MailDetailsModal } from '@/components/mail/MailDetailsModal';
+import { NewMailModal } from '@/components/mail/NewMailModal';
 import { useSocket } from '@/hooks/useSocket';
 import { Loading } from '@/components/ui/Loading';
 import { Button } from '@/components/ui/Button';
 import { BrandIcon } from '@/components/ui/Brand';
 
-export default function RequestsPage() {
+export default function MailPage() {
     const { user, token, loading: authLoading } = useAuth();
     const { state, dispatch } = useGlobal();
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<RequestItem> | null>(null);
-    const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
-    const [newRequestOpen, setNewRequestOpen] = useState(false);
+    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<MailItem> | null>(null);
+    const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
+    const [newMailOpen, setNewMailOpen] = useState(false);
 
     // Global UI states alias
     const fetching = state.ui.isLoading;
@@ -60,12 +60,12 @@ export default function RequestsPage() {
         router.push(`${pathname}?${params.toString()}`);
     };
 
-    const fetchRequests = useCallback(async () => {
+    const fetchMails = useCallback(async () => {
         if (!token) return;
         try {
             dispatch({ type: 'UI_SET_LOADING', payload: true });
             const [data, stats] = await Promise.all([
-                api.requests.getRequests(token, {
+                api.mail.getMails(token, {
                     page,
                     limit: pageSize,
                     search: searchQuery,
@@ -73,14 +73,14 @@ export default function RequestsPage() {
                     sortOrder,
                     status: statusFilter !== 'ALL' ? statusFilter : undefined,
                 }),
-                api.requests.getUnreadCount(token)
+                api.mail.getUnreadCount(token)
             ]);
             setPaginatedData(data);
             // Sync with global state
             dispatch({ type: 'STATS_SET_MAIL', payload: stats });
         } catch (error: unknown) {
             const apiError = error as ApiError;
-            const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to fetch requests';
+            const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to fetch mail';
             const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
             dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
         } finally {
@@ -97,29 +97,29 @@ export default function RequestsPage() {
 
     useEffect(() => {
         if (!authLoading && user && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && token) {
-            fetchRequests();
+            fetchMails();
         }
-    }, [authLoading, user, token, fetchRequests]);
+    }, [authLoading, user, token, fetchMails]);
 
     useEffect(() => {
-        const rid = searchParams.get('requestId');
-        if (rid) {
-            setSelectedRequestId(rid);
+        const mid = searchParams.get('mailId');
+        if (mid) {
+            setSelectedMailId(mid);
         }
     }, [searchParams]);
 
     useEffect(() => {
         const unsubs = [
-            subscribe('unread:update', () => fetchRequests()),
-            subscribe('request:new', () => fetchRequests()),
-            subscribe('request:message', () => fetchRequests()),
-            subscribe('request:update', () => fetchRequests())
+            subscribe('unread:update', () => fetchMails()),
+            subscribe('mail:new', () => fetchMails()),
+            subscribe('mail:message', () => fetchMails()),
+            subscribe('mail:update', () => fetchMails())
         ];
         return () => unsubs.forEach(u => u());
-    }, [subscribe, fetchRequests]);
+    }, [subscribe, fetchMails]);
 
-    const handleViewRequest = (item: RequestItem) => {
-        setSelectedRequestId(item.id);
+    const handleViewMail = (item: MailItem) => {
+        setSelectedMailId(item.id);
     };
 
     const handlePageSizeChange = (newSize: number) => {
@@ -128,15 +128,15 @@ export default function RequestsPage() {
         updateQueryParams({ page: 1 });
     };
 
-    const requests = paginatedData?.data || [];
+    const mails = paginatedData?.data || [];
 
-    const columns: Column<RequestItem>[] = [
+    const columns: Column<MailItem>[] = [
         {
             header: 'Mail',
             sortable: true,
             sortKey: 'subject',
-            accessor: (row: RequestItem) => (
-                <div className="flex items-start gap-3 min-w-0">
+            accessor: (row: MailItem) => (
+                <div className="flex items-start gap-3 min-0">
                     <div className="w-10 h-10 bg-indigo-50 rounded-sm flex items-center justify-center text-indigo-600 shrink-0">
                         <MessageSquare className="w-5 h-5" />
                     </div>
@@ -155,7 +155,7 @@ export default function RequestsPage() {
         },
         {
             header: 'Sender',
-            accessor: (row: RequestItem) => {
+            accessor: (row: MailItem) => {
                 return (
                     <div className="flex items-center gap-3">
                         {row.organization ? (
@@ -193,7 +193,7 @@ export default function RequestsPage() {
         },
         {
             header: 'Recipient',
-            accessor: (row: RequestItem) => (
+            accessor: (row: MailItem) => (
                 <div className="flex items-center gap-2">
                     {row.assignees && row.assignees.length > 0 ? (
                         <>
@@ -235,15 +235,15 @@ export default function RequestsPage() {
             header: 'Status',
             sortable: true,
             sortKey: 'status',
-            accessor: (row: RequestItem) => <RequestStatusBadge status={row.status} />
+            accessor: (row: MailItem) => <MailStatusBadge status={row.status} />
         },
         {
             header: 'Priority',
-            accessor: (row: RequestItem) => <RequestPriorityBadge priority={row.priority} />
+            accessor: (row: MailItem) => <MailPriorityBadge priority={row.priority} />
         },
         {
             header: 'Messages',
-            accessor: (row: RequestItem) => (
+            accessor: (row: MailItem) => (
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 min-w-[30px] justify-center">
                         <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
@@ -261,7 +261,7 @@ export default function RequestsPage() {
             header: 'Date',
             sortable: true,
             sortKey: 'createdAt',
-            accessor: (req: RequestItem) => (
+            accessor: (req: MailItem) => (
                 <div className="flex items-center text-xs font-medium text-card-text/60 gap-1.5">
                     <Calendar className="w-3 h-3" /> {new Date(req.createdAt).toLocaleString()}
                 </div>
@@ -284,11 +284,11 @@ export default function RequestsPage() {
                                 onChange={(val: string) => updateQueryParams({ status: val, page: 1 })}
                                 options={[
                                     { value: 'ALL', label: 'All Statuses', badge: state.stats.mail?.total },
-                                    { value: RequestStatus.OPEN, label: 'Open', badge: state.stats.mail?.countsByStatus?.[RequestStatus.OPEN], icon: Clock, iconClassName: 'text-blue-500' },
-                                    { value: RequestStatus.IN_PROGRESS, label: 'In Progress', badge: state.stats.mail?.countsByStatus?.[RequestStatus.IN_PROGRESS], icon: ArrowUpRight, iconClassName: 'text-amber-500' },
-                                    { value: RequestStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[RequestStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-indigo-500' },
-                                    { value: RequestStatus.RESOLVED, label: 'Resolved', badge: state.stats.mail?.countsByStatus?.[RequestStatus.RESOLVED], icon: CheckCircle2, iconClassName: 'text-green-500' },
-                                    { value: RequestStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[RequestStatus.CLOSED], icon: XCircle, iconClassName: 'text-gray-500' },
+                                    { value: MailStatus.OPEN, label: 'Open', badge: state.stats.mail?.countsByStatus?.[MailStatus.OPEN], icon: Clock, iconClassName: 'text-blue-500' },
+                                    { value: MailStatus.IN_PROGRESS, label: 'In Progress', badge: state.stats.mail?.countsByStatus?.[MailStatus.IN_PROGRESS], icon: ArrowUpRight, iconClassName: 'text-amber-500' },
+                                    { value: MailStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[MailStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-indigo-500' },
+                                    { value: MailStatus.RESOLVED, label: 'Resolved', badge: state.stats.mail?.countsByStatus?.[MailStatus.RESOLVED], icon: CheckCircle2, iconClassName: 'text-green-500' },
+                                    { value: MailStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[MailStatus.CLOSED], icon: XCircle, iconClassName: 'text-gray-500' },
                                 ]}
                                 className="w-full sm:w-[240px]"
                                 placeholder="Status"
@@ -301,7 +301,7 @@ export default function RequestsPage() {
                             />
                         </div>
                         <Button
-                            onClick={() => setNewRequestOpen(true)}
+                            onClick={() => setNewMailOpen(true)}
                             icon={MailPlus}
                             className="flex items-center gap-2 px-8 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-200 shrink-0 border-none"
                         >
@@ -313,10 +313,10 @@ export default function RequestsPage() {
                 <div className="flex-1 min-h-0 overflow-hidden">
                     <DataTable
                         columns={columns}
-                        data={requests}
+                        data={mails}
                         keyExtractor={(row) => row.id}
                         isLoading={fetching}
-                        onRowClick={handleViewRequest}
+                        onRowClick={handleViewMail}
                         currentPage={paginatedData?.currentPage || 1}
                         totalPages={paginatedData?.totalPages || 1}
                         totalResults={paginatedData?.totalRecords || 0}
@@ -325,23 +325,23 @@ export default function RequestsPage() {
                         onPageSizeChange={handlePageSizeChange}
                         sortConfig={{ key: sortBy, direction: sortOrder }}
                         onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
-                        getRowClassName={(row: RequestItem) => getRequestRowClassName(row.status)}
+                        getRowClassName={(row: MailItem) => getMailRowClassName(row.status)}
                         maxHeight="100%"
                     />
                 </div>
             </div>
 
-            <RequestDetailsModal
-                isOpen={!!selectedRequestId}
-                requestId={selectedRequestId}
-                onClose={() => setSelectedRequestId(null)}
-                onUpdate={fetchRequests}
+            <MailDetailsModal
+                isOpen={!!selectedMailId}
+                mailId={selectedMailId}
+                onClose={() => setSelectedMailId(null)}
+                onUpdate={fetchMails}
             />
 
-            <NewRequestModal
-                isOpen={newRequestOpen}
-                onClose={() => setNewRequestOpen(false)}
-                onSuccess={() => { fetchRequests(); dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent', type: 'success' } }); }}
+            <NewMailModal
+                isOpen={newMailOpen}
+                onClose={() => setNewMailOpen(false)}
+                onSuccess={() => { fetchMails(); dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent', type: 'success' } }); }}
             />
         </div>
     );

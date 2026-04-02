@@ -14,7 +14,7 @@ export enum OrgStatus {
     SUSPENDED = 'SUSPENDED',
 }
 
-export enum RequestStatus {
+export enum MailStatus {
     OPEN = 'OPEN',
     IN_PROGRESS = 'IN_PROGRESS',
     AWAITING_RESPONSE = 'AWAITING_RESPONSE',
@@ -22,9 +22,6 @@ export enum RequestStatus {
     CLOSED = 'CLOSED',
     NO_REPLY = 'NO_REPLY',
 }
-
-/** Alias for RequestStatus — used in Mail system */
-export { RequestStatus as MailStatus };
 
 export enum TeacherStatus {
     ACTIVE = 'ACTIVE',
@@ -56,8 +53,8 @@ export enum OrganizationType {
     OTHER = 'OTHER',
 }
 
-// ── Request Categories (context-aware) ────────────────────────────────────────
-export enum RequestCategory {
+// ── Mail Categories (context-aware) ────────────────────────────────────────
+export enum MailCategory {
     // Platform-level (messaging Super Admin / Platform Admin)
     ACCOUNT_STATUS = 'ACCOUNT_STATUS',
     BUG_REPORT = 'BUG_REPORT',

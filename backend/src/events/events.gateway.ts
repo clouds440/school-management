@@ -26,12 +26,12 @@ interface SocketUser {
 /**
  * Single WebSocket gateway designed for future expansion.
  *
- * Current scope:  request:new, request:update, request:message
+ * Current scope:  mail:new, mail:update, mail:message
  * Future scope:   chat, notifications, announcements
  *
  * Room strategy:
  *   On connect → auto-join: user:{userId}, role:{role}, org:{orgId}
- *   On demand  → join: request:{id}, chat:{id}, section:{id}, etc.
+ *   On demand  → join: mail:{id}, chat:{id}, section:{id}, etc.
  */
 @WebSocketGateway({
     cors: {
@@ -84,7 +84,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // ──────────────────────────── Client-callable events ────────────────────────
 
     /**
-     * Join a specific room (e.g., request:{id}, chat:{id}, section:{id}).
+     * Join a specific room (e.g., mail:{id}, chat:{id}, section:{id}).
      */
     @SubscribeMessage('joinRoom')
     async handleJoinRoom(

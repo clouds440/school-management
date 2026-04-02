@@ -14,7 +14,7 @@ import { useGlobal } from '@/context/GlobalContext';
 import { TableActions } from '@/components/ui/TableActions';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 import { Loading } from '@/components/ui/Loading';
-import { NewRequestModal } from '@/components/requests/NewRequestModal';
+import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
 
 type TeacherParams = BasePaginationParams;
@@ -29,7 +29,7 @@ export default function TeachersPage() {
     // We no longer need local paginatedData state as fetchedData is used directly
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
-    const [newRequestOpen, setNewRequestOpen] = useState(false);
+    const [newMailOpen, setNewMailOpen] = useState(false);
     const [initialTargetId, setInitialTargetId] = useState<string | undefined>(undefined);
     const [initialSubject, setInitialSubject] = useState<string | undefined>(undefined);
 
@@ -190,7 +190,7 @@ export default function TeachersPage() {
                             onClick: () => {
                                 setInitialTargetId(row.user.id);
                                 setInitialSubject(`Inquiry regarding ${row.user.name}`);
-                                setNewRequestOpen(true);
+                                setNewMailOpen(true);
                             }
                         }
                     ]}
@@ -258,10 +258,10 @@ export default function TeachersPage() {
                 isDestructive={true}
             />
 
-            <NewRequestModal
-                isOpen={newRequestOpen}
+            <NewMailModal
+                isOpen={newMailOpen}
                 onClose={() => {
-                    setNewRequestOpen(false);
+                    setNewMailOpen(false);
                     setInitialTargetId(undefined);
                     setInitialSubject(undefined);
                 }}

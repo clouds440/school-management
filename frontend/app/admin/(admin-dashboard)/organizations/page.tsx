@@ -19,7 +19,7 @@ import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Loading } from '@/components/ui/Loading';
-import { NewRequestModal } from '@/components/requests/NewRequestModal';
+import { NewMailModal } from '@/components/mail/NewMailModal';
 
 interface AdminOrgParams extends BasePaginationParams {
     status: OrgStatus;
@@ -42,7 +42,7 @@ export default function OrganizationsPage() {
     const [modalMode, setModalMode] = useState<'REJECT' | 'SUSPEND' | 'EDIT_MESSAGE'>('REJECT');
     const [reason, setReason] = useState('');
 
-    const [newRequestOpen, setNewRequestOpen] = useState(false);
+    const [newMailOpen, setNewMailOpen] = useState(false);
     const [initialTargetId, setInitialTargetId] = useState<string | undefined>(undefined);
     const [initialSubject, setInitialSubject] = useState<string | undefined>(undefined);
 
@@ -166,7 +166,7 @@ export default function OrganizationsPage() {
     const handleSendMail = (org: Organization) => {
         setInitialTargetId(org.adminUserId);
         setInitialSubject(`Inquiry regarding ${org.name}`);
-        setNewRequestOpen(true);
+        setNewMailOpen(true);
     };
 
     const dynamicCounts = fetchedData?.counts || stats;
@@ -519,10 +519,10 @@ export default function OrganizationsPage() {
                     />
                 </div>
             </ModalForm>
-            <NewRequestModal
-                isOpen={newRequestOpen}
+            <NewMailModal
+                isOpen={newMailOpen}
                 onClose={() => {
-                    setNewRequestOpen(false);
+                    setNewMailOpen(false);
                     setInitialTargetId(undefined);
                     setInitialSubject(undefined);
                 }}

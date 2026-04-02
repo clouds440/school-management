@@ -10,23 +10,23 @@ import {
     Request,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { MailService } from './requests.service';
-import { CreateRequestDto } from './dto/create-request.dto';
-import { UpdateRequestDto } from './dto/update-request.dto';
+import { MailService } from './mail.service';
+import { CreateMailDto } from './dto/create-mail.dto';
+import { UpdateMailDto } from './dto/update-mail.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 
 @UseGuards(JwtAuthGuard)
 @Controller('mail')
 export class MailController {
-    constructor(private readonly requestService: MailService) {}
+    constructor(private readonly mailService: MailService) {}
 
     @Post()
     async create(
-        @Body() dto: CreateRequestDto,
+        @Body() dto: CreateMailDto,
         @Request() req: AuthenticatedRequest,
     ) {
-        return this.requestService.createRequest(dto, {
+        return this.mailService.createMail(dto, {
             id: req.user.id,
             role: req.user.role,
             organizationId: req.user.organizationId,
@@ -37,7 +37,7 @@ export class MailController {
 
     @Get('unread-count')
     async getUnreadCount(@Request() req: AuthenticatedRequest) {
-        return this.requestService.getUnreadCount({
+        return this.mailService.getUnreadCount({
             id: req.user.id,
             role: req.user.role,
             organizationId: req.user.organizationId,
@@ -57,7 +57,7 @@ export class MailController {
         @Query('status') status?: string,
         @Query('category') category?: string,
     ) {
-        return this.requestService.getRequests(
+        return this.mailService.getMails(
             {
                 id: req.user.id,
                 role: req.user.role,
@@ -82,7 +82,7 @@ export class MailController {
         @Request() req: AuthenticatedRequest,
         @Query('search') search?: string,
     ) {
-        return this.requestService.getContactableUsers(
+        return this.mailService.getContactableUsers(
             {
                 id: req.user.id,
                 role: req.user.role,
@@ -99,7 +99,7 @@ export class MailController {
         @Param('id') id: string,
         @Request() req: AuthenticatedRequest,
     ) {
-        return this.requestService.getRequestById(id, {
+        return this.mailService.getMailById(id, {
             id: req.user.id,
             role: req.user.role,
             organizationId: req.user.organizationId,
@@ -111,10 +111,10 @@ export class MailController {
     @Patch(':id')
     async update(
         @Param('id') id: string,
-        @Body() dto: UpdateRequestDto,
+        @Body() dto: UpdateMailDto,
         @Request() req: AuthenticatedRequest,
     ) {
-        return this.requestService.updateRequest(id, dto, {
+        return this.mailService.updateMail(id, dto, {
             id: req.user.id,
             role: req.user.role,
             organizationId: req.user.organizationId,
@@ -129,7 +129,7 @@ export class MailController {
         @Body() dto: CreateMessageDto,
         @Request() req: AuthenticatedRequest,
     ) {
-        return this.requestService.addMessage(id, dto, {
+        return this.mailService.addMessage(id, dto, {
             id: req.user.id,
             role: req.user.role,
             organizationId: req.user.organizationId,
@@ -138,3 +138,4 @@ export class MailController {
         });
     }
 }
+

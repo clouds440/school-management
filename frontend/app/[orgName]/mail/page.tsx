@@ -3,11 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Tag, Calendar, Filter, Clock, MailPlus } from 'lucide-react';
 import { api } from '@/lib/api';
-import { RequestItem, RequestStatus, PaginatedResponse } from '@/types';
+import { MailItem, MailStatus, PaginatedResponse } from '@/types';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { RequestStatusBadge, RequestPriorityBadge, getRequestRowClassName } from '@/components/requests/RequestStatusBadge';
-import { RequestDetailsModal } from '@/components/requests/RequestDetailsModal';
-import { NewRequestModal } from '@/components/requests/NewRequestModal';
+import { MailStatusBadge, MailPriorityBadge, getMailRowClassName } from '@/components/mail/MailStatusBadge';
+import { MailDetailsModal } from '@/components/mail/MailDetailsModal';
+import { NewMailModal } from '@/components/mail/NewMailModal';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { useAuth } from '@/context/AuthContext';
@@ -17,16 +17,16 @@ import { useSocket } from '@/hooks/useSocket';
 import { Button } from '@/components/ui/Button';
 import { BrandIcon } from '@/components/ui/Brand';
 
-export default function OrgRequestsPage() {
+export default function OrgMailPage() {
     const { user, token, loading: authLoading } = useAuth();
     const { state, dispatch } = useGlobal();
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
 
-    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<RequestItem> | null>(null);
-    const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
-    const [newRequestOpen, setNewRequestOpen] = useState(false);
+    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<MailItem> | null>(null);
+    const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
+    const [newMailOpen, setNewMailOpen] = useState(false);
 
     // Global symbols
     const fetching = state.ui.isLoading;
@@ -44,24 +44,24 @@ export default function OrgRequestsPage() {
     const searchQuery = searchParams.get('search') || '';
     const statusFilter = searchParams.get('status') || '';
 
-    const fetchRequests = useCallback(async () => {
+    const fetchMails = useCallback(async () => {
         if (!token) return;
         try {
             dispatch({ type: 'UI_SET_LOADING', payload: true });
             const [data, stats] = await Promise.all([
-                api.requests.getRequests(token, {
+                api.mail.getMails(token, {
                     page,
                     limit: pageSize,
                     search: searchQuery,
                     status: statusFilter || undefined
                 }),
-                api.requests.getUnreadCount(token)
+                api.mail.getUnreadCount(token)
             ]);
             setPaginatedData(data);
             // Sync with global state
             dispatch({ type: 'STATS_SET_MAIL', payload: stats });
         } catch (error: unknown) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to fetch requests', type: 'error' } });
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to fetch mail', type: 'error' } });
         } finally {
             dispatch({ type: 'UI_SET_LOADING', payload: false });
         }
@@ -76,29 +76,29 @@ export default function OrgRequestsPage() {
 
     useEffect(() => {
         if (!authLoading && token) {
-            fetchRequests();
+            fetchMails();
         }
-    }, [authLoading, token, fetchRequests]);
+    }, [authLoading, token, fetchMails]);
 
     useEffect(() => {
-        const rid = searchParams.get('requestId');
-        if (rid) {
-            setSelectedRequestId(rid);
+        const mid = searchParams.get('mailId');
+        if (mid) {
+            setSelectedMailId(mid);
         }
     }, [searchParams]);
 
     useEffect(() => {
         const unsubs = [
-            subscribe('unread:update', () => fetchRequests()),
-            subscribe('request:new', () => fetchRequests()),
-            subscribe('request:message', () => fetchRequests()),
-            subscribe('request:update', () => fetchRequests())
+            subscribe('unread:update', () => fetchMails()),
+            subscribe('mail:new', () => fetchMails()),
+            subscribe('mail:message', () => fetchMails()),
+            subscribe('mail:update', () => fetchMails())
         ];
         return () => unsubs.forEach(u => u());
-    }, [subscribe, fetchRequests]);
+    }, [subscribe, fetchMails]);
 
-    const handleRequestClick = (request: RequestItem) => {
-        setSelectedRequestId(request.id);
+    const handleMailClick = (mail: MailItem) => {
+        setSelectedMailId(mail.id);
     };
 
     const updateFilters = (key: string, value: string) => {
@@ -115,10 +115,10 @@ export default function OrgRequestsPage() {
         updateFilters('page', '1');
     };
 
-    const columns: Column<RequestItem>[] = [
+    const columns: Column<MailItem>[] = [
         {
             header: 'Subject',
-            accessor: (row: RequestItem) => (
+            accessor: (row: MailItem) => (
                 <div className="flex flex-col">
                     <span className="font-black text-gray-900 group-hover:text-primary transition-colors">{row.subject}</span>
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">#{row.id.slice(0, 8)}</span>
@@ -127,7 +127,7 @@ export default function OrgRequestsPage() {
         },
         {
             header: 'Sender',
-            accessor: (row: RequestItem) => {
+            accessor: (row: MailItem) => {
                 return (
                     <div className="flex items-center gap-3">
                         <BrandIcon
@@ -146,7 +146,7 @@ export default function OrgRequestsPage() {
         },
         {
             header: 'Category',
-            accessor: (row: RequestItem) => (
+            accessor: (row: MailItem) => (
                 <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2 py-1 rounded-sm border border-indigo-100/50">
                     <Tag className="w-3 h-3" />
                     {row.category.replace('_', ' ')}
@@ -155,15 +155,15 @@ export default function OrgRequestsPage() {
         },
         {
             header: 'Status',
-            accessor: (row: RequestItem) => <RequestStatusBadge status={row.status} />
+            accessor: (row: MailItem) => <MailStatusBadge status={row.status} />
         },
         {
             header: 'Priority',
-            accessor: (row: RequestItem) => <RequestPriorityBadge priority={row.priority} />
+            accessor: (row: MailItem) => <MailPriorityBadge priority={row.priority} />
         },
         {
             header: 'Messages',
-            accessor: (row: RequestItem) => (
+            accessor: (row: MailItem) => (
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 min-w-[30px] justify-center">
                         <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
@@ -179,7 +179,7 @@ export default function OrgRequestsPage() {
         },
         {
             header: 'Date',
-            accessor: (row: RequestItem) => (
+            accessor: (row: MailItem) => (
                 <div className="flex items-center gap-2 text-gray-500">
                     <Calendar className="w-4 h-4 opacity-30" />
                     <span className="text-xs font-bold font-mono">{new Date(row.updatedAt).toLocaleString()}</span>
@@ -197,11 +197,11 @@ export default function OrgRequestsPage() {
                             <CustomSelect
                                 options={[
                                     { value: '', label: 'All Statuses', badge: state.stats.mail?.total },
-                                    { value: RequestStatus.OPEN, label: 'Open', badge: state.stats.mail?.countsByStatus?.[RequestStatus.OPEN], icon: Clock, iconClassName: 'text-blue-500' },
-                                    { value: RequestStatus.IN_PROGRESS, label: 'In Progress', badge: state.stats.mail?.countsByStatus?.[RequestStatus.IN_PROGRESS], icon: ArrowUpRight, iconClassName: 'text-amber-500' },
-                                    { value: RequestStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[RequestStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-indigo-500' },
-                                    { value: RequestStatus.RESOLVED, label: 'Resolved', badge: state.stats.mail?.countsByStatus?.[RequestStatus.RESOLVED], icon: CheckCircle2, iconClassName: 'text-green-500' },
-                                    { value: RequestStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[RequestStatus.CLOSED], icon: XCircle, iconClassName: 'text-gray-500' },
+                                    { value: MailStatus.OPEN, label: 'Open', badge: state.stats.mail?.countsByStatus?.[MailStatus.OPEN], icon: Clock, iconClassName: 'text-blue-500' },
+                                    { value: MailStatus.IN_PROGRESS, label: 'In Progress', badge: state.stats.mail?.countsByStatus?.[MailStatus.IN_PROGRESS], icon: ArrowUpRight, iconClassName: 'text-amber-500' },
+                                    { value: MailStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[MailStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-indigo-500' },
+                                    { value: MailStatus.RESOLVED, label: 'Resolved', badge: state.stats.mail?.countsByStatus?.[MailStatus.RESOLVED], icon: CheckCircle2, iconClassName: 'text-green-500' },
+                                    { value: MailStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[MailStatus.CLOSED], icon: XCircle, iconClassName: 'text-gray-500' },
                                 ]}
                                 value={statusFilter}
                                 onChange={(val: string) => updateFilters('status', val)}
@@ -210,18 +210,18 @@ export default function OrgRequestsPage() {
                             />
                         </div>
                         <SearchBar
-                            placeholder="Search requests by subject or content..."
+                            placeholder="Search mail by subject or content..."
                             value={searchQuery}
                             onChange={(val: string) => updateFilters('search', val)}
                             className="bg-white/50 border-white/20"
                         />
                     </div>
                     <Button
-                        onClick={() => setNewRequestOpen(true)}
+                        onClick={() => setNewMailOpen(true)}
                         icon={MailPlus}
                         className="flex items-center justify-center gap-2 px-8 bg-primary text-primary-text rounded-sm text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 shrink-0 border-none"
                     >
-                        New Request
+                        New Mail
                     </Button>
                 </div>
 
@@ -229,40 +229,40 @@ export default function OrgRequestsPage() {
                     <DataTable
                         columns={columns}
                         data={paginatedData?.data || []}
-                        keyExtractor={(row: RequestItem) => row.id}
+                        keyExtractor={(row: MailItem) => row.id}
                         isLoading={fetching}
-                        onRowClick={handleRequestClick}
+                        onRowClick={handleMailClick}
                         currentPage={paginatedData?.currentPage || 1}
                         totalPages={paginatedData?.totalPages || 1}
                         totalResults={paginatedData?.totalRecords || 0}
                         pageSize={pageSize}
                         onPageChange={(p: number) => updateFilters('page', p.toString())}
                         onPageSizeChange={handlePageSizeChange}
-                        getRowClassName={(row: RequestItem) => getRequestRowClassName(row.status)}
+                        getRowClassName={(row: MailItem) => getMailRowClassName(row.status)}
                         maxHeight="100%"
                     />
                 </div>
             </div>
 
-            <RequestDetailsModal
-                isOpen={!!selectedRequestId}
-                requestId={selectedRequestId}
+            <MailDetailsModal
+                isOpen={!!selectedMailId}
+                mailId={selectedMailId}
                 onClose={() => {
-                    setSelectedRequestId(null);
-                    // Clear the requestId from the URL
+                    setSelectedMailId(null);
+                    // Clear the mailId from the URL
                     const params = new URLSearchParams(searchParams.toString());
-                    params.delete('requestId');
+                    params.delete('mailId');
                     const query = params.toString();
                     router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
                 }}
-                onUpdate={fetchRequests}
+                onUpdate={fetchMails}
             />
 
-            <NewRequestModal
-                isOpen={newRequestOpen}
-                onClose={() => setNewRequestOpen(false)}
+            <NewMailModal
+                isOpen={newMailOpen}
+                onClose={() => setNewMailOpen(false)}
                 onSuccess={() => {
-                    fetchRequests();
+                    fetchMails();
                     dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent', type: 'success' } });
                 }}
             />

@@ -57,9 +57,9 @@ export class ActiveOrgGuard implements CanActivate {
             const handlerName = context.getHandler().name;
             const className = context.getClass().name;
 
-            // Allow reaching mail/requests BUT only for support
-            // This is a coarse filter, the RequestService already enforces the targetRole.
-            if (className === 'RequestController' || className === 'RequestsController') {
+            // Allow reaching mail BUT only for support
+            // This is a coarse filter, the MailService already enforces the targetRole.
+            if (className === 'MailController') {
                 return true; 
             }
 

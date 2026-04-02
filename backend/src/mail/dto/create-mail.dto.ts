@@ -1,7 +1,7 @@
 import { IsString, IsOptional, IsNotEmpty, MaxLength, IsIn, IsEnum } from 'class-validator';
-import { RequestStatus } from '../../common/enums';
+import { MailStatus } from '../../common/enums';
 
-export class CreateRequestDto {
+export class CreateMailDto {
     @IsString()
     @IsNotEmpty()
     @MaxLength(200)
@@ -31,8 +31,8 @@ export class CreateRequestDto {
     assigneeIds?: string[];
 
     @IsOptional()
-    @IsEnum(RequestStatus)
-    status?: RequestStatus;
+    @IsEnum(MailStatus)
+    status?: MailStatus;
 
     @IsOptional()
     metadata?: Record<string, unknown>;

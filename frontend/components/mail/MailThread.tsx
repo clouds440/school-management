@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Send, Clock, Paperclip, X, FileText, ImageIcon, Download, MessageSquare } from 'lucide-react';
-import { RequestDetail, RequestMessage as RequestMessageType, RequestActionLog, Attachment } from '@/types';
+import { MailDetail, MailMessage as MailMessageType, MailActionLog, Attachment } from '@/types';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { MarkdownEditor, MarkdownEditorHandle } from '@/components/ui/MarkdownEditor';
 import { getPublicUrl } from '@/lib/utils';
@@ -11,15 +11,15 @@ import { BrandIcon } from '@/components/ui/Brand';
 import { ADMIN_REPLY_TEMPLATES } from './MailTemplates';
 import { Button } from '@/components/ui/Button';
 
-interface RequestThreadProps {
-    request: RequestDetail;
+interface MailThreadProps {
+    mail: MailDetail;
     currentUserId: string;
     currentUserRole?: string;
     onReply: (content: string, files?: File[]) => Promise<void>;
     isClosed?: boolean;
 }
 
-export interface RequestThreadHandle {
+export interface MailThreadHandle {
     scrollToReply: () => void;
 }
 
@@ -52,7 +52,7 @@ function AttachmentPreview({ file }: { file: Attachment }) {
     );
 }
 
-function MessageBubble({ message, isOwn }: { message: RequestMessageType; isOwn: boolean }) {
+function MessageBubble({ message, isOwn }: { message: MailMessageType; isOwn: boolean }) {
     return (
         <div className="flex gap-3">
             <BrandIcon variant="user" size="sm" user={message.sender} className={`w-8 h-8 ${isOwn ? 'ring-2 ring-indigo-500/20' : ''}`} />
@@ -92,7 +92,7 @@ function MessageBubble({ message, isOwn }: { message: RequestMessageType; isOwn:
     );
 }
 
-function ActionLogItem({ log }: { log: RequestActionLog }) {
+function ActionLogItem({ log }: { log: MailActionLog }) {
     const getActionLabel = (action: string) => {
         switch (action) {
             case 'CREATED': return 'sent this mail';
@@ -101,7 +101,7 @@ function ActionLogItem({ log }: { log: RequestActionLog }) {
                 const to = (log.details as Record<string, string>)?.statusTo || '';
                 return `changed status from ${from.replace('_', ' ')} to ${to.replace('_', ' ')}`;
             }
-            case 'ASSIGNED': return 'assigned this folder';
+            case 'ASSIGNED': return 'assigned this mail';
             case 'MESSAGE_SENT': return 'sent a message';
             case 'UPDATED': return 'updated this mail';
             default: return action.toLowerCase().replace('_', ' ');
@@ -122,8 +122,8 @@ function ActionLogItem({ log }: { log: RequestActionLog }) {
     );
 }
 
-export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>(
-    ({ request, currentUserId, currentUserRole, onReply, isClosed }, ref) => {
+export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
+    ({ mail, currentUserId, currentUserRole, onReply, isClosed }, ref) => {
         const [replyContent, setReplyContent] = useState('');
         const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
         const [sending, setSending] = useState(false);
@@ -141,8 +141,8 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
         const isPlatformAdmin = currentUserRole === 'PLATFORM_ADMIN' || currentUserRole === 'SUPER_ADMIN';
 
         const orgData = isPlatformAdmin ? {
-            name: request.organization?.name || request.creator.name || 'User',
-            id: request.organization?.id || request.creator.id,
+            name: mail.organization?.name || mail.creator.name || 'User',
+            id: mail.organization?.id || mail.creator.id,
             admin: 'Platform Support Team',
             role: currentUserRole || 'Administrator',
             date: new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
@@ -176,12 +176,12 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
         };
 
         type TimelineItem =
-            | { type: 'message'; data: RequestMessageType; time: string }
-            | { type: 'action'; data: RequestActionLog; time: string };
+            | { type: 'message'; data: MailMessageType; time: string }
+            | { type: 'action'; data: MailActionLog; time: string };
 
         const timeline: TimelineItem[] = [
-            ...request.messages.map((m): TimelineItem => ({ type: 'message', data: m, time: m.createdAt })),
-            ...request.actionLogs
+            ...mail.messages.map((m): TimelineItem => ({ type: 'message', data: m, time: m.createdAt })),
+            ...mail.actionLogs
                 .filter(l => l.action !== 'MESSAGE_SENT')
                 .map((l): TimelineItem => ({ type: 'action', data: l, time: l.createdAt })),
         ].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
@@ -191,39 +191,39 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
                 <div className="px-6 py-2 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-4">
                         <div className="flex -space-x-2">
-                            <BrandIcon variant="user" size="sm" user={request.creator} className="border-2 border-white/80 shadow-sm" />
-                            {request.assignees.length > 0 ? (
-                                request.assignees.slice(0, 2).map((a) => (
+                            <BrandIcon variant="user" size="sm" user={mail.creator} className="border-2 border-white/80 shadow-sm" />
+                            {mail.assignees.length > 0 ? (
+                                mail.assignees.slice(0, 2).map((a) => (
                                     <BrandIcon key={a.id} variant="user" size="sm" user={a} className="border-2 border-white/80 shadow-sm" />
                                 ))
                             ) : (
                                 <div className="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-orange-600 text-[10px] font-black uppercase shadow-sm font-mono">
-                                    {request.targetRole ? 'GRP' : 'ALL'}
+                                    {mail.targetRole ? 'GRP' : 'ALL'}
                                 </div>
                             )}
                         </div>
                         <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Conversation Between</p>
                             <p className="text-sm font-bold text-gray-700">
-                                {request.creator.name || request.creator.email}
+                                {mail.creator.name || mail.creator.email}
                                 <span className="mx-2 text-gray-300">→</span>
-                                {request.assignees.length > 0 ? (
-                                    request.assignees.length > 3
-                                        ? `${request.assignees.slice(0, 2).map(a => a.name || a.email).join(', ')} and ${request.assignees.length - 2} others`
-                                        : request.assignees.map(a => a.name || a.email).join(', ')
-                                ) : request.targetRole === 'ORG_STAFF' ? 'All Employees' :
-                                    request.targetRole === 'PLATFORM_ADMIN' || request.targetRole === 'SUPER_ADMIN' ? 'Platform Administrative Team' :
-                                        (request.targetRole?.replace('_', ' ') || 'Platform Support Team')}
+                                {mail.assignees.length > 0 ? (
+                                    mail.assignees.length > 3
+                                        ? `${mail.assignees.slice(0, 2).map(a => a.name || a.email).join(', ')} and ${mail.assignees.length - 2} others`
+                                        : mail.assignees.map(a => a.name || a.email).join(', ')
+                                ) : mail.targetRole === 'ORG_STAFF' ? 'All Employees' :
+                                    mail.targetRole === 'PLATFORM_ADMIN' || mail.targetRole === 'SUPER_ADMIN' ? 'Platform Administrative Team' :
+                                        (mail.targetRole?.replace('_', ' ') || 'Platform Support Team')}
                             </p>
                         </div>
                     </div>
                     <div className="text-right">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Priority</p>
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${request.priority === 'URGENT' ? 'bg-red-100 text-red-600' :
-                            request.priority === 'HIGH' ? 'bg-orange-100 text-orange-600' :
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${mail.priority === 'URGENT' ? 'bg-red-100 text-red-600' :
+                            mail.priority === 'HIGH' ? 'bg-orange-100 text-orange-600' :
                                 'bg-blue-100 text-blue-600'
                             }`}>
-                            {request.priority}
+                            {mail.priority}
                         </span>
                     </div>
                 </div>
@@ -319,4 +319,4 @@ export const RequestThread = forwardRef<RequestThreadHandle, RequestThreadProps>
     }
 );
 
-RequestThread.displayName = 'RequestThread';
+MailThread.displayName = 'MailThread';

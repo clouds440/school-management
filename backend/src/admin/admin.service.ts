@@ -1,12 +1,12 @@
 import { UnauthorizedException, NotFoundException, Injectable } from '@nestjs/common';
 import { Prisma, User as UserEntity, Organization } from '@prisma/client';
-import { OrgStatus, Role, RequestStatus, RequestCategory } from '../common/enums';
+import { OrgStatus, Role, MailStatus, MailCategory } from '../common/enums';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { getPaginationOptions, formatPaginatedResponse, mapStatusCounts, PaginationOptions } from '../common/utils';
-import { RequestService } from '../requests/requests.service';
-import { RequestUser } from '../requests/interfaces/request-user.interface';
+import { MailService } from '../mail/mail.service';
+import { MailUser } from '../mail/interfaces/mail-user.interface';
 
 import { CreatePlatformAdminDto } from './dto/create-platform-admin.dto';
 import { UpdatePlatformAdminDto } from './dto/update-platform-admin.dto';
@@ -17,7 +17,7 @@ export class AdminService {
     constructor(
         private readonly authService: AuthService,
         private readonly prisma: PrismaService,
-        private readonly requestService: RequestService
+        private readonly mailService: MailService
     ) { }
     
     private orgWithAdminInclude = Prisma.validator<Prisma.OrganizationInclude>()({
@@ -156,9 +156,9 @@ export class AdminService {
             }
 
             // Send NO_REPLY mail
-            await this.requestService.createRequest({
+            await this.mailService.createMail({
                 subject,
-                category: RequestCategory.PLATFORM_NOTICE,
+                category: MailCategory.PLATFORM_NOTICE,
                 priority: 'NORMAL',
                 message,
                 assigneeIds: [orgAdmin.id],
@@ -212,13 +212,13 @@ export class AdminService {
                 where: { organizationId: id, role: Role.ORG_ADMIN }
             });
 
-            // 4. Create a Request thread (Notice) - No Reply
-            const request = await tx.request.create({
+            // 4. Create a Mail thread (Notice) - No Reply
+            const mail = await tx.mail.create({
                 data: {
                     subject: 'Application Status Update: REJECTED',
                     category: 'System Notice',
                     priority: 'URGENT',
-                    status: RequestStatus.NO_REPLY,
+                    status: MailStatus.NO_REPLY,
                     creatorId: admin.id,
                     creatorRole: admin.role,
                     organizationId: id,
@@ -228,19 +228,19 @@ export class AdminService {
             });
 
             // 5. Initial Message
-            await tx.requestMessage.create({
+            await tx.mailMessage.create({
                 data: {
-                    requestId: request.id,
+                    mailId: mail.id,
                     senderId: admin.id,
                     content: reason
                 }
             });
 
-            // 5. Mark as read for the admin (sender)
-            await tx.requestUserView.create({
+            // 6. Mark as read for the admin (sender)
+            await tx.mailUserView.create({
                 data: {
                     userId: admin.id,
-                    requestId: request.id,
+                    mailId: mail.id,
                     lastViewedAt: new Date()
                 }
             });
@@ -288,13 +288,13 @@ export class AdminService {
                 where: { organizationId: id, role: Role.ORG_ADMIN }
             });
 
-            // 4. Create a Request thread (Notice) - No Reply
-            const request = await tx.request.create({
+            // 4. Create a Mail thread (Notice) - No Reply
+            const mail = await tx.mail.create({
                 data: {
                     subject: 'Organization Status Update: SUSPENDED',
                     category: 'Security/Admin Notice',
                     priority: 'URGENT',
-                    status: RequestStatus.NO_REPLY,
+                    status: MailStatus.NO_REPLY,
                     creatorId: admin.id,
                     creatorRole: admin.role,
                     organizationId: id,
@@ -304,19 +304,19 @@ export class AdminService {
             });
 
             // 5. Initial Message
-            await tx.requestMessage.create({
+            await tx.mailMessage.create({
                 data: {
-                    requestId: request.id,
+                    mailId: mail.id,
                     senderId: admin.id,
                     content: reason
                 }
             });
 
-            // 5. Mark as read for the admin (sender)
-            await tx.requestUserView.create({
+            // 6. Mark as read for the admin (sender)
+            await tx.mailUserView.create({
                 data: {
                     userId: admin.id,
-                    requestId: request.id,
+                    mailId: mail.id,
                     lastViewedAt: new Date()
                 }
             });
@@ -328,13 +328,13 @@ export class AdminService {
     }
 
 
-    async getAdminStats(user: RequestUser) {
+    async getAdminStats(user: MailUser) {
         const [orgStatusCounts, unreadMail, platformAdmins] = await Promise.all([
             this.prisma.organization.groupBy({
                 by: ['status'],
                 _count: { _all: true }
             }),
-            this.requestService.getUnreadCount(user),
+            this.mailService.getUnreadCount(user),
             this.prisma.user.count({ where: { role: Role.PLATFORM_ADMIN } }),
         ]);
 

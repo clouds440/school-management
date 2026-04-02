@@ -139,7 +139,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
                     .catch((err) => console.error('Failed to fetch org data:', err));
 
                 // Fetch Mail Stats
-                api.requests.getUnreadCount(token)
+                api.mail.getUnreadCount(token)
                     .then(data => dispatch({ type: 'STATS_SET_MAIL', payload: data }))
                     .catch(err => console.error('Failed to fetch mail stats:', err));
 
@@ -161,7 +161,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
 
         const unsubs = [
             subscribe('unread:update', fetchAllData),
-            subscribe('request:new', fetchAllData),
+            subscribe('mail:new', fetchAllData),
             subscribe('chat:message', fetchAllData),
             subscribe('chat:read', fetchAllData)
         ];
