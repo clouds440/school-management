@@ -35,7 +35,9 @@ interface SocketUser {
  */
 @WebSocketGateway({
     cors: {
-        origin: process.env.FRONTEND_URL || '*',
+        origin: (process.env.FRONTEND_URL || '').split(',').map(url => url.trim()).filter(Boolean).length > 0 
+            ? (process.env.FRONTEND_URL || '').split(',').map(url => url.trim()).filter(Boolean) 
+            : '*',
         credentials: true,
     },
     namespace: '/',

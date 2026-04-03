@@ -9,8 +9,8 @@ import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  const frontendUrl = process.env.FRONTEND_URL; // Default to permissive in dev if not set, but restrict in prod
-  app.enableCors({ origin: frontendUrl });
+  const frontendUrls = (process.env.FRONTEND_URL || '').split(',').map(url => url.trim()).filter(Boolean);
+  app.enableCors({ origin: frontendUrls.length > 0 ? frontendUrls : '*' });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
 
   // Serve uploaded files as static assets (e.g. /uploads/orgs/5/students/avatar.png)
