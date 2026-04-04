@@ -9,6 +9,7 @@ import { Notification } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { useGlobal } from '@/context/GlobalContext';
 import Link from 'next/link';
+import notificationsStore from '@/lib/notificationsStore';
 
 export function NotificationDropdown() {
     const { token, user } = useAuth();
@@ -22,19 +23,22 @@ export function NotificationDropdown() {
     
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Fetch notifications initially
+    // Fetch notifications initially via notificationsStore
     useEffect(() => {
         if (!token) return;
-        const fetchNotifications = async () => {
-            try {
-                const res = await api.notifications.getUserNotifications(token, { limit: 10 });
-                setNotifications(res.data);
-                setUnreadCount(res.unreadCount);
-            } catch (err) {
-                console.error('Failed to fetch notifications', err);
-            }
-        };
-        fetchNotifications();
+        let mounted = true;
+        notificationsStore.fetchAll(token).then(cache => {
+            if (!mounted) return;
+            setNotifications(cache.items.slice(0, 10));
+            setUnreadCount(cache.unreadCount || 0);
+        }).catch(err => console.error('Failed to load notifications from store', err));
+
+        const unsub = notificationsStore.subscribe(() => {
+            const c = notificationsStore.getAll();
+            setNotifications(c.items.slice(0, 10));
+            setUnreadCount(c.unreadCount || 0);
+        });
+        return () => { mounted = false; unsub(); };
     }, [token]);
 
     // Setup socket listeners
@@ -43,20 +47,17 @@ export function NotificationDropdown() {
 
         const unsubNew = subscribe('notification:new', (newNotification: unknown) => {
             const notif = newNotification as Notification;
-            setNotifications(prev => [notif, ...prev].slice(0, 10)); // Keep top 10
-            setUnreadCount(prev => prev + 1);
+            notificationsStore.applyNew(notif);
             dispatch({ type: 'TOAST_ADD', payload: { message: notif.title, type: 'info' } });
         });
 
         const unsubRead = subscribe('notification:read', (data: unknown) => {
             const { notificationId } = data as { notificationId: string };
-            setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n));
-            setUnreadCount(prev => Math.max(0, prev - 1));
+            notificationsStore.applyRead(notificationId);
         });
 
         const unsubReadAll = subscribe('notification:read_all', () => {
-            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-            setUnreadCount(0);
+            notificationsStore.applyReadAll();
         });
 
         return () => {
@@ -79,21 +80,12 @@ export function NotificationDropdown() {
 
     const markAsRead = async (id: string) => {
         if (!token) return;
-        try {
-            await api.notifications.markAsRead(id, token);
-            // State updates handled by socket listener
-        } catch (err) {
-            console.error(err);
-        }
+        await notificationsStore.markAsReadGuard(id, token);
     };
 
     const markAllAsRead = async () => {
         if (!token || unreadCount === 0) return;
-        try {
-            await api.notifications.markAllAsRead(token);
-        } catch (err) {
-            console.error(err);
-        }
+        await notificationsStore.markAllAsReadGuard(token);
     };
 
     if (!token || !user) return null;

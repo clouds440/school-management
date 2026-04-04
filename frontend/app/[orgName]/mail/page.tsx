@@ -12,6 +12,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
+import notificationsStore from '@/lib/notificationsStore';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useSocket } from '@/hooks/useSocket';
 import { Button } from '@/components/ui/Button';
@@ -88,17 +89,41 @@ export default function OrgMailPage() {
     }, [searchParams]);
 
     useEffect(() => {
+        // Debounce mail list refreshes to avoid repeated full fetches
+        const timerRef: { current: number | null } = { current: null };
+        const scheduleFetch = () => {
+            if (timerRef.current) window.clearTimeout(timerRef.current);
+            timerRef.current = window.setTimeout(() => {
+                fetchMails();
+                timerRef.current = null;
+            }, 1000);
+        };
+
         const unsubs = [
-            subscribe('unread:update', () => fetchMails()),
-            subscribe('mail:new', () => fetchMails()),
-            subscribe('mail:message', () => fetchMails()),
-            subscribe('mail:update', () => fetchMails())
+            subscribe('unread:update', scheduleFetch),
+            subscribe('mail:new', scheduleFetch),
+            subscribe('mail:message', scheduleFetch),
+            subscribe('mail:update', scheduleFetch)
         ];
-        return () => unsubs.forEach(u => u());
+
+        return () => {
+            unsubs.forEach(u => u());
+            if (timerRef.current) window.clearTimeout(timerRef.current);
+        };
     }, [subscribe, fetchMails]);
 
     const handleMailClick = (mail: MailItem) => {
         setSelectedMailId(mail.id);
+        try {
+            const { items } = notificationsStore.getAll();
+            const notif = items.find(n => n.metadata?.mailId === mail.id || (n.actionUrl && n.actionUrl.includes(mail.id)) || n.metadata?.entityId === mail.id);
+            if (notif && token) {
+                // fire-and-forget optimistic mark-as-read
+                notificationsStore.markAsReadGuard(notif.id, token).catch(() => {});
+            }
+        } catch (e) {
+            // swallow to avoid UI interruption
+        }
     };
 
     const updateFilters = (key: string, value: string) => {

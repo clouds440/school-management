@@ -29,7 +29,7 @@ import { ActiveOrgGuard } from './common/guards/active-org.guard';
     MailModule,
     ThrottlerModule.forRoot([{
       ttl: 60000,
-      limit: 300,
+      limit: 150,
     }]),
     ChatModule,
     NotificationsModule,

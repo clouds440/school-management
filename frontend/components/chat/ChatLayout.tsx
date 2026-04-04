@@ -7,12 +7,13 @@ import { useGlobal } from '@/context/GlobalContext';
 import { useUI } from '@/context/UIContext';
 import { useSocket } from '@/hooks/useSocket';
 import { api } from '@/lib/api';
+import { getUserChatsCached, invalidateChats, insertOrUpdateChatFromMessage, markAsReadGuard, getCachedChats } from '@/lib/chatStore';
 import { BrandIcon } from '../ui/Brand';
 import { Chat, ChatMessage, ChatType, Role, User } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import {
     Search, Plus, MessageSquarePlus, Send, MoreVertical, X, Loader2, Image as ImageIcon,
-    UserMinus, Trash2, Shield, Info, ChevronLeft, Check, CheckCheck
+    UserMinus, Trash2, Shield, Info, ChevronLeft, Check, CheckCheck, ArrowDown
 } from 'lucide-react';
 import { MarkdownEditor } from '../ui/MarkdownEditor';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
@@ -72,6 +73,13 @@ export function ChatLayout() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
+    const [showScrollButton, setShowScrollButton] = useState(false);
+    const handleScroll = () => {
+        if (!messagesContainerRef.current) return;
+        const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+        setShowScrollButton(scrollHeight - scrollTop - clientHeight > 300);
+    };
+
     // Click outside to close participants
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -110,7 +118,7 @@ export function ChatLayout() {
     const fetchChats = async () => {
         if (!token) return;
         try {
-            const data = await api.chat.getUserChats(token);
+            const data = await getUserChatsCached(token);
             setChats(data);
             setIsLoadingChats(false);
             if (data.length > 0 && !activeChatId) {
@@ -136,7 +144,7 @@ export function ChatLayout() {
                 setMessages(res.data);
                 setIsLoadingMessages(false);
                 setTimeout(scrollToBottom, 100);
-                api.chat.markAsRead(activeChatId, '', token).catch(console.error);
+                markAsReadGuard(activeChatId, '', token);
             })
             .catch(err => {
                 console.error(err);
@@ -159,34 +167,37 @@ export function ChatLayout() {
                 });
                 setTimeout(scrollToBottom, 50);
                 if (message.senderId !== user.id) {
-                    api.chat.markAsRead(activeChatId, message.id, token).catch(console.error);
+                    markAsReadGuard(activeChatId, message.id, token);
                 }
             }
 
-            setChats(prevChats => {
-                const chatIndex = prevChats.findIndex(c => c.id === message.chatId);
-                if (chatIndex > -1) {
-                    const updatedChat = {
-                        ...prevChats[chatIndex],
-                        updatedAt: new Date().toISOString(),
-                        messages: [message],
-                        unreadCount: (message.chatId !== activeChatId && message.senderId !== user.id)
-                            ? (prevChats[chatIndex].unreadCount || 0) + 1
-                            : 0
-                    };
-                    const newChats = [...prevChats];
-                    newChats.splice(chatIndex, 1);
-                    return [updatedChat, ...newChats];
-                } else {
-                    fetchChats();
+                setChats(prevChats => {
+                    const chatIndex = prevChats.findIndex(c => c.id === message.chatId);
+                    if (chatIndex > -1) {
+                        const updatedChat = {
+                            ...prevChats[chatIndex],
+                            updatedAt: new Date().toISOString(),
+                            messages: [message],
+                            unreadCount: (message.chatId !== activeChatId && message.senderId !== user.id)
+                                ? (prevChats[chatIndex].unreadCount || 0) + 1
+                                : 0
+                        };
+                        const newChats = [...prevChats];
+                        newChats.splice(chatIndex, 1);
+                        return [updatedChat, ...newChats];
+                    }
+
+                    // If chat isn't present, insert a lightweight placeholder from message
+                    insertOrUpdateChatFromMessage(message);
+                    const cached = getCachedChats();
+                    if (cached) return cached;
                     return prevChats;
-                }
-            });
+                });
         });
 
         const unsubRead = subscribe('chat:read', (data: unknown) => {
             const readData = data as { chatId: string; userId: string; messageId: string };
-            if (readData.chatId === activeChatId) {
+                if (readData.chatId === activeChatId) {
                 setMessages(prev => prev.map(m => {
                     if (m.senderId !== readData.userId && readData.messageId && readData.messageId >= m.id) {
                         const readBy = Array.from(new Set([...(m.readBy || []), readData.userId]));
@@ -223,7 +234,7 @@ export function ChatLayout() {
             setChats(prev => prev.map(c => c.id === chat.id ? { ...c, ...chat } : c));
         });
 
-        const unsubRoomLeft = subscribe('roomLeft', (data: unknown) => {
+            const unsubRoomLeft = subscribe('roomLeft', (data: unknown) => {
             const leftData = data as { roomId: string; forced?: boolean };
             if (leftData.forced && leftData.roomId === `chat:${activeChatId}`) {
                 dispatch({
@@ -329,7 +340,7 @@ export function ChatLayout() {
             setMessageDraft('');
             setIsSending(false);
             textareaRef.current?.focus();
-            api.chat.markAsRead(activeChatId, '', token).catch(console.error);
+            // sender's own message — no need to call markAsRead here (guarded elsewhere)
         } catch (err) {
             const error = err as Error;
             console.error(error);
@@ -430,7 +441,7 @@ export function ChatLayout() {
 
     const handleEditorFocus = () => {
         if (token && activeChatId) {
-            api.chat.markAsRead(activeChatId, '', token).catch(console.error);
+            markAsReadGuard(activeChatId, '', token);
             setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, unreadCount: 0 } : c));
         }
     };
@@ -447,7 +458,7 @@ export function ChatLayout() {
         <div className="flex h-full bg-white lg:rounded-sm lg:shadow-sm lg:border border-gray-100 overflow-hidden relative">
             <div className={`
                 ${activeChatId && !isDesktop ? 'hidden' : 'flex'} 
-                w-full lg:max-w-xs xl:max-w-sm border-r border-gray-100 flex-col bg-gray-50/50 h-full
+                w-full lg:max-w-xs xl:max-w-sm border-r border-gray-200 flex-col bg-gray-100 h-full
             `}>
                 <div className="p-4 border-b border-gray-100 bg-white flex justify-between items-center">
                     <h2 className="text-xl font-bold text-gray-800 tracking-tight">Chats</h2>
@@ -491,6 +502,7 @@ export function ChatLayout() {
 
                             return (
                                 <button
+                                    type='button'
                                     key={chat.id}
                                     onClick={() => setActiveChatId(chat.id)}
                                     className={`w-full flex items-center p-4 border-b border-gray-100 transition-colors text-left group ${isActive ? 'bg-primary/5 border-l-4 border-l-primary' : 'hover:bg-white border-l-4 border-l-transparent'}`}
@@ -551,14 +563,16 @@ export function ChatLayout() {
 
             <div className={`
                 ${!activeChatId && !isDesktop ? 'hidden' : 'flex'} 
-                flex-1 flex-col bg-white h-full relative
+                flex-1 flex-col bg-white h-full relative border border-gray-200 shadow-sm m-1 rounded-lg overflow-hidden
             `}>
                 {activeChat ? (
                     <>
-                        <div className="p-3 md:p-4 border-b border-gray-100 flex items-center justify-between shadow-sm z-20 bg-white/80 backdrop-blur-md">
+                        <div className="p-2 border-b border-gray-200 flex items-center justify-between shadow-gray-500 shadow-lg z-20 bg-white/90 backdrop-blur-md">
                             <div className="flex items-center space-x-3">
                                 {!isDesktop && (
                                     <button
+                                        type='button'
+                                        title='Back'
                                         className="p-2 -ml-2 text-primary hover:bg-primary/5 rounded-full transition-colors"
                                         onClick={() => setActiveChatId(null)}
                                     >
@@ -580,6 +594,7 @@ export function ChatLayout() {
                                         {activeChat.type === ChatType.GROUP && <Shield size={12} className="ml-1.5 text-primary opacity-60" />}
                                     </div>
                                     <button
+                                        type='button'
                                         id="participants-toggle"
                                         onClick={() => setShowParticipants(!showParticipants)}
                                         className={`text-[11px] font-bold px-2 py-0.5 rounded-sm transition-all flex items-center ${showParticipants ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:text-primary hover:bg-primary/5'}`}
@@ -593,6 +608,7 @@ export function ChatLayout() {
                             <div className="flex items-center space-x-1">
                                 {activeChat.type === ChatType.GROUP && (
                                     <button
+                                        type='button'
                                         onClick={() => setIsSettingsModalOpen(true)}
                                         className="p-2 text-gray-400 hover:text-primary rounded-sm hover:bg-primary/5 transition-all"
                                         title="Chat Settings"
@@ -607,12 +623,13 @@ export function ChatLayout() {
                         <div className="flex-1 flex overflow-hidden relative">
                             <div
                                 ref={messagesContainerRef}
-                                className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar"
+                                onScroll={handleScroll}
+                                className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 custom-scrollbar"
                                 style={{
                                     backgroundImage: "url('/assets/chat-background.png')",
                                     backgroundSize: "cover",
                                     backgroundRepeat: "no-repeat",
-                                    backgroundColor: "rgba(220, 220, 255, 0.9)",
+                                    backgroundColor: "rgba(190, 190, 255, 0.95)",
                                     backgroundBlendMode: "overlay"
                                 }}
                             >
@@ -624,8 +641,8 @@ export function ChatLayout() {
                                             if (msg.type === 'SYSTEM') {
                                                 return (
                                                     <div key={msg.id} className="flex justify-center py-2">
-                                                        <div className="bg-gray-100/80 text-gray-500 px-4 py-1.5 rounded-sm text-[11px] font-medium flex items-center border border-gray-200/50 shadow-sm">
-                                                            <Info size={12} className="mr-1.5 opacity-60" />
+                                                        <div className="bg-gray-100/95 text-gray-600 px-4 py-1.5 rounded-sm text-[11px] font-medium flex items-center border border-gray-200 shadow-lg">
+                                                            <Info size={12} className="mr-1.5 opacity-70" />
                                                             {msg.content}
                                                         </div>
                                                     </div>
@@ -642,7 +659,7 @@ export function ChatLayout() {
                                                     {!isMine && (
                                                         <div className="w-8 shrink-0 mr-2.5 flex flex-col justify-end mb-1">
                                                             {isLastInGroup ? (
-                                                                <UserAvatar targetUser={msg.sender} className="w-8 h-8 rounded-full border border-gray-200 shadow-sm" />
+                                                                <UserAvatar targetUser={msg.sender} className="w-8 h-8 rounded-full border border-gray-200 shadow-xl" />
                                                             ) : <div className="w-8 h-8" />}
                                                         </div>
                                                     )}
@@ -657,13 +674,13 @@ export function ChatLayout() {
                                                             {isDeleted ? (
                                                                 /* Deleted message bubble stays as-is */
                                                                 <div className={`
-                                                                    px-4 py-2.5 rounded-2xl shadow-sm text-base leading-relaxed relative
-                                                                    bg-gray-50/50 text-gray-400 border-dashed border-gray-200
+                                                                    px-4 py-2.5 rounded-2xl shadow-gray-400 shadow-xl text-base leading-relaxed relative
+                                                                    bg-gray-100/95 text-gray-600 border border-gray-200
                                                                     ${isMine ? 'rounded-br-none' : 'rounded-bl-none'}
                                                                 `}>
-                                                                    <div className="flex items-center space-x-2 italic text-[12px] py-1">
-                                                                        <Trash2 size={12} className="opacity-40" />
-                                                                        <span>This message was deleted by {msg.sender?.name} at {new Date(msg.deletedAt ?? '').toLocaleTimeString()}</span>
+                                                                    <div className="flex items-center space-x-2 font-medium text-[13px]">
+                                                                        <Trash2 size={14} className="opacity-60" />
+                                                                        <span>This message was deleted by {msg.deletedBy?.name} at {new Date(msg.deletedAt!).toLocaleString()}</span>
                                                                     </div>
                                                                 </div>
                                                             ) : (
@@ -695,17 +712,17 @@ export function ChatLayout() {
                                                                                     );
                                                                                 }
 
-                                                                                return (
-                                                                                    <div
-                                                                                        key={idx}
-                                                                                        className={`
-                                                                                            px-4 py-2.5 rounded-2xl shadow-sm text-base leading-relaxed relative
-                                                                                            ${isMine
-                                                                                                ? 'bg-linear-to-br from-primary/80 to-primary/60 text-white! rounded-br-none'
-                                                                                                : 'bg-white/70 text-gray-800 border border-gray-100 rounded-bl-none'
-                                                                                            }
-                                                                                        `}
-                                                                                    >
+return (
+                                            <div
+                                                key={idx}
+                                                className={`
+                                                    px-4 py-2.5 rounded-2xl shadow-xl text-base leading-relaxed relative
+                                                    ${isMine
+                                                                                                 ? 'bg-linear-to-br from-primary/90 to-primary/80 text-white! rounded-br-none shadow-primary/80'
+                                                                                                 : 'bg-white/95 text-gray-800 border border-gray-100/50 rounded-bl-none shadow-gray-500'
+                                                                                             }
+                                                `}
+                                            >
                                                                                         <div className={`prose prose-base max-w-none ${isMine ? 'prose-invert prose-p:text-white' : 'prose-p:text-gray-800'}`}>
                                                                                             <MarkdownRenderer content={segment} className={isMine ? 'text-white!' : ''} />
                                                                                         </div>
@@ -756,6 +773,18 @@ export function ChatLayout() {
                                 )}
                             </div>
 
+                            {/* Scroll to Bottom Button */}
+                            {showScrollButton && (
+                                <button
+                                    type="button"
+                                    onClick={scrollToBottom}
+                                    className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 p-3 bg-primary text-primary-text rounded-full shadow-lg hover:bg-primary-hover transition-all animate-in fade-in zoom-in"
+                                    title="Scroll to bottom"
+                                >
+                                    <ArrowDown size={20} />
+                                </button>
+                            )}
+
                             {/* Participants Drawer */}
                             {showParticipants && (
                                 <div
@@ -764,7 +793,14 @@ export function ChatLayout() {
                                 >
                                     <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                         <h4 className="font-bold text-gray-800 text-sm uppercase tracking-wider">Group Members</h4>
-                                        <button onClick={() => setShowParticipants(false)} className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-sm transition-colors"><X size={18} /></button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowParticipants(false)}
+                                            className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-sm transition-colors"
+                                            title="Close"
+                                        >
+                                            <X size={18} />
+                                        </button>
                                     </div>
                                     <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
                                         {activeChat.participants?.filter(p => p.isActive).map(p => (
@@ -796,7 +832,7 @@ export function ChatLayout() {
                         </div>
 
                         {/* Input Area */}
-                        <div className="p-4 bg-white border-t border-gray-100 z-20">
+                        <div className="p-0.5 bg-white border-t border-gray-200 z-20">
                             <div className="flex items-end space-x-2">
                                 <div className="flex-1">
                                     {/* Staged Files Preview */}
@@ -818,6 +854,8 @@ export function ChatLayout() {
                                                         <span className="text-[8px] font-medium text-gray-400">{(file.size / 1024).toFixed(0)} KB</span>
                                                     </div>
                                                     <button
+                                                        type="button"
+                                                        title='Close'
                                                         onClick={() => removeStagedFile(i)}
                                                         className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
                                                     >
@@ -841,6 +879,7 @@ export function ChatLayout() {
                                 </div>
                                 <div className="flex flex-col space-y-2.5 pb-0.5 relative">
                                     <input
+                                        title='Upload File'
                                         type="file"
                                         id="chat-file-upload"
                                         className="hidden"
@@ -888,6 +927,8 @@ export function ChatLayout() {
                             className="max-w-full max-h-[90vh] object-contain rounded-sm shadow-2xl"
                         />
                         <button
+                            title='Close'
+                            type='button'
                             onClick={() => setPreviewImageUrl(null)}
                             className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
                         >

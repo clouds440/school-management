@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { MessageSquareDot, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useSocket } from '@/hooks/useSocket';
-import { api } from '@/lib/api';
+import { getUserChatsCached, insertOrUpdateChatFromMessage, getCachedChats, markAsReadGuard } from '@/lib/chatStore';
 import { BrandIcon } from '../ui/Brand';
-import { Chat, ChatMessage, Role } from '@/types';
+import { Chat, ChatMessage } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 
@@ -28,7 +28,7 @@ export function ChatDropdown() {
         if (!token) return;
         const fetchChats = async () => {
             try {
-                const data = await api.chat.getUserChats(token);
+                const data = await getUserChatsCached(token);
                 setChats(data);
                 const count = data.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
                 setUnreadCount(count);
@@ -46,15 +46,16 @@ export function ChatDropdown() {
             const message = newMsg as ChatMessage & { chat?: { id: string, name: string, type: string } };
 
             // Update unread count if sender is not current user
-            if (message.senderId !== user?.id) {
-                setUnreadCount(prev => prev + 1);
-            }
+            if (message.senderId !== user?.id) setUnreadCount(prev => prev + 1);
 
             // Update chats state to show last message and move chat to top
             setChats(prevChats => {
                 const chatIndex = prevChats.findIndex(c => c.id === message.chatId);
                 if (chatIndex === -1) {
-                    if (token) api.chat.getUserChats(token).then(setChats).catch(console.error);
+                    // Insert placeholder from message instead of refetching
+                    insertOrUpdateChatFromMessage(message);
+                    const cached = getCachedChats();
+                    if (cached) return cached;
                     return prevChats;
                 }
 
@@ -178,7 +179,9 @@ export function ChatDropdown() {
                                 {chats.slice(0, 5).map((chat) => {
                                     const otherParticipant = chat.participants?.find(p => p.userId !== user.id)?.user;
                                     const displayName = chat.type === 'GROUP' ? chat.name : (otherParticipant?.name || 'Unknown User');
-                                    const lastMessage = chat.messages?.[0];
+                                        const lastMessage = chat.messages?.[0];
+                                        const heardKey = `chat_heard_${user.id}`;
+                                        const heardAt = typeof window !== 'undefined' ? Number(localStorage.getItem(heardKey) || 0) : 0;
 
                                     return (
                                         <Link
@@ -186,7 +189,7 @@ export function ChatDropdown() {
                                             key={chat.id}
                                             onClick={() => {
                                                 setIsOpen(false);
-                                                if (token) api.chat.markAsRead(chat.id, '', token).catch(console.error);
+                                                if (token) markAsReadGuard(chat.id, '', token);
                                             }}
                                             className="flex items-start p-4 hover:bg-gray-50 transition-colors cursor-pointer"
                                         >
@@ -212,12 +215,17 @@ export function ChatDropdown() {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-xs text-gray-500 truncate mt-0.5">
+                                                <p className="text-xs truncate mt-0.5">
                                                     {lastMessage ? (
-                                                        <span className={lastMessage.senderId !== user.id && lastMessage.createdAt > (localStorage.getItem(`chat_heard_${user.id}`) || '') ? 'font-medium text-gray-800' : ''}>
-                                                            {lastMessage.senderId === user.id ? 'You: ' : (chat.type === 'GROUP' ? `${lastMessage.sender?.name || 'Unknown'}: ` : '')}
-                                                            {lastMessage.content}
-                                                        </span>
+                                                        // If message was deleted, show a clear deleted label instead of content
+                                                        lastMessage.deletedAt ? (
+                                                            <span className="italic text-gray-600 bg-gray-50/60 rounded px-1 py-px">Message deleted</span>
+                                                        ) : (
+                                                            <span className={((lastMessage.senderId !== user.id) && (new Date(lastMessage.createdAt).getTime() > heardAt)) ? 'font-medium text-gray-800' : 'text-gray-500'}>
+                                                                {lastMessage.senderId === user.id ? 'You: ' : (chat.type === 'GROUP' ? `${lastMessage.sender?.name || 'Unknown'}: ` : '')}
+                                                                {lastMessage.content}
+                                                            </span>
+                                                        )
                                                     ) : (
                                                         <span className="italic text-gray-400">No messages yet</span>
                                                     )}

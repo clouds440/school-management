@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { ShieldOff, ShieldAlert, ShieldCheck, Building2, MapPin, Mail, Calendar, LucideIcon, Tag, Phone, Info, Hash, Clock, GraduationCap, BookOpen, School, Library, MonitorPlay, Pencil, Send } from 'lucide-react';
 import { api } from '@/lib/api';
+import statsStore from '@/lib/statsStore';
 import { Organization, OrgStatus } from '@/types';
 import { getPublicUrl } from '@/lib/utils';
 import { TableActions, AdminAction } from '@/components/ui/TableActions';
@@ -109,7 +110,11 @@ export default function OrganizationsPage() {
             await api.admin.approveOrganization(id, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: `${name} approved successfully`, type: 'success' } });
             refresh();
-            api.admin.getAdminStats(token!).then(data => dispatch({ type: 'STATS_SET_ADMIN', payload: data })).catch(console.error);
+            if (token) {
+                statsStore.fetchAll(token).then(({ admin }) => {
+                    if (admin) dispatch({ type: 'STATS_SET_ADMIN', payload: admin });
+                }).catch(console.error);
+            }
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Failed to approve organization';
             dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });

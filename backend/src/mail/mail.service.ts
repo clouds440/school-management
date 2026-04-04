@@ -967,7 +967,7 @@ export class MailService {
         if (isAdminSender && isNonAdminViewer) {
             return {
                 ...user,
-                name: 'EduManage Team',
+                name: 'EduVerse Team',
                 email: user.role === Role.SUPER_ADMIN ? 'System Admin' : 'Platform Admin',
                 avatarUrl: null,
             };

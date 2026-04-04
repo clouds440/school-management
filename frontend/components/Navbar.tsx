@@ -24,7 +24,7 @@ export default function Navbar() {
         pathname?.split('/').length > 2; // Matches /[orgSlug]/something OR /admin/something
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-100 flex items-center justify-between pl-2 pr-4 py-3 md:pr-10 backdrop-blur-xl bg-white/80 border-b border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.03)] h-16 transition-all duration-300">
+        <nav className="fixed top-0 left-0 right-0 z-100 flex items-center justify-between pl-2 pr-4 py-3 md:pr-10 backdrop-blur-xl bg-secondary/80 border-b border-gray-500 shadow-gray-500 shadow-md h-16 transition-all duration-300">
             <div className="flex space-x-2">
                 {isDashboard && (
                     <button

@@ -1,11 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class RemindersService {
-    private readonly logger = new Logger(RemindersService.name);
 
     constructor(
         private readonly prisma: PrismaService,
@@ -17,9 +16,7 @@ export class RemindersService {
      * This ensures students get a single notification one day before the deadline.
      */
     @Cron(CronExpression.EVERY_HOUR)
-    async checkDueSoonAssessments() {
-        this.logger.log('Executing Cron Job: checkDueSoonAssessments');
-
+    async checkDueSoonAssessment() {
         const now = new Date();
         const tomorrowStart = new Date(now.getTime() + 23.5 * 60 * 60 * 1000);
         const tomorrowEnd = new Date(now.getTime() + 24.5 * 60 * 60 * 1000);
@@ -51,11 +48,9 @@ export class RemindersService {
             }
         });
 
-        this.logger.log(`Found ${assessments.length} assessment(s) due in ~24 hours.`);
-
         for (const assessment of assessments) {
             const enrollments = assessment.section.enrollments;
-            
+
             for (const enrollment of enrollments) {
                 const studentUser = enrollment.student.user;
                 
@@ -84,7 +79,7 @@ export class RemindersService {
                         actionUrl: `/assessments/${assessment.id}`,
                         metadata: { assessmentId: assessment.id }
                     });
-                    this.logger.log(`Notified student ${studentUser.id} about assessment ${assessment.id}`);
+                    
                 }
             }
         }

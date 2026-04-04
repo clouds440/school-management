@@ -159,19 +159,30 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
 
         fetchAllData();
 
+        // Debounce global refreshes to avoid storms when socket events flood
+        const timerRef: { current: number | null } = { current: null };
+        const scheduleFetch = () => {
+            if (timerRef.current) window.clearTimeout(timerRef.current);
+            timerRef.current = window.setTimeout(() => {
+                fetchAllData();
+                timerRef.current = null;
+            }, 1000);
+        };
+
         const unsubs = [
-            subscribe('unread:update', fetchAllData),
-            subscribe('mail:new', fetchAllData),
-            subscribe('chat:message', fetchAllData),
-            subscribe('chat:read', fetchAllData)
+            subscribe('unread:update', scheduleFetch),
+            subscribe('mail:new', scheduleFetch),
+            subscribe('chat:message', scheduleFetch),
+            subscribe('chat:read', scheduleFetch)
         ];
 
-        const refreshOnEvent = () => fetchAllData();
+        const refreshOnEvent = () => scheduleFetch();
         window.addEventListener('stats-updated', refreshOnEvent);
 
         return () => {
             unsubs.forEach(u => u());
             window.removeEventListener('stats-updated', refreshOnEvent);
+            if (timerRef.current) window.clearTimeout(timerRef.current);
         };
     }, [token, user?.role, user?.id, dispatch, subscribe]);
 

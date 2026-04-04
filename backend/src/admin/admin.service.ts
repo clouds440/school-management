@@ -144,8 +144,8 @@ export class AdminService {
         });
 
         if (orgAdmin) {
-            let subject = `Welcome to EduManage: ${org.name}`;
-            let message = `Congratulations! Your organization **${org.name}** has been approved. You now have full access to your dashboard.\n\nWelcome to the EduManage community!`;
+            let subject = `Welcome to EduVerse: ${org.name}`;
+            let message = `Congratulations! Your organization **${org.name}** has been approved. You now have full access to your dashboard.\n\nWelcome to the EduVerse community!`;
             
             if (org.status === OrgStatus.REJECTED) {
                 subject = `Re-approval of Your Organization: ${org.name}`;

@@ -144,7 +144,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     {link.label}
                                 </span>
                                 {link.badge !== undefined && (
-                                    <span className={`${!effectiveExpanded ? 'hidden' : 'ml-auto bg-sidebar-active-text/20'} px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter text-sidebar-text animate-in fade-in duration-300`}>
+                                    <span className={`${!effectiveExpanded ? 'hidden' : 'ml-auto'} px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter animate-in fade-in duration-300 ${link.badge === 0 ? 'bg-gray-200 text-gray-500' : 'bg-sidebar-active-text/20 text-sidebar-text'}`}>
                                         {link.badge}
                                     </span>
                                 )}
@@ -180,11 +180,10 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                             >
                                 <Mail className="w-4 h-4 shrink-0" />
                                 {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Mail</span>}
-                                {mailCount.unread > 0 && (
-                                    <span className={`ml-auto bg-red-500 text-white ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
-                                        {mailCount.unread > 99 ? '99+' : mailCount.unread}
-                                    </span>
-                                )}
+                                {/* Always show a mail count; gray when zero */}
+                                <span className={`ml-auto ${mailCount.unread > 0 ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-500'} ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
+                                    {mailCount.unread > 99 ? '99+' : mailCount.unread}
+                                </span>
                             </Link>
                         )}
                         <Link
@@ -228,6 +227,8 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
                 <button
+                    type='button'
+                    title='Toggle Sidebar'
                     onClick={() => setIsMobileOpen(true)}
                     className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-primary text-primary-text rounded-sm shadow-xl border-2 border-white/20 active:scale-95 transition-all hover:bg-primary-hover"
                 >

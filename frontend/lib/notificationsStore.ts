@@ -1,0 +1,139 @@
+import { api } from './api';
+import { Notification } from '@/types';
+
+const cache: { items: Notification[]; unreadCount: number } = { items: [], unreadCount: 0 };
+const listeners = new Set<() => void>();
+const inFlightMark = new Set<string>();
+let inFlightMarkAll = false;
+
+function notify() {
+    listeners.forEach(l => l());
+}
+
+export const notificationsStore = {
+    async fetchAll(token?: string) {
+        if (!token) return cache;
+        try {
+            const res = await api.notifications.getUserNotifications(token, { limit: 50 });
+            let items: Notification[] = res.data || [];
+
+            // Reflect optimistic single-item marks locally
+            if (inFlightMark.size > 0) {
+                items = items.map(n => inFlightMark.has(n.id) ? { ...n, isRead: true } : n);
+            }
+
+            // If a mark-all is in flight, treat items as read locally
+            if (inFlightMarkAll) {
+                items = items.map(n => ({ ...n, isRead: true }));
+            }
+
+            cache.items = items;
+            cache.unreadCount = inFlightMarkAll ? 0 : (res.unreadCount || cache.items.filter((n: Notification) => !n.isRead).length);
+            // Debug: surface fetch results for investigation
+            try { console.debug('[notificationsStore] fetchAll -> items:', cache.items.length, 'unread:', cache.unreadCount); } catch (e) {}
+            notify();
+            return cache;
+        } catch (err) {
+            console.error('notificationsStore.fetchAll error', err);
+            throw err;
+        }
+    },
+
+    getAll() {
+        return { ...cache, items: [...cache.items] };
+    },
+
+    subscribe(fn: () => void) {
+        listeners.add(fn);
+        return () => listeners.delete(fn);
+    },
+
+    // Add incoming notification (socket)
+    applyNew(notif: Notification) {
+        // Avoid duplicate insertions
+        const exists = cache.items.find(n => n.id === notif.id);
+        if (exists) {
+            const updated = { ...exists, ...notif } as Notification;
+            const idx = cache.items.findIndex(n => n.id === notif.id);
+            const arr = [...cache.items];
+            arr.splice(idx, 1);
+            arr.unshift(updated);
+            cache.items = arr.slice(0, 50);
+            try { console.debug('[notificationsStore] applyNew (existing) id=', notif.id); } catch (e) {}
+            notify();
+            return;
+        }
+
+        const alreadyMarked = inFlightMark.has(notif.id);
+        cache.items = [{ ...(alreadyMarked ? { ...notif, isRead: true } : notif) }, ...cache.items].slice(0, 50);
+        if (!notif.isRead && !alreadyMarked && !inFlightMarkAll) {
+            cache.unreadCount = (cache.unreadCount || 0) + 1;
+        }
+        try { console.debug('[notificationsStore] applyNew id=', notif.id, 'isRead=', !!notif.isRead, 'alreadyMarked=', alreadyMarked); } catch (e) {}
+        notify();
+    },
+
+    applyRead(notificationId: string) {
+        const idx = cache.items.findIndex(n => n.id === notificationId);
+        if (idx === -1) {
+            // Unknown item; nothing to adjust locally
+            try { console.debug('[notificationsStore] applyRead unknown id=', notificationId); } catch (e) {}
+            notify();
+            return;
+        }
+        const existing = cache.items[idx];
+        if (!existing.isRead) {
+            cache.items = cache.items.map(n => n.id === notificationId ? { ...n, isRead: true } : n);
+            cache.unreadCount = Math.max(0, (cache.unreadCount || 0) - 1);
+            try { console.debug('[notificationsStore] applyRead id=', notificationId, 'newUnread=', cache.unreadCount); } catch (e) {}
+            notify();
+        }
+    },
+
+    applyReadAll() {
+        cache.items = cache.items.map(n => ({ ...n, isRead: true }));
+        cache.unreadCount = 0;
+        notify();
+    },
+
+    // Guarded mark-as-read to avoid duplicate API calls
+    async markAsReadGuard(id: string, token?: string) {
+        if (!token) return;
+        // If already marked locally, skip
+        const existing = cache.items.find(n => n.id === id);
+        if (existing && existing.isRead) return;
+        if (inFlightMark.has(id)) return;
+        inFlightMark.add(id);
+        // Optimistic local update
+        try {
+            this.applyRead(id);
+            await api.notifications.markAsRead(id, token);
+        } catch (err) {
+            console.error('markAsReadGuard error', err);
+            // Resync from server to ensure accurate state
+            try { await this.fetchAll(token); } catch (e) { /* swallow */ }
+        } finally {
+            inFlightMark.delete(id);
+        }
+    },
+
+    async markAllAsReadGuard(token?: string) {
+        if (!token) return;
+        if ((cache.unreadCount || 0) === 0) return;
+        if (inFlightMarkAll) return;
+        inFlightMarkAll = true;
+        // Optimistic local update
+        try {
+            this.applyReadAll();
+            await api.notifications.markAllAsRead(token);
+        } catch (err) {
+            console.error('markAllAsReadGuard error', err);
+            // Resync from server
+            try { await this.fetchAll(token); } catch (e) { /* swallow */ }
+        } finally {
+            inFlightMarkAll = false;
+        }
+    }
+};
+
+export default notificationsStore;

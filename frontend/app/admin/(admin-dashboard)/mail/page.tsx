@@ -12,6 +12,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { MailStatusBadge, MailPriorityBadge, getMailRowClassName } from '@/components/mail/MailStatusBadge';
 import { MailDetailsModal } from '@/components/mail/MailDetailsModal';
+import notificationsStore from '@/lib/notificationsStore';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { useSocket } from '@/hooks/useSocket';
 import { Loading } from '@/components/ui/Loading';
@@ -109,17 +110,38 @@ export default function MailPage() {
     }, [searchParams]);
 
     useEffect(() => {
+        // Debounce full list refreshes to avoid storms from many socket events
+        const timerRef: { current: number | null } = { current: null };
+        const scheduleFetch = () => {
+            if (timerRef.current) window.clearTimeout(timerRef.current);
+            timerRef.current = window.setTimeout(() => {
+                fetchMails();
+                timerRef.current = null;
+            }, 1000);
+        };
+
         const unsubs = [
-            subscribe('unread:update', () => fetchMails()),
-            subscribe('mail:new', () => fetchMails()),
-            subscribe('mail:message', () => fetchMails()),
-            subscribe('mail:update', () => fetchMails())
+            subscribe('unread:update', scheduleFetch),
+            subscribe('mail:new', scheduleFetch),
+            subscribe('mail:message', scheduleFetch),
+            subscribe('mail:update', scheduleFetch)
         ];
-        return () => unsubs.forEach(u => u());
+
+        return () => {
+            unsubs.forEach(u => u());
+            if (timerRef.current) window.clearTimeout(timerRef.current);
+        };
     }, [subscribe, fetchMails]);
 
     const handleViewMail = (item: MailItem) => {
         setSelectedMailId(item.id);
+        try {
+            const { items } = notificationsStore.getAll();
+            const notif = items.find(n => n.metadata?.mailId === item.id || (n.actionUrl && n.actionUrl.includes(item.id)) || n.metadata?.entityId === item.id);
+            if (notif && token) {
+                notificationsStore.markAsReadGuard(notif.id, token).catch(() => {});
+            }
+        } catch (e) {}
     };
 
     const handlePageSizeChange = (newSize: number) => {

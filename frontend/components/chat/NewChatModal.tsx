@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { invalidateChats } from '@/lib/chatStore';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -167,6 +168,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
                 if (participantIds.length === 0) throw new Error('Please select at least one person');
                 await api.chat.addParticipants(chatId, participantIds, token);
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Participants added successfully', type: 'success' } });
+                invalidateChats();
                 onChatCreated?.(chatId);
                 resetForm();
                 onClose();
@@ -186,6 +188,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
             }
 
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Chat created successfully', type: 'success' } });
+            invalidateChats();
             onChatCreated?.(newChatId);
             resetForm();
             onClose();
