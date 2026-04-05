@@ -18,13 +18,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 <input
                     type={type}
                     className={`
-            block w-full rounded-sm border bg-primary/5 
+            block w-full rounded-sm border bg-white 
             ${Icon ? 'pl-11' : 'pl-4'} pr-4 py-3 
-            text-card-text placeholder-card-text/40 
+            text-card-text placeholder:text-card-text/40 
             transition-all duration-200 shadow-sm
             ${error 
-                ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/50 focus:border-primary focus:ring-primary/20 focus:bg-card' 
-                : 'border-gray-200/20 focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20'
+                ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/50 focus:border-primary focus:ring-primary/20' 
+                : 'border-gray-200 focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20'
             }
             sm:text-sm
             ${className || ''}

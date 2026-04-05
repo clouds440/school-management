@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { Grade, GradeStatus, UpdateGradeRequest, ApiError, Student } from '@/types';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -85,7 +86,7 @@ export default function GradingForm({
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="flex items-center gap-4 p-4 bg-primary/5 rounded-sm border border-white/10 mb-6 font-bold italic">
+            <div className="flex items-center gap-4 p-4 bg-card/30 rounded-sm border border-white/10 mb-6 font-bold italic text-card-text">
                 <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-black uppercase tracking-tighter italic">
                     {student.user.name.charAt(0)}
                 </div>
@@ -129,17 +130,13 @@ export default function GradingForm({
 
                 <div className="space-y-2">
                     <Label htmlFor="feedback">Feedback (Optional)</Label>
-                    <div className="relative group">
-                        <div className="absolute top-3.5 left-0 pl-3.5 flex items-start pointer-events-none text-card-text/40 group-focus-within:text-primary">
-                            <MessageCircle className="h-5 w-5" />
-                        </div>
-                        <textarea
-                            id="feedback"
-                            {...register('feedback')}
-                            className="w-full pl-11 pr-4 py-3 rounded-sm border border-white/10 ring-primary/10 bg-primary/5 text-card-text placeholder:text-card-text/40 focus:bg-card focus:border-primary focus:ring-4 sm:text-sm transition-all duration-200 shadow-sm min-h-[120px] outline-none font-bold"
-                            placeholder="Great job! Keep it up."
-                        />
-                    </div>
+                    <Textarea
+                        id="feedback"
+                        {...register('feedback')}
+                        icon={MessageCircle}
+                        placeholder="Great job! Keep it up."
+                        className="min-h-[120px]"
+                    />
                 </div>
             </div>
 

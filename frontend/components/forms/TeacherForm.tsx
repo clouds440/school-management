@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { Section, Teacher, TeacherStatus, Role, CreateTeacherRequest, UpdateTeacherRequest, ApiError } from '@/types';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -453,14 +454,13 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
 
                     <div className="space-y-2">
                         <Label>Residential Address</Label>
-                        <div className="relative group">
-                            <div className={`absolute top-3.5 left-0 pl-3.5 flex items-start pointer-events-none transition-colors ${errors.address ? 'text-red-500' : 'text-card-text/40 group-focus-within:text-primary'}`}>
-                                <MapPin className="h-5 w-5" />
-                            </div>
-                            <textarea
+                        <div>
+                            <Textarea
                                 {...register('address')}
-                                className={`w-full pl-11 pr-4 py-3 rounded-sm border ${errors.address ? 'border-red-500 ring-4 ring-red-500/10' : 'border-black/10 ring-primary/10'} bg-primary/5 text-card-text placeholder:text-card-text/40 focus:bg-card focus:border-primary focus:ring-4 sm:text-sm transition-all duration-200 shadow-sm min-h-[160px] outline-none font-bold`}
+                                error={!!errors.address}
+                                icon={MapPin}
                                 placeholder="123 Education Lane, Learning City"
+                                className="min-h-[160px]"
                             />
                         </div>
                         {errors.address && <p className="mt-1 text-xs text-red-500 font-bold">{errors.address.message}</p>}

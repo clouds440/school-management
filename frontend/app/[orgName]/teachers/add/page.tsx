@@ -28,13 +28,13 @@ export default function AddTeacherPage() {
                         <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-3xl md:text-5xl font-black text-primary/90 tracking-tight drop-shadow-lg text-left">Add Teacher</h1>
+                        <h1 className="text-3xl md:text-5xl font-black text-primary tracking-tight drop-shadow-lg text-left">Add Teacher</h1>
                         <p className="text-gray-600 font-bold opacity-80 mt-1 text-sm md:text-base text-left uppercase tracking-widest text-[10px]">CREATE NEW FACULTY ACCOUNT</p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-6 md:p-12 mb-10">
+            <div className="bg-secondary rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-black/20 p-6 md:p-12 mb-10">
                 <TeacherForm orgSlug={orgSlug} />
             </div>
         </div>

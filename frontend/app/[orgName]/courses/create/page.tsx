@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { LibraryBig, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { Role } from '@/types';
@@ -58,19 +59,19 @@ export default function CreateCoursePage() {
 
     return (
         <div className="flex flex-col w-full">
-            <div className="mb-6">
+            <div className="mb-6 p-2">
                 <div className="flex items-center gap-5">
-                    <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
-                        <LibraryBig className="w-10 h-10 text-white" />
+                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-sm border border-black/30 shadow-xl">
+                        <LibraryBig className="w-10 h-10 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-4xl font-black text-white tracking-tight drop-shadow-lg">Create Course</h1>
-                        <p className="text-white/80 font-bold opacity-80 mt-1 uppercase tracking-widest text-[10px]">ADD A NEW SUBJECT TO CATALOG</p>
+                        <h1 className="text-4xl font-black text-primary tracking-tight drop-shadow-lg">Create Course</h1>
+                        <p className="text-gray-600 font-bold opacity-80 mt-1 uppercase tracking-widest text-[10px]">ADD A NEW SUBJECT TO CATALOG</p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-white/20 p-8 md:p-12 mb-10">
+            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-black/20 p-8 md:p-12 mb-10 text-card-text">
                 <form onSubmit={handleSubmit} className="space-y-8">
                     <div className="space-y-8">
                         <div>
@@ -88,16 +89,14 @@ export default function CreateCoursePage() {
 
                         <div>
                             <Label>Description</Label>
-                            <div className="relative group">
-                                <div className="absolute top-3.5 left-0 pl-3.5 flex items-start pointer-events-none text-card-text/40 group-focus-within:text-primary transition-colors">
-                                    <FileText className="w-5 h-5" />
-                                </div>
-                                <textarea
+                            <div>
+                                <Label className="sr-only">Course Description</Label>
+                                <Textarea
                                     name="description"
                                     value={formData.description}
                                     onChange={handleChange}
                                     rows={4}
-                                    className="w-full pl-11 pr-4 py-3 rounded-sm border border-white/10 bg-primary/5 text-card-text placeholder:text-card-text/40 focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10 sm:text-sm transition-all duration-200 shadow-sm resize-none outline-none font-bold"
+                                    icon={FileText}
                                     placeholder="Brief description of the course content..."
                                 />
                             </div>

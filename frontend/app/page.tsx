@@ -15,7 +15,6 @@ import {
   LayoutDashboard,
   BookOpen,
   ArrowRight,
-  Sparkles,
   Zap,
   Globe
 } from 'lucide-react';
@@ -27,7 +26,14 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-auto bg-white">
       {/* Hero Section */}
-      <section className="relative pt-10 pb-16 md:pt-20 md:pb-40 overflow-hidden">
+      <section className="relative pt-10 pb-16 md:pt-20 md:pb-40 overflow-hidden" 
+        style={{ 
+          backgroundImage: `url('/assets/home-banner.png')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundBlendMode: 'overlay',
+          backgroundColor: 'rgba(180, 180, 210, 0.7)'
+        }}>
         <div className="absolute inset-0 z-0">
           <div className="absolute top-0 -left-1/4 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-primary/5 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-0 -right-1/4 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-secondary/10 rounded-full blur-3xl animate-pulse animation-delay-2000" />
@@ -42,7 +48,7 @@ export default function HomePage() {
             </Reveal>
 
             <Reveal delay={200}>
-              <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed font-medium">
+              <p className="text-lg md:text-xl text-gray-800 text-shadow-md max-w-2xl mx-auto leading-relaxed font-bold">
                 A unified, cloud-based ecosystem designed to bridge the gap between
                 administration, teachers, and students. Experience seamless school management.
               </p>
@@ -51,10 +57,9 @@ export default function HomePage() {
             <Reveal delay={300}>
               <div className="pt-4 flex flex-col items-center gap-6">
                 <HeroButtons />
-                <div className="flex flex-wrap justify-center items-center gap-4 text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-widest">
-                  <span className="flex items-center"><ShieldCheck className="w-3 h-3 mr-1 text-green-500" /> No Card Required</span>
-                  <span className="hidden sm:block text-gray-300">•</span>
-                  <span className="flex items-center"><Zap className="w-3 h-3 mr-1 text-yellow-500" /> 14-Day Free Trial</span>
+                <div className="flex flex-wrap justify-center items-center gap-4 text-[10px] md:text-xs text-gray-800 font-bold uppercase tracking-widest">
+                  <span className="flex items-center"><ShieldCheck className="w-4 h-4 mr-1 text-green-500" /> No Card Required</span>
+                  <span className="flex items-center"><Zap className="w-4 h-4 mr-1 text-yellow-500" /> 14-Day Free Trial</span>
                 </div>
               </div>
             </Reveal>

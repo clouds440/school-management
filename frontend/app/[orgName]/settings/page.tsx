@@ -132,12 +132,12 @@ export default function SettingsPage() {
         <div className="flex flex-1 flex-col max-w-7xl mx-auto w-full">
             <div className="mb-2">
                 <div className="mt-2 flex items-center gap-5">
-                    <div className="p-4 bg-white/20 backdrop-blur-md rounded-sm border border-white/30 shadow-xl">
-                        <Settings className="w-10 h-10 text-white" />
+                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-sm border border-black/30 shadow-xl">
+                        <Settings className="w-10 h-10 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-5xl font-black text-white tracking-tight drop-shadow-lg">Settings</h1>
-                        <p className="text-white font-bold opacity-80 mt-1 uppercase tracking-wider">Organization Profile & Configuration</p>
+                        <h1 className="text-5xl font-black text-primary tracking-tight drop-shadow-lg">Settings</h1>
+                        <p className="text-gray-600 font-bold opacity-80 mt-1 uppercase tracking-wider">Organization Profile & Configuration</p>
                     </div>
                 </div>
             </div>

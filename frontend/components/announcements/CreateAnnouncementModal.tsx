@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
 import { CustomSelect, DropdownOption } from '@/components/ui/CustomSelect';
 import { TargetType, Role, AnnouncementPriority } from '@/types';
@@ -147,11 +148,12 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
 
                 <div>
                     <Label>Message <span className="text-red-500">*</span></Label>
-                    <textarea
+                    <Textarea
                         required
                         value={body}
                         onChange={e => setBody(e.target.value)}
-                        className="w-full px-4 py-3 rounded-sm border border-white/10 bg-primary/5 text-card-text placeholder-card-text/40 transition-all duration-200 focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none h-32 text-sm font-bold"
+                        icon={Type}
+                        className="h-32"
                         placeholder="Type your message here..."
                     />
                 </div>
@@ -189,8 +191,8 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
                 {targetType !== TargetType.GLOBAL && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                         <Label>Select {targetType.toLowerCase().replace('_', ' ')} <span className="text-red-500">*</span></Label>
-                        {targetType === TargetType.ORG && !isPlatformAdmin ? (
-                            <div className="px-4 py-3 bg-primary/5 border border-white/10 rounded-sm text-sm font-bold text-card-text/60 flex items-center gap-2">
+                            {targetType === TargetType.ORG && !isPlatformAdmin ? (
+                            <div className="px-4 py-3 bg-card/80 border border-white/10 rounded-sm text-sm font-bold text-card-text/60 flex items-center gap-2">
                                 <Building2 className="w-4 h-4" />
                                 Current Organization
                             </div>
