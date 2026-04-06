@@ -77,10 +77,10 @@ export default function TeacherLandingPage() {
                 <div className="relative p-6 md:p-8 bg-card text-card-text backdrop-blur-3xl rounded-sm shadow-2xl border border-white/40 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
                         <div className="relative">
-                            <BrandIcon 
-                                variant="user" 
-                                size="hero" 
-                                user={displayUser} 
+                            <BrandIcon
+                                variant="user"
+                                size="hero"
+                                user={displayUser}
                                 className="w-20 h-20 md:w-24 md:h-24"
                             />
                         </div>
@@ -206,7 +206,6 @@ export default function TeacherLandingPage() {
                             {payload.role === Role.ORG_MANAGER && (
                                 <ActionLink href={`/${payload.orgSlug}/admin`} icon={ShieldCheck} label="Admin Portal" sub="Organization settings" primary />
                             )}
-                            <ActionLink href={`/${payload.orgSlug}/attendance`} icon={CheckCircle} label="Attendance" sub="Mark daily presence" />
                             <ActionLink href={`/${payload.orgSlug}/grades`} icon={FileText} label="Manage Grades" sub="Grade entry & reports" />
                             <ActionLink href={`/${payload.orgSlug}/sections`} icon={BookOpen} label="Assessments" sub="Create & manage tasks" />
                         </div>
