@@ -99,6 +99,7 @@ export default function MailPage() {
     useEffect(() => {
         if (!authLoading && user && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && token) {
             fetchMails();
+            api.notifications.clearCategory('MAIL', token).catch(console.error);
         }
     }, [authLoading, user, token, fetchMails]);
 

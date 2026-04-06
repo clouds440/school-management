@@ -91,4 +91,20 @@ export class NotificationsService {
 
         return result;
     }
+
+    async markCategoryAsRead(userId: string, category: 'CHAT' | 'MAIL') {
+        const typePrefix = category === 'CHAT' ? 'CHAT_' : 'MAIL_';
+        const result = await this.prisma.notification.updateMany({
+            where: {
+                userId,
+                isRead: false,
+                type: { startsWith: typePrefix }
+            },
+            data: { isRead: true }
+        });
+
+        this.events.emitToUser(userId, 'notification:read_all', { category });
+
+        return result;
+    }
 }

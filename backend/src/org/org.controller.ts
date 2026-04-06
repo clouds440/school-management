@@ -16,9 +16,8 @@ import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import * as fs from 'fs';
-import * as path from 'path';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import { OrgId } from '../common/decorators/org-id.decorator';
 import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateAssessmentDto } from './dto/update-assessment.dto';
@@ -50,20 +49,16 @@ export class OrgController {
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
     @Patch('settings/logo')
     @UseInterceptors(FileInterceptor('file', {
-        // Explicitly use disk storage so file.path is populated.
-        // orgId is read from req.user because JwtAuthGuard runs before interceptors.
-        storage: diskStorage({
-            destination: (req: AuthenticatedRequest, _file, cb) => {
+        storage: new CloudinaryStorage({
+            cloudinary: cloudinary,
+            params: (req: AuthenticatedRequest, _file: any) => {
                 const orgId = req.user?.organizationId ?? 'unknown';
-                const uploadPath = path.join(
-                    process.cwd(), 'uploads', 'orgs', orgId, 'orgLogo', orgId,
-                );
-                fs.mkdirSync(uploadPath, { recursive: true });
-                cb(null, uploadPath);
-            },
-            filename: (_req, file: Express.Multer.File, cb) => {
-                const sanitized = file.originalname.replace(/\s+/g, '-');
-                cb(null, `${Date.now()}-${sanitized}`);
+                const fileName = _file.originalname.replace(/\s+/g, '-').split('.').slice(0, -1).join('.');
+                return {
+                    folder: `school-management/orgs/${orgId}/orgLogo`,
+                    resource_type: 'auto',
+                    public_id: `${Date.now()}-${fileName}`,
+                };
             },
         }),
         limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB hard cap
@@ -316,18 +311,16 @@ export class OrgController {
     @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
     @Patch('users/:id/avatar')
     @UseInterceptors(FileInterceptor('file', {
-        storage: diskStorage({
-            destination: (req, file, cb) => {
+        storage: new CloudinaryStorage({
+            cloudinary: cloudinary,
+            params: (req: any, _file: any) => {
                 const userId = req.params.id as string;
-                const uploadPath = path.join(
-                    process.cwd(), 'uploads', 'users', userId, 'avatar',
-                );
-                fs.mkdirSync(uploadPath, { recursive: true });
-                cb(null, uploadPath);
-            },
-            filename: (_req, file, cb) => {
-                const sanitized = file.originalname.replace(/\s+/g, '-');
-                cb(null, `${Date.now()}-${sanitized}`);
+                const fileName = _file.originalname.replace(/\s+/g, '-').split('.').slice(0, -1).join('.');
+                return {
+                    folder: `school-management/users/${userId}/avatar`,
+                    resource_type: 'auto',
+                    public_id: `${Date.now()}-${fileName}`,
+                };
             },
         }),
         limits: { fileSize: 5 * 1024 * 1024 },

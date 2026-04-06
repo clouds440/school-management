@@ -108,7 +108,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
             label: 'Messages',
             href: '/admin/chat',
             icon: MessageSquare,
-            badge: undefined
+            badge: state.stats.chat && state.stats.chat.unread > 0 ? `${state.stats.chat.unread} New` : undefined
         });
 
         return adminLinks;

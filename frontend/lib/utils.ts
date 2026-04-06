@@ -19,19 +19,16 @@ export function getPublicUrl(path: string | null | undefined, updatedAt?: string
     const apiUrl = (process.env.NEXT_PUBLIC_API_URL!).replace(/\/+$/, '');
     const baseUrl = apiUrl.replace(/\/api$/, '');
 
-    // Ensure path starts with a slash if it doesn't already have one and isn't an absolute path
+    // Ensure path starts with a slash if it doesn't already have one
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
 
-    // Append timestamp for cache busting if provided
     let finalUrl = `${baseUrl}${normalizedPath}`;
 
-    // If the path is actually just a filename without /uploads/, it might be legacy or dynamic
-    // But getPublicUrl generally expects the relative path from the server root (e.g. /uploads/...)
-
+    // Append timestamp for cache busting if provided (mostly for local files)
     if (updatedAt) {
         const date = new Date(updatedAt);
         if (!isNaN(date.getTime())) {
-            finalUrl += `?t=${date.getTime()}`;
+            finalUrl += (finalUrl.includes('?') ? '&' : '?') + `t=${date.getTime()}`;
         }
     }
 

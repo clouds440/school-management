@@ -6,6 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import { User, Organization, Teacher } from '@prisma/client';
 import { Role, OrgStatus } from '../common/enums';
 import { PrismaService } from '../prisma/prisma.service';
+import { BCRYPT_ROUNDS } from '../common/utils';
 
 export type TokenUser = User & {
     organization?: Organization | null;
@@ -30,7 +31,7 @@ export class AuthService {
             throw new UnauthorizedException('Email already in use');
         }
 
-        const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+        const hashedPassword = await bcrypt.hash(registerDto.password, BCRYPT_ROUNDS);
 
         // Transaction to ensure both Org and User are created
         const result = await this.prisma.$transaction(async (tx) => {
@@ -123,7 +124,7 @@ export class AuthService {
             throw new UnauthorizedException('Incorrect old password');
         }
 
-        const hashedNew = await bcrypt.hash(newPass, 10);
+        const hashedNew = await bcrypt.hash(newPass, BCRYPT_ROUNDS);
         const updatedUser = await this.prisma.user.update({
             where: { id: userId },
             data: {

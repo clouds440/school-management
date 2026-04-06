@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import * as fs from 'fs';
-import * as path from 'path';
+
+export const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS!, 10);
 
 export interface PaginationOptions {
     page?: number;
@@ -50,32 +50,6 @@ export const formatPaginatedResponse = <T>(
     };
 };
 
-export const handleFileUpdate = async (
-    oldUrl: string | null,
-    file: Express.Multer.File,
-) => {
-    // 1. Delete old file from disk (best-effort)
-    if (oldUrl) {
-        const oldAbsolute = path.resolve(oldUrl.replace(/^\/uploads\//, 'uploads/'));
-        if (fs.existsSync(oldAbsolute)) {
-            try {
-                fs.unlinkSync(oldAbsolute);
-            } catch (err) {
-                console.error(`Failed to delete old file: ${oldAbsolute}`, err);
-            }
-        }
-    }
-
-    // 2. Derive portable relative path
-    const forwardSlash = file.path.replace(/\\/g, '/');
-    const uploadsIndex = forwardSlash.indexOf('uploads/');
-    const relativePath = uploadsIndex >= 0
-        ? forwardSlash.slice(uploadsIndex)
-        : forwardSlash;
-
-    return `/${relativePath}`;
-};
-
 export const extractUpdateFields = async <T extends Record<string, unknown>>(
     data: T,
     userFields: string[],
@@ -90,7 +64,7 @@ export const extractUpdateFields = async <T extends Record<string, unknown>>(
 
         if (userFields.includes(key)) {
             if (key === 'password' && typeof value === 'string' && value.trim() !== '') {
-                userData.password = await bcrypt.hash(value, 10);
+                userData.password = await bcrypt.hash(value, BCRYPT_ROUNDS);
             } else if (key === 'email') {
                 if (value !== existingUserEmail) {
                     userData.email = value;

@@ -7,6 +7,7 @@ export interface UploadedFileInfo {
   entityType: string;
   entityId: string;
   orgId: string;
+  publicId?: string;
   uploadedBy: string;
   createdAt: Date;
 }

@@ -16,7 +16,7 @@ import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateAssessmentDto } from './dto/update-assessment.dto';
 import * as bcrypt from 'bcrypt';
 import { FilesService } from '../files/files.service';
-import { getPaginationOptions, formatPaginatedResponse, handleFileUpdate, extractUpdateFields, PaginationOptions } from '../common/utils';
+import { getPaginationOptions, formatPaginatedResponse, extractUpdateFields, BCRYPT_ROUNDS, PaginationOptions } from '../common/utils';
 import { UpdateGradeDto } from './dto/update-grade.dto';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -95,7 +95,7 @@ export class OrgService {
         });
         if (!org) throw new NotFoundException('Organization not found');
 
-        const publicUrl = await handleFileUpdate(org.logoUrl, file);
+        const publicUrl = await this.filesService.replaceFile(org.logoUrl, file);
 
         // Save new file record via FilesService (for audit trail)
         await this.filesService.saveFile(
@@ -131,7 +131,7 @@ export class OrgService {
         });
         if (!user) throw new NotFoundException('User not found');
 
-        const publicUrl = await handleFileUpdate(user.avatarUrl, file);
+        const publicUrl = await this.filesService.replaceFile(user.avatarUrl, file);
 
         // Save new file record via FilesService (for audit trail)
         await this.filesService.saveFile(
@@ -299,7 +299,7 @@ export class OrgService {
             throw new ForbiddenException('Only Organization Admins can create Managers');
         }
 
-        const hashedPassword = await bcrypt.hash(data.password, 10);
+        const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
 
 
         // 2. Create User and Teacher in transaction
@@ -784,7 +784,7 @@ export class OrgService {
             throw new ConflictException(`Roll number "${data.rollNumber}" is already assigned to another student in this organization`);
         }
 
-        const hashedPassword = await bcrypt.hash(data.password, 10);
+        const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
 
         try {
             return await this.prisma.$transaction(async (prisma) => {

@@ -26,13 +26,13 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-auto bg-white">
       {/* Hero Section */}
-      <section className="relative pt-10 pb-16 md:pt-20 md:pb-40 overflow-hidden" 
-        style={{ 
+      <section className="relative pt-10 pb-16 md:pt-20 md:pb-40 overflow-hidden"
+        style={{
           backgroundImage: `url('/assets/home-banner.png')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundBlendMode: 'overlay',
-          backgroundColor: 'rgba(180, 180, 210, 0.7)'
+          backgroundColor: 'rgba(180, 180, 220, 0.95)'
         }}>
         <div className="absolute inset-0 z-0">
           <div className="absolute top-0 -left-1/4 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-primary/5 rounded-full blur-3xl animate-pulse" />

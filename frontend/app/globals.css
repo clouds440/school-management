@@ -349,4 +349,48 @@ body {
   .dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
   }
+
+  /* --- Chat Highlight & Image Enhancements --- */
+  @keyframes highlight-float {
+    0% {
+      transform: translateY(0);
+    }
+
+    15% {
+      transform: translateY(-8px);
+    }
+
+    30% {
+      transform: translateY(0);
+    }
+
+    45% {
+      transform: translateY(-8px);
+    }
+
+    60% {
+      transform: translateY(-1px);
+    }
+
+    100% {
+      transform: translateY(0);
+    }
+  }
+
+  .animate-highlight-float {
+    animation: highlight-float 3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .naked-image-container img {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .naked-image-container img:hover {
+    opacity: 0.95;
+  }
 }

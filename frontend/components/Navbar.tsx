@@ -5,10 +5,9 @@ import { usePathname } from 'next/navigation';
 import { LogIn, UserPlus, Menu, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
-import { Brand, BrandIcon } from './ui/Brand';
+import { Brand } from './ui/Brand';
 import { NotificationDropdown } from './notifications/NotificationDropdown';
 import { AnnouncementDropdown } from './announcements/AnnouncementDropdown';
-import { ChatDropdown } from './chat/ChatDropdown';
 import { useGlobal } from '@/context/GlobalContext';
 
 
@@ -48,7 +47,6 @@ export default function Navbar() {
                 {token && user ? (
                     <div className="flex items-center space-x-1 md:space-x-3 pr-2">
                         <AnnouncementDropdown />
-                        {isApproved && <ChatDropdown />}
                         <NotificationDropdown />
                     </div>
                 ) : (

@@ -4,7 +4,7 @@ import { OrgStatus, Role, MailStatus, MailCategory } from '../common/enums';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { getPaginationOptions, formatPaginatedResponse, mapStatusCounts, PaginationOptions } from '../common/utils';
+import { getPaginationOptions, formatPaginatedResponse, mapStatusCounts, BCRYPT_ROUNDS, PaginationOptions } from '../common/utils';
 import { MailService } from '../mail/mail.service';
 import { MailUser } from '../mail/interfaces/mail-user.interface';
 
@@ -381,7 +381,7 @@ export class AdminService {
         const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
         if (existing) throw new UnauthorizedException('Email already in use');
 
-        const hashedPassword = await bcrypt.hash(data.password, 10);
+        const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
         return this.prisma.user.create({
             data: {
                 email: data.email,
@@ -403,7 +403,7 @@ export class AdminService {
         if (data.email) updateData.email = data.email;
         if (data.phone) updateData.phone = data.phone;
         if (data.password) {
-            updateData.password = await bcrypt.hash(data.password, 10);
+            updateData.password = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
         }
 
         return this.prisma.user.update({
@@ -435,7 +435,7 @@ export class AdminService {
             throw new UnauthorizedException('Incorrect old password');
         }
 
-        const hashedNew = await bcrypt.hash(newPass, 10);
+        const hashedNew = await bcrypt.hash(newPass, BCRYPT_ROUNDS);
         const updatedUser = await this.prisma.user.update({
             where: { id: userId },
             data: {

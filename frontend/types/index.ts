@@ -7,6 +7,8 @@ export interface PaginatedResponse<T> {
     totalPages: number;
     currentPage: number;
     counts?: Record<string, number>;
+    hasMoreBefore?: boolean;
+    hasMoreAfter?: boolean;
 }
 
 export interface User {
@@ -483,6 +485,8 @@ export interface ChatMessage {
     sender?: User;
     deletedBy?: User;
     chat?: Partial<Chat>;
+    replyToId?: string | null;
+    replyTo?: ChatMessage | null;
 }
 
 export interface Chat {

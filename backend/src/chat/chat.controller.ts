@@ -77,12 +77,16 @@ export class ChatController {
         @Request() req: AuthenticatedRequest,
         @Query('page') page?: string,
         @Query('limit') limit?: string,
+        @Query('aroundId') aroundId?: string,
     ) {
         return this.chatService.getChatMessages(
             id,
             { id: req.user.id, role: req.user.role, organizationId: req.user.organizationId },
-            page ? parseInt(page, 10) : 1,
-            limit ? parseInt(limit, 10) : 50
+            {
+                page: page ? parseInt(page, 10) : 1,
+                limit: limit ? parseInt(limit, 10) : 50,
+                aroundId
+            }
         );
     }
 

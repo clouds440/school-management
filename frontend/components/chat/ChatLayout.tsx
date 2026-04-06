@@ -1,19 +1,19 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useUI } from '@/context/UIContext';
 import { useSocket } from '@/hooks/useSocket';
 import { api } from '@/lib/api';
-import { getUserChatsCached, invalidateChats, insertOrUpdateChatFromMessage, markAsReadGuard, getCachedChats } from '@/lib/chatStore';
+import { getUserChatsCached, insertOrUpdateChatFromMessage, markAsReadGuard, getCachedChats } from '@/lib/chatStore';
 import { BrandIcon } from '../ui/Brand';
-import { Chat, ChatMessage, ChatType, Role, User } from '@/types';
+import { Chat, ChatMessage, ChatType, PaginatedResponse, Role, User } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import {
-    Search, Plus, MessageSquarePlus, Send, MoreVertical, X, Loader2, Image as ImageIcon,
-    UserMinus, Trash2, Shield, Info, ChevronLeft, Check, CheckCheck, ArrowDown
+    Search, Plus, MessageSquarePlus, Send, MoreVertical, X, Loader2, FileUp,
+    UserMinus, Trash2, Shield, Info, ChevronLeft, Check, CheckCheck, ArrowDown, FileText, Reply, ArrowUp
 } from 'lucide-react';
 import { MarkdownEditor } from '../ui/MarkdownEditor';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
@@ -26,8 +26,8 @@ import { ChatSettingsModal } from './ChatSettingsModal';
 export function ChatLayout() {
     const { token, user } = useAuth();
     const { dispatch } = useGlobal();
-    const { isDesktop, mounted } = useUI();
-    const { socket, subscribe, joinRoom, leaveRoom } = useSocket({ token, userId: user?.id, enabled: !!token });
+    const { isDesktop } = useUI();
+    const { subscribe, joinRoom, leaveRoom } = useSocket({ token, userId: user?.id, enabled: !!token });
     const searchParams = useSearchParams();
     const initialChatId = searchParams.get('id');
 
@@ -43,13 +43,14 @@ export function ChatLayout() {
     const [isUploading, setIsUploading] = useState(false);
     const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+    const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [showParticipants, setShowParticipants] = useState(false);
+    const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
 
     // Modal state for image preview
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
-    // Confirm Dialog State
     const [confirmConfig, setConfirmConfig] = useState<{
         isOpen: boolean;
         title: string;
@@ -63,21 +64,44 @@ export function ChatLayout() {
         onConfirm: () => { },
     });
 
+    // Pagination & Smart Scroll States
+    const [messagesPage, setMessagesPage] = useState(1);
+    const [hasMoreMessages, setHasMoreMessages] = useState(true);
+    const [hasMoreAfter, setHasMoreAfter] = useState(false);
+    const [unreadSinceScroll, setUnreadSinceScroll] = useState(0);
+    const [isAtBottom, setIsAtBottom] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [isLoadingNewer, setIsLoadingNewer] = useState(false);
+    const [isViewingHistory, setIsViewingHistory] = useState(false);
+
     // Refs
     const participantsRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<import('../ui/MarkdownEditor').MarkdownEditorHandle>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+        messagesEndRef.current?.scrollIntoView({ behavior });
+        setUnreadSinceScroll(0);
+        if (activeChatId && token) {
+            markAsReadGuard(activeChatId, '', token);
+        }
     };
 
-    const [showScrollButton, setShowScrollButton] = useState(false);
     const handleScroll = () => {
         if (!messagesContainerRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
-        setShowScrollButton(scrollHeight - scrollTop - clientHeight > 300);
+
+        // Use a 50px threshold for "at bottom"
+        const atBottom = scrollHeight - scrollTop - clientHeight < 50;
+        setIsAtBottom(atBottom);
+
+        if (atBottom && unreadSinceScroll > 0) {
+            setUnreadSinceScroll(0);
+            if (activeChatId && token) {
+                markAsReadGuard(activeChatId, '', token);
+            }
+        }
     };
 
     // Click outside to close participants
@@ -133,25 +157,99 @@ export function ChatLayout() {
 
     useEffect(() => {
         fetchChats();
+        if (token) {
+            api.notifications.clearCategory('CHAT', token).catch(console.error);
+        }
     }, [token]);
 
-    // 2. Fetch Messages for Active Chat
-    useEffect(() => {
-        if (!token || !activeChatId) return;
+    // 2. Fetch Messages for Active Chat (Initial)
+    const fetchInitialMessages = useCallback(async (chatId: string) => {
+        if (!token) return;
         setIsLoadingMessages(true);
-        api.chat.getChatMessages(activeChatId, token, { limit: 50 })
-            .then(res => {
-                setMessages(res.data);
-                setIsLoadingMessages(false);
-                setTimeout(scrollToBottom, 100);
-                markAsReadGuard(activeChatId, '', token);
-            })
-            .catch(err => {
-                console.error(err);
-                setIsLoadingMessages(false);
-                dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load messages', type: 'error' } });
+        setMessagesPage(1);
+        setHasMoreMessages(true);
+        setHasMoreAfter(false);
+        setUnreadSinceScroll(0);
+        setIsViewingHistory(false);
+
+        try {
+            const res = await api.chat.getChatMessages(chatId, token, { limit: 35, page: 1 });
+            setMessages(res.data);
+            setHasMoreMessages(res.hasMoreBefore ?? (res.currentPage < res.totalPages));
+            setHasMoreAfter(res.hasMoreAfter ?? false);
+            setTimeout(() => scrollToBottom('instant'), 100);
+            markAsReadGuard(chatId, '', token);
+        } catch (err) {
+            console.error(err);
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load messages', type: 'error' } });
+        } finally {
+            setIsLoadingMessages(false);
+        }
+    }, [token, dispatch]);
+
+    useEffect(() => {
+        if (!activeChatId) return;
+        fetchInitialMessages(activeChatId);
+    }, [activeChatId, fetchInitialMessages]);
+
+    const loadEarlierMessages = async () => {
+        if (!token || !activeChatId || isLoadingMore || !hasMoreMessages) return;
+
+        const container = messagesContainerRef.current;
+        const previousScrollHeight = container?.scrollHeight || 0;
+
+        setIsLoadingMore(true);
+
+        try {
+            let res: PaginatedResponse<ChatMessage>;
+            if (isViewingHistory && messages.length > 0) {
+                // Fetch context before the first message
+                res = await api.chat.getChatMessages(activeChatId, token, {
+                    limit: 35,
+                    aroundId: messages[0].id
+                });
+                const newItems = res.data.filter(m => !messages.some(ex => ex.id === m.id));
+                setMessages(prev => [...newItems, ...prev]);
+                setHasMoreMessages(res.hasMoreBefore ?? false);
+            } else {
+                const nextPage = messagesPage + 1;
+                res = await api.chat.getChatMessages(activeChatId, token, { limit: 35, page: nextPage });
+                setMessages(prev => [...res.data, ...prev]);
+                setMessagesPage(nextPage);
+                setHasMoreMessages(res.hasMoreBefore ?? (res.currentPage < res.totalPages));
+            }
+
+            // Preserve scroll position
+            setTimeout(() => {
+                if (container) {
+                    container.scrollTop = container.scrollHeight - previousScrollHeight;
+                }
+            }, 0);
+        } catch (err) {
+            console.error('Failed to load more messages', err);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
+
+    const loadNewerMessages = async () => {
+        if (!token || !activeChatId || isLoadingNewer || !hasMoreAfter || messages.length === 0) return;
+
+        setIsLoadingNewer(true);
+        try {
+            const res = await api.chat.getChatMessages(activeChatId, token, {
+                limit: 35,
+                aroundId: messages[messages.length - 1].id
             });
-    }, [token, activeChatId, dispatch]);
+            const newItems = res.data.filter(m => !messages.some(ex => ex.id === m.id));
+            setMessages(prev => [...prev, ...newItems]);
+            setHasMoreAfter(res.hasMoreAfter ?? false);
+        } catch (err) {
+            console.error('Failed to load newer messages', err);
+        } finally {
+            setIsLoadingNewer(false);
+        }
+    };
 
     // 3. Setup socket listen
     useEffect(() => {
@@ -165,39 +263,47 @@ export function ChatLayout() {
                     if (prev.some(m => m.id === message.id)) return prev;
                     return [...prev, message];
                 });
-                setTimeout(scrollToBottom, 50);
+
+                // Smart scroll: only scroll if user is already at the bottom
+                // Also track unread messages if user is scrolled up
+                if (isAtBottom || message.senderId === user.id) {
+                    setTimeout(() => scrollToBottom(), 50);
+                } else {
+                    setUnreadSinceScroll(prev => prev + 1);
+                }
+
                 if (message.senderId !== user.id) {
                     markAsReadGuard(activeChatId, message.id, token);
                 }
             }
 
-                setChats(prevChats => {
-                    const chatIndex = prevChats.findIndex(c => c.id === message.chatId);
-                    if (chatIndex > -1) {
-                        const updatedChat = {
-                            ...prevChats[chatIndex],
-                            updatedAt: new Date().toISOString(),
-                            messages: [message],
-                            unreadCount: (message.chatId !== activeChatId && message.senderId !== user.id)
-                                ? (prevChats[chatIndex].unreadCount || 0) + 1
-                                : 0
-                        };
-                        const newChats = [...prevChats];
-                        newChats.splice(chatIndex, 1);
-                        return [updatedChat, ...newChats];
-                    }
+            setChats(prevChats => {
+                const chatIndex = prevChats.findIndex(c => c.id === message.chatId);
+                if (chatIndex > -1) {
+                    const updatedChat = {
+                        ...prevChats[chatIndex],
+                        updatedAt: new Date().toISOString(),
+                        messages: [message],
+                        unreadCount: (message.chatId !== activeChatId && message.senderId !== user.id)
+                            ? (prevChats[chatIndex].unreadCount || 0) + 1
+                            : 0
+                    };
+                    const newChats = [...prevChats];
+                    newChats.splice(chatIndex, 1);
+                    return [updatedChat, ...newChats];
+                }
 
-                    // If chat isn't present, insert a lightweight placeholder from message
-                    insertOrUpdateChatFromMessage(message);
-                    const cached = getCachedChats();
-                    if (cached) return cached;
-                    return prevChats;
-                });
+                // If chat isn't present, insert a lightweight placeholder from message
+                insertOrUpdateChatFromMessage(message);
+                const cached = getCachedChats();
+                if (cached) return cached;
+                return prevChats;
+            });
         });
 
         const unsubRead = subscribe('chat:read', (data: unknown) => {
             const readData = data as { chatId: string; userId: string; messageId: string };
-                if (readData.chatId === activeChatId) {
+            if (readData.chatId === activeChatId) {
                 setMessages(prev => prev.map(m => {
                     if (m.senderId !== readData.userId && readData.messageId && readData.messageId >= m.id) {
                         const readBy = Array.from(new Set([...(m.readBy || []), readData.userId]));
@@ -234,7 +340,7 @@ export function ChatLayout() {
             setChats(prev => prev.map(c => c.id === chat.id ? { ...c, ...chat } : c));
         });
 
-            const unsubRoomLeft = subscribe('roomLeft', (data: unknown) => {
+        const unsubRoomLeft = subscribe('roomLeft', (data: unknown) => {
             const leftData = data as { roomId: string; forced?: boolean };
             if (leftData.forced && leftData.roomId === `chat:${activeChatId}`) {
                 dispatch({
@@ -326,9 +432,18 @@ export function ChatLayout() {
                 const attachmentLinks = uploadResults.map((res, i) => {
                     const file = stagedFiles[i];
                     const url = res.url || res.path || '';
-                    return file.type.startsWith('image/')
-                        ? `\n![${file.name}](${url})`
-                        : `\n[${file.name}](${url})`;
+                    const isImage = file.type.startsWith('image/');
+                    const isPdf = file.type === 'application/pdf';
+                    const isOffice = [
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+                    ].includes(file.type);
+
+                    if (isImage) return `\n![${file.name}](${url})`;
+                    if (isPdf) return `\n[📄 PDF: ${file.name}](${url})`;
+                    if (isOffice) return `\n[📝 Doc: ${file.name}](${url})`;
+                    return `\n[📎 Attachment: ${file.name}](${url})`;
                 }).join('');
 
                 finalContent += attachmentLinks;
@@ -336,8 +451,9 @@ export function ChatLayout() {
                 setIsUploading(false);
             }
 
-            const res = await api.chat.sendMessage(activeChatId, finalContent || 'Sent an attachment', token);
+            const res = await api.chat.sendMessage(activeChatId, finalContent || 'Sent an attachment', token, replyToMessage?.id || undefined);
             setMessageDraft('');
+            setReplyToMessage(null);
             setIsSending(false);
             textareaRef.current?.focus();
             // sender's own message — no need to call markAsRead here (guarded elsewhere)
@@ -414,6 +530,55 @@ export function ChatLayout() {
         fetchChats();
     };
 
+    const scrollToMessage = async (messageId: string) => {
+        const element = document.getElementById(`msg-${messageId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setHighlightedMessageId(messageId);
+            setTimeout(() => setHighlightedMessageId(null), 2000);
+        } else {
+            // Jump to history context
+            if (!token || !activeChatId) return;
+            setIsLoadingMessages(true);
+            try {
+                const res = await api.chat.getChatMessages(activeChatId, token, { aroundId: messageId, limit: 30 });
+                setMessages(res.data);
+                setIsViewingHistory(true);
+                setHasMoreMessages(res.hasMoreBefore ?? false);
+                setHasMoreAfter(res.hasMoreAfter ?? false);
+
+                // Wait for render, then scroll to the specific item
+                setTimeout(() => {
+                    const el = document.getElementById(`msg-${messageId}`);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'instant', block: 'center' });
+                        setHighlightedMessageId(messageId);
+                        setTimeout(() => setHighlightedMessageId(null), 2000);
+                    }
+                }, 100);
+            } catch (err) {
+                console.error(err);
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'Message not found in history', type: 'error' } });
+            } finally {
+                setIsLoadingMessages(false);
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (highlightedMessageId) {
+            const timer = setTimeout(() => setHighlightedMessageId(null), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [highlightedMessageId]);
+
+    const handleReply = useCallback((msg: ChatMessage) => {
+        setReplyToMessage(msg);
+        setTimeout(() => {
+            textareaRef.current?.focus();
+        }, 50);
+    }, []);
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter') {
             if (e.ctrlKey) {
@@ -457,9 +622,9 @@ export function ChatLayout() {
     return (
         <div className="flex h-full bg-white lg:rounded-sm lg:shadow-sm lg:border border-gray-100 overflow-hidden relative">
             <div className={`
-                ${activeChatId && !isDesktop ? 'hidden' : 'flex'} 
-                w-full lg:max-w-xs xl:max-w-sm border-r border-gray-200 flex-col bg-gray-100 h-full
-            `}>
+            ${activeChatId && !isDesktop ? 'hidden' : 'flex'} 
+            w-full lg:max-w-xs xl:max-w-sm border-r border-gray-200 flex-col bg-gray-100 h-full
+        `}>
                 <div className="p-4 border-b border-gray-100 bg-white flex justify-between items-center">
                     <h2 className="text-xl font-bold text-gray-800 tracking-tight">Chats</h2>
                     {user.role !== Role.STUDENT && (
@@ -521,7 +686,7 @@ export function ChatLayout() {
                                             </h4>
                                             {lastMsg && (
                                                 <div className="flex flex-col items-end shrink-0 ml-2">
-                                                    <span className="text-[10px] text-gray-400 font-medium mb-1">
+                                                    <span className="text-[10px] text-gray-600 font-medium mb-1">
                                                         {formatDistanceToNow(new Date(lastMsg.createdAt), { addSuffix: false })}
                                                     </span>
                                                     {chat.unreadCount !== undefined && chat.unreadCount > 0 && (
@@ -562,9 +727,9 @@ export function ChatLayout() {
             </div>
 
             <div className={`
-                ${!activeChatId && !isDesktop ? 'hidden' : 'flex'} 
-                flex-1 flex-col bg-white h-full relative border border-gray-200 shadow-sm m-1 rounded-lg overflow-hidden
-            `}>
+            ${!activeChatId && !isDesktop ? 'hidden' : 'flex'} 
+            flex-1 flex-col bg-white h-full relative border border-gray-200 shadow-sm m-1 rounded-lg overflow-hidden
+        `}>
                 {activeChat ? (
                     <>
                         <div className="p-2 border-b border-gray-200 flex items-center justify-between shadow-gray-500 shadow-lg z-20 bg-white/90 backdrop-blur-md">
@@ -637,6 +802,22 @@ export function ChatLayout() {
                                     <div className="flex justify-center p-8"><Loader2 className="animate-spin text-gray-400" /></div>
                                 ) : (
                                     <>
+                                        {hasMoreMessages && (
+                                            <div className="flex justify-center pb-4">
+                                                <button
+                                                    onClick={loadEarlierMessages}
+                                                    disabled={isLoadingMore}
+                                                    className="px-4 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95 flex items-center"
+                                                >
+                                                    {isLoadingMore ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin mr-2" />
+                                                    ) : (
+                                                        <ArrowUp className="w-3 h-3 mr-2" />
+                                                    )}
+                                                    Load earlier messages
+                                                </button>
+                                            </div>
+                                        )}
                                         {messages.map((msg, i) => {
                                             if (msg.type === 'SYSTEM') {
                                                 return (
@@ -655,7 +836,11 @@ export function ChatLayout() {
                                             const isDeleted = !!msg.deletedAt;
 
                                             return (
-                                                <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-3' : 'mb-1'}`}>
+                                                <div
+                                                    key={msg.id}
+                                                    id={`msg-${msg.id}`}
+                                                    className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-3' : 'mb-1'} transition-all duration-700 ${highlightedMessageId === msg.id ? 'animate-highlight-float z-40' : ''}`}
+                                                >
                                                     {!isMine && (
                                                         <div className="w-8 shrink-0 mr-2.5 flex flex-col justify-end mb-1">
                                                             {isLastInGroup ? (
@@ -671,13 +856,29 @@ export function ChatLayout() {
                                                             </span>
                                                         )}
                                                         <div className="relative group/content flex flex-col items-inherit">
+                                                            {/* Quoted Message Preview in Bubble */}
+                                                            {msg.replyTo && !isDeleted && (
+                                                                <div
+                                                                    onClick={() => scrollToMessage(msg.replyTo!.id)}
+                                                                    className={`
+                                                                    mb-0.5 p-2 rounded-lg text-xs max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity
+                                                                    bg-gray-500/90 border-gray-600/90 text-white ${isMine ? 'border-l-4' : 'border-r-4'}`}
+                                                                >
+                                                                    <p className="flex font-black mb-0.5 opacity-80 uppercase tracking-tighter text-[10px]">
+                                                                        <Reply size={12} className='mr-1.5 rotate-180' /><span className='normal-case text-gray-100'>Replying to:&nbsp;</span>{msg.replyTo.sender?.name || 'Someone'}
+                                                                    </p>
+                                                                    <p className="truncate line-clamp-1 italic">
+                                                                        {msg.replyTo.content.replace(/!\[.*?\]\(.*?\)/g, '[Image]')}
+                                                                    </p>
+                                                                </div>
+                                                            )}
                                                             {isDeleted ? (
                                                                 /* Deleted message bubble stays as-is */
                                                                 <div className={`
-                                                                    px-4 py-2.5 rounded-2xl shadow-gray-400 shadow-xl text-base leading-relaxed relative
-                                                                    bg-gray-100/95 text-gray-600 border border-gray-200
-                                                                    ${isMine ? 'rounded-br-none' : 'rounded-bl-none'}
-                                                                `}>
+                                                                px-4 py-2.5 rounded-2xl shadow-gray-400 shadow-xl text-base leading-relaxed relative
+                                                                bg-gray-100/95 text-gray-600 border border-gray-200
+                                                                ${isMine ? 'rounded-br-none' : 'rounded-bl-none'}
+                                                            `}>
                                                                     <div className="flex items-center space-x-2 font-medium text-[13px]">
                                                                         <Trash2 size={14} className="opacity-60" />
                                                                         <span>This message was deleted by {msg.deletedBy?.name} at {new Date(msg.deletedAt!).toLocaleString()}</span>
@@ -695,35 +896,25 @@ export function ChatLayout() {
                                                                                 const isImage = segment.match(/^!\[.*?\]\(.*?\)$/);
                                                                                 if (isImage) {
                                                                                     return (
-                                                                                        <div key={idx} className="naked-image-container max-w-full">
+                                                                                        <div key={idx} className={`naked-image-container max-w-full transition-all duration-500 rounded-xl ${highlightedMessageId === msg.id ? 'ring-4 ring-yellow-400 border border-yellow-400 shadow-xl shadow-yellow-300' : ''}`}>
                                                                                             <MarkdownRenderer content={segment} />
-                                                                                            <style jsx>{`
-                                                                                                .naked-image-container :global(img) {
-                                                                                                    max-width: 100%;
-                                                                                                    max-height: 400px;
-                                                                                                    object-fit: contain;
-                                                                                                    border-radius: 12px;
-                                                                                                    cursor: pointer;
-                                                                                                    transition: opacity 0.2s;
-                                                                                                }
-                                                                                                .naked-image-container :global(img:hover) { opacity: 0.95; }
-                                                                                            `}</style>
                                                                                         </div>
                                                                                     );
                                                                                 }
 
-return (
-                                            <div
-                                                key={idx}
-                                                className={`
-                                                    px-4 py-2.5 rounded-2xl shadow-xl text-base leading-relaxed relative
-                                                    ${isMine
-                                                                                                 ? 'bg-linear-to-br from-primary/90 to-primary/80 text-white! rounded-br-none shadow-primary/80'
-                                                                                                 : 'bg-white/95 text-gray-800 border border-gray-100/50 rounded-bl-none shadow-gray-500'
-                                                                                             }
-                                                `}
-                                            >
-                                                                                        <div className={`prose prose-base max-w-none ${isMine ? 'prose-invert prose-p:text-white' : 'prose-p:text-gray-800'}`}>
+                                                                                return (
+                                                                                    <div
+                                                                                        key={idx}
+                                                                                        className={`
+                                                                                        px-4 py-2.5 rounded-2xl shadow-xl text-base leading-relaxed relative transition-all duration-500
+                                                                                        ${isMine
+                                                                                                ? 'bg-linear-to-br from-primary/90 to-primary/80 text-white! rounded-br-none shadow-primary/80'
+                                                                                                : 'bg-white/95 text-gray-800 border border-gray-100/50 rounded-bl-none shadow-gray-500'
+                                                                                            }
+                                                                                        ${highlightedMessageId === msg.id ? 'ring-3 ring-yellow-400/50 border border-yellow-400 bg-yellow-200/50! shadow-xl shadow-yellow-200' : ''}
+                                                                                    `}
+                                                                                    >
+                                                                                        <div className={`prose prose-base max-w-none ${isMine && highlightedMessageId !== msg.id ? 'prose-invert prose-p:text-white' : 'prose-p:text-gray-800'}`}>
                                                                                             <MarkdownRenderer content={segment} className={isMine ? 'text-white!' : ''} />
                                                                                         </div>
                                                                                     </div>
@@ -731,14 +922,14 @@ return (
                                                                             })}
 
                                                                             {/* Timestamp & Read Receipts attached to the LAST element or as a standalone overlay if it was an image-only message */}
-                                                                            <div className={`flex items-center justify-end mt-1 space-x-1 ${isMine ? 'text-white/80' : 'text-gray-400'} text-[9px] font-medium`}>
+                                                                            <div className={`flex items-center justify-end mb-1.5 space-y-2 space-x-1 text-gray-600 text-[12px] font-medium`}>
                                                                                 <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                                                 {isMine && (
                                                                                     <div className="flex">
                                                                                         {msg.readBy && msg.readBy.length > 0 ? (
-                                                                                            <CheckCheck className="w-3.5 h-3.5 text-blue-400" strokeWidth={3} />
+                                                                                            <CheckCheck className="w-5 h-5 text-blue-600" strokeWidth={2} />
                                                                                         ) : (
-                                                                                            <Check className="w-3.5 h-3.5 text-white/60" strokeWidth={3} />
+                                                                                            <Check className="w-5 h-5 text-gray-600" strokeWidth={2} />
                                                                                         )}
                                                                                     </div>
                                                                                 )}
@@ -748,40 +939,85 @@ return (
                                                                 })()
                                                             )}
 
-                                                            {/* Actions bar - Hover only */}
-                                                            {(isMine || user.role === Role.ORG_ADMIN) && !isDeleted && (
-                                                                <div className={`
-                                                                    absolute top-1/2 -translate-y-1/2 ${isMine ? '-left-10' : '-right-10'}
-                                                                    flex space-x-1 opacity-0 group-hover/msg:opacity-100 transition-opacity
-                                                                `}>
+                                                            {/* Fixed Actions bar - Hover only */}
+                                                            <div className={`
+                                                            absolute top-1/2 -translate-y-1/2 ${isMine ? '-left-16' : '-right-16'}
+                                                            flex space-x-1 opacity-0 group-hover/msg:opacity-100 transition-opacity z-10
+                                                        `}>
+                                                                {!isDeleted && (
+                                                                    <button
+                                                                        onClick={() => handleReply(msg)}
+                                                                        className="p-1.5 text-gray-500 hover:text-primary hover:bg-white rounded-full transition-all shadow-sm border border-gray-100 bg-white/50 backdrop-blur-sm"
+                                                                        title="Reply"
+                                                                    >
+                                                                        <Reply size={14} />
+                                                                    </button>
+                                                                )}
+                                                                {(isMine || user.role === Role.ORG_ADMIN) && !isDeleted && (
                                                                     <button
                                                                         onClick={() => handleDeleteMessage(msg.id)}
-                                                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                                                                        className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-white rounded-full transition-all shadow-sm border border-gray-100 bg-white/50 backdrop-blur-sm"
                                                                         title="Delete"
                                                                     >
                                                                         <Trash2 size={14} />
                                                                     </button>
-                                                                </div>
-                                                            )}
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             );
                                         })}
                                         <div ref={messagesEndRef} />
+
+                                        {hasMoreAfter && (
+                                            <div className="flex justify-center pt-4">
+                                                <button
+                                                    onClick={loadNewerMessages}
+                                                    disabled={isLoadingNewer}
+                                                    className="px-4 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95 flex items-center"
+                                                >
+                                                    {isLoadingNewer ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin mr-2" />
+                                                    ) : (
+                                                        <ArrowDown className="w-3 h-3 mr-2" />
+                                                    )}
+                                                    Load newer messages
+                                                </button>
+                                            </div>
+                                        )}
                                     </>
                                 )}
                             </div>
 
+                            {/* History Mode Banner */}
+                            {isViewingHistory && (
+                                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-primary/95 text-white px-4 py-2 rounded-full shadow-lg border border-white/20 backdrop-blur-sm flex items-center space-x-3 text-xs font-bold animate-in slide-in-from-top duration-300">
+                                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+                                    <span>Viewing message history</span>
+                                    <button
+                                        onClick={() => activeChatId && fetchInitialMessages(activeChatId)}
+                                        className="bg-white text-primary px-3 py-1 rounded-full hover:bg-gray-100 transition-colors uppercase tracking-widest text-[10px]"
+                                    >
+                                        Jump to Present
+                                    </button>
+                                </div>
+                            )}
+
                             {/* Scroll to Bottom Button */}
-                            {showScrollButton && (
+                            {((!isAtBottom && !isLoadingMessages) || isViewingHistory) && (
                                 <button
                                     type="button"
-                                    onClick={scrollToBottom}
-                                    className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 p-3 bg-primary text-primary-text rounded-full shadow-lg hover:bg-primary-hover transition-all animate-in fade-in zoom-in"
-                                    title="Scroll to bottom"
+                                    onClick={() => isViewingHistory ? (activeChatId && fetchInitialMessages(activeChatId)) : scrollToBottom()}
+                                    className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 p-3 bg-primary text-primary-text rounded-full shadow-lg hover:bg-primary-hover transition-all animate-in fade-in zoom-in group"
+                                    title={isViewingHistory ? "Jump to Present" : "Scroll to bottom"}
                                 >
-                                    <ArrowDown size={20} />
+                                    <ArrowDown size={20} className="group-hover:translate-y-0.5 transition-transform" />
+                                    {!isViewingHistory && unreadSinceScroll > 0 && (
+                                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm animate-bounce">
+                                            {unreadSinceScroll}
+                                        </span>
+                                    )}
                                 </button>
                             )}
 
@@ -832,7 +1068,27 @@ return (
                         </div>
 
                         {/* Input Area */}
-                        <div className="p-0.5 bg-white border-t border-gray-200 z-20">
+                        <div className="bg-white border-t border-gray-200 z-20">
+                            {/* Reply Preview Banner */}
+                            {replyToMessage && (
+                                <div className="mb-1 p-2 bg-primary/5 border-l-4 border-primary rounded-r-lg flex items-start justify-between animate-in slide-in-from-bottom-2 duration-200">
+                                    <div className="flex-1 min-w-0 pr-4">
+                                        <p className="text-[10px] font-black text-primary uppercase tracking-wider mb-0.5">
+                                            Replying to {replyToMessage.sender?.name || 'Message'}
+                                        </p>
+                                        <p className="text-xs text-gray-600 truncate italic">
+                                            {replyToMessage.content.replace(/!\[.*?\]\(.*?\)/g, '[Image]')}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setReplyToMessage(null)}
+                                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="flex items-end space-x-2">
                                 <div className="flex-1">
                                     {/* Staged Files Preview */}
@@ -846,7 +1102,7 @@ return (
                                                         </div>
                                                     ) : (
                                                         <div className="w-8 h-8 rounded-sm bg-primary/10 flex items-center justify-center text-primary mr-2">
-                                                            <Plus size={14} />
+                                                            <FileText size={14} />
                                                         </div>
                                                     )}
                                                     <div className="flex flex-col mr-2 max-w-[100px]">
@@ -884,11 +1140,12 @@ return (
                                         id="chat-file-upload"
                                         className="hidden"
                                         onChange={handleFileUpload}
+                                        multiple
                                     />
                                     <Button
                                         onClick={() => document.getElementById('chat-file-upload')?.click()}
                                         title="Attach file"
-                                        icon={ImageIcon}
+                                        icon={FileUp}
                                         variant="warning"
                                     />
                                     <Button
@@ -949,7 +1206,7 @@ return (
                     isOpen={isSettingsModalOpen}
                     onClose={() => setIsSettingsModalOpen(false)}
                     chat={activeChat}
-                    currentUser={user as any}
+                    currentUser={user as User}
                     token={token!}
                     onUpdate={fetchChats}
                     onAddParticipants={() => setIsAddUserModalOpen(true)}
@@ -969,6 +1226,7 @@ return (
                     existingParticipantIds={activeChatParticipantIds}
                 />
             )}
+
 
             <ConfirmDialog
                 isOpen={confirmConfig.isOpen}

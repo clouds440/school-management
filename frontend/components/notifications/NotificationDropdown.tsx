@@ -48,7 +48,6 @@ export function NotificationDropdown() {
         const unsubNew = subscribe('notification:new', (newNotification: unknown) => {
             const notif = newNotification as Notification;
             notificationsStore.applyNew(notif);
-            dispatch({ type: 'TOAST_ADD', payload: { message: notif.title, type: 'info' } });
         });
 
         const unsubRead = subscribe('notification:read', (data: unknown) => {

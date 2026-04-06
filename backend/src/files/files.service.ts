@@ -4,8 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import * as fs from 'fs';
-import * as path from 'path';
+import { v2 as cloudinary } from 'cloudinary';
 import { FileUploadDto } from './files.dto';
 import { Role } from '../common/enums';
 import { UploadedFileInfo, DeleteFileResult } from './interfaces/files.interfaces';
@@ -14,7 +13,7 @@ import { UploadedFileInfo, DeleteFileResult } from './interfaces/files.interface
 export class FilesService {
   constructor(private readonly prisma: PrismaService) { }
   /**
-   * Creates a database record for a file that multer already saved to disk.
+   * Creates a database record for a file that was uploaded to Cloudinary.
    * Returns structured file metadata.
    */
   async saveFile(
@@ -22,20 +21,16 @@ export class FilesService {
     file: Express.Multer.File,
     uploadedBy: string,
   ): Promise<UploadedFileInfo> {
-    const forwardSlash = file.path.replace(/\\/g, '/');
-    // On Windows, multer gives an absolute path (e.g. C:/…/uploads/orgs/…).
-    // Strip everything before 'uploads/' so we store a portable relative path.
-    const uploadsIndex = forwardSlash.indexOf('uploads/');
-    const normalizedPath = uploadsIndex >= 0
-      ? forwardSlash.slice(uploadsIndex)
-      : forwardSlash;
+    // Cloudinary returns the full URL in file.path and public_id in file.filename (standard for multer-storage-cloudinary)
+    const publicId = (file as any).public_id || file.filename;
 
     const record = await this.prisma.file.create({
       data: {
         orgId: dto.orgId,
         entityType: dto.entityType,
         entityId: dto.entityId,
-        path: normalizedPath,
+        path: file.path, // Full secure URL
+        publicId: publicId,
         filename: file.originalname,
         mimeType: file.mimetype,
         size: file.size,
@@ -58,7 +53,7 @@ export class FilesService {
   }
 
   /**
-   * Deletes a file from disk and removes its database record.
+   * Deletes a file from Cloudinary and removes its database record.
    * Verifies that the requesting user belongs to the same organization that
    * owns the file (SUPER_ADMIN and PLATFORM_ADMIN are exempt).
    */
@@ -83,14 +78,49 @@ export class FilesService {
       );
     }
 
-    // Remove from filesystem (best-effort, do not throw if already gone)
-    const absolutePath = path.resolve(record.path);
-    if (fs.existsSync(absolutePath)) {
-      fs.unlinkSync(absolutePath);
+    // Remove from Cloudinary (best-effort)
+    const publicId = record.publicId;
+    if (publicId) {
+       try {
+         await cloudinary.uploader.destroy(publicId);
+       } catch (err) {
+         console.error(`Failed to delete file from Cloudinary: ${publicId}`, err);
+       }
     }
 
     await this.prisma.file.delete({ where: { id: fileId } });
 
     return { message: 'File deleted successfully' };
+  }
+
+  /**
+   * Replaces an existing file (on disk or Cloudinary) with a new one.
+   * Useful for logos and avatars where we only store the URL string.
+   */
+  async replaceFile(
+    oldUrl: string | null,
+    file: Express.Multer.File,
+  ): Promise<string> {
+    // 1. Delete old file if it exists
+    if (oldUrl) {
+      if (oldUrl.startsWith('http') && oldUrl.includes('cloudinary.com')) {
+        // Extract public_id from Cloudinary URL
+        const parts = oldUrl.split('/');
+        const uploadIndex = parts.indexOf('upload');
+        if (uploadIndex !== -1 && parts.length > uploadIndex + 2) {
+          const publicIdWithExt = parts.slice(uploadIndex + 2).join('/');
+          const publicId = publicIdWithExt.split('.')[0];
+          try {
+            await cloudinary.uploader.destroy(publicId);
+          } catch (err) {
+            console.error(`Failed to delete old file from Cloudinary: ${publicId}`, err);
+          }
+        }
+      }
+    }
+    // Note: Local file deletion is omitted here as we transitioned to Cloudinary,
+    // but the logic can be added back if mixed storage is needed.
+
+    return file.path; // New Cloudinary URL
   }
 }

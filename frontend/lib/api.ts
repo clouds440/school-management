@@ -9,18 +9,11 @@ import {
     Chat, ChatMessage, Notification, Announcement, ChatType, TargetType, AnnouncementPriority, User
 } from '@/types';
 
-
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
 
 if (!API_BASE_URL) {
     throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
 }
-
-export const getPublicUrl = (path: string | null | undefined) => {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-    return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
-};
 
 let unauthorizedHandler: (() => void) | null = null;
 
@@ -126,7 +119,7 @@ export const api = {
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,
             });
-            
+
             if (response.status === 401 && unauthorizedHandler) {
                 unauthorizedHandler();
             }
@@ -293,17 +286,17 @@ export const api = {
 
     chat: {
         searchUsers: (token: string, search?: string) =>
-             request<User[]>(`/chat/users${buildQueryString({ search })}`, { token }),
+            request<User[]>(`/chat/users${buildQueryString({ search })}`, { token }),
         createDirectChat: (participantId: string, token: string) =>
             request<Chat>('/chat/direct', { method: 'POST', body: JSON.stringify({ participantId }), token }),
         createGroupChat: (name: string, participantIds: string[], token: string) =>
             request<Chat>('/chat/group', { method: 'POST', body: JSON.stringify({ name, participantIds }), token }),
         getUserChats: (token: string) =>
             request<Chat[]>('/chat', { token }),
-        getChatMessages: (chatId: string, token: string, params: { page?: number, limit?: number } = {}) =>
+        getChatMessages: (chatId: string, token: string, params: { page?: number, limit?: number, aroundId?: string } = {}) =>
             request<PaginatedResponse<ChatMessage>>(`/chat/${chatId}/messages${buildQueryString(params)}`, { token }),
-        sendMessage: (chatId: string, content: string, token: string) =>
-            request<ChatMessage>(`/chat/${chatId}/messages`, { method: 'POST', body: JSON.stringify({ content }), token }),
+        sendMessage: (chatId: string, content: string, token: string, replyToId?: string) =>
+            request<ChatMessage>(`/chat/${chatId}/messages`, { method: 'POST', body: JSON.stringify({ content, replyToId }), token }),
         getUnreadCount: (token: string) =>
             request<{ unread: number }>('/chat/unread-count', { token }),
         markAsRead: (chatId: string, messageId: string | undefined, token: string) =>
@@ -325,6 +318,8 @@ export const api = {
             request<void>(`/notifications/${id}/read`, { method: 'PATCH', token }),
         markAllAsRead: (token: string) =>
             request<void>('/notifications/read-all', { method: 'PATCH', token }),
+        clearCategory: (category: 'CHAT' | 'MAIL', token: string) =>
+            request<void>(`/notifications/clear-category/${category}`, { method: 'PATCH', token }),
     },
 
     announcements: {

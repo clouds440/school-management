@@ -298,6 +298,7 @@ model File {
   entityType String
   entityId   String
   path       String
+  publicId   String?
   filename   String
   mimeType   String
   size       Int
@@ -438,6 +439,10 @@ model ChatMessage {
   chat        Chat  @relation(fields: [chatId], references: [id], onDelete: Cascade)
   sender      User  @relation("SentChatMessages", fields: [senderId], references: [id])
   deletedBy   User? @relation("DeletedChatMessages", fields: [deletedById], references: [id])
+
+  replyToId String?
+  replyTo   ChatMessage?  @relation("ChatReply", fields: [replyToId], references: [id])
+  replies   ChatMessage[] @relation("ChatReply")
 
   @@index([chatId])
   @@index([senderId])

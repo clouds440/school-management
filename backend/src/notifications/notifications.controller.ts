@@ -26,6 +26,14 @@ export class NotificationsController {
         return this.notificationsService.markAllAsRead(req.user.id);
     }
 
+    @Patch('clear-category/:category')
+    async markCategoryAsRead(
+        @Param('category') category: 'CHAT' | 'MAIL',
+        @Request() req: AuthenticatedRequest
+    ) {
+        return this.notificationsService.markCategoryAsRead(req.user.id, category);
+    }
+
     @Patch(':id/read')
     async markAsRead(
         @Param('id') id: string,

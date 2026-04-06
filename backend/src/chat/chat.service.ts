@@ -5,6 +5,7 @@ import { CreateDirectChatDto } from './dto/create-direct-chat.dto';
 import { CreateGroupChatDto } from './dto/create-group.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { AddParticipantsDto } from './dto/add-participants.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Role, ChatType, ChatParticipantRole, ChatMessageType, Prisma } from '@prisma/client';
 
 interface CurrentUser {
@@ -18,6 +19,7 @@ export class ChatService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly events: EventsGateway,
+        private readonly notifications: NotificationsService,
     ) { }
 
     async searchUsers(query: string, user: CurrentUser) {
@@ -653,7 +655,7 @@ export class ChatService {
         // Add unread count for each chat based on user's lastReadMessageId
         const chatsWithUnread = await Promise.all(chats.map(async (chat) => {
             const myParticipant = chat.participants.find(p => p.userId === user.id);
-            
+
             let lastReadAt: Date | undefined;
             if (myParticipant?.lastReadMessageId) {
                 const lastMsg = await this.prisma.chatMessage.findUnique({
@@ -678,7 +680,7 @@ export class ChatService {
             const lastMessage = await this.prisma.chatMessage.findFirst({
                 where: {
                     chatId: chat.id,
-                    OR: visibilityOR.length > 0 ? visibilityOR : [{ chatId: 'NONE' }] // Handle no history gracefully
+                    ...(visibilityOR.length > 0 ? { OR: visibilityOR } : {})
                 },
                 orderBy: { createdAt: 'desc' },
                 include: { sender: { select: { id: true, name: true, email: true } } }
@@ -691,7 +693,7 @@ export class ChatService {
                     senderId: { not: user.id },
                     deletedAt: null,
                     type: { not: ChatMessageType.SYSTEM },
-                    OR: visibilityOR.length > 0 ? visibilityOR : [{ chatId: 'NONE' }]
+                    ...(visibilityOR.length > 0 ? { OR: visibilityOR } : {})
                 }
             });
             return { ...chat, messages: lastMessage ? [lastMessage] : [], unreadCount };
@@ -700,8 +702,16 @@ export class ChatService {
         return chatsWithUnread;
     }
 
-    async getChatMessages(chatId: string, user: CurrentUser, page: number = 1, limit: number = 20) {
-        const participant = await this.verifyChatAccess(chatId, user.id, true); // Allow inactive to see history
+    async getChatMessages(
+        chatId: string, 
+        user: CurrentUser, 
+        options: { page?: number; limit?: number; aroundId?: string }
+    ) {
+        const page = options.page || 1;
+        const limit = options.limit || 50;
+        const aroundId = options.aroundId;
+
+        const participant = await this.verifyChatAccess(chatId, user.id, true);
         const history = await this.prisma.chatMembershipHistory.findMany({
             where: { chatParticipantId: participant.id }
         });
@@ -713,19 +723,73 @@ export class ChatService {
             }
         }));
 
-        const messagesList = await this.prisma.chatMessage.findMany({
-            where: {
-                chatId,
-                ...(visibilityOR.length > 0 ? { OR: visibilityOR } : {})
-            },
-            orderBy: { createdAt: 'desc' },
-            skip: (page - 1) * limit,
-            take: limit,
-            include: {
-                sender: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } },
-                deletedBy: { select: { id: true, name: true } }
+        const include = {
+            sender: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } },
+            deletedBy: { select: { id: true, name: true } },
+            replyTo: {
+                include: {
+                    sender: { select: { id: true, name: true } }
+                }
             }
-        });
+        } as const satisfies Prisma.ChatMessageInclude;
+
+        type MessageWithRelations = Prisma.ChatMessageGetPayload<{ include: typeof include }>;
+        let messagesList: MessageWithRelations[] = [];
+        let hasMoreBefore = false;
+        let hasMoreAfter = false;
+
+        if (aroundId) {
+            const target = await this.prisma.chatMessage.findUnique({ where: { id: aroundId } });
+            if (!target) throw new NotFoundException('Target message not found.');
+
+            const halfLimit = Math.floor(limit / 2);
+            
+            // Messages before and including target
+            const before = await this.prisma.chatMessage.findMany({
+                where: {
+                    chatId,
+                    createdAt: { lte: target.createdAt },
+                    ...(visibilityOR.length > 0 ? { OR: visibilityOR } : {})
+                },
+                orderBy: { createdAt: 'desc' },
+                take: halfLimit + 1,
+                include
+            });
+
+            // Messages after target
+            const after = await this.prisma.chatMessage.findMany({
+                where: {
+                    chatId,
+                    createdAt: { gt: target.createdAt },
+                    ...(visibilityOR.length > 0 ? { OR: visibilityOR } : {})
+                },
+                orderBy: { createdAt: 'asc' },
+                take: halfLimit,
+                include
+            });
+
+            messagesList = [...before.reverse(), ...after];
+            
+            // Simple flags for context-mode
+            hasMoreBefore = before.length > halfLimit;
+            hasMoreAfter = after.length >= halfLimit;
+        } else {
+            const list = await this.prisma.chatMessage.findMany({
+                where: {
+                    chatId,
+                    ...(visibilityOR.length > 0 ? { OR: visibilityOR } : {})
+                },
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+                include
+            });
+            messagesList = list.reverse();
+            hasMoreBefore = (page * limit) < await this.prisma.chatMessage.count({
+                where: { chatId, ...(visibilityOR.length > 0 ? { OR: visibilityOR } : {}) }
+            });
+            hasMoreAfter = page > 1;
+        }
 
         const totalCount = await this.prisma.chatMessage.count({
             where: {
@@ -734,13 +798,12 @@ export class ChatService {
             }
         });
 
-        // Include read receipts for active participants using timestamp comparison instead of UUID lexical order
+        // Include read receipts
         const activeParticipants = await this.prisma.chatParticipant.findMany({
             where: { chatId, isActive: true, lastReadMessageId: { not: null } },
             select: { userId: true, lastReadMessageId: true }
         });
 
-        // Fetch timestamps for all lastReadMessageIds involved
         const lastReadMsgIds = Array.from(new Set(activeParticipants.map(p => p.lastReadMessageId!)));
         const readMessages = await this.prisma.chatMessage.findMany({
             where: { id: { in: lastReadMsgIds } },
@@ -749,18 +812,21 @@ export class ChatService {
         const readMap = new Map(readMessages.map(m => [m.id, m.createdAt.getTime()]));
 
         return {
-            data: messagesList.reverse().map(m => ({
+            data: messagesList.map((m: MessageWithRelations) => ({
                 ...m,
                 readBy: activeParticipants
                     .filter(p => {
                         const readTime = readMap.get(p.lastReadMessageId!);
-                        return p.userId !== m.senderId && readTime && readTime >= m.createdAt.getTime();
+                        // Use getTime() for comparison safety
+                        return p.userId !== m.senderId && readTime !== undefined && readTime >= new Date(m.createdAt).getTime();
                     })
                     .map(p => p.userId)
             })),
-            total: totalCount,
-            page,
-            totalPages: Math.ceil(totalCount / limit)
+            totalRecords: totalCount,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit),
+            hasMoreBefore,
+            hasMoreAfter
         };
     }
 
@@ -776,11 +842,17 @@ export class ChatService {
                 senderId: user.id,
                 organizationId: user.organizationId,
                 content: dto.content,
-                type: ChatMessageType.TEXT
+                type: ChatMessageType.TEXT,
+                replyToId: dto.replyToId
             },
             include: {
                 sender: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } },
-                chat: { select: { id: true, name: true, type: true } }
+                chat: { select: { id: true, name: true, type: true } },
+                replyTo: {
+                    include: {
+                        sender: { select: { id: true, name: true } }
+                    }
+                }
             }
         });
 
@@ -800,6 +872,7 @@ export class ChatService {
         // Mark as read for the sender automatically
         await this.markAsRead(chatId, newMessage.id, user);
 
+        // Notify all participants via WebSocket for real-time UI/badge updates
         for (const p of activeParticipants) {
             this.events.emitToRoom(`user:${p.userId}`, 'chat:message', newMessage);
         }

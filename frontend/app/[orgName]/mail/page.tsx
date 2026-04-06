@@ -78,6 +78,7 @@ export default function OrgMailPage() {
     useEffect(() => {
         if (!authLoading && token) {
             fetchMails();
+            api.notifications.clearCategory('MAIL', token).catch(console.error);
         }
     }, [authLoading, token, fetchMails]);
 

@@ -144,7 +144,15 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     {link.label}
                                 </span>
                                 {link.badge !== undefined && (
-                                    <span className={`${!effectiveExpanded ? 'hidden' : 'ml-auto'} px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter animate-in fade-in duration-300 ${link.badge === 0 ? 'bg-gray-200 text-gray-500' : 'bg-sidebar-active-text/20 text-sidebar-text'}`}>
+                                    <span className={`
+                                        flex items-center justify-center shrink-0
+                                        ${!effectiveExpanded
+                                            ? 'absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full'
+                                            : 'ml-auto px-2 py-0.5 rounded-full'
+                                        } 
+                                        text-[10px] font-black tracking-tighter animate-in zoom-in duration-300 
+                                        ${link.badge === 0 ? 'bg-gray-200 text-gray-500' : `${link.label === 'Messages' ? 'bg-red-500' : 'bg-primary'} text-white shadow-sm ring-2 ring-white/80`}
+                                    `}>
                                         {link.badge}
                                     </span>
                                 )}

@@ -214,7 +214,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             label: 'Messages',
             icon: MessageSquare,
             href: `/${orgSlug}/chat`,
-            badge: undefined
+            badge: state.stats.chat && state.stats.chat.unread > 0 ? `${state.stats.chat.unread} New` : undefined
         });
 
         if (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) {
@@ -244,7 +244,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
         }
 
         return orgLinks;
-    }, [isApproved, orgSlug, user, stats]);
+    }, [isApproved, orgSlug, user, stats, state.stats.chat?.unread]);
 
     const bottomLinks: SidebarLink[] = [
         {
