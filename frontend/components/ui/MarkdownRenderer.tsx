@@ -62,9 +62,10 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
             dangerouslySetInnerHTML={{ __html: htmlContent }}
             dir="auto"
             style={{
-                lineHeight: '1.6',
-                wordBreak: 'break-word',
-            }}
+                    lineHeight: '1.6',
+                    wordBreak: 'break-word',
+                    overflowWrap: 'anywhere'
+                }}
         />
     );
 };
@@ -76,7 +77,7 @@ if (typeof document !== 'undefined') {
         const style = document.createElement('style');
         style.id = styleId;
         style.innerHTML = `
-            .markdown-content { color: #1f2937; }
+            .markdown-content { color: #1f2937; overflow-wrap: anywhere; word-break: break-word; white-space: pre-wrap; }
             .markdown-content p { margin-bottom: 1rem; line-height: 1.7; }
             .markdown-content p:last-child { margin-bottom: 0; }
             .markdown-content strong { font-weight: 800; color: #111827; }
@@ -112,6 +113,8 @@ if (typeof document !== 'undefined') {
                 font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
                 color: #991b1b;
             }
+            .markdown-content pre { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+            .markdown-content code { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
         `;
         document.head.appendChild(style);
     }

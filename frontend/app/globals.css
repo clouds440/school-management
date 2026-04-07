@@ -394,15 +394,34 @@ body {
     opacity: 0.95;
   }
 
+  /* Ensure long words, code blocks and markdown content wrap inside message bubbles */
+  .wrap-break-word {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  /* Message bubble/content guards */
+  .message-bubble, .message-bubble .markdown-content, .markdown-content {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: pre-wrap;
+    max-width: 100%;
+  }
+
+  /* Ensure image containers don't force horizontal overflow */
+  .naked-image-container {
+    display: block;
+    max-width: 100%;
+  }
+
   /* --- Modern Chat Background Pattern --- */
   .chat-bg-pattern {
-    background-color: #f6f8fb;
-    background-image: 
-      radial-gradient(at 40% 20%, rgba(79, 70, 229, 0.08) 0px, transparent 50%),
-      radial-gradient(at 80% 0%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
-      radial-gradient(at 0% 50%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
-      radial-gradient(circle at 2px 2px, rgba(79, 70, 229, 0.04) 1px, transparent 0);
-    background-size: 100% 100%, 100% 100%, 100% 100%, 24px 24px;
+    background-image:
+      url('/assets/chat-doodle-light.jpg');
+    background-color: invert(100%);
+    background-size: cover;
+    background-position: center;
     background-attachment: fixed;
   }
 

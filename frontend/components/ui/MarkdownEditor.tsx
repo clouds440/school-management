@@ -1,4 +1,4 @@
-import { useState, useRef, forwardRef, useImperativeHandle, useId } from 'react';
+import { useState, useRef, forwardRef, useImperativeHandle, useId, useEffect } from 'react';
 import { Bold, Link as LinkIcon, Eye, Type, Zap, User, Hash, Mail, Calendar, PenTool, ShieldCheck } from 'lucide-react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { CustomSelect } from './CustomSelect';
@@ -33,6 +33,20 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const [previewMode, setPreviewMode] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const editorId = useId();
+
+    // Auto-resize when `value` changes (covers programmatic updates like editing)
+    const resizeTextarea = () => {
+        const ta = textareaRef.current;
+        if (!ta) return;
+        ta.style.height = 'auto';
+        const max = 320; // px
+        ta.style.height = Math.min(ta.scrollHeight, max) + 'px';
+    };
+
+    // run on mount and whenever value changes
+    useEffect(() => {
+        resizeTextarea();
+    }, [value]);
 
     useImperativeHandle(ref, () => ({
         focus: () => {
@@ -173,7 +187,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
             <div className="relative min-h-auto">
                 {previewMode ? (
-                    <div className="p-5 overflow-y-auto max-h-[400px] bg-white">
+                    <div className="p-5 overflow-y-auto max-h-100 bg-white">
                         {value.length > 0 ? (
                             <MarkdownRenderer content={value} />
                         ) : (
@@ -193,21 +207,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                         onFocus={onFocus}
                         placeholder={placeholder}
                         rows={rows + (value.length > 100 ? 3 : 0) + (value.length > 300 ? 3 : 0) + (value.length > 600 ? 3 : 0)}
-                        className="w-full p-2.5 outline-none resize-y border-none focus:ring-0 bg-transparent custom-scrollbar max-h-80 min-h-10 font-medium leading-relaxed text-gray-800 placeholder:text-gray-300"
+                        className="w-full p-2.5 outline-none resize-y border-none focus:ring-0 bg-transparent custom-scrollbar max-h-110 min-h-10 font-medium leading-relaxed text-gray-800 placeholder:text-gray-300"
                     />
                 )}
             </div>
-
-            {!previewMode && (
-                <div className="px-4 py-0.5 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                        Markdown Supported
-                    </span>
-                    <span className="text-[10px] text-gray-500 font-black tracking-tighter">
-                        {value.length} CHARS
-                    </span>
-                </div>
-            )}
         </div>
     );
 });

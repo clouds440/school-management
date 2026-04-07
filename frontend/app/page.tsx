@@ -35,8 +35,8 @@ export default function HomePage() {
           backgroundColor: 'rgba(180, 180, 220, 0.95)'
         }}>
         <div className="absolute inset-0 z-0">
-          <div className="absolute top-0 -left-1/4 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-primary/5 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 -right-1/4 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-secondary/10 rounded-full blur-3xl animate-pulse animation-delay-2000" />
+          <div className="absolute top-0 -left-1/4 w-75 md:w-150 h-75 md:h-150 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 -right-1/4 w-75 md:w-150 h-75 md:h-150 bg-secondary/10 rounded-full blur-3xl animate-pulse animation-delay-2000" />
         </div>
 
         <div className="container mx-auto px-6 relative z-10">
@@ -239,7 +239,7 @@ export default function HomePage() {
       {/* Ultimate CTA */}
       <section className="py-24 md:py-32 bg-gray-900 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
-          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/40 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute top-0 left-0 w-125 h-125 bg-primary/40 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
         </div>
         <div className="container mx-auto px-6 text-center max-w-4xl relative z-10 space-y-10">
           <Reveal>

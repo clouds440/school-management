@@ -75,8 +75,8 @@ export function BrandIcon({
           />
         </div>
       ) : (
-        <div className={`w-full h-full ${variant === 'brand' ? 'rotate-3 group-hover:rotate-0' : 'bg-primary/10'} flex items-center justify-center rounded-full shadow-lg shadow-primary/5 transition-transform group-hover:scale-110`}>
-          <FallbackIcon className={`${iconSizes[size]} ${variant === 'brand' ? 'text-white' : 'text-primary opacity-60'}`} />
+        <div className={`w-full h-full ${variant === 'brand' ? 'rotate-3 group-hover:rotate-0' : 'bg-primary/60'} flex items-center justify-center rounded-full shadow-lg shadow-primary/5 transition-transform group-hover:scale-110`}>
+          <FallbackIcon className={`${iconSizes[size]} ${variant === 'brand' ? 'text-white' : 'text-primary'}`} />
         </div>
       )}
     </div>
