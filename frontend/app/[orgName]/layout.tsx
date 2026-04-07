@@ -31,7 +31,7 @@ const StatusOverlay = ({ orgData, user, orgSlug }: { orgData: Organization, user
                 <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Awaiting Approval</h2>
                 <p className="text-gray-600 text-lg mb-8 font-medium">
                     Your organization registration is currently being verified.
-                    You&apos;ll have full access once EduManage confirms your details.
+                    You&apos;ll have full access once EduVerse confirms your details.
                 </p>
                 <div className="bg-yellow-500 text-white px-10 py-5 rounded-sm font-black text-xl border border-yellow-300 w-full shadow-2xl flex items-center justify-center gap-3">
                     Status: Pending Verification

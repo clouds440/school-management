@@ -154,4 +154,18 @@ export class ChatController {
             organizationId: req.user.organizationId
         });
     }
+
+    @Patch(':id/messages/:messageId')
+    async editMessage(
+        @Param('id') id: string,
+        @Param('messageId') messageId: string,
+        @Body('content') content: string,
+        @Request() req: AuthenticatedRequest
+    ) {
+        return this.chatService.editMessage(id, messageId, content, {
+            id: req.user.id,
+            role: req.user.role,
+            organizationId: req.user.organizationId
+        });
+    }
 }

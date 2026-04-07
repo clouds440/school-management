@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { ChatLayout } from '@/components/chat/ChatLayout';
 
 export const metadata: Metadata = {
-    title: 'Platform Chat | EduManage',
+    title: 'Platform Chat | EduVerse',
     description: 'Internal real-time communication platform for admins',
 };
 

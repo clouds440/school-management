@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Send, Clock, Paperclip, X, FileText, ImageIcon, Download, MessageSquare } from 'lucide-react';
-import { MailDetail, MailMessage as MailMessageType, MailActionLog, Attachment } from '@/types';
+import { MailDetail, MailMessage as MailMessageType, MailActionLog, Attachment, Role } from '@/types';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { MarkdownEditor, MarkdownEditorHandle } from '@/components/ui/MarkdownEditor';
 import { getPublicUrl } from '@/lib/utils';
@@ -138,7 +138,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
             }
         }));
 
-        const isPlatformAdmin = currentUserRole === 'PLATFORM_ADMIN' || currentUserRole === 'SUPER_ADMIN';
+        const isPlatformAdmin = currentUserRole === Role.PLATFORM_ADMIN || currentUserRole === Role.SUPER_ADMIN;
 
         const orgData = isPlatformAdmin ? {
             name: mail.organization?.name || mail.creator.name || 'User',
@@ -146,7 +146,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
             admin: 'Platform Support Team',
             role: currentUserRole || 'Administrator',
             date: new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
-            signature: 'EduManage @ Support Team'
+            signature: 'EduVerse @ Support Team'
         } : {};
 
         const handleSend = async () => {
@@ -212,7 +212,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                                         ? `${mail.assignees.slice(0, 2).map(a => a.name || a.email).join(', ')} and ${mail.assignees.length - 2} others`
                                         : mail.assignees.map(a => a.name || a.email).join(', ')
                                 ) : mail.targetRole === 'ORG_STAFF' ? 'All Employees' :
-                                    mail.targetRole === 'PLATFORM_ADMIN' || mail.targetRole === 'SUPER_ADMIN' ? 'Platform Administrative Team' :
+                                    mail.targetRole === Role.PLATFORM_ADMIN || mail.targetRole === Role.SUPER_ADMIN ? 'Platform Administrative Team' :
                                         (mail.targetRole?.replace('_', ' ') || 'Platform Support Team')}
                             </p>
                         </div>

@@ -297,6 +297,8 @@ export const api = {
             request<PaginatedResponse<ChatMessage>>(`/chat/${chatId}/messages${buildQueryString(params)}`, { token }),
         sendMessage: (chatId: string, content: string, token: string, replyToId?: string) =>
             request<ChatMessage>(`/chat/${chatId}/messages`, { method: 'POST', body: JSON.stringify({ content, replyToId }), token }),
+        editMessage: (chatId: string, messageId: string, content: string, token: string) =>
+            request<ChatMessage>(`/chat/${chatId}/messages/${messageId}`, { method: 'PATCH', body: JSON.stringify({ content }), token }),
         getUnreadCount: (token: string) =>
             request<{ unread: number }>('/chat/unread-count', { token }),
         markAsRead: (chatId: string, messageId: string | undefined, token: string) =>

@@ -626,6 +626,43 @@ export class ChatService {
 
         return updated;
     }
+
+    async editMessage(chatId: string, messageId: string, content: string, user: CurrentUser) {
+        await this.verifyChatAccess(chatId, user.id, true);
+
+        const message = await this.prisma.chatMessage.findUnique({
+            where: { id: messageId }
+        });
+
+        if (!message || message.chatId !== chatId) throw new NotFoundException('Message not found.');
+
+        // Only the sender can edit their message
+        if (message.senderId !== user.id) {
+            throw new ForbiddenException('You can only edit your own messages.');
+        }
+
+        if (message.deletedAt) throw new BadRequestException('Cannot edit a deleted message.');
+        if (message.type === ChatMessageType.SYSTEM) throw new BadRequestException('Cannot edit system messages.');
+
+        const updated = await this.prisma.chatMessage.update({
+            where: { id: messageId },
+            data: { content },
+            include: {
+                sender: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } },
+                replyTo: { include: { sender: { select: { id: true, name: true } } } },
+                deletedBy: { select: { id: true, name: true } }
+            }
+        });
+
+        // Use same event pattern 'chat:message:edit'
+        this.events.emitToRoom(`chat:${chatId}`, 'chat:message:edit', updated);
+        const participants = await this.prisma.chatParticipant.findMany({ where: { chatId, isActive: true } });
+        for (const p of participants) {
+            this.events.emitToRoom(`user:${p.userId}`, 'chat:message:edit', updated);
+        }
+
+        return updated;
+    }
     async getUserChats(user: CurrentUser) {
         const chats = await this.prisma.chat.findMany({
             where: {

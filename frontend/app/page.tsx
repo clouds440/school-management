@@ -139,7 +139,7 @@ export default function HomePage() {
                   <div className="aspect-video relative rounded-lg md:rounded-xl overflow-hidden bg-gray-100">
                     <img
                       src="/assets/dashboard-preview.png"
-                      alt="EduManage Modern Dashboard Dashboard"
+                      alt="EduVerse Modern Dashboard Dashboard"
                       className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
                     />
                   </div>

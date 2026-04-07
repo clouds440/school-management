@@ -9,11 +9,11 @@ import { useSocket } from '@/hooks/useSocket';
 import { api } from '@/lib/api';
 import { getUserChatsCached, insertOrUpdateChatFromMessage, markAsReadGuard, getCachedChats } from '@/lib/chatStore';
 import { BrandIcon } from '../ui/Brand';
-import { Chat, ChatMessage, ChatType, PaginatedResponse, Role, User } from '@/types';
+import { Chat, ChatMessage, ChatType, ChatMessageType, PaginatedResponse, Role, User } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import {
     Search, Plus, MessageSquarePlus, Send, MoreVertical, X, Loader2, FileUp,
-    UserMinus, Trash2, Shield, Info, ChevronLeft, Check, CheckCheck, ArrowDown, FileText, Reply, ArrowUp
+    UserMinus, Trash2, Shield, Info, ChevronLeft, Check, CheckCheck, ArrowDown, FileText, Reply, ArrowUp, Download
 } from 'lucide-react';
 import { MarkdownEditor } from '../ui/MarkdownEditor';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
@@ -41,15 +41,27 @@ export function ChatLayout() {
     const [isSending, setIsSending] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [showParticipants, setShowParticipants] = useState(false);
     const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
+    const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
 
     // Modal state for image preview
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+    // Mobile: tap-to-show actions
+    const [tappedMessageId, setTappedMessageId] = useState<string | null>(null);
+    const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const handleGlobalClick = () => setOpenDropdownId(null);
+        document.addEventListener('click', handleGlobalClick);
+        return () => document.removeEventListener('click', handleGlobalClick);
+    }, []);
 
     const [confirmConfig, setConfirmConfig] = useState<{
         isOpen: boolean;
@@ -335,6 +347,19 @@ export function ChatLayout() {
             }));
         });
 
+        const unsubEdit = subscribe('chat:message:edit', (editedMsg: unknown) => {
+            const message = editedMsg as ChatMessage;
+            if (message.chatId === activeChatId) {
+                setMessages(prev => prev.map(m => m.id === message.id ? { ...m, ...message } : m));
+            }
+            setChats(prev => prev.map(c => {
+                if (c.id === message.chatId && c.messages?.[0]?.id === message.id) {
+                    return { ...c, messages: [{ ...c.messages[0], ...message }] };
+                }
+                return c;
+            }));
+        });
+
         const unsubUpdate = subscribe('chat:update', (updatedChat: unknown) => {
             const chat = updatedChat as Chat;
             setChats(prev => prev.map(c => c.id === chat.id ? { ...c, ...chat } : c));
@@ -451,7 +476,13 @@ export function ChatLayout() {
                 setIsUploading(false);
             }
 
-            const res = await api.chat.sendMessage(activeChatId, finalContent || 'Sent an attachment', token, replyToMessage?.id || undefined);
+            if (editingMessage) {
+                await api.chat.editMessage(activeChatId, editingMessage.id, finalContent, token);
+                setEditingMessage(null);
+            } else {
+                await api.chat.sendMessage(activeChatId, finalContent || 'Sent an attachment', token, replyToMessage?.id || undefined);
+            }
+
             setMessageDraft('');
             setReplyToMessage(null);
             setIsSending(false);
@@ -574,6 +605,17 @@ export function ChatLayout() {
 
     const handleReply = useCallback((msg: ChatMessage) => {
         setReplyToMessage(msg);
+        setEditingMessage(null);
+        setTimeout(() => {
+            textareaRef.current?.focus();
+        }, 50);
+    }, []);
+
+    const handleEditMessage = useCallback((msg: ChatMessage) => {
+        setEditingMessage(msg);
+        setReplyToMessage(null);
+        setMessageDraft(msg.content);
+        setIsPreviewMode(false);
         setTimeout(() => {
             textareaRef.current?.focus();
         }, 50);
@@ -619,42 +661,93 @@ export function ChatLayout() {
 
     if (!user) return null;
 
+    // Date separator helper
+    const formatDateLabel = (dateStr: string) => {
+        const d = new Date(dateStr);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today.getTime() - 86400000);
+        const msgDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        if (msgDate.getTime() === today.getTime()) return 'Today';
+        if (msgDate.getTime() === yesterday.getTime()) return 'Yesterday';
+        return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    };
+
+    const handleMessageTap = (msgId: string) => {
+        if (isDesktop) return;
+        setTappedMessageId(prev => prev === msgId ? null : msgId);
+    };
+
+    const handleDownload = (e: React.MouseEvent, url: string, name: string) => {
+        e.stopPropagation();
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = name || 'download';
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
-        <div className="flex h-full bg-white lg:rounded-sm lg:shadow-sm lg:border border-gray-100 overflow-hidden relative">
+        <div className="flex h-full bg-gray-50 lg:rounded-xl lg:shadow-md lg:border border-gray-200/60 overflow-hidden relative">
+            {/* ===== SIDEBAR ===== */}
             <div className={`
             ${activeChatId && !isDesktop ? 'hidden' : 'flex'} 
-            w-full lg:max-w-xs xl:max-w-sm border-r border-gray-200 flex-col bg-gray-100 h-full
+            w-full lg:max-w-[320px] xl:max-w-[340px] border-r border-gray-200/80 flex-col bg-white h-full
         `}>
-                <div className="p-4 border-b border-gray-100 bg-white flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-gray-800 tracking-tight">Chats</h2>
+                <div className="px-5 py-4 border-b border-gray-100 bg-linear-to-r from-white to-gray-50/80 flex justify-between items-center">
+                    <div>
+                        <h2 className="text-lg font-extrabold text-gray-900 tracking-tight">Messages</h2>
+                        <p className="text-[10px] text-gray-400 font-semibold tracking-wide mt-0.5">{chats.length} conversation{chats.length !== 1 ? 's' : ''}</p>
+                    </div>
                     {user.role !== Role.STUDENT && (
-                        <Button
+                        <button
                             onClick={() => setIsNewChatModalOpen(true)}
-                            variant="primary"
-                            px="px-3"
-                            py="py-2"
-                            icon={MessageSquarePlus}
-                            title='New Chat'
-                        />
+                            className="p-2.5 bg-primary text-white rounded-xl hover:bg-primary-hover transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 active:scale-95"
+                            title="New Chat"
+                        >
+                            <MessageSquarePlus size={18} />
+                        </button>
                     )}
                 </div>
 
-                <div className="p-3 bg-white border-b border-gray-100">
-                    <Input
-                        icon={Search}
-                        type="text"
-                        placeholder="Search chats..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-gray-100 border-none py-2! pl-10! shadow-none text-sm focus-within:bg-white transition-all ring-primary/20 rounded-sm"
-                    />
+                {/* Search */}
+                <div className="px-4 py-3">
+                    <div className="relative">
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            placeholder="Search conversations..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-gray-100/80 border border-transparent rounded-xl text-sm font-medium text-gray-700 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-primary/30 focus:ring-2 focus:ring-primary/10 transition-all"
+                        />
+                    </div>
                 </div>
 
+                {/* Chat List */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {isLoadingChats ? (
-                        <div className="flex justify-center p-8"><Loader2 className="animate-spin text-gray-400" /></div>
+                        <div className="p-4 space-y-1">
+                            {[...Array(5)].map((_, i) => (
+                                <div key={i} className="flex items-center p-3 space-x-3 rounded-xl">
+                                    <div className="w-12 h-12 rounded-full skeleton-shimmer shrink-0" />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-3.5 w-2/3 rounded-md skeleton-shimmer" />
+                                        <div className="h-3 w-full rounded-md skeleton-shimmer" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     ) : filteredChats.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500 text-sm">No chats found.</div>
+                        <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
+                                <MessageSquarePlus size={28} className="text-gray-300" />
+                            </div>
+                            <p className="text-sm font-semibold text-gray-500 mb-1">No conversations yet</p>
+                            <p className="text-xs text-gray-400">Start a new chat to begin messaging</p>
+                        </div>
                     ) : (
                         filteredChats.map(chat => {
                             const otherUsers = chat.participants?.filter(p => (p.userId !== user.id) && p.isActive) || [];
@@ -664,60 +757,70 @@ export function ChatLayout() {
 
                             const lastMsg = chat.messages?.[0];
                             const isActive = activeChatId === chat.id;
+                            const hasUnread = chat.unreadCount !== undefined && chat.unreadCount > 0;
 
                             return (
                                 <button
                                     type='button'
                                     key={chat.id}
                                     onClick={() => setActiveChatId(chat.id)}
-                                    className={`w-full flex items-center p-4 border-b border-gray-100 transition-colors text-left group ${isActive ? 'bg-primary/5 border-l-4 border-l-primary' : 'hover:bg-white border-l-4 border-l-transparent'}`}
+                                    className={`w-full flex items-center px-4 py-3.5 transition-all text-left group relative
+                                        ${isActive
+                                            ? 'bg-primary/6 border-l-[3px] border-l-primary'
+                                            : 'hover:bg-gray-50 border-l-[3px] border-l-transparent'
+                                        }`}
                                 >
-                                    <UserAvatar
-                                        targetUser={chat.type === ChatType.GROUP
-                                            ? { name: displayName, avatarUrl: chat.avatarUrl, avatarUpdatedAt: chat.avatarUpdatedAt }
-                                            : otherUsers[0]?.user
-                                        }
-                                        className="w-12 h-12 mr-3"
-                                    />
+                                    <div className="relative mr-3 shrink-0">
+                                        <UserAvatar
+                                            targetUser={chat.type === ChatType.GROUP
+                                                ? { name: displayName, avatarUrl: chat.avatarUrl, avatarUpdatedAt: chat.avatarUpdatedAt }
+                                                : otherUsers[0]?.user
+                                            }
+                                            className="w-12 h-12"
+                                        />
+                                        {hasUnread && (
+                                            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-white" />
+                                        )}
+                                    </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex justify-between items-baseline mb-1">
-                                            <h4 className={`font-semibold text-sm truncate pr-2 ${isActive ? 'text-primary' : 'text-gray-900'}`}>
+                                        <div className="flex justify-between items-center mb-0.5">
+                                            <h4 className={`text-[13.5px] truncate pr-2 ${isActive ? 'font-bold text-primary' : hasUnread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>
                                                 {displayName}
                                             </h4>
                                             {lastMsg && (
-                                                <div className="flex flex-col items-end shrink-0 ml-2">
-                                                    <span className="text-[10px] text-gray-600 font-medium mb-1">
-                                                        {formatDistanceToNow(new Date(lastMsg.createdAt), { addSuffix: false })}
-                                                    </span>
-                                                    {chat.unreadCount !== undefined && chat.unreadCount > 0 && (
-                                                        <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 text-[10px] font-black text-white bg-green-500 rounded-full border border-white shadow-sm ring-2 ring-green-500/10">
-                                                            {chat.unreadCount}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                <span className={`text-[10px] shrink-0 ${hasUnread ? 'text-primary font-bold' : 'text-gray-400 font-medium'}`}>
+                                                    {formatDistanceToNow(new Date(lastMsg.createdAt), { addSuffix: false })}
+                                                </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-gray-500 truncate mt-0.5">
-                                            {lastMsg ? (
-                                                <>
-                                                    <span className="font-medium text-gray-400">{lastMsg.senderId === user.id ? 'You: ' : (chat.type === ChatType.GROUP ? `${lastMsg.sender?.name}: ` : '')}</span>
-                                                    {lastMsg.deletedAt ? (
-                                                        <span className="italic text-gray-400 text-[11px]">Message deleted</span>
-                                                    ) : (
-                                                        (() => {
-                                                            const content = lastMsg.content || '';
-                                                            if (content.includes('![')) {
-                                                                const textPart = content.replace(/!\[.*?\]\(.*?\)/g, '').trim();
-                                                                return textPart ? `${textPart} [Image]` : '[Image]';
-                                                            }
-                                                            return content;
-                                                        })()
-                                                    )}
-                                                </>
-                                            ) : (
-                                                <span className="italic">Click to start chatting</span>
+                                        <div className="flex items-center justify-between">
+                                            <p className={`text-[12px] truncate flex-1 ${hasUnread ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                                                {lastMsg ? (
+                                                    <>
+                                                        <span className="text-gray-400">{lastMsg.senderId === user.id ? 'You: ' : (chat.type === ChatType.GROUP ? `${lastMsg.sender?.name?.split(' ')[0]}: ` : '')}</span>
+                                                        {lastMsg.deletedAt ? (
+                                                            <span className="italic text-gray-400">Message deleted</span>
+                                                        ) : (
+                                                            (() => {
+                                                                const content = lastMsg.content || '';
+                                                                if (content.includes('![')) {
+                                                                    const textPart = content.replace(/!\[.*?\]\(.*?\)/g, '').trim();
+                                                                    return textPart ? `${textPart} 📷` : '📷 Photo';
+                                                                }
+                                                                return content;
+                                                            })()
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <span className="italic text-gray-400">Tap to start chatting</span>
+                                                )}
+                                            </p>
+                                            {hasUnread && (
+                                                <span className="ml-2 flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold text-white bg-primary rounded-full">
+                                                    {chat.unreadCount}
+                                                </span>
                                             )}
-                                        </p>
+                                        </div>
                                     </div>
                                 </button>
                             );
@@ -725,23 +828,25 @@ export function ChatLayout() {
                     )}
                 </div>
             </div>
-
+            {/* ===== CHAT PANEL ===== */}
             <div className={`
             ${!activeChatId && !isDesktop ? 'hidden' : 'flex'} 
-            flex-1 flex-col bg-white h-full relative border border-gray-200 shadow-sm m-1 rounded-lg overflow-hidden
+            flex-1 flex-col bg-white h-full relative overflow-hidden
+            ${!isDesktop && activeChatId ? 'animate-chat-slide-in' : ''}
         `}>
                 {activeChat ? (
                     <>
-                        <div className="p-2 border-b border-gray-200 flex items-center justify-between shadow-gray-500 shadow-lg z-20 bg-white/90 backdrop-blur-md">
-                            <div className="flex items-center space-x-3">
+                        {/* Chat Header */}
+                        <div className="px-4 py-3 border-b border-gray-200/80 flex items-center justify-between z-20 bg-white/95 backdrop-blur-md relative">
+                            <div className="flex items-center space-x-3 min-w-0">
                                 {!isDesktop && (
                                     <button
                                         type='button'
                                         title='Back'
-                                        className="p-2 -ml-2 text-primary hover:bg-primary/5 rounded-full transition-colors"
+                                        className="p-1.5 -ml-1 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-xl transition-all active:scale-95"
                                         onClick={() => setActiveChatId(null)}
                                     >
-                                        <ChevronLeft size={24} />
+                                        <ChevronLeft size={22} />
                                     </button>
                                 )}
                                 <UserAvatar
@@ -751,37 +856,38 @@ export function ChatLayout() {
                                     }
                                     className="w-10 h-10"
                                 />
-                                <div>
-                                    <div className="flex items-center">
-                                        <h3 className="font-bold text-gray-800 leading-tight">
-                                            {activeChat.type === ChatType.GROUP ? activeChat.name : activeChat.participants?.find(p => p.userId !== user.id)?.user?.name || 'Unknown'}
-                                        </h3>
-                                        {activeChat.type === ChatType.GROUP && <Shield size={12} className="ml-1.5 text-primary opacity-60" />}
-                                    </div>
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-[15px] text-gray-900 leading-tight truncate">
+                                        {activeChat.type === ChatType.GROUP ? activeChat.name : activeChat.participants?.find(p => p.userId !== user.id)?.user?.name || 'Unknown'}
+                                    </h3>
                                     <button
                                         type='button'
                                         id="participants-toggle"
                                         onClick={() => setShowParticipants(!showParticipants)}
-                                        className={`text-[11px] font-bold px-2 py-0.5 rounded-sm transition-all flex items-center ${showParticipants ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:text-primary hover:bg-primary/5'}`}
+                                        className={`text-[11px] font-semibold rounded-md transition-all flex items-center ${showParticipants ? 'text-primary' : 'text-gray-400 hover:text-primary'}`}
                                     >
                                         {activeChat.type === ChatType.GROUP
-                                            ? `${activeChat.participants?.filter(p => p.isActive).length || 0} participants`
-                                            : activeChat.participants?.find(p => p.userId !== user.id)?.user?.role?.replace('_', ' ') || 'Member'}
+                                            ? `${activeChat.participants?.filter(p => p.isActive).length || 0} members`
+                                            : activeChat.participants?.find(p => p.userId !== user.id)?.user?.role?.replace('_', ' ').toLowerCase() || 'member'}
                                     </button>
                                 </div>
                             </div>
                             <div className="flex items-center space-x-1">
                                 {activeChat.type === ChatType.GROUP && (
-                                    <button
+                                    <Button
                                         type='button'
+                                        variant="secondary"
+                                        px="px-2"
+                                        py="py-2"
                                         onClick={() => setIsSettingsModalOpen(true)}
-                                        className="p-2 text-gray-400 hover:text-primary rounded-sm hover:bg-primary/5 transition-all"
+                                        className="text-gray-400 hover:text-gray-600 rounded-xl bg-transparent border-none shadow-none"
                                         title="Chat Settings"
-                                    >
-                                        <MoreVertical size={20} />
-                                    </button>
+                                        icon={MoreVertical}
+                                    />
                                 )}
                             </div>
+                            {/* Subtle bottom accent */}
+                            <div className="absolute bottom-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary/10 to-transparent" />
                         </div>
 
                         {/* Messages Area */}
@@ -789,178 +895,203 @@ export function ChatLayout() {
                             <div
                                 ref={messagesContainerRef}
                                 onScroll={handleScroll}
-                                className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 custom-scrollbar"
-                                style={{
-                                    backgroundImage: "url('/assets/chat-background.png')",
-                                    backgroundSize: "cover",
-                                    backgroundRepeat: "no-repeat",
-                                    backgroundColor: "rgba(190, 190, 255, 0.95)",
-                                    backgroundBlendMode: "overlay"
-                                }}
+                                className="flex-1 overflow-y-auto px-3 md:px-5 py-3 space-y-0.5 custom-scrollbar chat-bg-pattern"
                             >
                                 {isLoadingMessages ? (
-                                    <div className="flex justify-center p-8"><Loader2 className="animate-spin text-gray-400" /></div>
+                                    <div className="flex flex-col items-center justify-center py-16 space-y-3">
+                                        <Loader2 className="w-6 h-6 animate-spin text-primary/40" />
+                                        <span className="text-xs text-gray-400 font-medium">Loading messages...</span>
+                                    </div>
                                 ) : (
                                     <>
                                         {hasMoreMessages && (
-                                            <div className="flex justify-center pb-4">
-                                                <button
+                                            <div className="flex justify-center py-3">
+                                                <Button
                                                     onClick={loadEarlierMessages}
                                                     disabled={isLoadingMore}
-                                                    className="px-4 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95 flex items-center"
+                                                    variant="secondary"
+                                                    px="px-4"
+                                                    py="py-1.5"
+                                                    className="bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full text-[11px] font-semibold text-gray-500 hover:text-primary hover:border-primary/30 transition-all shadow-sm active:scale-95 flex items-center"
+                                                    icon={isLoadingMore ? Loader2 : ArrowUp}
                                                 >
-                                                    {isLoadingMore ? (
-                                                        <Loader2 className="w-3 h-3 animate-spin mr-2" />
-                                                    ) : (
-                                                        <ArrowUp className="w-3 h-3 mr-2" />
-                                                    )}
-                                                    Load earlier messages
-                                                </button>
+                                                    {isLoadingMore ? 'Loading...' : 'Load earlier'}
+                                                </Button>
                                             </div>
                                         )}
                                         {messages.map((msg, i) => {
-                                            if (msg.type === 'SYSTEM') {
+                                            // Date separator
+                                            const showDateSep = i === 0 || formatDateLabel(msg.createdAt) !== formatDateLabel(messages[i - 1].createdAt);
+
+                                            if (msg.type === ChatMessageType.SYSTEM) {
                                                 return (
-                                                    <div key={msg.id} className="flex justify-center py-2">
-                                                        <div className="bg-gray-100/95 text-gray-600 px-4 py-1.5 rounded-sm text-[11px] font-medium flex items-center border border-gray-200 shadow-lg">
-                                                            <Info size={12} className="mr-1.5 opacity-70" />
-                                                            {msg.content}
+                                                    <div key={msg.id}>
+                                                        {showDateSep && <div className="chat-date-separator"><span>{formatDateLabel(msg.createdAt)}</span></div>}
+                                                        <div className="flex justify-center py-2">
+                                                            <div className="bg-white/80 backdrop-blur-sm text-gray-500 px-4 py-1.5 rounded-full text-[11px] font-medium flex items-center border border-gray-200/60 shadow-sm">
+                                                                <Info size={12} className="mr-1.5 text-gray-400" />
+                                                                {msg.content}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 );
                                             }
 
                                             const isMine = msg.senderId === user.id;
-                                            const showAvatar = !isMine && (i === 0 || messages[i - 1].senderId !== msg.senderId || messages[i - 1].type === 'SYSTEM');
-                                            const isLastInGroup = i === messages.length - 1 || messages[i + 1].senderId !== msg.senderId || messages[i + 1].type === 'SYSTEM';
+                                            const showAvatar = !isMine && (i === 0 || messages[i - 1].senderId !== msg.senderId || messages[i - 1].type === ChatMessageType.SYSTEM);
+                                            const isLastInGroup = i === messages.length - 1 || messages[i + 1].senderId !== msg.senderId || messages[i + 1].type === ChatMessageType.SYSTEM;
                                             const isDeleted = !!msg.deletedAt;
+                                            const showActions = isDesktop || tappedMessageId === msg.id;
 
                                             return (
-                                                <div
-                                                    key={msg.id}
-                                                    id={`msg-${msg.id}`}
-                                                    className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-3' : 'mb-1'} transition-all duration-700 ${highlightedMessageId === msg.id ? 'animate-highlight-float z-40' : ''}`}
-                                                >
-                                                    {!isMine && (
-                                                        <div className="w-8 shrink-0 mr-2.5 flex flex-col justify-end mb-1">
-                                                            {isLastInGroup ? (
-                                                                <UserAvatar targetUser={msg.sender} className="w-8 h-8 rounded-full border border-gray-200 shadow-xl" />
-                                                            ) : <div className="w-8 h-8" />}
-                                                        </div>
-                                                    )}
-
-                                                    <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] ${isMine ? 'items-end' : 'items-start'}`}>
-                                                        {activeChat.type === ChatType.GROUP && !isMine && showAvatar && (
-                                                            <span className="text-[10px] font-bold text-primary mb-1 ml-2 tracking-wide uppercase">
-                                                                {msg.sender?.name}
-                                                            </span>
+                                                <div key={msg.id}>
+                                                    {showDateSep && <div className="chat-date-separator"><span>{formatDateLabel(msg.createdAt)}</span></div>}
+                                                    <div
+                                                        id={`msg-${msg.id}`}
+                                                        onClick={() => handleMessageTap(msg.id)}
+                                                        className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-2.5' : 'mb-0.5'} transition-all duration-500 ${highlightedMessageId === msg.id ? 'animate-highlight-float z-40' : ''}`}
+                                                    >
+                                                        {!isMine && (
+                                                            <div className="w-7 shrink-0 mr-2 flex flex-col justify-end mb-1">
+                                                                {isLastInGroup ? (
+                                                                    <UserAvatar targetUser={msg.sender} className="w-7 h-7 rounded-full" />
+                                                                ) : <div className="w-7 h-7" />}
+                                                            </div>
                                                         )}
-                                                        <div className="relative group/content flex flex-col items-inherit">
-                                                            {/* Quoted Message Preview in Bubble */}
-                                                            {msg.replyTo && !isDeleted && (
-                                                                <div
-                                                                    onClick={() => scrollToMessage(msg.replyTo!.id)}
-                                                                    className={`
-                                                                    mb-0.5 p-2 rounded-lg text-xs max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity
-                                                                    bg-gray-500/90 border-gray-600/90 text-white ${isMine ? 'border-l-4' : 'border-r-4'}`}
-                                                                >
-                                                                    <p className="flex font-black mb-0.5 opacity-80 uppercase tracking-tighter text-[10px]">
-                                                                        <Reply size={12} className='mr-1.5 rotate-180' /><span className='normal-case text-gray-100'>Replying to:&nbsp;</span>{msg.replyTo.sender?.name || 'Someone'}
-                                                                    </p>
-                                                                    <p className="truncate line-clamp-1 italic">
-                                                                        {msg.replyTo.content.replace(/!\[.*?\]\(.*?\)/g, '[Image]')}
-                                                                    </p>
-                                                                </div>
+
+                                                        <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] ${isMine ? 'items-end' : 'items-start'}`}>
+                                                            {activeChat.type === ChatType.GROUP && !isMine && showAvatar && (
+                                                                <span className="text-[10px] font-semibold text-primary/70 mb-0.5 ml-1 tracking-wide">
+                                                                    {msg.sender?.name}
+                                                                </span>
                                                             )}
-                                                            {isDeleted ? (
-                                                                /* Deleted message bubble stays as-is */
-                                                                <div className={`
-                                                                px-4 py-2.5 rounded-2xl shadow-gray-400 shadow-xl text-base leading-relaxed relative
-                                                                bg-gray-100/95 text-gray-600 border border-gray-200
-                                                                ${isMine ? 'rounded-br-none' : 'rounded-bl-none'}
-                                                            `}>
-                                                                    <div className="flex items-center space-x-2 font-medium text-[13px]">
-                                                                        <Trash2 size={14} className="opacity-60" />
-                                                                        <span>This message was deleted by {msg.deletedBy?.name} at {new Date(msg.deletedAt!).toLocaleString()}</span>
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                /* Non-deleted message splitting logic */
-                                                                (() => {
-                                                                    const imageRegex = /(!\[.*?\]\(.*?\))/g;
-                                                                    const segments = msg.content.split(imageRegex).filter(s => s.trim() !== '');
-
-                                                                    return (
-                                                                        <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} space-y-1.5`}>
-                                                                            {segments.map((segment, idx) => {
-                                                                                const isImage = segment.match(/^!\[.*?\]\(.*?\)$/);
-                                                                                if (isImage) {
-                                                                                    return (
-                                                                                        <div key={idx} className={`naked-image-container max-w-full transition-all duration-500 rounded-xl ${highlightedMessageId === msg.id ? 'ring-4 ring-yellow-400 border border-yellow-400 shadow-xl shadow-yellow-300' : ''}`}>
-                                                                                            <MarkdownRenderer content={segment} />
-                                                                                        </div>
-                                                                                    );
-                                                                                }
-
-                                                                                return (
-                                                                                    <div
-                                                                                        key={idx}
-                                                                                        className={`
-                                                                                        px-4 py-2.5 rounded-2xl shadow-xl text-base leading-relaxed relative transition-all duration-500
-                                                                                        ${isMine
-                                                                                                ? 'bg-linear-to-br from-primary/90 to-primary/80 text-white! rounded-br-none shadow-primary/80'
-                                                                                                : 'bg-white/95 text-gray-800 border border-gray-100/50 rounded-bl-none shadow-gray-500'
-                                                                                            }
-                                                                                        ${highlightedMessageId === msg.id ? 'ring-3 ring-yellow-400/50 border border-yellow-400 bg-yellow-200/50! shadow-xl shadow-yellow-200' : ''}
-                                                                                    `}
-                                                                                    >
-                                                                                        <div className={`prose prose-base max-w-none ${isMine && highlightedMessageId !== msg.id ? 'prose-invert prose-p:text-white' : 'prose-p:text-gray-800'}`}>
-                                                                                            <MarkdownRenderer content={segment} className={isMine ? 'text-white!' : ''} />
-                                                                                        </div>
-                                                                                    </div>
-                                                                                );
-                                                                            })}
-
-                                                                            {/* Timestamp & Read Receipts attached to the LAST element or as a standalone overlay if it was an image-only message */}
-                                                                            <div className={`flex items-center justify-end mb-1.5 space-y-2 space-x-1 text-gray-600 text-[12px] font-medium`}>
-                                                                                <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                                                {isMine && (
-                                                                                    <div className="flex">
-                                                                                        {msg.readBy && msg.readBy.length > 0 ? (
-                                                                                            <CheckCheck className="w-5 h-5 text-blue-600" strokeWidth={2} />
-                                                                                        ) : (
-                                                                                            <Check className="w-5 h-5 text-gray-600" strokeWidth={2} />
-                                                                                        )}
-                                                                                    </div>
-                                                                                )}
+                                                            <div className={`flex items-end space-x-1.5 relative max-w-full group/content ${isMine ? 'flex-row-reverse space-x-reverse justify-start' : 'flex-row-reverse justify-end'}`}>
+                                                                <div className="flex flex-col items-inherit max-w-full min-w-0">
+                                                                    {/* Reply Preview */}
+                                                                    {msg.replyTo && !isDeleted && (() => {
+                                                                        const isMineRepliedTo = msg.replyTo.senderId === user.id;
+                                                                        return (
+                                                                            <div
+                                                                                onClick={(e) => { e.stopPropagation(); scrollToMessage(msg.replyTo!.id); }}
+                                                                                className={`mb-0.5 px-3 py-1.5 rounded-lg text-[11px] max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity
+                                                                            ${isMineRepliedTo ? 'bg-primary/20 border-l-[3px] border-primary/40 text-gray-900' : 'bg-black/5 border-l-[3px] border-gray-300 text-gray-800'}`}
+                                                                            >
+                                                                                <p className="font-semibold mb-0.5 text-[10px] flex items-center">
+                                                                                    <Reply size={10} className='mr-1 rotate-180 opacity-60' />
+                                                                                    {msg.replyTo.sender?.name || 'Someone'}
+                                                                                </p>
+                                                                                <p className="truncate line-clamp-1 opacity-80">
+                                                                                    {msg.replyTo.content.replace(/!\[.*?\]\(.*?\)/g, '[Image]')}
+                                                                                </p>
+                                                                            </div>
+                                                                        );
+                                                                    })()}
+                                                                    {isDeleted ? (
+                                                                        <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed bg-gray-100 text-gray-400 border border-gray-200/60 ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
+                                                                            <div className="flex items-center space-x-1.5 italic">
+                                                                                <Trash2 size={13} className="opacity-50" />
+                                                                                <span>Message deleted {msg.deletedBy?.name ? `by ${msg.deletedBy.name}` : ''}</span>
                                                                             </div>
                                                                         </div>
-                                                                    );
-                                                                })()
-                                                            )}
+                                                                    ) : (
+                                                                        (() => {
+                                                                            const imageRegex = /(!\[.*?\]\(.*?\))/g;
+                                                                            const segments = msg.content.split(imageRegex).filter(s => s.trim() !== '');
 
-                                                            {/* Fixed Actions bar - Hover only */}
-                                                            <div className={`
-                                                            absolute top-1/2 -translate-y-1/2 ${isMine ? '-left-16' : '-right-16'}
-                                                            flex space-x-1 opacity-0 group-hover/msg:opacity-100 transition-opacity z-10
-                                                        `}>
+                                                                            return (
+                                                                                <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} space-y-1`}>
+                                                                                    {segments.map((segment, idx) => {
+                                                                                        const isImage = segment.match(/^!\[.*?\]\(.*?\)$/);
+                                                                                        if (isImage) {
+                                                                                            return (
+                                                                                                <div key={idx} className={`naked-image-container max-w-full transition-all duration-500 rounded-xl ${highlightedMessageId === msg.id ? 'ring-3 ring-primary/30' : ''}`}>
+                                                                                                    <MarkdownRenderer content={segment} />
+                                                                                                </div>
+                                                                                            );
+                                                                                        }
+
+                                                                                        return (
+                                                                                            <div
+                                                                                                key={idx}
+                                                                                                className={`
+                                                                                            px-3.5 py-2 rounded-2xl text-[14px] leading-relaxed relative transition-all duration-300
+                                                                                            ${isMine
+                                                                                                        ? 'bg-primary text-white rounded-br-sm shadow-sm shadow-primary/20'
+                                                                                                        : 'bg-white text-gray-800 border border-gray-200/60 rounded-bl-sm shadow-sm'
+                                                                                                    }
+                                                                                            ${highlightedMessageId === msg.id ? 'ring-2 ring-primary/30 shadow-md' : ''}
+                                                                                        `}
+                                                                                            >
+                                                                                                <div className={`prose prose-sm max-w-none ${isMine && highlightedMessageId !== msg.id ? 'prose-invert prose-p:text-white' : 'prose-p:text-gray-800'}`}>
+                                                                                                    <MarkdownRenderer content={segment} className={isMine ? 'text-white!' : ''} />
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
+
+                                                                                    {/* Timestamp & Read Receipts */}
+                                                                                    <div className="flex items-center space-x-1 px-1">
+                                                                                        <span className="text-[10px] text-gray-400 font-medium">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                                        {isMine && (
+                                                                                            msg.readBy && msg.readBy.length > 0 ? (
+                                                                                                <CheckCheck className="w-3.5 h-3.5 text-blue-500" strokeWidth={2.5} />
+                                                                                            ) : (
+                                                                                                <Check className="w-3.5 h-3.5 text-gray-400" strokeWidth={2.5} />
+                                                                                            )
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        })()
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Actions */}
                                                                 {!isDeleted && (
-                                                                    <button
-                                                                        onClick={() => handleReply(msg)}
-                                                                        className="p-1.5 text-gray-500 hover:text-primary hover:bg-white rounded-full transition-all shadow-sm border border-gray-100 bg-white/50 backdrop-blur-sm"
-                                                                        title="Reply"
-                                                                    >
-                                                                        <Reply size={14} />
-                                                                    </button>
-                                                                )}
-                                                                {(isMine || user.role === Role.ORG_ADMIN) && !isDeleted && (
-                                                                    <button
-                                                                        onClick={() => handleDeleteMessage(msg.id)}
-                                                                        className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-white rounded-full transition-all shadow-sm border border-gray-100 bg-white/50 backdrop-blur-sm"
-                                                                        title="Delete"
-                                                                    >
-                                                                        <Trash2 size={14} />
-                                                                    </button>
+                                                                    <div className={`relative shrink-0 flex items-center justify-center transition-all mb-[18px] ${isDesktop && openDropdownId !== msg.id ? 'opacity-0' : 'opacity-100'} group-hover/content:opacity-100`}>
+                                                                        <button
+                                                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenDropdownId(openDropdownId === msg.id ? null : msg.id); }}
+                                                                            className={`p-1.5 rounded-lg transition-all border shadow-sm ${openDropdownId === msg.id ? 'bg-primary/5 text-primary border-primary/20' : 'text-gray-400 hover:text-primary hover:bg-white border-gray-200/60 bg-white/90 backdrop-blur-sm'}`}
+                                                                            title="More actions"
+                                                                        >
+                                                                            <MoreVertical size={13} />
+                                                                        </button>
+                                                                        {openDropdownId === msg.id && (
+                                                                            <div className={`absolute ${isMine ? 'right-0' : 'left-0'} bottom-full mb-1 w-32 bg-white border border-gray-100 rounded-xl shadow-xl z-70 flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100`}>
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleReply(msg); }}
+                                                                                    className="w-full text-left px-3 py-2 text-[12px] text-gray-600 hover:bg-gray-50 flex items-center mb-0.5"
+                                                                                >
+                                                                                    <Reply size={12} className="mr-2 opacity-70" /> Reply
+                                                                                </button>
+                                                                                {isMine && (
+                                                                                    <button
+                                                                                        onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleEditMessage(msg); }}
+                                                                                        className="w-full text-left px-3 py-2 text-[12px] text-gray-600 hover:bg-gray-50 flex items-center mb-0.5"
+                                                                                    >
+                                                                                        <FileText size={12} className="mr-2 opacity-70 text-emerald-500" /> Edit
+                                                                                    </button>
+                                                                                )}
+                                                                                {Array.from(msg.content.matchAll(/\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g)).map((match, idx) => (
+                                                                                    <button
+                                                                                        key={idx}
+                                                                                        onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDownload(e, match[2], match[1] || 'download') }}
+                                                                                        className="w-full text-left px-3 py-2 text-[12px] text-gray-600 hover:bg-gray-50 flex items-center mb-0.5"
+                                                                                    >
+                                                                                        <Download size={12} className="mr-2 opacity-70 text-blue-500" /> Download
+                                                                                    </button>
+                                                                                ))}
+                                                                                {(isMine || user.role === Role.ORG_ADMIN) && (
+                                                                                    <button
+                                                                                        onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDeleteMessage(msg.id); }}
+                                                                                        className="w-full text-left px-3 py-2 text-[12px] text-red-600 hover:bg-red-50 flex items-center mt-1 border-t border-gray-100 pt-2"
+                                                                                    >
+                                                                                        <Trash2 size={12} className="mr-2 opacity-70" /> Delete
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -968,22 +1099,22 @@ export function ChatLayout() {
                                                 </div>
                                             );
                                         })}
+
                                         <div ref={messagesEndRef} />
 
                                         {hasMoreAfter && (
-                                            <div className="flex justify-center pt-4">
-                                                <button
+                                            <div className="flex justify-center py-3">
+                                                <Button
                                                     onClick={loadNewerMessages}
                                                     disabled={isLoadingNewer}
-                                                    className="px-4 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95 flex items-center"
+                                                    variant="secondary"
+                                                    px="px-4"
+                                                    py="py-1.5"
+                                                    className="bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full text-[11px] font-semibold text-gray-500 hover:text-primary hover:border-primary/30 transition-all shadow-sm active:scale-95 flex items-center"
+                                                    icon={isLoadingNewer ? Loader2 : ArrowDown}
                                                 >
-                                                    {isLoadingNewer ? (
-                                                        <Loader2 className="w-3 h-3 animate-spin mr-2" />
-                                                    ) : (
-                                                        <ArrowDown className="w-3 h-3 mr-2" />
-                                                    )}
-                                                    Load newer messages
-                                                </button>
+                                                    {isLoadingNewer ? 'Loading...' : 'Load newer'}
+                                                </Button>
                                             </div>
                                         )}
                                     </>
@@ -992,29 +1123,29 @@ export function ChatLayout() {
 
                             {/* History Mode Banner */}
                             {isViewingHistory && (
-                                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-primary/95 text-white px-4 py-2 rounded-full shadow-lg border border-white/20 backdrop-blur-sm flex items-center space-x-3 text-xs font-bold animate-in slide-in-from-top duration-300">
-                                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
-                                    <span>Viewing message history</span>
+                                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-gray-900/90 text-white px-4 py-2 rounded-full shadow-lg backdrop-blur-sm flex items-center space-x-3 text-[11px] font-semibold animate-in slide-in-from-top duration-300">
+                                    <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
+                                    <span>Viewing history</span>
                                     <button
                                         onClick={() => activeChatId && fetchInitialMessages(activeChatId)}
-                                        className="bg-white text-primary px-3 py-1 rounded-full hover:bg-gray-100 transition-colors uppercase tracking-widest text-[10px]"
+                                        className="bg-white text-gray-900 px-3 py-1 rounded-full hover:bg-gray-100 transition-colors font-bold text-[10px]"
                                     >
-                                        Jump to Present
+                                        Jump to present
                                     </button>
                                 </div>
                             )}
 
-                            {/* Scroll to Bottom Button */}
+                            {/* Scroll to Bottom FAB */}
                             {((!isAtBottom && !isLoadingMessages) || isViewingHistory) && (
                                 <button
                                     type="button"
                                     onClick={() => isViewingHistory ? (activeChatId && fetchInitialMessages(activeChatId)) : scrollToBottom()}
-                                    className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 p-3 bg-primary text-primary-text rounded-full shadow-lg hover:bg-primary-hover transition-all animate-in fade-in zoom-in group"
+                                    className="absolute bottom-6 right-6 z-30 p-2.5 bg-white text-gray-600 rounded-full shadow-lg border border-gray-200/80 hover:bg-primary hover:text-white hover:border-primary transition-all active:scale-95 group"
                                     title={isViewingHistory ? "Jump to Present" : "Scroll to bottom"}
                                 >
-                                    <ArrowDown size={20} className="group-hover:translate-y-0.5 transition-transform" />
+                                    <ArrowDown size={18} className="group-hover:translate-y-0.5 transition-transform" />
                                     {!isViewingHistory && unreadSinceScroll > 0 && (
-                                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm animate-bounce">
+                                        <span className="absolute -top-1.5 -right-1.5 bg-primary text-white text-[9px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
                                             {unreadSinceScroll}
                                         </span>
                                     )}
@@ -1025,148 +1156,184 @@ export function ChatLayout() {
                             {showParticipants && (
                                 <div
                                     ref={participantsRef}
-                                    className="absolute top-0 right-0 h-full w-72 bg-white border-l border-gray-200 shadow-2xl z-30 animate-in slide-in-from-right transition-all flex flex-col"
+                                    className="absolute top-0 right-0 h-full w-72 bg-white border-l border-gray-200/80 shadow-2xl z-30 animate-in slide-in-from-right duration-300 flex flex-col"
                                 >
-                                    <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                                        <h4 className="font-bold text-gray-800 text-sm uppercase tracking-wider">Group Members</h4>
+                                    <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                                        <h4 className="font-bold text-gray-800 text-[13px]">Members</h4>
                                         <button
                                             type="button"
                                             onClick={() => setShowParticipants(false)}
-                                            className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-sm transition-colors"
+                                            className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors"
                                             title="Close"
                                         >
-                                            <X size={18} />
+                                            <X size={16} />
                                         </button>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
+                                    <div className="flex-1 overflow-y-auto p-3 space-y-0.5 custom-scrollbar">
                                         {activeChat.participants?.filter(p => p.isActive).map(p => (
-                                            <div key={p.id} className="flex items-center justify-between p-2.5 rounded-sm hover:bg-gray-50 transition-colors group/item border border-transparent hover:border-gray-100">
-                                                <div className="flex items-center space-x-3 min-w-0">
-                                                    <UserAvatar targetUser={p.user} className="w-9 h-9" />
+                                            <div key={p.id} className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 transition-colors group/item">
+                                                <div className="flex items-center space-x-2.5 min-w-0">
+                                                    <UserAvatar targetUser={p.user} className="w-8 h-8" />
                                                     <div className="min-w-0">
-                                                        <p className="text-[13px] font-bold text-gray-900 truncate">{p.user?.name} {p.userId === user.id && '(You)'}</p>
-                                                        <p className="text-[10px] text-primary/70 font-bold uppercase tracking-widest truncate">{p.user?.role?.toLowerCase().replace('_', ' ')}</p>
+                                                        <p className="text-[13px] font-semibold text-gray-800 truncate">{p.user?.name} {p.userId === user.id && <span className="text-gray-400 font-normal">(You)</span>}</p>
+                                                        <p className="text-[10px] text-gray-400 font-medium capitalize truncate">{p.user?.role?.toLowerCase().replace('_', ' ')}</p>
                                                     </div>
                                                 </div>
                                                 {isGroupAdmin && p.userId !== user.id && p.userId !== activeChat.creatorId && (
-                                                    <button
+                                                    <Button
+                                                        variant="danger"
+                                                        px="p-1.5"
+                                                        py="p-1.5"
                                                         onClick={() => handleRemoveParticipant(p.userId)}
-                                                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg opacity-60 group-hover/item:opacity-100 transition-all border border-red-100/30 hover:border-red-200 shadow-sm"
+                                                        className="text-gray-300 hover:text-white rounded-lg opacity-0 group-hover/item:opacity-100 transition-all bg-transparent border-none shadow-none"
                                                         title="Remove from group"
-                                                    >
-                                                        <UserMinus size={15} />
-                                                    </button>
+                                                        icon={UserMinus}
+                                                    />
                                                 )}
                                             </div>
                                         ))}
-                                    </div>
-                                    <div className="p-4 bg-gray-50/50 border-t border-gray-100">
-                                        <p className="text-[10px] text-gray-400 font-medium text-center italic">Only admins can manage group members.</p>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Input Area */}
-                        <div className="bg-white border-t border-gray-200 z-20">
-                            {/* Reply Preview Banner */}
-                            {replyToMessage && (
-                                <div className="mb-1 p-2 bg-primary/5 border-l-4 border-primary rounded-r-lg flex items-start justify-between animate-in slide-in-from-bottom-2 duration-200">
-                                    <div className="flex-1 min-w-0 pr-4">
-                                        <p className="text-[10px] font-black text-primary uppercase tracking-wider mb-0.5">
-                                            Replying to {replyToMessage.sender?.name || 'Message'}
+                        {/* Input Composer */}
+                        <div className="bg-white border-t border-gray-200/80 px-3 md:px-4 py-3 z-20">
+                            {/* Reply / Edit Banner */}
+                            {(replyToMessage || editingMessage) && (
+                                <div className="mb-2 px-3 py-2 bg-gray-50 border-l-[3px] border-primary rounded-r-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                                    <div className="flex-1 min-w-0 pr-3">
+                                        <p className="text-[10px] font-semibold text-primary mb-0.5">
+                                            {editingMessage ? 'Editing Message' : `Replying to ${replyToMessage?.sender?.name || 'Message'}`}
                                         </p>
-                                        <p className="text-xs text-gray-600 truncate italic">
-                                            {replyToMessage.content.replace(/!\[.*?\]\(.*?\)/g, '[Image]')}
+                                        <p className="text-[11px] text-gray-500 truncate">
+                                            {(editingMessage?.content || replyToMessage?.content || '').replace(/!\[.*?\]\(.*?\)/g, '📷 Photo')}
                                         </p>
                                     </div>
                                     <button
-                                        onClick={() => setReplyToMessage(null)}
-                                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                        onClick={() => {
+                                            setReplyToMessage(null);
+                                            if (editingMessage) {
+                                                setEditingMessage(null);
+                                                setMessageDraft('');
+                                            }
+                                        }}
+                                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                                     >
                                         <X size={14} />
                                     </button>
                                 </div>
                             )}
 
-                            <div className="flex items-end space-x-2">
-                                <div className="flex-1">
-                                    {/* Staged Files Preview */}
-                                    {stagedFiles.length > 0 && (
-                                        <div className="flex flex-wrap gap-2 mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                            {stagedFiles.map((file, i) => (
-                                                <div key={i} className="group relative flex items-center bg-gray-50 border border-gray-200 pl-2 pr-1 py-1 rounded-sm shadow-sm hover:border-primary/30 transition-all">
-                                                    {file.type.startsWith('image/') ? (
-                                                        <div className="w-8 h-8 rounded-sm overflow-hidden bg-gray-200 mr-2 border border-gray-100">
-                                                            <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="w-8 h-8 rounded-sm bg-primary/10 flex items-center justify-center text-primary mr-2">
-                                                            <FileText size={14} />
-                                                        </div>
-                                                    )}
-                                                    <div className="flex flex-col mr-2 max-w-[100px]">
-                                                        <span className="text-[10px] font-bold text-gray-700 truncate">{file.name}</span>
-                                                        <span className="text-[8px] font-medium text-gray-400">{(file.size / 1024).toFixed(0)} KB</span>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        title='Close'
-                                                        onClick={() => removeStagedFile(i)}
-                                                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
-                                                    >
-                                                        <X size={12} />
-                                                    </button>
+                            {/* Staged Files */}
+                            {stagedFiles.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {stagedFiles.map((file, i) => (
+                                        <div key={i} className="group relative flex items-center bg-gray-50 border border-gray-200/80 pl-2 pr-1 py-1 rounded-xl hover:border-primary/30 transition-all">
+                                            {file.type.startsWith('image/') ? (
+                                                <div className="w-8 h-8 rounded-lg overflow-hidden bg-gray-200 mr-2">
+                                                    <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
                                                 </div>
-                                            ))}
+                                            ) : (
+                                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary mr-2">
+                                                    <FileText size={14} />
+                                                </div>
+                                            )}
+                                            <div className="flex flex-col mr-1.5 max-w-[80px]">
+                                                <span className="text-[10px] font-semibold text-gray-700 truncate">{file.name}</span>
+                                                <span className="text-[9px] text-gray-400">{(file.size / 1024).toFixed(0)} KB</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                title='Remove'
+                                                onClick={() => removeStagedFile(i)}
+                                                className="p-0.5 text-gray-400 hover:text-red-500 rounded-full transition-all"
+                                            >
+                                                <X size={12} />
+                                            </button>
                                         </div>
-                                    )}
+                                    ))}
+                                </div>
+                            )}
 
-                                    <MarkdownEditor
-                                        ref={textareaRef}
+                            {/* Composer Row */}
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    title='Upload File'
+                                    type="file"
+                                    id="chat-file-upload"
+                                    className="hidden"
+                                    onChange={handleFileUpload}
+                                    multiple
+                                />
+                                <Button
+                                    type="button"
+                                    icon={FileUp}
+                                    variant="secondary"
+                                    px='px-3.5'
+                                    py='py-3.5'
+                                    onClick={() => document.getElementById('chat-file-upload')?.click()}
+                                    className="rounded-xl text-gray-400 hover:text-primary"
+                                    title="Attach file"
+                                />
+
+                                <div className="flex-1 relative flex items-center bg-gray-100/80 border border-transparent rounded-2xl focus-within:bg-white focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                                    <textarea
+                                        ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
                                         value={messageDraft}
-                                        onChange={setMessageDraft}
+                                        onChange={(e) => {
+                                            setMessageDraft(e.target.value);
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                                        }}
                                         onKeyDown={handleKeyDown}
                                         onFocus={handleEditorFocus}
                                         placeholder={stagedFiles.length > 0 ? "Add a caption..." : "Type a message..."}
                                         rows={1}
-                                        className="border-gray-200! shadow-none! focus-within:border-primary/50! focus-within:ring-1! focus-within:ring-primary/50! transition-all rounded-sm"
+                                        className="w-full px-4 py-3 bg-transparent border-none text-[14px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-0 resize-none max-h-[120px] leading-relaxed"
                                     />
+
+                                    {/* Preview Toggle Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPreviewMode(!isPreviewMode)}
+                                        className={`absolute right-2 bottom-2 px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors ${isPreviewMode ? 'bg-primary/10 text-primary' : 'bg-gray-200/60 text-gray-500 hover:bg-gray-200'} shrink-0`}
+                                        title={isPreviewMode ? "Write text" : "Preview markdown"}
+                                    >
+                                        {isPreviewMode ? 'Edit' : 'Preview'}
+                                    </button>
                                 </div>
-                                <div className="flex flex-col space-y-2.5 pb-0.5 relative">
-                                    <input
-                                        title='Upload File'
-                                        type="file"
-                                        id="chat-file-upload"
-                                        className="hidden"
-                                        onChange={handleFileUpload}
-                                        multiple
-                                    />
-                                    <Button
-                                        onClick={() => document.getElementById('chat-file-upload')?.click()}
-                                        title="Attach file"
-                                        icon={FileUp}
-                                        variant="warning"
-                                    />
-                                    <Button
-                                        onClick={handleSendMessage}
-                                        disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
-                                        isLoading={isSending || isUploading}
-                                        variant='primary'
-                                        loadingText=" "
-                                        icon={Send}
-                                    />
-                                </div>
+                                <Button
+                                    type="button"
+                                    icon={isSending || isUploading ? Loader2 : Send}
+                                    variant="primary"
+                                    px='px-3.5'
+                                    py='py-3.5'
+                                    onClick={handleSendMessage}
+                                    disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
+                                    className="rounded-xl transition-all shrink-0 self-end active:scale-95 shadow-md shadow-primary/20"
+                                    title="Send"
+                                />
                             </div>
+
+                            {/* Preview Mode Render */}
+                            {isPreviewMode && messageDraft.trim() && (
+                                <div className="mt-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200/60 max-h-[150px] overflow-y-auto custom-scrollbar">
+                                    <div className="prose prose-sm max-w-none prose-p:text-gray-700">
+                                        <MarkdownRenderer content={messageDraft} />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center bg-gray-50/30 text-gray-400">
-                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-                            <Send size={40} className="text-gray-300 ml-1" />
+                    /* Empty State */
+                    <div className="flex-1 flex flex-col items-center justify-center chat-bg-pattern">
+                        <div className="w-20 h-20 bg-white rounded-xl flex items-center justify-center shadow-sm border border-gray-200/60 mb-5">
+                            <MessageSquarePlus size={36} className="text-gray-300" />
                         </div>
-                        <h3 className="text-xl font-medium text-gray-600 mb-2">Your Messages</h3>
-                        <p className="text-sm">Select a chat to start participating or create a new one.</p>
+                        <h3 className="text-lg font-bold text-gray-700 mb-1">Your Messages</h3>
+                        <p className="text-sm text-gray-400 max-w-xs text-center">Select a conversation or start a new one to begin chatting</p>
                     </div>
                 )}
             </div>

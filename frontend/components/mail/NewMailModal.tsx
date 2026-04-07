@@ -135,7 +135,7 @@ export function NewMailModal({
         [targets, targetIds]
     );
 
-    const isPlatformAdmin = user?.role === 'PLATFORM_ADMIN' || user?.role === 'SUPER_ADMIN';
+    const isPlatformAdmin = user?.role === Role.PLATFORM_ADMIN || user?.role === Role.SUPER_ADMIN;
     const primaryTarget = selectedTargets[0];
     const isTargetingPlatform = selectedTargets.some(t => t.role === Role.PLATFORM_ADMIN || t.role === Role.SUPER_ADMIN);
     const showNoReply = (isPlatformAdmin || user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) &&
@@ -147,7 +147,7 @@ export function NewMailModal({
         admin: user?.name || 'Administrator',
         role: user?.role || 'Platform Admin',
         date: new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
-        signature: 'EduManage Support'
+        signature: 'EduVerse Support'
     } : {};
 
     // Fetch contactable users when modal opens

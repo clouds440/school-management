@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Users, Mail, MessageSquare, Calendar, UserPlus } from 'lucide-react';
 import { api } from '@/lib/api';
-import { PlatformAdmin, PaginatedResponse } from '@/types';
+import { PlatformAdmin, PaginatedResponse, Role } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
 import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -222,7 +222,7 @@ export default function PlatformAdminsPage() {
         );
     }
 
-    if (user?.role !== 'SUPER_ADMIN') {
+    if (user?.role !== Role.SUPER_ADMIN) {
         return <div className="p-8 text-center text-gray-500">Access Restricted</div>;
     }
 

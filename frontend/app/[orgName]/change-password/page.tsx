@@ -22,9 +22,9 @@ export default function OrganizationChangePasswordPage() {
                 <ChangePasswordForm
                     title="Change Password"
                     description={
-                        (user?.role === 'ORG_ADMIN' || user?.role === 'ORG_MANAGER')
+                        (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER)
                             ? `Update administrative password for ${user?.name || 'Organization'}`
-                            : user?.role === 'TEACHER'
+                            : user?.role === Role.TEACHER
                                 ? `Update teacher portal password for ${user?.name || 'User'}`
                                 : `Update student portal password for ${user?.name || 'User'}`
                     }

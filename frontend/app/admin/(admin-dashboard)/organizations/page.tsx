@@ -493,7 +493,7 @@ export default function OrganizationsPage() {
                             admin: user?.name || 'Platform Administrator',
                             role: user?.role || 'Administrator',
                             date: new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
-                            signature: 'EduManage @ Support Team'
+                            signature: 'EduVerse @ Support Team'
                         }}
                         templates={[
                             {
