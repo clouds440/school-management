@@ -57,8 +57,8 @@ export class WsJwtGuard implements CanActivate {
 
             if (!user) return false;
 
-            // Token version check: only enforce if the payload has a version (legacy token safety)
-            if (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion) return false;
+            // Token version check
+            if (user.tokenVersion !== payload.tokenVersion) return false;
 
             // Attach user data to socket for downstream use
             client.data.user = user;

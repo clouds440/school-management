@@ -32,8 +32,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
             throw new UnauthorizedException();
         }
 
-        // Token Versioning check: only enforce if the payload has a version (resilient to legacy tokens)
-        if (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion) {
+        // Token Versioning check
+        if (user.tokenVersion !== payload.tokenVersion) {
             throw new UnauthorizedException('Session expired or revoked. Please log in again.');
         }
 

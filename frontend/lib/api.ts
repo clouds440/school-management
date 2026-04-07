@@ -15,9 +15,9 @@ if (!API_BASE_URL) {
     throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
 }
 
-let unauthorizedHandler: (() => void) | null = null;
+let unauthorizedHandler: ((failedToken?: string) => void) | null = null;
 
-export const setUnauthorizedHandler = (handler: () => void) => {
+export const setUnauthorizedHandler = (handler: (failedToken?: string) => void) => {
     unauthorizedHandler = handler;
 };
 
@@ -51,7 +51,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...rest, headers });
 
     if (response.status === 401 && unauthorizedHandler) {
-        unauthorizedHandler();
+        unauthorizedHandler(token);
     }
 
     if (!response.ok) {
@@ -121,7 +121,7 @@ export const api = {
             });
 
             if (response.status === 401 && unauthorizedHandler) {
-                unauthorizedHandler();
+                unauthorizedHandler(token);
             }
 
             if (!response.ok) throw new Error('Failed to upload logo');
@@ -173,7 +173,7 @@ export const api = {
             });
 
             if (response.status === 401 && unauthorizedHandler) {
-                unauthorizedHandler();
+                unauthorizedHandler(token);
             }
 
             if (!response.ok) throw new Error('Failed to upload avatar');
@@ -232,7 +232,7 @@ export const api = {
             });
 
             if (response.status === 401 && unauthorizedHandler) {
-                unauthorizedHandler();
+                unauthorizedHandler(token);
             }
 
             if (!response.ok) {
@@ -270,7 +270,7 @@ export const api = {
                 });
 
                 if (response.status === 401 && unauthorizedHandler) {
-                    unauthorizedHandler();
+                    unauthorizedHandler(token);
                 }
 
                 if (!response.ok) throw new Error('Failed to send reply with files');

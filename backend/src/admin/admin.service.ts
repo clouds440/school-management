@@ -389,6 +389,7 @@ export class AdminService {
                 name: data.name,
                 phone: data.phone,
                 role: Role.PLATFORM_ADMIN,
+                tokenVersion: 0,
             },
             select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true }
         });
@@ -440,7 +441,8 @@ export class AdminService {
             where: { id: userId },
             data: {
                 password: hashedNew,
-                isFirstLogin: false
+                isFirstLogin: false,
+                tokenVersion: { increment: 1 }
             }
         });
 

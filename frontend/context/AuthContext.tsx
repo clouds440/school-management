@@ -69,8 +69,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Register global 401 handler
     useEffect(() => {
-        setUnauthorizedHandler(() => {
-            if (localStorage.getItem('token')) {
+        setUnauthorizedHandler((failedToken) => {
+            const currentToken = localStorage.getItem('token');
+            // Only trigger if the failure was for our actual current token
+            // This prevents race conditions when switching accounts
+            if (currentToken && (!failedToken || failedToken === currentToken)) {
                 localStorage.removeItem('token');
                 dispatch({ type: 'AUTH_LOGOUT' });
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Your session has expired. Please log in again.', type: 'info' } });
