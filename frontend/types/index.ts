@@ -1,5 +1,5 @@
-import { Role, TeacherStatus, StudentStatus, MailStatus, MailCategory, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority } from './enums';
-export { Role, TeacherStatus, StudentStatus, MailStatus, MailCategory, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority } from './enums';
+import { Role, TeacherStatus, StudentStatus, MailStatus, MailCategory, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority, ThemeMode } from './enums';
+export { Role, TeacherStatus, StudentStatus, MailStatus, MailCategory, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority, ThemeMode } from './enums';
 
 export interface PaginatedResponse<T> {
     data: T[];
@@ -119,7 +119,7 @@ export interface Organization {
     phone?: string;
     logoUrl?: string | null;
     avatarUpdatedAt?: string | null;
-    accentColor?: { primary?: string; secondary?: string } | null;
+    accentColor?: { primary?: string; secondary?: string; mode?: ThemeMode } | null;
     status: OrgStatus;
     statusHistory?: StatusHistoryEntry[];
     createdAt: string;
@@ -158,7 +158,7 @@ export interface UpdateOrgSettingsRequest {
     location?: string;
     contactEmail?: string;
     phone?: string;
-    accentColor?: { primary?: string; secondary?: string };
+    accentColor?: { primary?: string; secondary?: string; mode?: ThemeMode };
 }
 
 export interface PlatformAdmin {

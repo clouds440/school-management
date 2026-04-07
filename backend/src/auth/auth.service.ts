@@ -3,7 +3,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { User, Organization, Teacher } from '@prisma/client';
+import { User, Organization, Teacher, ThemeMode } from '@prisma/client';
 import { Role, OrgStatus } from '../common/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { BCRYPT_ROUNDS } from '../common/utils';
@@ -14,6 +14,7 @@ export type TokenUser = User & {
     avatarUrl?: string | null;
     avatarUpdatedAt?: Date | null;
     tokenVersion?: number;
+    themeMode?: ThemeMode | null;
 };
 
 @Injectable()
@@ -99,6 +100,7 @@ export class AuthService {
             orgLogoUrl: user.organization?.logoUrl || null,
             avatarUrl: user.avatarUrl || null,
             avatarUpdatedAt: user.avatarUpdatedAt || null,
+            themeMode: user.themeMode ?? ThemeMode.SYSTEM,
             status: user.organization ? user.organization.status : OrgStatus.APPROVED, // Keep SUPER_ADMIN as APPROVED
             isFirstLogin: user.isFirstLogin,
             tokenVersion: user.tokenVersion
@@ -110,6 +112,26 @@ export class AuthService {
                 expiresIn: rememberMe ? '30d' : '1d'
             }),
             role: user.role
+        };
+    }
+
+    async updateProfile(userId: string, data: Partial<{ themeMode: 'LIGHT' | 'DARK' | 'SYSTEM'; name?: string }>) {
+        const updated = await this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                themeMode: data.themeMode,
+                name: data.name,
+            },
+            include: { organization: true, teacherProfile: true }
+        });
+
+        return {
+            id: updated.id,
+            email: updated.email,
+            name: updated.name,
+            organization: updated.organization,
+            teacherProfile: updated.teacherProfile,
+            themeMode: updated.themeMode,
         };
     }
 

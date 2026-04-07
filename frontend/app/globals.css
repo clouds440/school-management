@@ -33,6 +33,7 @@
   --item-hover: #f1f5f9;
   --shadow-color: rgba(0, 0, 0, 0.1);
   --theme-bg: #f8fafc;
+  --chat-doodle: url('/assets/chat-doodle-light.jpg');
 }
 
 @theme {
@@ -350,6 +351,52 @@ body {
     background: rgba(255, 255, 255, 0.2);
   }
 
+  /* Dark-mode overrides for common utility classes so components using plain Tailwind colors follow theme */
+  .dark .bg-white,
+  .dark .bg-white\/50,
+  .dark .bg-white\/80,
+  .dark .bg-white\/90,
+  .dark .bg-gray-50,
+  .dark .bg-gray-100,
+  .dark .bg-gray-200 {
+    background-color: var(--card-bg) !important;
+    color: var(--card-text) !important;
+  }
+
+  .dark .text-gray-900,
+  .dark .text-gray-800,
+  .dark .text-gray-700,
+  .dark .text-gray-600,
+  .dark .text-slate-900,
+  .dark .text-slate-800 {
+    color: var(--foreground) !important;
+  }
+
+  .dark .border-gray-100,
+  .dark .border-gray-200,
+  .dark .border-gray-300,
+  .dark .border-slate-100 {
+    border-color: rgba(255,255,255,0.06) !important;
+  }
+
+  /* Broad selectors to catch many Tailwind utility uses and enforce theme colors */
+  .dark [class*="bg-white"],
+  .dark [class*="bg-gray-"] ,
+  .dark [class*="bg-slate-"] {
+    background-color: var(--card-bg) !important;
+    color: var(--card-text) !important;
+  }
+
+  .dark [class*="text-gray-"],
+  .dark [class*="text-slate-"] {
+    color: var(--foreground) !important;
+  }
+
+  .dark [class*="border-gray-"],
+  .dark [class*="border-slate-"] {
+    border-color: rgba(255,255,255,0.06) !important;
+  }
+
   /* --- Chat Highlight & Image Enhancements --- */
   @keyframes highlight-float {
     0% {
@@ -417,9 +464,8 @@ body {
 
   /* --- Modern Chat Background Pattern --- */
   .chat-bg-pattern {
-    background-image:
-      url('/assets/chat-doodle-light.jpg');
-    background-color: invert(100%);
+    background-image: var(--chat-doodle);
+    background-color: transparent;
     background-size: cover;
     background-position: center;
     background-attachment: fixed;

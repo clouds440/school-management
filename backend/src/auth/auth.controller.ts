@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, Patch } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -27,6 +28,13 @@ export class AuthController {
             message: 'You have accessed a protected route successfully!',
             organization: req.user
         };
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('profile')
+    async updateProfile(@Request() req: { user: { sub: string } }, @Body() updateDto: UpdateUserDto) {
+        const userId = req.user.sub;
+        return this.authService.updateProfile(userId, updateDto);
     }
 
     @UseGuards(JwtAuthGuard)

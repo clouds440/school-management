@@ -3,13 +3,16 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { api } from '@/lib/api';
-import { Role } from '@/types';
+import { Role, ThemeMode } from '@/types';
 
 interface ThemeContextType {
     primaryColor: string;
     secondaryColor: string;
-    setThemeColors: (primary: string, secondary: string) => void;
-    refreshTheme: () => Promise<void>;
+    themeMode: ThemeMode;
+    setThemeMode: (mode: ThemeMode) => Promise<void>;
+    setPrimaryColor: (primary: string) => Promise<void>;
+        setThemeColors: (primary: string, secondary: string) => void;
+        refreshTheme: () => Promise<void>;
 }
 
 const DEFAULT_PRIMARY = '#4f46e5'; // indigo-600
@@ -19,10 +22,11 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const { user, token } = useAuth();
-    const [primaryColor, setPrimaryColor] = useState(DEFAULT_PRIMARY);
+    const [primaryColor, setPrimaryColorState] = useState(DEFAULT_PRIMARY);
     const [secondaryColor, setSecondaryColor] = useState(DEFAULT_SECONDARY);
+    const [themeMode, setThemeModeState] = useState<ThemeMode>(ThemeMode.SYSTEM);
 
-    const applyTheme = useCallback((primary: string, secondary: string) => {
+    const applyTheme = useCallback((primary: string, secondary: string, mode?: ThemeMode) => {
         const root = document.documentElement;
 
         // Base Colors
@@ -38,6 +42,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // Text Contrast (Automatic black/white text based on background)
         const primaryText = getContrastColor(primary);
         const secondaryText = getContrastColor(secondary);
+
+        // Global foreground (text) color depends on mode
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const effectiveMode = (mode && mode !== ThemeMode.SYSTEM) ? mode : (prefersDark ? ThemeMode.DARK : ThemeMode.LIGHT);
+        if (effectiveMode === ThemeMode.DARK) {
+            root.style.setProperty('--foreground', '#ffffff');
+        } else {
+            root.style.setProperty('--foreground', '#0f172a');
+        }
         root.style.setProperty('--primary-text', primaryText);
         root.style.setProperty('--secondary-text', secondaryText);
 
@@ -55,7 +68,25 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // Tints & Atmospherics
         // Global Theme Background (Blend of both - Much more subtle/sober)
         const bgBase = adjustBrightness(secondary, -10);
+        // Set doodle based on mode
+        if (effectiveMode === ThemeMode.DARK) {
+            root.style.setProperty('--chat-doodle', "url('/assets/chat-doodle-dark.jpg')");
+        } else {
+            root.style.setProperty('--chat-doodle', "url('/assets/chat-doodle-light.jpg')");
+        }
         root.style.setProperty('--theme-bg', bgBase);
+
+        // Ensure site-wide background/card/navbar follow strict light/dark expectations
+        // Light: pure white site; Dark: dark gray site
+        if (effectiveMode === ThemeMode.DARK) {
+            root.style.setProperty('--background', '#0b1220');
+            root.style.setProperty('--card-bg', '#0f1724');
+            root.style.setProperty('--navbar-bg', '#0b1220');
+        } else {
+            root.style.setProperty('--background', '#ffffff');
+            root.style.setProperty('--card-bg', '#ffffff');
+            root.style.setProperty('--navbar-bg', '#ffffff');
+        }
 
         root.style.setProperty('--primary-tint', adjustBrightness(primary, 90));
         root.style.setProperty('--secondary-tint', adjustBrightness(secondary, 90));
@@ -86,13 +117,36 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
         // Shadows
         root.style.setProperty('--shadow-color', `rgba(${primaryRgb?.r || 0}, ${primaryRgb?.g || 0}, ${primaryRgb?.b || 0}, 0.15)`);
+
+        // Toggle dark class on html for Tailwind utilities
+        const isDark = effectiveMode === ThemeMode.DARK;
+        if (isDark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
     }, []);
 
     const setThemeColors = useCallback((primary: string, secondary: string) => {
-        setPrimaryColor(primary);
+        setPrimaryColorState(primary);
         setSecondaryColor(secondary);
         applyTheme(primary, secondary);
     }, [applyTheme]);
+
+    // Save primary only; secondary is computed
+    const setPrimaryColor = useCallback(async (primary: string) => {
+        const mode = themeMode;
+        // Compute secondary based on mode
+        const computedSecondary = mode === ThemeMode.DARK ? adjustBrightness(primary, -85) : adjustBrightness(primary, 90);
+        setPrimaryColorState(primary);
+        setSecondaryColor(computedSecondary);
+        applyTheme(primary, computedSecondary, mode);
+    }, [applyTheme, themeMode]);
+
+    // Preview-only: set theme mode locally (no DB persistence). Settings form will persist on save.
+    const setThemeMode = useCallback(async (mode: ThemeMode) => {
+        setThemeModeState(mode);
+        // recompute secondary from current primary
+        const computedSecondary = mode === ThemeMode.DARK ? adjustBrightness(primaryColor, -85) : adjustBrightness(primaryColor, 90);
+        setSecondaryColor(computedSecondary);
+        applyTheme(primaryColor, computedSecondary, mode);
+    }, [applyTheme, primaryColor]);
 
     const refreshTheme = useCallback(async () => {
         if (!token || !user?.orgSlug || user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) {
@@ -104,8 +158,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             const settings = await api.org.getOrgData(token);
             if (settings.accentColor) {
                 const primary = settings.accentColor.primary || DEFAULT_PRIMARY;
-                const secondary = settings.accentColor.secondary || DEFAULT_SECONDARY;
-                setThemeColors(primary, secondary);
+                const mode = (settings.accentColor.mode as ThemeMode) || ThemeMode.SYSTEM;
+                setThemeModeState(mode);
+                const secondary = settings.accentColor.secondary || (mode === ThemeMode.DARK ? adjustBrightness(primary, -85) : adjustBrightness(primary, 90));
+                setPrimaryColorState(primary);
+                setSecondaryColor(secondary);
+                applyTheme(primary, secondary, mode);
             } else {
                 setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
             }
@@ -121,7 +179,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }, [refreshTheme]);
 
     return (
-        <ThemeContext.Provider value={{ primaryColor, secondaryColor, setThemeColors, refreshTheme }}>
+        <ThemeContext.Provider value={{ primaryColor, secondaryColor, themeMode, setThemeMode, setPrimaryColor, setThemeColors, refreshTheme }}>
             {children}
         </ThemeContext.Provider>
     );
@@ -193,3 +251,5 @@ function adjustBrightness(hex: string, percent: number) {
 
     return `#${rr}${gg}${bb}`;
 }
+
+

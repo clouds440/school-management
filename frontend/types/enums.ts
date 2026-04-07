@@ -124,3 +124,9 @@ export enum AnnouncementPriority {
     HIGH = 'HIGH',
     URGENT = 'URGENT'
 }
+
+export enum ThemeMode {
+    LIGHT = 'LIGHT',
+    DARK = 'DARK',
+    SYSTEM = 'SYSTEM',
+}

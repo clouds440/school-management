@@ -11,12 +11,13 @@ import { useGlobal } from '@/context/GlobalContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
+import { useTheme } from '@/context/ThemeContext';
+import { ThemeMode } from '@/types';
 
 export default function SettingsPage() {
     const { token } = useAuth();
     const { state, dispatch } = useGlobal();
     const loading = state.ui.isLoading;
-    const saving = state.ui.isProcessing;
     const [reapplying, setReapplying] = useState(false);
     const [orgData, setOrgData] = useState<Organization | null>(null);
     const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
@@ -28,7 +29,7 @@ export default function SettingsPage() {
         phone: '',
         accentColor: {
             primary: '#4f46e5',
-            secondary: '#ffffff'
+            mode: ThemeMode.SYSTEM
         }
     });
 
@@ -46,7 +47,7 @@ export default function SettingsPage() {
                     phone: data.phone || '',
                     accentColor: {
                         primary: data.accentColor?.primary || '#4f46e5',
-                        secondary: data.accentColor?.secondary || '#ffffff'
+                        mode: (data.accentColor?.mode as ThemeMode) || ThemeMode.SYSTEM
                     }
                 });
             })
@@ -64,15 +65,9 @@ export default function SettingsPage() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // const handleColorChange = (type: 'primary' | 'secondary', value: string) => {
-    //     const newColors = { ...formData.accentColor, [type]: value };
-    //     setFormData({
-    //         ...formData,
-    //         accentColor: newColors
-    //     });
-    //     // Live preview
-    //     setThemeColors(newColors.primary, newColors.secondary);
-    // };
+    // Live preview helpers
+    // We'll use ThemeContext to preview primary and mode
+    const { setPrimaryColor, setThemeMode, themeMode } = useTheme();
 
     const handleLogoReady = useCallback((file: File) => {
         setPendingLogoFile(file);
@@ -83,8 +78,23 @@ export default function SettingsPage() {
         if (!token) return;
         dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
-            // 1. Save text settings
-            await api.org.updateSettings(formData, token);
+            // 1. Save text settings — send only primary for accentColor (no secondary)
+            const payload = {
+                ...formData,
+                accentColor: {
+                    primary: formData.accentColor.primary
+                }
+            };
+
+            await api.org.updateSettings(payload, token);
+
+            // 1b. Save per-user themeMode to user profile
+            try {
+                await api.auth.updateProfile({ themeMode: formData.accentColor.mode }, token);
+            } catch (e) {
+                // non-blocking — inform user but continue
+                console.warn('Failed to save user themeMode', e);
+            }
 
             // 2. Upload logo if one was selected
             if (pendingLogoFile) {
@@ -195,64 +205,6 @@ export default function SettingsPage() {
                         )}
                     </div>
 
-                    {/* Branding Section (Disabled for now due to UI issues) */}
-                    {/* <div className="py-6 border-b border-white/10">
-                        <div className="flex items-center gap-2 mb-6">
-                            <Palette className="w-5 h-5 text-primary" />
-                            <h3 className="text-lg font-black text-card-text uppercase tracking-tight">Organization Branding</h3>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-4">
-                                <div>
-                                    <Label>Primary Accent Color</Label>
-                                    <div className="flex items-center gap-4 mt-2">
-                                        <div 
-                                            className="w-12 h-12 rounded-sm border border-white/10 shadow-inner shrink-0"
-                                            style={{ backgroundColor: formData.accentColor.primary }}
-                                        />
-                                        <div className="flex-1">
-                                            <input
-                                                type="color"
-                                                value={formData.accentColor.primary}
-                                                onChange={(e) => handleColorChange('primary', e.target.value)}
-                                                className="w-full h-10 p-1 rounded-sm border border-white/10 bg-primary/5 cursor-pointer"
-                                            />
-                                            <p className="text-[10px] text-card-text/40 mt-1 font-bold uppercase tracking-widest leading-none">HEX: {formData.accentColor.primary}</p>
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-card-text/60 mt-2 leading-relaxed font-medium">
-                                        Used for buttons, active states, and main accents across your portal.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <Label>Secondary Accent Color</Label>
-                                    <div className="flex items-center gap-4 mt-2">
-                                        <div 
-                                            className="w-12 h-12 rounded-sm border border-white/10 shadow-inner shrink-0"
-                                            style={{ backgroundColor: formData.accentColor.secondary }}
-                                        />
-                                        <div className="flex-1">
-                                            <input
-                                                type="color"
-                                                value={formData.accentColor.secondary}
-                                                onChange={(e) => handleColorChange('secondary', e.target.value)}
-                                                className="w-full h-10 p-1 rounded-sm border border-white/10 bg-primary/5 cursor-pointer"
-                                            />
-                                            <p className="text-[10px] text-card-text/40 mt-1 font-bold uppercase tracking-widest leading-none">HEX: {formData.accentColor.secondary}</p>
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-card-text/60 mt-2 leading-relaxed font-medium">
-                                        Used for secondary buttons and backgrounds. Light colors work best.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div> */}
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
                         <div>
                             <Label>Organization Name</Label>
@@ -265,6 +217,51 @@ export default function SettingsPage() {
                                 icon={School}
                                 placeholder="School Name"
                             />
+                        </div>
+
+                        <div>
+                            <Label>Primary Accent Color</Label>
+                            <div className="flex items-center gap-4 mt-2">
+                                <div
+                                    className="w-12 h-12 rounded-sm border border-white/10 shadow-inner shrink-0"
+                                    style={{ backgroundColor: formData.accentColor.primary }}
+                                />
+                                <div className="flex-1">
+                                    <input
+                                        type="color"
+                                        value={formData.accentColor.primary}
+                                        onChange={(e) => {
+                                            const newPrimary = e.target.value;
+                                            setFormData({ ...formData, accentColor: { ...formData.accentColor, primary: newPrimary } });
+                                            // live preview
+                                            setPrimaryColor(newPrimary).catch(() => { });
+                                        }}
+                                        className="w-full h-10 p-1 rounded-sm border border-white/10 bg-primary/5 cursor-pointer"
+                                    />
+                                    <p className="text-[10px] text-card-text/40 mt-1 font-bold uppercase tracking-widest leading-none">HEX: {formData.accentColor.primary}</p>
+                                </div>
+                            </div>
+                            <p className="text-xs text-card-text/60 mt-2 leading-relaxed font-medium">
+                                Pick accent color.
+                            </p>
+
+                            <div className="mt-4">
+                                <Label>Theme Mode</Label>
+                                <div className="flex items-center gap-3 mt-2">
+                                    {[ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK].map(m => (
+                                        <button
+                                            key={m}
+                                            type="button"
+                                            onClick={() => {
+                                                setFormData({ ...formData, accentColor: { ...formData.accentColor, mode: m } });
+                                                setThemeMode(m).catch(() => { });
+                                            }}
+                                            className={`px-3 py-2 rounded-md border ${formData.accentColor.mode === m ? 'bg-primary text-primary-text border-primary' : 'bg-transparent text-card-text/60 border-white/10'}`}>
+                                            {m === ThemeMode.SYSTEM ? 'System' : m === ThemeMode.LIGHT ? 'Light' : 'Dark'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
 
                         <div>

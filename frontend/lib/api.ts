@@ -6,7 +6,8 @@ import {
     PaginatedResponse, OrgStatus, MailItem, MailDetail, CreateMailPayload, UpdateMailPayload,
     Assessment, Grade, Submission, CreateAssessmentRequest, UpdateAssessmentRequest,
     UpdateGradeRequest, CreateSubmissionRequest, FinalGradeResponse, MailTarget,
-    Chat, ChatMessage, Notification, Announcement, ChatType, TargetType, AnnouncementPriority, User
+    Chat, ChatMessage, Notification, Announcement, ChatType, TargetType, AnnouncementPriority, User,
+    ThemeMode
 } from '@/types';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
@@ -84,6 +85,8 @@ export const api = {
             request<{ access_token: string, role: string }>('/auth/change-password', {
                 method: 'POST', body: JSON.stringify({ oldPassword, newPassword }), token
             }),
+        updateProfile: (data: Partial<{ themeMode?: ThemeMode; name?: string }>, token: string) =>
+            request('/auth/profile', { method: 'PATCH', body: JSON.stringify(data), token }),
     },
 
     admin: {

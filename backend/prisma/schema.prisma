@@ -45,6 +45,7 @@ model User {
   updatedAt             DateTime           @updatedAt
   name                  String?
   phone                 String?
+  themeMode             ThemeMode          @default(SYSTEM)
   tokenVersion          Int                @default(0)
   avatarUrl             String?
   avatarUpdatedAt       DateTime?
@@ -357,6 +358,12 @@ enum GradeStatus {
   DRAFT
   PUBLISHED
   FINALIZED
+}
+
+enum ThemeMode {
+  LIGHT
+  DARK
+  SYSTEM
 }
 
 // ─── CHAT SYSTEM ────────────────────────────────────────────────────────────
