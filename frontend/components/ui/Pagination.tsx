@@ -15,7 +15,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, totalResults
     const isDisabled = isLoading;
 
     return (
-        <div className="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200/20 bg-white/40 backdrop-blur-sm shrink-0">
+        <div className="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border bg-card/40 backdrop-blur-sm shrink-0">
             {totalResults !== undefined && pageSize !== undefined && (
                 <div className="flex flex-col sm:flex-row items-center gap-4 order-2 sm:order-1 shrink-0">
                     <div className="text-xs font-bold text-card-text/40">
@@ -33,7 +33,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, totalResults
                                 value={pageSize}
                                 onChange={(e) => onPageSizeChange(Number(e.target.value))}
                                 disabled={isLoading}
-                                className="bg-white px-2 py-1 rounded-sm border border-gray-200/50 text-[10px] font-black text-primary hover:border-primary/30 transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/20"
+                                className="bg-card px-2 py-1 rounded-sm border border-border text-[10px] font-black text-primary hover:border-primary/30 transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/20"
                             >
                                 {[10, 20, 50, 100].map(size => (
                                     <option key={size} value={size}>{size}</option>
@@ -49,7 +49,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, totalResults
                     <button
                         onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
                         disabled={currentPage === 1 || isDisabled}
-                        className="flex items-center gap-2 px-4 py-2 rounded-sm hover:bg-primary/10 disabled:opacity-20 disabled:hover:bg-transparent transition-all group text-card-text font-bold border border-transparent hover:border-primary/20 bg-white/30"
+                        className="flex items-center gap-2 px-4 py-2 rounded-sm hover:bg-primary/10 disabled:opacity-20 disabled:hover:bg-transparent transition-all group text-card-text font-bold border border-transparent hover:border-primary/20 bg-card/30"
                     >
                         <ChevronLeft className="w-4 h-4 text-primary transition-transform group-hover:-translate-x-0.5" />
                         <span className="text-[10px] font-black uppercase tracking-wider">Previous</span>
@@ -70,7 +70,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, totalResults
                                     className={`w-8 h-8 flex items-center justify-center rounded-sm text-[11px] font-black transition-all ${
                                         currentPage === page 
                                             ? 'bg-primary text-white shadow-lg transform scale-110' 
-                                            : 'hover:bg-primary/10 text-card-text/80 border border-gray-200/50 hover:border-primary/20 bg-white/50'
+                                            : 'hover:bg-primary/10 text-card-text/80 border border-border hover:border-primary/20 bg-card/50'
                                     }`}
                                 >
                                     {page}
@@ -82,7 +82,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, totalResults
                     <button
                         onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
                         disabled={currentPage === totalPages || isDisabled}
-                        className="flex items-center gap-2 px-4 py-2 rounded-sm hover:bg-primary/10 disabled:opacity-20 disabled:hover:bg-transparent transition-all group text-card-text font-bold border border-transparent hover:border-primary/20 bg-white/30"
+                        className="flex items-center gap-2 px-4 py-2 rounded-sm hover:bg-primary/10 disabled:opacity-20 disabled:hover:bg-transparent transition-all group text-card-text font-bold border border-transparent hover:border-primary/20 bg-card/30"
                     >
                         <span className="text-[10px] font-black uppercase tracking-wider">Next</span>
                         <ChevronRight className="w-4 h-4 text-primary transition-transform group-hover:translate-x-0.5" />

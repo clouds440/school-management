@@ -27,11 +27,11 @@ export default function AdminPage() {
             <div className="space-y-8">
 
                 {/* Organization Profile Card */}
-                <div className="p-6 bg-card text-card-text backdrop-blur-xl rounded-sm shadow-xl border border-white/40 flex flex-col md:flex-row gap-6 items-start">
+                <div className="p-6 bg-card text-card-foreground backdrop-blur-xl rounded-sm shadow-xl border border-border flex flex-col md:flex-row gap-6 items-start">
                     <OrgLogoOrIcon
                         logoUrl={orgData.logoUrl}
                         orgName={orgData.name}
-                        className="w-24 h-24 relative rounded-full overflow-hidden border-2 border-white/50 shadow-lg"
+                        className="w-24 h-24 relative rounded-full overflow-hidden border-2 border-primary/20 shadow-lg"
                     />
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -54,17 +54,17 @@ export default function AdminPage() {
 
                 {/* Key metrics */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
+                    <div className="p-6 bg-card text-card-foreground backdrop-blur-sm rounded-sm border border-border shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
                         <span className="text-xs font-black opacity-40 uppercase tracking-widest">Total Users</span>
                         <span className="text-3xl font-black">{(stats?.TEACHERS ?? 0) + (stats?.STUDENTS ?? 0)}</span>
                         <span className="text-xs opacity-60">{stats?.TEACHERS} teachers · {stats?.STUDENTS} students</span>
                     </div>
-                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
+                    <div className="p-6 bg-card text-card-foreground backdrop-blur-sm rounded-sm border border-border shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
                         <span className="text-xs font-black opacity-40 uppercase tracking-widest">Courses</span>
                         <span className="text-3xl font-black">{stats?.COURSES ?? 0}</span>
                         <span className="text-xs opacity-60">{stats?.SECTIONS ?? 0} sections</span>
                     </div>
-                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
+                    <div className="p-6 bg-card text-card-foreground backdrop-blur-sm rounded-sm border border-border shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
                         <span className="text-xs font-black opacity-40 uppercase tracking-widest">Unread Mail</span>
                         <span className="text-3xl font-black text-yellow-600">{state.stats.mail?.unread ?? 0}</span>
                         <span className="text-xs opacity-60">{state.stats.mail?.total ?? 0} total requests</span>
@@ -81,16 +81,16 @@ export default function AdminPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Recent Activity */}
                     <div className="lg:col-span-2 space-y-4">
-                        <h3 className="text-lg font-black text-card-text flex items-center gap-2"><Clock className="w-5 h-5" /> Recent Activity</h3>
-                        <div className="bg-white/40 backdrop-blur-sm border border-white/40 rounded-sm p-4 shadow-md space-y-3">
+                        <h3 className="text-lg font-black text-card-foreground flex items-center gap-2"><Clock className="w-5 h-5" /> Recent Activity</h3>
+                        <div className="bg-card/40 backdrop-blur-sm border border-border rounded-sm p-4 shadow-md space-y-3">
                             {[1, 2, 3].map(i => (
-                                <div key={i} className="flex items-start gap-3 border-b border-black/5 pb-2 last:border-0">
+                                <div key={i} className="flex items-start gap-3 border-b border-border/50 pb-2 last:border-0">
                                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                                         <UserPlus className="w-4 h-4 text-primary" />
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-sm font-bold text-gray-800">New teacher registered</p>
-                                        <p className="text-xs text-gray-500 font-medium">Dr. Sarah Johnson · 2 hours ago</p>
+                                        <p className="text-sm font-bold text-foreground">New teacher registered</p>
+                                        <p className="text-xs text-muted-foreground font-medium">Dr. Sarah Johnson · 2 hours ago</p>
                                     </div>
                                     <span className="text-xs bg-yellow-500/20 text-yellow-800 px-2 py-0.5 rounded-full font-bold">Pending</span>
                                 </div>
@@ -100,8 +100,8 @@ export default function AdminPage() {
 
                     {/* Quick Actions */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-black text-card-text flex items-center gap-2"><PlusCircle className="w-5 h-5" /> Quick Actions</h3>
-                        <div className="bg-white/40 backdrop-blur-sm border border-white/40 rounded-sm p-4 shadow-md space-y-2">
+                        <h3 className="text-lg font-black text-card-foreground flex items-center gap-2"><PlusCircle className="w-5 h-5" /> Quick Actions</h3>
+                        <div className="bg-card/40 backdrop-blur-sm border border-border rounded-sm p-4 shadow-md space-y-2">
                             <Link href={`/${payload.orgSlug}/teachers/add`} className="flex items-center gap-3 p-2 hover:bg-white/20 rounded transition text-gray-700 hover:text-gray-900 font-bold">
                                 <UserPlus className="w-4 h-4 text-primary" /> Add Teacher
                             </Link>
@@ -111,7 +111,7 @@ export default function AdminPage() {
                             <Link href={`/${payload.orgSlug}/courses/create`} className="flex items-center gap-3 p-2 hover:bg-white/20 rounded transition text-gray-700 hover:text-gray-900 font-bold">
                                 <PlusCircle className="w-4 h-4 text-primary" /> Create Course
                             </Link>
-                            <Link href={`/${payload.orgSlug}/settings`} className="flex items-center gap-3 p-2 hover:bg-white/20 rounded transition text-gray-700 hover:text-gray-900 font-bold">
+                            <Link href={`/${payload.orgSlug}/settings`} className="flex items-center gap-3 p-2 hover:bg-accent rounded transition text-muted-foreground hover:text-foreground font-bold">
                                 <Settings className="w-4 h-4 text-primary" /> Org Settings
                             </Link>
                         </div>

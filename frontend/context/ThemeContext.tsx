@@ -46,11 +46,35 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // Global foreground (text) color depends on mode
         const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         const effectiveMode = (mode && mode !== ThemeMode.SYSTEM) ? mode : (prefersDark ? ThemeMode.DARK : ThemeMode.LIGHT);
-        if (effectiveMode === ThemeMode.DARK) {
-            root.style.setProperty('--foreground', '#ffffff');
+        
+        // --- Semantic Variable Injection ---
+        const isDark = effectiveMode === ThemeMode.DARK;
+        
+        // 1. Core Backgrounds & Foregrounds
+        if (isDark) {
+            root.style.setProperty('--background', '#030816'); // Very dark slate
+            root.style.setProperty('--foreground', '#f8fafc'); // slate-50
+            root.style.setProperty('--card-bg', '#0f172a'); // slate-900
+            root.style.setProperty('--card-text', '#f1f5f9'); // slate-100
+            root.style.setProperty('--muted-bg', '#1e293b'); // slate-800
+            root.style.setProperty('--muted-text', '#94a3b8'); // slate-400
+            root.style.setProperty('--accent-bg', '#1e293b');
+            root.style.setProperty('--accent-text', '#f1f5f9');
+            root.style.setProperty('--border-color', 'rgba(255, 255, 255, 0.1)');
+            root.style.setProperty('--input-bg', '#020617');
         } else {
-            root.style.setProperty('--foreground', '#0f172a');
+            root.style.setProperty('--background', '#ffffff');
+            root.style.setProperty('--foreground', '#0f172a'); // slate-900
+            root.style.setProperty('--card-bg', '#ffffff');
+            root.style.setProperty('--card-text', '#1e293b'); // slate-800
+            root.style.setProperty('--muted-bg', '#f1f5f9'); // slate-100
+            root.style.setProperty('--muted-text', '#64748b'); // slate-500
+            root.style.setProperty('--accent-bg', '#f1f5f9');
+            root.style.setProperty('--accent-text', '#0f172a');
+            root.style.setProperty('--border-color', 'rgba(0, 0, 0, 0.06)'); // More subtle slate-200
+            root.style.setProperty('--input-bg', '#ffffff');
         }
+
         root.style.setProperty('--primary-text', primaryText);
         root.style.setProperty('--secondary-text', secondaryText);
 
@@ -65,61 +89,30 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         root.style.setProperty('--sidebar-active-bg', primary);
         root.style.setProperty('--sidebar-active-text', primaryText);
 
+        // Sidebar defaults for dark mode if neutrals
+        if (isDark && isSecondaryNeutral) {
+            root.style.setProperty('--sidebar-bg', '#111827');
+            root.style.setProperty('--sidebar-text', '#f9fafb');
+        }
+
         // Tints & Atmospherics
-        // Global Theme Background (Blend of both - Much more subtle/sober)
-        const bgBase = adjustBrightness(secondary, -10);
         // Set doodle based on mode
-        if (effectiveMode === ThemeMode.DARK) {
+        if (isDark) {
             root.style.setProperty('--chat-doodle', "url('/assets/chat-doodle-dark.jpg')");
+            root.style.setProperty('--theme-bg', '#020617');
         } else {
             root.style.setProperty('--chat-doodle', "url('/assets/chat-doodle-light.jpg')");
-        }
-        root.style.setProperty('--theme-bg', bgBase);
-
-        // Ensure site-wide background/card/navbar follow strict light/dark expectations
-        // Light: pure white site; Dark: dark gray site
-        if (effectiveMode === ThemeMode.DARK) {
-            root.style.setProperty('--background', '#0b1220');
-            root.style.setProperty('--card-bg', '#0f1724');
-            root.style.setProperty('--navbar-bg', '#0b1220');
-        } else {
-            root.style.setProperty('--background', '#ffffff');
-            root.style.setProperty('--card-bg', '#ffffff');
-            root.style.setProperty('--navbar-bg', '#ffffff');
+            root.style.setProperty('--theme-bg', '#f8fafc');
         }
 
-        root.style.setProperty('--primary-tint', adjustBrightness(primary, 90));
-        root.style.setProperty('--secondary-tint', adjustBrightness(secondary, 90));
-
-        // Hovers - Prioritize Primary variant unless it blends too much
-        const bgBrightnessValue = getBrightness(bgBase);
-        const primaryHover = adjustBrightness(primary, bgBrightnessValue > 128 ? -15 : 15);
-        const secondaryHover = adjustBrightness(secondary, -10);
-
-        root.style.setProperty('--primary-hover', primaryHover);
-        root.style.setProperty('--secondary-hover', secondaryHover);
-
-        // Interaction Hover (Used for cards, buttons that aren't specifically primary/secondary)
-        root.style.setProperty('--item-hover', isSecondaryNeutral ? 'rgba(var(--primary-rgb), 0.05)' : adjustBrightness(secondary, -5));
-
-        // Navbar Branding
-        // Navbar should be a unique variant of primary, fallback to secondary if primary is too dark/clashing
-        const navbarBg = adjustBrightness(primary, bgBrightnessValue > 128 ? -10 : 10);
-        const navbarText = getContrastColor(navbarBg);
-
-        root.style.setProperty('--navbar-bg', navbarBg);
-        root.style.setProperty('--navbar-text', navbarText);
-
-        // Card Background
-        const cardBg = isSecondaryNeutral ? '#ffffff' : adjustBrightness(secondary, 5);
-        root.style.setProperty('--card-bg', cardBg);
-        root.style.setProperty('--card-text', getContrastColor(cardBg));
+        // Navbar defaults
+        root.style.setProperty('--navbar-bg', isDark ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.8)');
+        root.style.setProperty('--navbar-text', isDark ? '#f8fafc' : '#0f172a');
 
         // Shadows
-        root.style.setProperty('--shadow-color', `rgba(${primaryRgb?.r || 0}, ${primaryRgb?.g || 0}, ${primaryRgb?.b || 0}, 0.15)`);
+        root.style.setProperty('--shadow-color', isDark ? 'rgba(0,0,0,0.5)' : `rgba(${primaryRgb?.r || 0}, ${primaryRgb?.g || 0}, ${primaryRgb?.b || 0}, 0.15)`);
 
         // Toggle dark class on html for Tailwind utilities
-        const isDark = effectiveMode === ThemeMode.DARK;
         if (isDark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
     }, []);
 
@@ -177,6 +170,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         refreshTheme();
     }, [refreshTheme]);
+
+    useEffect(() => {
+        if (themeMode !== ThemeMode.SYSTEM) return;
+
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = () => {
+            applyTheme(primaryColor, secondaryColor, ThemeMode.SYSTEM);
+        };
+
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+    }, [themeMode, primaryColor, secondaryColor, applyTheme]);
 
     return (
         <ThemeContext.Provider value={{ primaryColor, secondaryColor, themeMode, setThemeMode, setPrimaryColor, setThemeColors, refreshTheme }}>

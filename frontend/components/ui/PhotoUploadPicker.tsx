@@ -85,7 +85,7 @@ export function PhotoUploadPicker({
         <button
           type="button"
           onClick={() => !disabled && fileInputRef.current?.click()}
-          className={`group relative ${sizeClassName} rounded-full border-2 border-dashed ${disabled ? 'border-gray-200 bg-gray-50/10 cursor-not-allowed opacity-60' : 'border-indigo-200 hover:border-indigo-400 bg-indigo-50/60 hover:bg-indigo-50 cursor-pointer'} transition-all duration-200 flex items-center justify-center overflow-hidden shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+          className={`group relative ${sizeClassName} rounded-full border-2 border-dashed ${disabled ? 'border-border bg-muted/10 cursor-not-allowed opacity-60' : 'border-primary/20 hover:border-primary/50 bg-primary/5 hover:bg-primary/10 cursor-pointer'} transition-all duration-200 flex items-center justify-center overflow-hidden shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
           aria-label={`Upload ${type === 'user' ? 'profile picture' : 'organisation logo'}`}
           disabled={disabled}
         >
@@ -110,9 +110,9 @@ export function PhotoUploadPicker({
             )
           ) : (
             type === 'user' ? (
-              <User className="w-1/2 h-1/2 text-indigo-300" />
+              <User className="w-1/2 h-1/2 text-primary/30" />
             ) : (
-              <Building2 className="w-1/2 h-1/2 text-indigo-300" />
+              <Building2 className="w-1/2 h-1/2 text-primary/30" />
             )
           )}
 
@@ -124,7 +124,7 @@ export function PhotoUploadPicker({
           )}
         </button>
 
-        {hint && <p className="text-[10px] text-gray-400 text-center max-w-[180px] leading-tight">{hint}</p>}
+        {hint && <p className="text-[10px] text-muted-foreground text-center max-w-[180px] leading-tight">{hint}</p>}
 
         <input
           ref={fileInputRef}

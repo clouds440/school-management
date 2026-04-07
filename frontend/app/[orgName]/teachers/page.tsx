@@ -121,7 +121,7 @@ export default function TeachersPage() {
                         <BrandIcon variant="user" size="sm" user={row.user} className="w-10 h-10 shadow-sm" />
                         {(row.user.role === Role.ORG_ADMIN || row.user.role === Role.ORG_MANAGER) && (
                             <div
-                                className={`absolute -bottom-1 -right-1 p-0.5 rounded-full bg-white shadow-sm border z-20 ${row.user.role === Role.ORG_ADMIN
+                                className={`absolute -bottom-1 -right-1 p-0.5 rounded-full bg-background shadow-sm border z-20 ${row.user.role === Role.ORG_ADMIN
                                     ? 'text-amber-500 border-amber-200'
                                     : 'text-blue-500 border-blue-200'
                                     }`}
@@ -132,8 +132,8 @@ export default function TeachersPage() {
                         )}
                     </div>
                     <div className="flex flex-col">
-                        <div className="font-semibold text-card-text">{row.user.name || 'No Name'}</div>
-                        <div className="text-sm text-card-text/60">{row.user.email}</div>
+                        <div className="font-semibold text-card-foreground">{row.user.name || 'No Name'}</div>
+                        <div className="text-sm text-muted-foreground">{row.user.email}</div>
                     </div>
                 </div>
             )
@@ -144,8 +144,8 @@ export default function TeachersPage() {
             sortKey: 'designation',
             accessor: (row: Teacher) => (
                 <div className="flex flex-col">
-                    <span className="font-medium text-card-text/80">{row.designation || <span className="text-card-text/30 italic">No Designation</span>}</span>
-                    <span className="text-sm text-card-text/60">{row.subject || 'No Subject'}</span>
+                    <span className="font-medium text-card-foreground/80">{row.designation || <span className="text-muted-foreground/30 italic">No Designation</span>}</span>
+                    <span className="text-sm text-muted-foreground">{row.subject || 'No Subject'}</span>
                 </div>
             )
         },
@@ -162,14 +162,14 @@ export default function TeachersPage() {
                             </span>
                         ))}
                     </div>
-                ) : <span className="text-card-text/30 italic">Unassigned</span>;
+                ) : <span className="text-muted-foreground/30 italic">Unassigned</span>;
             }
         },
         {
             header: 'Contact',
             sortable: true,
             sortKey: 'phone',
-            accessor: (row: Teacher) => row.user.phone || <span className="text-card-text/30 italic">-</span>
+            accessor: (row: Teacher) => row.user.phone || <span className="text-muted-foreground/30 italic">-</span>
         },
         {
             header: 'Actions',
@@ -207,7 +207,7 @@ export default function TeachersPage() {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
                 <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, email or subject..." />

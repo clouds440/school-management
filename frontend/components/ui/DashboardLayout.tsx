@@ -98,14 +98,14 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
             <aside
                 className={`
                     fixed lg:relative inset-y-0 left-0 z-90 transform transition-all duration-300 ease-in-out
-                    flex flex-col bg-sidebar text-sidebar-text border-r border-sidebar-text/10 shadow-[4px_0_24px_var(--shadow-color)]
+                    flex flex-col bg-sidebar text-sidebar-text border-r border-white/5 shadow-[4px_0_24px_var(--shadow-color)]
                     ${isMobileOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0'}
                     ${effectiveExpanded ? 'lg:w-72' : 'lg:w-20'}
                     h-full shrink-0 overflow-hidden
                 `}
             >
                 {/* Sidebar Header - Branded */}
-                <div className={`h-16 mt-14 lg:mt-0 flex items-center px-4 border-b border-sidebar-text/10 shrink-0 ${!effectiveExpanded ? 'justify-center' : 'justify-between'} gap-2 overflow-hidden relative group`}>
+                <div className={`h-16 mt-14 lg:mt-0 flex items-center px-4 border-b border-white/5 shrink-0 ${!effectiveExpanded ? 'justify-center' : 'justify-between'} gap-2 overflow-hidden relative group`}>
                     <div className="flex items-center gap-2 min-w-0">
                         <div className="ml-auto opacity-40 hover:opacity-100 transition-opacity">
                             <BackButton
@@ -151,7 +151,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                             : 'ml-auto px-2 py-0.5 rounded-full'
                                         } 
                                         text-[10px] font-black tracking-tighter animate-in zoom-in duration-300 
-                                        ${link.badge === 0 ? 'bg-gray-200 text-gray-500' : `${link.label === 'Messages' ? 'bg-red-500' : 'bg-primary'} text-white shadow-sm ring-2 ring-white/80`}
+                                        ${link.badge === 0 ? 'bg-muted text-muted-foreground' : `${link.label === 'Messages' ? 'bg-red-500' : 'bg-primary'} text-white shadow-sm ring-2 ring-white/30`}
                                     `}>
                                         {link.badge}
                                     </span>
@@ -162,7 +162,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                 </div>
 
                 {/* Branded Sidebar Footer */}
-                <div className="p-4 border-t border-sidebar-text/10 shrink-0">
+                <div className="p-4 border-t border-white/5 shrink-0">
                     {user && (
                         <div className={`flex items-center ${!effectiveExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
                             <div className={`w-9 h-9 flex items-center justify-center shrink-0 shadow-inner relative`}>
@@ -189,7 +189,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                 <Mail className="w-4 h-4 shrink-0" />
                                 {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Mail</span>}
                                 {/* Always show a mail count; gray when zero */}
-                                <span className={`ml-auto ${mailCount.unread > 0 ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-500'} ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
+                                <span className={`ml-auto ${mailCount.unread > 0 ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground'} ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
                                     {mailCount.unread > 99 ? '99+' : mailCount.unread}
                                 </span>
                             </Link>
@@ -238,13 +238,13 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                     type='button'
                     title='Toggle Sidebar'
                     onClick={() => setIsMobileOpen(true)}
-                    className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-primary text-primary-text rounded-sm shadow-xl border-2 border-white/20 active:scale-95 transition-all hover:bg-primary-hover"
+                    className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-primary text-primary-foreground rounded-sm shadow-xl border-2 border-white/20 active:scale-95 transition-all hover:bg-primary/90"
                 >
                     <ChevronRight className="w-5 h-5 rotate-180" />
                 </button>
 
                 {/* Universal Content Wrapper - This is the ONLY scrollable area */}
-                <div className={`flex-1 min-h-0 w-full ${showPadding ? 'px-[3px] md:px-2 py-1 md:py-2 bg-slate-100' : 'p-0 bg-white'} overflow-y-auto custom-scrollbar flex flex-col`}>
+                <div className={`flex-1 min-h-0 w-full ${showPadding ? 'px-[3px] md:px-2 py-1 md:py-2 bg-background' : 'p-0 bg-card'} overflow-y-auto custom-scrollbar flex flex-col`}>
                     {children}
                 </div>
             </main>

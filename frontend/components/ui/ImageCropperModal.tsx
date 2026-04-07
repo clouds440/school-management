@@ -84,14 +84,14 @@ export function ImageCropperModal({
   };
 
   return (
-    <ModalOverlay isOpen={true} maxWidth="max-w-2xl" className="bg-white rounded-lg flex flex-col p-0">
+    <ModalOverlay isOpen={true} maxWidth="max-w-2xl" className="bg-card rounded-lg flex flex-col p-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
-        <h3 className="text-base font-bold text-gray-900 uppercase tracking-tight leading-none">Crop Logo Image</h3>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+        <h3 className="text-base font-bold text-foreground uppercase tracking-tight leading-none">Crop Logo Image</h3>
         <button
           type="button"
           onClick={onCancel}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
+          className="text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -114,11 +114,11 @@ export function ImageCropperModal({
       </div>
 
       {/* Controls */}
-      <div className="px-5 py-4 space-y-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
+      <div className="px-5 py-4 space-y-4 border-t border-border bg-muted/50 shrink-0">
         {/* Zoom */}
         <div className="flex items-center gap-4">
-          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 w-12">Zoom</span>
-          <ZoomOut className="w-4 h-4 text-gray-400 shrink-0" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground w-12">Zoom</span>
+          <ZoomOut className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             type="range"
             min={1}
@@ -126,15 +126,15 @@ export function ImageCropperModal({
             step={0.05}
             value={zoom}
             onChange={(e) => setZoom(Number(e.target.value))}
-            className="flex-1 h-1.5 appearance-none rounded-full bg-gray-200 accent-indigo-600 cursor-pointer"
+            className="flex-1 h-1.5 appearance-none rounded-full bg-border accent-primary cursor-pointer"
           />
-          <ZoomIn className="w-4 h-4 text-gray-400 shrink-0" />
+          <ZoomIn className="w-4 h-4 text-muted-foreground shrink-0" />
         </div>
 
         {/* Rotation */}
         <div className="flex items-center gap-4">
-          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 w-12">Rotate</span>
-          <RotateCw className="w-4 h-4 text-gray-400 shrink-0" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground w-12">Rotate</span>
+          <RotateCw className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             type="range"
             min={0}
@@ -142,18 +142,18 @@ export function ImageCropperModal({
             step={1}
             value={rotation}
             onChange={(e) => setRotation(Number(e.target.value))}
-            className="flex-1 h-1.5 appearance-none rounded-full bg-gray-200 accent-indigo-600 cursor-pointer"
+            className="flex-1 h-1.5 appearance-none rounded-full bg-border accent-primary cursor-pointer"
           />
-          <span className="text-xs font-bold text-gray-500 w-10 text-right">{rotation}°</span>
+          <span className="text-xs font-bold text-muted-foreground w-10 text-right">{rotation}°</span>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 px-5 py-5 bg-gray-50 border-t border-gray-100 shrink-0">
+      <div className="flex gap-3 px-5 py-5 bg-muted/30 border-t border-border shrink-0">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 py-3 rounded-sm border border-gray-300 text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-white hover:border-gray-400 transition-all active:scale-95"
+          className="flex-1 py-3 rounded-sm border border-border text-xs font-black uppercase tracking-widest text-muted-foreground hover:bg-card hover:border-border transition-all active:scale-95"
         >
           Cancel
         </button>
@@ -161,7 +161,7 @@ export function ImageCropperModal({
           type="button"
           onClick={handleConfirm}
           disabled={confirming}
-          className="flex-1 py-3 rounded-sm bg-indigo-600 text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 disabled:opacity-60 active:scale-95 shadow-lg shadow-indigo-600/20"
+          className="flex-1 py-3 rounded-sm bg-primary text-xs font-black uppercase tracking-widest text-white hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-60 active:scale-95 shadow-lg shadow-primary/20"
         >
           {confirming ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

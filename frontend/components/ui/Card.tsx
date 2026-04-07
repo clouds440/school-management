@@ -36,7 +36,7 @@ export const Card = ({
         <div
             onClick={onClick}
             className={cn(
-                "bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl flex flex-col h-full relative overflow-hidden ring-1 ring-slate-200/50 transition-all duration-500",
+                "bg-card/80 backdrop-blur-sm border border-border rounded-2xl flex flex-col h-full relative overflow-hidden ring-1 ring-border transition-all duration-500",
                 paddingClasses[padding],
                 hoverable && "hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 hover:z-10 group",
                 onClick && "cursor-pointer",
@@ -72,7 +72,7 @@ export const CardContent = ({ children, className }: { children: React.ReactNode
 );
 
 export const CardFooter = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div className={cn("mt-8 pt-6 border-t border-slate-100 flex items-center justify-between", className)}>
+    <div className={cn("mt-8 pt-6 border-t border-border flex items-center justify-between", className)}>
         {children}
     </div>
 );

@@ -27,11 +27,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
         let variantClasses = "";
         if (variant === 'primary') {
-            variantClasses = "bg-primary text-primary-text hover:bg-primary-hover hover:shadow-2xl hover:-translate-y-1 focus:ring-(--primary)/20 disabled:bg-primary/50 disabled:hover:translate-y-0";
+            variantClasses = "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-2xl hover:-translate-y-1 focus:ring-primary/20 disabled:bg-primary/50 disabled:hover:translate-y-0";
         } else if (variant === 'secondary') {
-            variantClasses = "bg-gray-300 text-gray-900 border-gray-200/50 hover:bg-gray-400 hover:shadow-lg hover:-translate-y-1 focus:ring-(--secondary)/20 disabled:bg-secondary/50 disabled:text-gray-400 disabled:hover:translate-y-0";
+            variantClasses = "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80 hover:shadow-lg hover:-translate-y-1 focus:ring-secondary/20 disabled:bg-secondary/50 disabled:text-muted-foreground disabled:hover:translate-y-0";
         } else if (variant === 'danger') {
-            variantClasses = "bg-red-600 text-white hover:bg-red-700 hover:shadow-2xl hover:-translate-y-1 focus:ring-red-500/20 disabled:bg-red-300 disabled:hover:translate-y-0";
+            variantClasses = "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-2xl hover:-translate-y-1 focus:ring-destructive/20 disabled:bg-destructive/30 disabled:hover:translate-y-0";
         } else if (variant === 'success') {
             variantClasses = "bg-green-600 text-white hover:bg-green-700 hover:shadow-2xl hover:-translate-y-1 focus:ring-green-500/20 disabled:bg-green-300 disabled:hover:translate-y-0";
         } else if (variant === 'warning') {

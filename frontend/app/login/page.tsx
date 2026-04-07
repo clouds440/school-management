@@ -48,20 +48,20 @@ export default function LoginPage() {
 
 
   return (
-    <div className="flex min-h-full h-screen bg-gray-100 overflow-hidden">
+    <div className="flex min-h-full h-screen bg-background overflow-hidden relative">
       {/* Left Column: Branding Assets (Hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-10 overflow-hidden bg-gray-100">
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-10 overflow-hidden bg-background">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-pulse"></div>
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-pulse delay-700"></div>
 
         <div className="relative z-10 w-full max-w-lg text-center lg:text-left space-y-16 animate-in fade-in slide-in-from-left duration-1000">
           <div className="space-y-4">
-            <h1 className="text-3xl xl:text-4xl font-black text-gray-900 leading-tight tracking-tighter">
+            <h1 className="text-3xl xl:text-4xl font-black text-foreground leading-tight tracking-tighter">
               The <span className="text-primary italic animate-pulse group-hover:scale-110 transition-transform inline-block">Verse</span> <br />
               of Modern Education.
             </h1>
-            <p className="text-lg text-gray-600 font-medium leading-relaxed max-w-md">
+            <p className="text-lg text-muted-foreground font-medium leading-relaxed max-w-md">
               Streamline your school's operations with the ultimate all-in-one management platform. Efficient, secure, and ready for the future.
             </p>
           </div>
@@ -81,7 +81,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Column: Interaction Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 bg-gray-200 relative animate-in fade-in duration-700">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 bg-secondary/30 relative animate-in fade-in duration-700">
         <div className="w-full max-w-md space-y-12">
           {/* Mobile Header Branding (Visible only on mobile) */}
           <div className="lg:hidden text-center mb-8">
@@ -92,10 +92,10 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-4xl font-black text-gray-900 tracking-tighter leading-tight italic">
+            <h2 className="text-4xl font-black text-foreground tracking-tighter leading-tight italic">
               Welcome back.
             </h2>
-            <p className="text-sm text-gray-500 font-medium tracking-tight">
+            <p className="text-sm text-muted-foreground font-medium tracking-tight">
               Sign in to your organization or student portal.
             </p>
           </div>
@@ -103,7 +103,7 @@ export default function LoginPage() {
           <form className="space-y-8" onSubmit={handleSubmit}>
             <div className="space-y-6">
               <div>
-                <Label htmlFor="email-address" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Email</Label>
+                <Label htmlFor="email-address" className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1 opacity-60">Email</Label>
                 <Input
                   id="email-address"
                   name="email"
@@ -113,13 +113,13 @@ export default function LoginPage() {
                   placeholder="admin@school.edu"
                   value={formData.email}
                   onChange={handleChange}
-                  className="h-14 font-bold border-gray-100 focus:border-primary/50 transition-all"
+                  className="h-14 font-bold border-border focus:border-primary/50 transition-all bg-background"
                 />
               </div>
 
               <div>
                 <div className="flex justify-between items-center mb-2 ml-1">
-                  <Label htmlFor="password" className="text-[11px] font-black uppercase tracking-widest text-gray-400">Password</Label>
+                  <Label htmlFor="password" className="text-[11px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Password</Label>
                   <Link href="#" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline italic">Forgot?</Link>
                 </div>
                 <Input
@@ -131,7 +131,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleChange}
-                  className="h-14 font-bold border-gray-100 focus:border-primary/50 transition-all"
+                  className="h-14 font-bold border-border focus:border-primary/50 transition-all bg-background"
                 />
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function LoginPage() {
                     checked={formData.rememberMe}
                     onChange={handleChange}
                   />
-                  <div className="w-5 h-5 bg-gray-100 border-2 border-gray-200 rounded-sm peer-checked:bg-primary peer-checked:border-primary transition-all duration-200 group-hover:border-primary/40 shadow-sm flex items-center justify-center">
+                  <div className="w-5 h-5 bg-muted border-2 border-border rounded-sm peer-checked:bg-primary peer-checked:border-primary transition-all duration-200 group-hover:border-primary/40 shadow-sm flex items-center justify-center">
                     <svg
                       className={`w-3.5 h-3.5 text-white transition-opacity duration-200 ${formData.rememberMe ? 'opacity-100' : 'opacity-0'}`}
                       fill="none"
@@ -159,7 +159,7 @@ export default function LoginPage() {
                     </svg>
                   </div>
                 </div>
-                <span className="ml-3 text-[11px] font-black uppercase tracking-widest text-gray-500 group-hover:text-gray-900 transition-colors">
+                <span className="ml-3 text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
                   Remember Session
                 </span>
               </label>
@@ -174,7 +174,7 @@ export default function LoginPage() {
                 <span className="font-black uppercase">Log In</span>
               </Button>
 
-              <p className="text-center text-xs text-gray-400 font-bold tracking-tight">
+              <p className="text-center text-xs text-muted-foreground font-bold tracking-tight">
                 Don&apos;t have an account?{' '}
                 <Link href="/register" className="text-primary hover:text-primary/80 transition-colors underline underline-offset-4 decoration-2">
                   Create new organization

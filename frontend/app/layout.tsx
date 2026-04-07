@@ -41,9 +41,9 @@ export default function RootLayout({
             <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-secondary/10" />
 
             {/* Animated Branded Blobs */}
-            <div className="absolute -top-12 -left-12 w-96 h-96 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
-            <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
-            <div className="absolute -bottom-12 left-1/2 w-96 h-96 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000" />
+            <div className="absolute -top-12 -left-12 w-96 h-96 bg-primary/20 dark:bg-primary/10 rounded-full mix-blend-multiply dark:mix-blend-lighten filter blur-3xl opacity-30 animate-blob" />
+            <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/20 dark:bg-secondary/10 rounded-full mix-blend-multiply dark:mix-blend-lighten filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
+            <div className="absolute -bottom-12 left-1/2 w-96 h-96 bg-primary/20 dark:bg-primary/10 rounded-full mix-blend-multiply dark:mix-blend-lighten filter blur-3xl opacity-30 animate-blob animation-delay-4000" />
           </div>
 
           <Navbar />

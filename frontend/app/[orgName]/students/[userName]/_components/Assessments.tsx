@@ -17,40 +17,40 @@ const getGradeColors = (marks: number, total: number) => {
     const percentage = (marks / total) * 100;
     if (percentage < 40) {
         return {
-            bg: 'bg-red-50',
-            border: 'border-red-100',
-            text: 'text-red-700',
+            bg: 'bg-red-500/10',
+            border: 'border-red-500/20',
+            text: 'text-red-600',
             accent: 'text-red-600',
             light: 'text-red-400',
             muted: 'text-red-600/60',
             fill: 'text-red-500',
-            dark: 'text-red-900',
-            borderDark: 'border-red-200'
+            dark: 'text-red-900 dark:text-red-400',
+            borderDark: 'border-red-500/30'
         };
     }
     if (percentage < 60) {
         return {
-            bg: 'bg-orange-50',
-            border: 'border-orange-100',
-            text: 'text-orange-700',
+            bg: 'bg-orange-500/10',
+            border: 'border-orange-500/20',
+            text: 'text-orange-600',
             accent: 'text-orange-600',
             light: 'text-orange-400',
             muted: 'text-orange-600/60',
             fill: 'text-orange-500',
-            dark: 'text-orange-900',
-            borderDark: 'border-orange-200'
+            dark: 'text-orange-900 dark:text-orange-400',
+            borderDark: 'border-orange-500/30'
         };
     }
     return {
-        bg: 'bg-emerald-50',
-        border: 'border-emerald-100',
-        text: 'text-emerald-700',
+        bg: 'bg-emerald-500/10',
+        border: 'border-emerald-500/20',
+        text: 'text-emerald-600',
         accent: 'text-emerald-600',
         light: 'text-emerald-400',
         muted: 'text-emerald-600/60',
         fill: 'text-emerald-500',
-        dark: 'text-emerald-900',
-        borderDark: 'border-emerald-200'
+        dark: 'text-emerald-900 dark:text-emerald-400',
+        borderDark: 'border-emerald-500/30'
     };
 };
 
@@ -157,10 +157,10 @@ export default function Assessments({ sections, assessments }: { sections: Secti
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4 mb-10">
                 <div>
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">
+                    <h1 className="text-4xl font-black text-foreground tracking-tighter leading-none italic uppercase">
                         {selectedSectionId ? sections.find(s => s.id === selectedSectionId)?.course?.name || sections.find(s => s.id === selectedSectionId)?.name : 'Assessments'}
                     </h1>
-                    <p className="text-slate-500 mt-3 font-bold max-w-md tracking-tight">
+                    <p className="text-muted-foreground mt-3 font-bold max-w-md tracking-tight">
                         {selectedSectionId ? 'Viewing all assessments for this course.' : 'View your coursework, quizzes, and project assignments.'}
                     </p>
                 </div>
@@ -188,39 +188,39 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                             <Card
                                 key={sec.id}
                                 onClick={() => handleSelectSection(sec.id)}
-                                accentColor="bg-indigo-500"
+                                accentColor="bg-primary"
                                 padding="lg"
                                 delay={index * 100}
                             >
                                 <CardHeader>
-                                    <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100 shadow-xs tracking-[0.15em]">
+                                    <span className="text-[10px] font-black uppercase text-primary bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20 shadow-xs tracking-[0.15em]">
                                         {courseAssessments.length} Modules
                                     </span>
-                                    <div className="p-2.5 bg-indigo-50 rounded-xl group-hover:bg-indigo-100 transition-colors border border-indigo-100/50 shadow-xs">
-                                        <BookOpen className="w-5 h-5 text-indigo-600" />
+                                    <div className="p-2.5 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors border border-primary/20 shadow-xs">
+                                        < BookOpen className="w-5 h-5 text-primary" />
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <h3 className="text-xl font-black text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2 tracking-tight italic">
+                                    <h3 className="text-xl font-black text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-2 tracking-tight italic">
                                         {sec.course?.name || sec.name}
                                     </h3>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mt-2">{teacherName}</p>
+                                    <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest leading-none mt-2">{teacherName}</p>
                                 </CardContent>
-                                <CardFooter className="flex-col gap-4 items-stretch border-slate-100/50">
+                                <CardFooter className="flex-col gap-4 items-stretch border-border">
                                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                        <span className="text-slate-400">Total Progress</span>
-                                        <span className="text-emerald-600 px-2 py-0.5 bg-emerald-50 rounded border border-emerald-100 uppercase tracking-tighter">
+                                        <span className="text-muted-foreground/60">Total Progress</span>
+                                        <span className="text-emerald-600 px-2 py-0.5 bg-emerald-500/10 rounded border border-emerald-500/20 uppercase tracking-tighter">
                                             {doneCount} / {courseAssessments.length} Done
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2 pt-1 overflow-x-auto pb-1 no-scrollbar">
                                         {quizzesCount > 0 && (
-                                            <span className="whitespace-nowrap px-2 py-1 bg-slate-50 text-slate-500 text-[9px] font-black uppercase rounded-lg border border-slate-100 tracking-wider transition-all group-hover:border-indigo-100 group-hover:text-indigo-600 shadow-xs">
+                                            <span className="whitespace-nowrap px-2 py-1 bg-muted text-muted-foreground text-[9px] font-black uppercase rounded-lg border border-border tracking-wider transition-all group-hover:border-primary/20 group-hover:text-primary shadow-xs">
                                                 {quizzesCount} Quizzes
                                             </span>
                                         )}
                                         {assignmentsCount > 0 && (
-                                            <span className="whitespace-nowrap px-2 py-1 bg-slate-50 text-slate-500 text-[9px] font-black uppercase rounded-lg border border-slate-100 tracking-wider transition-all group-hover:border-indigo-100 group-hover:text-indigo-600 shadow-xs">
+                                            <span className="whitespace-nowrap px-2 py-1 bg-muted text-muted-foreground text-[9px] font-black uppercase rounded-lg border border-border tracking-wider transition-all group-hover:border-primary/20 group-hover:text-primary shadow-xs">
                                                 {assignmentsCount} Labs
                                             </span>
                                         )}
@@ -230,12 +230,12 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                         );
                     })}
                     {sections.filter(sec => assessments.some(a => a.sectionId === sec.id)).length === 0 && (
-                        <div className="col-span-full p-16 bg-white border border-dashed border-slate-300 rounded-2xl text-center shadow-sm">
-                            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
-                                <BookOpen className="w-8 h-8 text-slate-400" />
+                        <div className="col-span-full p-16 bg-card border border-dashed border-border rounded-2xl text-center shadow-sm">
+                            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
+                                <BookOpen className="w-8 h-8 text-muted-foreground/40" />
                             </div>
-                            <h3 className="text-lg font-bold text-slate-900 mb-1">No Active Courses</h3>
-                            <p className="text-slate-500 max-w-sm mx-auto">There are no courses with published assessments right now.</p>
+                            <h3 className="text-lg font-bold text-foreground mb-1">No Active Courses</h3>
+                            <p className="text-muted-foreground max-w-sm mx-auto">There are no courses with published assessments right now.</p>
                         </div>
                     )}
                 </div>
@@ -252,35 +252,35 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                     params.set('assessmentId', ann.id);
                                     router.push(`${pathname}?${params.toString()}`, { scroll: false });
                                 }}
-                                accentColor="bg-indigo-500"
+                                accentColor="bg-primary"
                                 padding="lg"
                                 delay={index * 50}
                             >
                                 <CardHeader>
-                                    <span className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-lg tracking-widest border-2 ${isDone ? 'bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm' : 'bg-amber-50 text-amber-700 border-amber-100 shadow-sm'}`}>
+                                    <span className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-lg tracking-widest border border-border/50 shadow-sm ${isDone ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
                                         {isDone ? 'Completed' : 'Pending'}
                                     </span>
-                                    <div className="p-2.5 bg-indigo-50 rounded-xl group-hover:bg-indigo-100 transition-colors border border-indigo-100/50 shadow-xs">
-                                        <BookOpen className="w-5 h-5 text-indigo-600" />
+                                    <div className="p-2.5 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors border border-primary/20 shadow-xs">
+                                        <BookOpen className="w-5 h-5 text-primary" />
                                     </div>
                                 </CardHeader>
 
                                 <CardContent>
-                                    <h3 className="text-xl font-black text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2 tracking-tight">
+                                    <h3 className="text-xl font-black text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-2 tracking-tight">
                                         {ann.title}
                                     </h3>
-                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{ann.section?.name}</p>
+                                    <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest">{ann.section?.name}</p>
                                 </CardContent>
 
-                                <CardFooter className="flex-col gap-4 items-stretch">
+                                <CardFooter className="flex-col gap-4 items-stretch border-border">
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                            <span className="text-slate-400">Type</span>
-                                            <span className="text-slate-900 px-2 py-0.5 bg-slate-50 rounded border border-slate-100">{ann.type}</span>
+                                            <span className="text-muted-foreground/60">Type</span>
+                                            <span className="text-foreground px-2 py-0.5 bg-muted rounded border border-border">{ann.type}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                            <span className="text-slate-400 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-primary/50" /> Due Date</span>
-                                            <span className={`px-2 py-0.5 rounded border ${!ann.dueDate ? 'text-slate-400 bg-slate-50 border-slate-100' : 'text-slate-900 bg-slate-50 border-slate-100'}`}>
+                                            <span className="text-muted-foreground/60 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-primary/50" /> Due Date</span>
+                                            <span className={`px-2 py-0.5 rounded border ${!ann.dueDate ? 'text-muted-foreground/60 bg-muted border-border' : 'text-foreground bg-muted border-border'}`}>
                                                 {ann.dueDate ? new Date(ann.dueDate).toLocaleDateString() : 'None'}
                                             </span>
                                         </div>
@@ -315,37 +315,37 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                     <div className="space-y-6">
                         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                             <div>
-                                <h2 className="text-2xl font-black text-slate-900 tracking-tight">{selectedAssessment.title}</h2>
-                                <p className="text-slate-500 font-medium mt-1">{selectedAssessment.section?.name}</p>
+                                <h2 className="text-2xl font-black text-foreground tracking-tight">{selectedAssessment.title}</h2>
+                                <p className="text-muted-foreground font-medium mt-1">{selectedAssessment.section?.name}</p>
                             </div>
-                            <span className={`self-start text-xs font-bold uppercase px-3 py-1.5 rounded-sm tracking-wider ${(selectedAssessment._count?.submissions || 0) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                            <span className={`self-start text-xs font-bold uppercase px-3 py-1.5 rounded-sm tracking-wider ${(selectedAssessment._count?.submissions || 0) > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
                                 {(selectedAssessment._count?.submissions || 0) > 0 ? 'Completed' : 'Pending'}
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-xl border border-border">
                             <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Type</p>
-                                <p className="text-sm font-bold text-slate-900">{selectedAssessment.type}</p>
+                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">Type</p>
+                                <p className="text-sm font-bold text-foreground">{selectedAssessment.type}</p>
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Marks</p>
-                                <p className="text-sm font-bold text-slate-900">{selectedAssessment.totalMarks}</p>
+                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">Total Marks</p>
+                                <p className="text-sm font-bold text-foreground">{selectedAssessment.totalMarks}</p>
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Weightage</p>
-                                <p className="text-sm font-bold text-slate-900">{selectedAssessment.weightage}%</p>
+                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">Weightage</p>
+                                <p className="text-sm font-bold text-foreground">{selectedAssessment.weightage}%</p>
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Due Date</p>
-                                <p className="text-sm font-bold text-slate-900">{selectedAssessment.dueDate ? new Date(selectedAssessment.dueDate).toLocaleDateString() : 'None'}</p>
+                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">Due Date</p>
+                                <p className="text-sm font-bold text-foreground">{selectedAssessment.dueDate ? new Date(selectedAssessment.dueDate).toLocaleDateString() : 'None'}</p>
                             </div>
                         </div>
 
                         {(selectedAssessment.grades && selectedAssessment.grades.length > 0 && (selectedAssessment.grades[0].status === GradeStatus.PUBLISHED || selectedAssessment.grades[0].status === GradeStatus.FINALIZED)) && (() => {
                             const colors = getGradeColors(selectedAssessment.grades[0].marksObtained, selectedAssessment.totalMarks);
                             return (
-                                <div className={`space-y-4 p-6 ${colors.bg}/50 rounded-2xl border-2 ${colors.border} shadow-inner`}>
+                                <div className={`space-y-4 p-6 ${colors.bg} rounded-2xl border ${colors.border} shadow-inner`}>
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                         <h3 className={`text-lg font-black ${colors.dark} tracking-tight uppercase italic flex items-center gap-2`}>
                                             <Check className={`w-6 h-6 ${colors.fill}`} />
@@ -359,9 +359,9 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                         </div>
                                     </div>
                                     {selectedAssessment.grades[0].feedback && (
-                                        <div className={`pt-4 border-t ${colors.border} italic`}>
+                                        <div className={`pt-4 border-t ${colors.borderDark || colors.border} italic`}>
                                             <p className={`text-[10px] font-bold ${colors.muted} uppercase tracking-widest mb-2`}>Teacher Remarks</p>
-                                            <p className="text-slate-700 font-medium leading-relaxed bg-white/60 p-4 rounded-xl shadow-xs">
+                                            <p className="text-foreground font-medium leading-relaxed bg-card/60 p-4 rounded-xl shadow-xs">
                                                 &quot;{selectedAssessment.grades[0].feedback}&quot;
                                             </p>
                                         </div>
@@ -372,15 +372,15 @@ export default function Assessments({ sections, assessments }: { sections: Secti
 
                         {(selectedAssessment.files && selectedAssessment.files.length > 0) && (
                             <div className="space-y-3">
-                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Attachments</h3>
+                                <h3 className="text-sm font-bold text-foreground uppercase tracking-widest">Attachments</h3>
                                 {selectedAssessment.files.map((file: Attachment) => (
-                                    <a key={file.id} href={getPublicUrl(file.path)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-sm transition-all group">
-                                        <div className="p-2 bg-indigo-50 text-indigo-500 rounded-lg group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                                    <a key={file.id} href={getPublicUrl(file.path)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl hover:border-primary/50 hover:shadow-sm transition-all group">
+                                        <div className="p-2 bg-primary/10 text-primary rounded-lg group-hover:bg-primary group-hover:text-white transition-colors">
                                             <FileText className="w-5 h-5" />
                                         </div>
                                         <div className="flex-1">
-                                            <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{file.filename}</p>
-                                            <p className="text-xs text-slate-500 font-medium">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                            <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{file.filename}</p>
+                                            <p className="text-xs text-muted-foreground font-medium">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                                         </div>
                                     </a>
                                 ))}
@@ -389,9 +389,9 @@ export default function Assessments({ sections, assessments }: { sections: Secti
 
                         {selectedAssessment.externalLink && (
                             <div className="space-y-3">
-                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">External Resource</h3>
+                                <h3 className="text-sm font-bold text-foreground uppercase tracking-widest">External Resource</h3>
                                 {selectedAssessment.isVideoLink ? (
-                                    <div className="w-full aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-inner bg-black">
+                                    <div className="w-full aspect-video rounded-xl overflow-hidden border border-border shadow-inner bg-black">
                                         <iframe
                                             src={getVideoEmbedUrl(selectedAssessment.externalLink)}
                                             className="w-full h-full"
@@ -400,17 +400,17 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                         ></iframe>
                                     </div>
                                 ) : (
-                                    <a href={selectedAssessment.externalLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 bg-indigo-50 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition-colors">
-                                        <PlayCircle className="w-6 h-6 text-indigo-600" />
-                                        <span className="text-sm font-bold text-indigo-900">Open External Link</span>
+                                    <a href={selectedAssessment.externalLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 bg-primary/10 border border-primary/20 rounded-xl hover:bg-primary/20 transition-colors">
+                                        <PlayCircle className="w-6 h-6 text-primary" />
+                                        <span className="text-sm font-bold text-primary italic">Open External Link</span>
                                     </a>
                                 )}
                             </div>
                         )}
 
                         {selectedAssessment._count?.submissions === 0 && (
-                            <form onSubmit={handleSubmission} className="space-y-4 pt-6 border-t border-slate-100">
-                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Submit Work</h3>
+                            <form onSubmit={handleSubmission} className="space-y-4 pt-6 border-t border-border">
+                                <h3 className="text-sm font-bold text-foreground uppercase tracking-widest">Submit Work</h3>
 
                                 {selectedAssessment.allowSubmissions && (
                                     <div className="relative flex items-center gap-2">
@@ -427,10 +427,10 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                         />
                                         <label
                                             htmlFor="student-file-upload"
-                                            className={`flex justify-center items-center gap-2 w-full px-4 py-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${selectedFile ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-300 hover:border-indigo-400 text-slate-500 hover:bg-slate-50'}`}
+                                            className={`flex justify-center items-center gap-2 w-full px-4 py-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${selectedFile ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50 text-muted-foreground/60 hover:bg-muted/30'}`}
                                         >
                                             <div className="flex flex-col items-center">
-                                                <UploadCloud className={`w-8 h-8 mb-2 ${selectedFile ? 'text-indigo-500' : 'text-slate-400'}`} />
+                                                <UploadCloud className={`w-8 h-8 mb-2 ${selectedFile ? 'text-primary' : 'text-muted-foreground/40'}`} />
                                                 <span className="font-bold">
                                                     {selectedFile ? selectedFile.name : 'Click to upload your submission'}
                                                 </span>

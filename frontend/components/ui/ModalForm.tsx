@@ -57,7 +57,7 @@ export function ModalForm({
                         variant === 'danger' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' :
                         variant === 'warning' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' :
                         variant === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20' :
-                        'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20'
+                        'bg-primary hover:bg-primary/90 shadow-primary/20'
                     }`}
                 >
                     {submitText}
@@ -82,7 +82,7 @@ export function ModalForm({
                     </div>
                 )}
 
-                <form id="modal-form" onSubmit={onSubmit} className="text-gray-900">
+                <form id="modal-form" onSubmit={onSubmit} className="text-foreground">
                     {children}
                 </form>
             </div>

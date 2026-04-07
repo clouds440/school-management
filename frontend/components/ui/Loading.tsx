@@ -35,7 +35,7 @@ export function Loading({
     fullScreen = false
 }: LoadingProps) {
     const containerClasses = fullScreen 
-        ? `fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 backdrop-blur-md ${className}`
+        ? `fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/80 backdrop-blur-md ${className}`
         : `flex flex-col items-center justify-center py-12 ${className}`;
 
     const spinnerSize = sizeMap[size];
@@ -45,23 +45,23 @@ export function Loading({
         <div className={containerClasses}>
             <div className="relative">
                 {/* Background pulse */}
-                <div className={`absolute inset-0 bg-indigo-500/10 rounded-full animate-ping scale-150 ${spinnerSize}`} />
+                <div className={`absolute inset-0 bg-primary/10 rounded-full animate-ping scale-150 ${spinnerSize}`} />
                 
                 {/* Main Spinner/Icon */}
-                <div className="relative bg-white p-2 rounded-full shadow-sm border border-indigo-100 flex items-center justify-center">
+                <div className="relative bg-card p-2 rounded-full shadow-sm border border-border flex items-center justify-center">
                     {Icon ? (
                         <div className="relative">
-                            <Icon className={`${spinnerSize} text-indigo-600 animate-pulse`} />
-                            <Loader2 className={`absolute -top-1 -right-1 w-4 h-4 text-indigo-400 animate-spin`} />
+                            <Icon className={`${spinnerSize} text-primary animate-pulse`} />
+                            <Loader2 className={`absolute -top-1 -right-1 w-4 h-4 text-primary/60 animate-spin`} />
                         </div>
                     ) : (
-                        <Loader2 className={`${spinnerSize} text-indigo-600 animate-spin`} />
+                        <Loader2 className={`${spinnerSize} text-primary animate-spin`} />
                     )}
                 </div>
             </div>
             
             {text && (
-                <p className={`mt-4 font-black uppercase tracking-[0.2em] text-indigo-900/60 animate-pulse ${textSize}`}>
+                <p className={`mt-4 font-black uppercase tracking-[0.2em] text-foreground/60 animate-pulse ${textSize}`}>
                     {text}
                 </p>
             )}

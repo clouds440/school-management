@@ -154,7 +154,7 @@ export default function SectionsPage() {
             sortKey: 'name',
             accessor: (row: Section) => (
                 <div className="flex flex-col">
-                    <span className="font-semibold text-card-text">{row.name}</span>
+                    <span className="font-semibold text-card-foreground">{row.name}</span>
                     <span className="text-sm font-medium text-primary">{row.course?.name || 'No Course'}</span>
                 </div>
             )
@@ -171,7 +171,7 @@ export default function SectionsPage() {
                             </span>
                         ))
                     ) : (
-                        <span className="text-gray-400 italic text-sm">No teachers</span>
+                        <span className="text-muted-foreground/50 italic text-sm">No teachers</span>
                     )}
                 </div>
             )
@@ -180,13 +180,13 @@ export default function SectionsPage() {
             header: 'Term',
             sortable: true,
             sortKey: 'semester',
-            accessor: (row: Section) => row.semester && row.year ? `${row.semester} ${row.year}` : <span className="text-gray-400 italic">Unspecified</span>
+            accessor: (row: Section) => row.semester && row.year ? `${row.semester} ${row.year}` : <span className="text-muted-foreground/50 italic">Unspecified</span>
         },
         {
             header: 'Room',
             sortable: true,
             sortKey: 'room',
-            accessor: (row: Section) => row.room || <span className="text-gray-400 italic">TBD</span>
+            accessor: (row: Section) => row.room || <span className="text-muted-foreground/50 italic">TBD</span>
         },
         {
             header: 'Actions',
@@ -239,7 +239,7 @@ export default function SectionsPage() {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
                 <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, course, or room..." />
@@ -252,13 +252,13 @@ export default function SectionsPage() {
                                 className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all cursor-pointer group select-none"
                             >
                                 <button
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMySections ? 'bg-primary' : 'bg-gray-200'}`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMySections ? 'bg-primary' : 'bg-muted'}`}
                                 >
                                     <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showOnlyMySections ? 'translate-x-6' : 'translate-x-1'}`}
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${showOnlyMySections ? 'translate-x-6' : 'translate-x-1'}`}
                                     />
                                 </button>
-                                <span className="text-xs font-bold text-card-text uppercase tracking-wider">My Sections</span>
+                                <span className="text-xs font-bold text-card-foreground uppercase tracking-wider">My Sections</span>
                             </div>
                         )}
 

@@ -112,7 +112,7 @@ export function Brand({
   const isOrgBrandingActive = !forcePlatform && isDashboardContext && activeUser?.orgName;
 
   const displayName = isOrgBrandingActive ? activeUser.orgName : PLATFORM_NAME;
-  const nameStyles = isOrgBrandingActive ? 'text-gray-900' : (useGradient ? 'text-transparent bg-clip-text bg-linear-to-r from-primary via-indigo-600 to-purple-600' : 'text-gray-900');
+  const nameStyles = isOrgBrandingActive ? 'text-foreground' : (useGradient ? 'text-transparent bg-clip-text bg-linear-to-r from-primary via-indigo-600 to-purple-600' : 'text-foreground');
 
   const sizeTextClasses = {
     sm: 'text-lg',

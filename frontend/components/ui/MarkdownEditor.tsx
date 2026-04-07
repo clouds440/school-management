@@ -89,15 +89,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     };
 
     return (
-        <div className={`flex flex-col border border-gray-200 rounded-sm overflow-hidden bg-white shadow-inner ${className}`}>
-            <div className="flex flex-wrap items-center justify-between px-3 bg-gray-50 border-b border-gray-100 gap-2">
+        <div className={`flex flex-col border border-border rounded-sm overflow-hidden bg-card shadow-inner ${className}`}>
+            <div className="flex flex-wrap items-center justify-between px-3 bg-muted/30 border-b border-border gap-2">
                 <div className="flex items-center gap-1 flex-wrap">
                     {!previewMode && (
                         <>
                             <button
                                 type="button"
                                 onClick={() => insertText('**', '**')}
-                                className="p-1.5 hover:bg-white rounded-sm text-gray-600 transition-colors border border-transparent hover:border-gray-200"
+                                className="p-1.5 hover:bg-card rounded-sm text-muted-foreground transition-colors border border-transparent hover:border-border"
                                 title="Bold"
                             >
                                 <Bold className="w-4 h-4" />
@@ -105,13 +105,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                             <button
                                 type="button"
                                 onClick={() => insertText('[', '](url)')}
-                                className="p-1.5 hover:bg-white rounded-sm text-gray-600 transition-colors border border-transparent hover:border-gray-200"
+                                className="p-1.5 hover:bg-card rounded-sm text-muted-foreground transition-colors border border-transparent hover:border-border"
                                 title="Link"
                             >
                                 <LinkIcon className="w-4 h-4" />
                             </button>
 
-                            <div className="h-6 w-px bg-gray-200 mx-1"></div>
+                            <div className="h-6 w-px bg-border mx-1"></div>
 
                             {templates.length > 0 && (
                                 <CustomSelect
@@ -167,8 +167,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                     type="button"
                     onClick={() => setPreviewMode(!previewMode)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-sm transition-all border ${previewMode
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-200'
-                        : 'text-gray-500 border-gray-200 hover:bg-white'
+                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                        : 'text-muted-foreground border-border hover:bg-card'
                         }`}
                 >
                     {previewMode ? (
@@ -187,7 +187,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
             <div className="relative min-h-auto">
                 {previewMode ? (
-                    <div className="p-5 overflow-y-auto max-h-100 bg-white">
+                    <div className="p-5 overflow-y-auto max-h-100 bg-card">
                         {value.length > 0 ? (
                             <MarkdownRenderer content={value} />
                         ) : (
@@ -207,7 +207,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                         onFocus={onFocus}
                         placeholder={placeholder}
                         rows={rows + (value.length > 100 ? 3 : 0) + (value.length > 300 ? 3 : 0) + (value.length > 600 ? 3 : 0)}
-                        className="w-full p-2.5 outline-none resize-y border-none focus:ring-0 bg-transparent custom-scrollbar max-h-110 min-h-10 font-medium leading-relaxed text-gray-800 placeholder:text-gray-300"
+                        className="w-full p-2.5 outline-none resize-y border-none focus:ring-0 bg-transparent custom-scrollbar max-h-110 min-h-10 font-medium leading-relaxed text-foreground placeholder:text-muted-foreground/50"
                     />
                 )}
             </div>

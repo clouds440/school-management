@@ -117,7 +117,7 @@ export default function StudentsPage() {
             accessor: (row: Student) => (
                 <div className="flex items-center gap-3">
                     <BrandIcon variant="user" size="sm" user={row.user} className="w-10 h-10 shadow-sm" />
-                    <span className="font-semibold text-card-text">{row.user.name || 'N/A'}</span>
+                    <span className="font-semibold text-card-foreground">{row.user.name || 'N/A'}</span>
                 </div>
             )
         },
@@ -127,8 +127,8 @@ export default function StudentsPage() {
             sortKey: 'registrationNumber',
             accessor: (row: Student) => (
                 <div className="flex flex-col">
-                    <span className="font-semibold text-card-text">{row.registrationNumber || '-'}</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-card-text/40 leading-none mt-1">
+                    <span className="font-semibold text-card-foreground">{row.registrationNumber || '-'}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 leading-none mt-1">
                         Roll: {row.rollNumber || '-'}
                     </span>
                 </div>
@@ -146,8 +146,8 @@ export default function StudentsPage() {
             sortKey: 'email',
             accessor: (row: Student) => (
                 <div className="flex flex-col">
-                    <span className="text-card-text/80">{row.user.phone || 'No phone'}</span>
-                    <span className="text-xs text-card-text/40">{row.user.email}</span>
+                    <span className="text-card-foreground/80">{row.user.phone || 'No phone'}</span>
+                    <span className="text-xs text-muted-foreground/40">{row.user.email}</span>
                 </div>
             )
         },
@@ -175,7 +175,7 @@ export default function StudentsPage() {
                             +{sectionsList.length - 1} more
                         </span>
                     </div>
-                ) : <span className="text-card-text/30 italic">Unassigned</span>;
+                ) : <span className="text-muted-foreground/30 italic">Unassigned</span>;
             }
         },
         {
@@ -194,10 +194,10 @@ export default function StudentsPage() {
             sortKey: 'updatedAt',
             accessor: (row: Student) => row.updatedBy ? (
                 <div className="flex flex-col whitespace-nowrap">
-                    <span className="font-medium text-gray-800">{row.updatedBy}</span>
-                    <span className="text-xs text-gray-500">{new Date(row.updatedAt || '').toLocaleDateString()}</span>
+                    <span className="font-medium text-foreground">{row.updatedBy}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(row.updatedAt || '').toLocaleDateString()}</span>
                 </div>
-            ) : <span className="text-card-text/30 italic text-sm text-center">Never</span>
+            ) : <span className="text-muted-foreground/30 italic text-sm text-center">Never</span>
         },
         {
             header: 'Actions',
@@ -243,7 +243,7 @@ export default function StudentsPage() {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
                 <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, reg, roll or major..." />
@@ -252,7 +252,7 @@ export default function StudentsPage() {
                     <div className="flex flex-wrap items-center gap-2 md:gap-3">
                         {(user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER) && (
                             <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-card-text/40 uppercase tracking-wider whitespace-nowrap">Section:</span>
+                                <span className="text-xs font-bold text-muted-foreground/40 uppercase tracking-wider whitespace-nowrap">Section:</span>
                                 <CustomSelect
                                     value={sectionId}
                                     onChange={(val) => updateQueryParams({ sectionId: val, page: 1 })}
@@ -272,13 +272,13 @@ export default function StudentsPage() {
                                 className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all cursor-pointer group select-none"
                             >
                                 <button
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMyStudents ? 'bg-primary' : 'bg-gray-200'}`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMyStudents ? 'bg-primary' : 'bg-muted'}`}
                                 >
                                     <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showOnlyMyStudents ? 'translate-x-6' : 'translate-x-1'}`}
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${showOnlyMyStudents ? 'translate-x-6' : 'translate-x-1'}`}
                                     />
                                 </button>
-                                <span className="text-xs font-bold text-card-text uppercase tracking-wider">My Students</span>
+                                <span className="text-xs font-bold text-card-foreground uppercase tracking-wider">My Students</span>
                             </div>
                         )}
 

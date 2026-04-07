@@ -142,31 +142,31 @@ export default function SettingsPage() {
         <div className="flex flex-1 flex-col max-w-7xl mx-auto w-full">
             <div className="mb-2">
                 <div className="mt-2 flex items-center gap-5">
-                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-sm border border-black/30 shadow-xl">
+                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-sm border border-border shadow-xl">
                         <Settings className="w-10 h-10 text-primary" />
                     </div>
                     <div>
                         <h1 className="text-5xl font-black text-primary tracking-tight drop-shadow-lg">Settings</h1>
-                        <p className="text-gray-600 font-bold opacity-80 mt-1 uppercase tracking-wider">Organization Profile & Configuration</p>
+                        <p className="text-muted-foreground font-bold opacity-80 mt-1 uppercase tracking-wider">Organization Profile & Configuration</p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-2xl border border-white/20 p-6 md:p-10 mb-10 text-card-text">
+            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-2xl border border-border p-6 md:p-10 mb-10 text-card-foreground">
                 {orgData?.status === 'REJECTED' && (
-                    <div className="mb-8 p-6 bg-red-50 border border-red-100 rounded-sm flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="mb-8 p-6 bg-destructive/10 border border-destructive/20 rounded-sm flex flex-col md:flex-row items-center justify-between gap-6">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-red-100/50 rounded-sm text-red-600">
                                 <ShieldOff className="w-6 h-6" />
                             </div>
                             <div>
-                                <h4 className="text-lg font-black text-red-600 leading-tight">Your application was rejected</h4>
+                                <h4 className="text-lg font-black text-destructive leading-tight">Your application was rejected</h4>
                                 <div className="mt-2">
                                     <MarkdownRenderer
                                         content={orgData?.statusHistory && orgData.statusHistory.length > 0
                                             ? orgData.statusHistory[orgData.statusHistory.length - 1].message
                                             : 'Please correct the details below and re-submit for review.'}
-                                        className="text-sm text-red-600/70 font-medium prose prose-red prose-sm max-w-none"
+                                        className="text-sm text-destructive font-medium prose prose-red prose-sm max-w-none opacity-70"
                                     />
                                 </div>
                             </div>
@@ -238,10 +238,10 @@ export default function SettingsPage() {
                                         }}
                                         className="w-full h-10 p-1 rounded-sm border border-white/10 bg-primary/5 cursor-pointer"
                                     />
-                                    <p className="text-[10px] text-card-text/40 mt-1 font-bold uppercase tracking-widest leading-none">HEX: {formData.accentColor.primary}</p>
+                                    <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase tracking-widest leading-none">HEX: {formData.accentColor.primary}</p>
                                 </div>
                             </div>
-                            <p className="text-xs text-card-text/60 mt-2 leading-relaxed font-medium">
+                            <p className="text-xs text-muted-foreground mt-2 leading-relaxed font-medium">
                                 Pick accent color.
                             </p>
 
@@ -256,7 +256,7 @@ export default function SettingsPage() {
                                                 setFormData({ ...formData, accentColor: { ...formData.accentColor, mode: m } });
                                                 setThemeMode(m).catch(() => { });
                                             }}
-                                            className={`px-3 py-2 rounded-md border ${formData.accentColor.mode === m ? 'bg-primary text-primary-text border-primary' : 'bg-transparent text-card-text/60 border-white/10'}`}>
+                                            className={`px-3 py-2 rounded-md border text-sm font-bold transition-all ${formData.accentColor.mode === m ? 'bg-primary text-primary-foreground border-primary shadow-lg' : 'bg-secondary/50 text-muted-foreground border-border hover:bg-secondary'}`}>
                                             {m === ThemeMode.SYSTEM ? 'System' : m === ThemeMode.LIGHT ? 'Light' : 'Dark'}
                                         </button>
                                     ))}

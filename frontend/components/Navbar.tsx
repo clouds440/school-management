@@ -27,7 +27,7 @@ export default function Navbar() {
         pathname?.split('/').length > 2; // Matches /[orgSlug]/something OR /admin/something
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-100 flex items-center justify-between pl-2 pr-4 py-3 md:pr-10 backdrop-blur-xl bg-secondary/80 border-b border-gray-500 shadow-gray-500 shadow-md h-16 transition-all duration-300">
+        <nav className="fixed top-0 left-0 right-0 z-100 flex items-center justify-between pl-2 pr-4 py-3 md:pr-10 backdrop-blur-xl bg-navbar border-b border-border shadow-sm h-16 transition-all duration-300 text-navbar-foreground">
             <div className="flex space-x-2">
                 {isDashboard && (
                     <button
@@ -38,7 +38,7 @@ export default function Navbar() {
                                 toggleMobileSidebar();
                             }
                         }}
-                        className="p-2 hover:bg-gray-100 rounded-sm transition-colors text-gray-600 outline-none focus-visible:ring-2 ring-primary"
+                        className="p-2 hover:bg-accent rounded-sm transition-colors text-muted-foreground outline-none focus-visible:ring-2 ring-primary"
                         title={mounted ? (isDesktop ? (isExpanded ? "Collapse Sidebar" : "Expand Sidebar") : (isMobileOpen ? "Close Menu" : "Open Menu")) : "Menu"}
                     >
                         {isDesktop ? (<Menu className="w-6 h-6" />) : (isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />)}
@@ -57,7 +57,7 @@ export default function Navbar() {
                                     setThemeMode(next).catch(() => { /* swallow */ });
                                 }}
                                 title={`Theme: ${themeMode}`}
-                            className="p-2 hover:bg-gray-100 rounded-sm transition-colors text-gray-600 outline-none focus-visible:ring-2 ring-primary"
+                        className="p-2 hover:bg-accent rounded-sm transition-colors text-foreground outline-none focus-visible:ring-2 ring-primary"
                         >
                                 {themeMode === ThemeMode.LIGHT && <Sun className="w-5 h-5" />}
                                 {themeMode === ThemeMode.DARK && <Moon className="w-5 h-5" />}
@@ -71,8 +71,8 @@ export default function Navbar() {
                         <Link
                             href="/login"
                             className={`flex items-center mr-1 md:mr-2 space-x-2 px-3 py-2 md:px-5 md:py-2.5 rounded-sm transition-all duration-300 font-medium text-xs md:text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary ${pathname === '/login'
-                                ? 'bg-primary text-primary-text shadow-lg'
-                                : 'text-gray-600 hover:text-primary hover:bg-white'
+                                ? 'bg-primary text-primary-foreground shadow-lg'
+                                : 'text-foreground hover:text-primary hover:bg-card'
                                 }`}
                         >
                             <LogIn className="w-4 h-4" />
@@ -81,8 +81,8 @@ export default function Navbar() {
                         <Link
                             href="/register"
                             className={`flex items-center space-x-2 px-3 py-2 md:px-5 md:py-2.5 rounded-sm transition-all duration-300 font-medium text-xs md:text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary ${pathname === '/register'
-                                ? 'bg-primary text-primary-text shadow-lg'
-                                : 'text-gray-600 hover:text-primary hover:bg-white'
+                                ? 'bg-primary text-primary-foreground shadow-lg'
+                                : 'text-foreground hover:text-primary hover:bg-card'
                                 }`}
                         >
                             <UserPlus className="w-4 h-4" />

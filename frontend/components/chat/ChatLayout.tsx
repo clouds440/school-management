@@ -643,7 +643,7 @@ export function ChatLayout() {
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter') {
-            if (e.ctrlKey) {
+            if (e.shiftKey) {
                 const target = e.currentTarget;
                 if (!target) return;
                 const start = target.selectionStart || 0;
@@ -725,16 +725,16 @@ export function ChatLayout() {
     };
 
     return (
-        <div className="flex h-full bg-gray-50 lg:rounded-xl lg:shadow-md lg:border border-gray-200/60 overflow-hidden relative">
+        <div className="flex h-full bg-card lg:rounded-xl lg:shadow-md lg:border border-border overflow-hidden relative">
             {/* ===== SIDEBAR ===== */}
             <div className={`
             ${activeChatId && !isDesktop ? 'hidden' : 'flex'} 
-            w-full lg:max-w-[320px] xl:max-w-85 border-r border-gray-200/80 flex-col bg-white h-full
+            w-full lg:max-w-[320px] xl:max-w-85 border-r border-border flex-col bg-card h-full
         `}>
-                <div className="px-5 py-4 border-b border-gray-100 bg-linear-to-r from-white to-gray-50/80 flex justify-between items-center">
+                <div className="px-5 py-4 border-b border-border bg-card/50 flex justify-between items-center">
                     <div>
-                        <h2 className="text-lg font-extrabold text-gray-900 tracking-tight">Messages</h2>
-                        <p className="text-[10px] text-gray-400 font-semibold tracking-wide mt-0.5">{chats.length} conversation{chats.length !== 1 ? 's' : ''}</p>
+                        <h2 className="text-lg font-extrabold text-foreground tracking-tight">Messages</h2>
+                        <p className="text-[10px] text-muted-foreground font-semibold tracking-wide mt-0.5">{chats.length} conversation{chats.length !== 1 ? 's' : ''}</p>
                     </div>
                     {user.role !== Role.STUDENT && (
                         <button
@@ -750,13 +750,13 @@ export function ChatLayout() {
                 {/* Search */}
                 <div className="px-4 py-3">
                     <div className="relative">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 pointer-events-none" />
                         <input
                             type="text"
                             placeholder="Search conversations..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-gray-100/80 border border-transparent rounded-xl text-sm font-medium text-gray-700 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-primary/30 focus:ring-2 focus:ring-primary/10 transition-all"
+                            className="w-full pl-10 pr-4 py-2.5 bg-background/80 border border-border/50 rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:bg-background focus:border-primary/30 focus:ring-2 focus:ring-primary/10 transition-all"
                         />
                     </div>
                 </div>
@@ -801,8 +801,8 @@ export function ChatLayout() {
                                     onClick={() => setActiveChatId(chat.id)}
                                     className={`w-full flex items-center px-4 py-3.5 transition-all text-left group relative
                                         ${isActive
-                                            ? 'bg-primary/6 border-l-[3px] border-l-primary'
-                                            : 'hover:bg-gray-50 border-l-[3px] border-l-transparent'
+                                            ? 'bg-primary/5 border-l-[3px] border-l-primary'
+                                            : 'hover:bg-muted/50 border-l-[3px] border-l-transparent'
                                         }`}
                                 >
                                     <div className="relative mr-3 shrink-0">
@@ -814,27 +814,27 @@ export function ChatLayout() {
                                             className="w-12 h-12"
                                         />
                                         {hasUnread && (
-                                            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-white" />
+                                            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-background" />
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-center mb-0.5">
-                                            <h4 className={`text-[13.5px] truncate pr-2 ${isActive ? 'font-bold text-primary' : hasUnread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>
+                                            <h4 className={`text-[13.5px] truncate pr-2 ${isActive ? 'font-bold text-primary' : hasUnread ? 'font-bold text-foreground' : 'font-semibold text-foreground/80'}`}>
                                                 {displayName}
                                             </h4>
                                             {lastMsg && (
-                                                <span className={`text-[10px] shrink-0 ${hasUnread ? 'text-primary font-bold' : 'text-gray-400 font-medium'}`}>
+                                                <span className={`text-[10px] shrink-0 ${hasUnread ? 'text-primary font-bold' : 'text-muted-foreground font-medium'}`}>
                                                     {formatDistanceToNow(new Date(lastMsg.createdAt), { addSuffix: false })}
                                                 </span>
                                             )}
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <p className={`text-[12px] truncate flex-1 ${hasUnread ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                                            <p className={`text-[12px] truncate flex-1 ${hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                                                 {lastMsg ? (
                                                     <>
-                                                        <span className="text-gray-400">{lastMsg.senderId === user.id ? 'You: ' : (chat.type === ChatType.GROUP ? `${lastMsg.sender?.name?.split(' ')[0]}: ` : '')}</span>
+                                                        <span className="text-muted-foreground">{lastMsg.senderId === user.id ? 'You: ' : (chat.type === ChatType.GROUP ? `${lastMsg.sender?.name?.split(' ')[0]}: ` : '')}</span>
                                                         {lastMsg.deletedAt ? (
-                                                            <span className="italic text-gray-400">Message deleted</span>
+                                                            <span className="italic text-muted-foreground">Message deleted</span>
                                                         ) : (
                                                             (() => {
                                                                 const content = lastMsg.content || '';
@@ -866,19 +866,19 @@ export function ChatLayout() {
             {/* ===== CHAT PANEL ===== */}
             <div className={`
             ${!activeChatId && !isDesktop ? 'hidden' : 'flex'} 
-            flex-1 flex-col bg-white h-full relative overflow-visible
+            flex-1 flex-col bg-background h-full relative overflow-visible
             ${!isDesktop && activeChatId ? 'animate-chat-slide-in' : ''}
         `}>
                 {activeChat ? (
                     <>
                         {/* Chat Header */}
-                        <div className="px-4 py-3 border-b border-gray-200/80 flex items-center justify-between z-20 bg-white/95 backdrop-blur-md relative">
+                        <div className="px-4 py-3 border-b border-border flex items-center justify-between z-20 bg-background/95 backdrop-blur-md relative">
                             <div className="flex items-center space-x-3 min-w-0">
                                 {!isDesktop && (
                                     <button
                                         type='button'
                                         title='Back'
-                                        className="p-1.5 -ml-1 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-xl transition-all active:scale-95"
+                                        className="p-1.5 -ml-1 text-foreground/60 hover:text-primary hover:bg-muted rounded-xl transition-all active:scale-95"
                                         onClick={() => setActiveChatId(null)}
                                     >
                                         <ChevronLeft size={22} />
@@ -892,14 +892,14 @@ export function ChatLayout() {
                                     className="w-10 h-10"
                                 />
                                 <div className="min-w-0">
-                                    <h3 className="font-bold text-[15px] text-gray-900 leading-tight truncate">
+                                    <h3 className="font-bold text-[15px] text-foreground leading-tight truncate">
                                         {activeChat.type === ChatType.GROUP ? activeChat.name : activeChat.participants?.find(p => p.userId !== user.id)?.user?.name || 'Unknown'}
                                     </h3>
                                     <button
                                         type='button'
                                         id="participants-toggle"
                                         onClick={() => setShowParticipants(!showParticipants)}
-                                        className={`text-[11px] font-semibold rounded-md transition-all flex items-center ${showParticipants ? 'text-primary' : 'text-gray-400 hover:text-primary'}`}
+                                        className={`text-[11px] font-semibold rounded-md transition-all flex items-center ${showParticipants ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
                                     >
                                         {activeChat.type === ChatType.GROUP
                                             ? `${activeChat.participants?.filter(p => p.isActive).length || 0} members`
@@ -915,7 +915,7 @@ export function ChatLayout() {
                                         px="px-2"
                                         py="py-2"
                                         onClick={() => setIsSettingsModalOpen(true)}
-                                        className="text-gray-400 hover:text-gray-600 rounded-xl bg-transparent border-none shadow-none"
+                                        className="text-muted-foreground hover:text-foreground rounded-xl bg-transparent border-none shadow-none"
                                         title="Chat Settings"
                                         icon={MoreVertical}
                                     />
@@ -935,7 +935,7 @@ export function ChatLayout() {
                                 {isLoadingMessages ? (
                                     <div className="flex flex-col items-center justify-center py-16 space-y-3">
                                         <Loader2 className="w-6 h-6 animate-spin text-primary/40" />
-                                        <span className="text-xs text-gray-400 font-medium">Loading messages...</span>
+                                        <span className="text-xs text-muted-foreground font-medium">Loading messages...</span>
                                     </div>
                                 ) : (
                                     <>
@@ -947,7 +947,7 @@ export function ChatLayout() {
                                                     variant="secondary"
                                                     px="px-4"
                                                     py="py-1.5"
-                                                    className="bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full text-[11px] font-semibold text-gray-500 hover:text-primary hover:border-primary/30 transition-all shadow-sm active:scale-95 flex items-center"
+                                                    className="bg-card/90 backdrop-blur-sm border border-border rounded-full text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/30 transition-all shadow-sm active:scale-95 flex items-center"
                                                     icon={isLoadingMore ? Loader2 : ArrowUp}
                                                 >
                                                     {isLoadingMore ? 'Loading...' : 'Load earlier'}
@@ -963,8 +963,8 @@ export function ChatLayout() {
                                                     <div key={msg.id}>
                                                         {showDateSep && <div className="chat-date-separator"><span>{formatDateLabel(msg.createdAt)}</span></div>}
                                                         <div className="flex justify-center py-2">
-                                                            <div className="bg-white/80 backdrop-blur-sm text-gray-500 px-4 py-1.5 rounded-full text-[11px] font-medium flex items-center border border-gray-200/60 shadow-sm">
-                                                                <Info size={12} className="mr-1.5 text-gray-400" />
+                                                            <div className="bg-card/80 backdrop-blur-sm text-muted-foreground px-4 py-1.5 rounded-full text-[11px] font-medium flex items-center border border-border shadow-sm">
+                                                                <Info size={12} className="mr-1.5 text-muted-foreground/60" />
                                                                 {msg.content}
                                                             </div>
                                                         </div>
@@ -1012,7 +1012,7 @@ export function ChatLayout() {
                                                                             <div
                                                                                 onClick={(e) => { e.stopPropagation(); scrollToMessage(msg.replyTo!.id); }}
                                                                                 className={`mb-0.5 px-3 py-1.5 rounded-lg border-l-[3px] text-[12px] max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity
-                                                                            ${isMineRepliedTo ? 'bg-primary/85  border-primary text-white' : 'bg-gray-600/90 border-gray-900 text-gray-100'}`}
+                                                                            ${isMineRepliedTo ? 'bg-primary/85  border-primary text-white' : 'bg-muted border-border text-foreground'}`}
                                                                             >
                                                                                 <p className="font-semibold mb-0.5 text-[10px] flex items-center">
                                                                                     <Reply size={10} className='mr-1 rotate-180' />
@@ -1025,7 +1025,7 @@ export function ChatLayout() {
                                                                         );
                                                                     })()}
                                                                     {isDeleted ? (
-                                                                        <div className={`px-3.5 py-2 rounded-2xl mb-5 text-[13px] leading-relaxed bg-white text-gray-500 border border-gray-200/60 ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
+                                                                        <div className={`px-3.5 py-2 rounded-2xl mb-5 text-[13px] leading-relaxed bg-card text-muted-foreground border border-border ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
                                                                             <div className="flex items-center space-x-1.5 italic">
                                                                                 <Trash2 size={13} className="opacity-50" />
                                                                                 <span>Message deleted {msg.deletedBy?.name ? `by ${msg.deletedBy.name}` : ''}</span>
@@ -1055,13 +1055,13 @@ export function ChatLayout() {
                                                                                             px-3.5 py-2 rounded-2xl text-[14px] leading-relaxed relative transition-all duration-300
                                                                                             ${isMine
                                                                                                         ? 'bg-primary text-white rounded-br-sm shadow-lg shadow-primary'
-                                                                                                        : 'bg-white text-gray-800 border border-gray-200/60 rounded-bl-sm shadow-lg shadow-gray-200'
+                                                                                                        : 'bg-card border border-border rounded-bl-sm shadow-lg shadow-black/5'
                                                                                                     }
                                                                                             ${highlightedMessageId === msg.id ? 'ring-2 ring-primary/30 shadow-md' : ''}
                                                                                             `}
                                                                                                 >
-                                                                                                    <div className={`prose prose-sm max-w-full ${isMine && highlightedMessageId !== msg.id ? 'prose-invert prose-p:text-white' : 'prose-p:text-gray-800'}`}>
-                                                                                                        <MarkdownRenderer content={segment} className={`${isMine ? 'text-white!' : ''} whitespace-pre-wrap wrap-break-word`} />
+                                                                                                    <div className={`prose prose-sm max-w-full ${isMine && highlightedMessageId !== msg.id ? 'prose-invert prose-p:text-white' : 'prose-p:text-foreground'}`}>
+                                                                                                        <MarkdownRenderer content={segment} className={`${isMine ? 'text-white!' : 'text-(--card-text)!'} whitespace-pre-wrap wrap-break-word`} />
                                                                                                     </div>
                                                                                                 </div>
                                                                                         );
@@ -1069,15 +1069,15 @@ export function ChatLayout() {
 
                                                                                     {/* Timestamp & Read Receipts */}
                                                                                     <div className="flex items-center mb-5 space-x-1 px-1">
-                                                                                        <span className="text-[12px] text-gray-800 font-medium">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                                        <span className="text-[12px] text-muted-foreground font-medium">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                                                         {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
-                                                                                            <span className="text-[12px] text-gray-800 font-medium italic opacity-80">Edited</span>
+                                                                                            <span className="text-[12px] text-muted-foreground font-medium italic opacity-80">Edited</span>
                                                                                         )}
                                                                                         {isMine && (
                                                                                             msg.readBy && msg.readBy.length > 0 ? (
                                                                                                 <CheckCheck className="w-3.5 h-3.5 text-blue-600" strokeWidth={2.5} />
                                                                                             ) : (
-                                                                                                <Check className="w-3.5 h-3.5 text-gray-700" strokeWidth={2.5} />
+                                                                                                <Check className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
                                                                                             )
                                                                                         )}
                                                                                     </div>
@@ -1105,22 +1105,22 @@ export function ChatLayout() {
                                                                                 window.setTimeout(() => { if (suppressCloseRef.current === msg.id) suppressCloseRef.current = null; }, 300);
                                                                                 setOpenDropdownId(prev => prev === msg.id ? null : msg.id);
                                                                             }}
-                                                                            className={`p-1.5 rounded-lg transition-all border shadow-sm ${openDropdownId === msg.id ? 'bg-primary/5 text-primary border-primary/20' : 'text-gray-400 hover:text-primary hover:bg-white border-gray-200/60 bg-white/90 backdrop-blur-sm'} more-actions-btn`}
+                                                                            className={`p-1.5 rounded-lg transition-all border shadow-sm ${openDropdownId === msg.id ? 'bg-primary/5 text-primary border-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-card border-border bg-card/90 backdrop-blur-sm'} more-actions-btn`}
                                                                             title="More actions"
                                                                         >
                                                                             <MoreVertical size={13} />
                                                                         </button>
                                                                         {openDropdownId === msg.id && (
-                                                                            <div className={`absolute ${isMine ? 'right-0' : 'left-0'} bottom-full mb-1 w-32 bg-white border border-gray-100 rounded-xl shadow-xl z-70 flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
+                                                                            <div className={`absolute ${isMine ? 'right-0' : 'left-0'} bottom-full mb-1 w-32 bg-card border border-border rounded-xl shadow-xl z-70 flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
                                                                                 <button
                                                                                     onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleReply(msg); }}
-                                                                                    className="w-full text-left px-3 py-2 text-[12px] text-gray-600 hover:bg-gray-50 flex items-center mb-0.5"
+                                                                                    className="w-full text-left px-3 py-2 text-[12px] text-foreground/70 hover:bg-muted flex items-center mb-0.5"
                                                                                 >
                                                                                     <Reply size={12} className="mr-2 opacity-70" /> Reply
                                                                                 </button>
                                                                                 <button
                                                                                     onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleCopyText(msg); }}
-                                                                                    className="w-full text-left px-3 py-2 text-[12px] text-gray-600 hover:bg-gray-50 flex items-center mb-0.5"
+                                                                                    className="w-full text-left px-3 py-2 text-[12px] text-foreground/70 hover:bg-muted flex items-center mb-0.5"
                                                                                 >
                                                                                     <Copy size={12} className="mr-2 opacity-70" /> Copy Text
                                                                                 </button>
@@ -1174,7 +1174,7 @@ export function ChatLayout() {
                                                     variant="secondary"
                                                     px="px-4"
                                                     py="py-1.5"
-                                                    className="bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full text-[11px] font-semibold text-gray-500 hover:text-primary hover:border-primary/30 transition-all shadow-sm active:scale-95 flex items-center"
+                                                    className="bg-card/90 backdrop-blur-sm border border-border rounded-full text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/30 transition-all shadow-sm active:scale-95 flex items-center"
                                                     icon={isLoadingNewer ? Loader2 : ArrowDown}
                                                 >
                                                     {isLoadingNewer ? 'Loading...' : 'Load newer'}
@@ -1187,12 +1187,12 @@ export function ChatLayout() {
 
                             {/* History Mode Banner */}
                             {isViewingHistory && (
-                                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-gray-900/90 text-white px-4 py-2 rounded-full shadow-lg backdrop-blur-sm flex items-center space-x-3 text-[11px] font-semibold animate-in slide-in-from-top duration-300">
-                                    <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
+                                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-foreground text-background px-4 py-2 rounded-full shadow-lg backdrop-blur-sm flex items-center space-x-3 text-[11px] font-semibold animate-in slide-in-from-top duration-300">
+                                    <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
                                     <span>Viewing history</span>
                                     <button
                                         onClick={() => activeChatId && fetchInitialMessages(activeChatId)}
-                                        className="bg-white text-gray-900 px-3 py-1 rounded-full hover:bg-gray-100 transition-colors font-bold text-[10px]"
+                                        className="bg-background text-foreground px-3 py-1 rounded-full hover:bg-muted transition-colors font-bold text-[10px]"
                                     >
                                         Jump to present
                                     </button>
@@ -1204,12 +1204,12 @@ export function ChatLayout() {
                                 <button
                                     type="button"
                                     onClick={() => isViewingHistory ? (activeChatId && fetchInitialMessages(activeChatId)) : scrollToBottom()}
-                                    className="absolute bottom-6 right-6 z-30 p-2.5 bg-white text-gray-600 rounded-full shadow-lg border border-gray-200/80 hover:bg-primary hover:text-white hover:border-primary transition-all active:scale-95 group"
+                                    className="absolute bottom-6 right-6 z-30 p-2.5 bg-card text-foreground/70 rounded-full shadow-lg border border-border hover:bg-primary hover:text-white hover:border-primary transition-all active:scale-95 group"
                                     title={isViewingHistory ? "Jump to Present" : "Scroll to bottom"}
                                 >
                                     <ArrowDown size={18} className="group-hover:translate-y-0.5 transition-transform" />
                                     {!isViewingHistory && unreadSinceScroll > 0 && (
-                                        <span className="absolute -top-1.5 -right-1.5 bg-primary text-white text-[9px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                                        <span className="absolute -top-1.5 -right-1.5 bg-primary text-white text-[9px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-card shadow-sm">
                                             {unreadSinceScroll}
                                         </span>
                                     )}
@@ -1220,14 +1220,14 @@ export function ChatLayout() {
                             {showParticipants && (
                                 <div
                                     ref={participantsRef}
-                                    className="absolute top-0 right-0 h-full w-72 bg-white border-l border-gray-200/80 shadow-2xl z-30 animate-in slide-in-from-right duration-300 flex flex-col"
+                                    className="absolute top-0 right-0 h-full w-72 bg-card border-l border-border shadow-2xl z-30 animate-in slide-in-from-right duration-300 flex flex-col"
                                 >
-                                    <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
-                                        <h4 className="font-bold text-gray-800 text-[13px]">Members</h4>
+                                    <div className="px-4 py-3 border-b border-border flex justify-between items-center">
+                                        <h4 className="font-bold text-foreground text-[13px]">Members</h4>
                                         <button
                                             type="button"
                                             onClick={() => setShowParticipants(false)}
-                                            className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                                            className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted rounded-lg transition-colors"
                                             title="Close"
                                         >
                                             <X size={16} />
@@ -1235,12 +1235,12 @@ export function ChatLayout() {
                                     </div>
                                     <div className="flex-1 overflow-y-auto p-3 space-y-0.5 custom-scrollbar">
                                         {activeChat.participants?.filter(p => p.isActive).map(p => (
-                                            <div key={p.id} className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 transition-colors group/item">
+                                            <div key={p.id} className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted transition-colors group/item">
                                                 <div className="flex items-center space-x-2.5 min-w-0">
                                                     <UserAvatar targetUser={p.user} className="w-8 h-8" />
                                                     <div className="min-w-0">
-                                                        <p className="text-[13px] font-semibold text-gray-800 truncate">{p.user?.name} {p.userId === user.id && <span className="text-gray-400 font-normal">(You)</span>}</p>
-                                                        <p className="text-[10px] text-gray-400 font-medium capitalize truncate">{p.user?.role?.toLowerCase().replace('_', ' ')}</p>
+                                                        <p className="text-[13px] font-semibold text-foreground truncate">{p.user?.name} {p.userId === user.id && <span className="text-muted-foreground font-normal">(You)</span>}</p>
+                                                        <p className="text-[10px] text-muted-foreground font-medium capitalize truncate">{p.user?.role?.toLowerCase().replace('_', ' ')}</p>
                                                     </div>
                                                 </div>
                                                 {isGroupAdmin && p.userId !== user.id && p.userId !== activeChat.creatorId && (
@@ -1249,7 +1249,7 @@ export function ChatLayout() {
                                                         px="p-1.5"
                                                         py="p-1.5"
                                                         onClick={() => handleRemoveParticipant(p.userId)}
-                                                        className="text-gray-300 hover:text-white rounded-lg opacity-0 group-hover/item:opacity-100 transition-all bg-transparent border-none shadow-none"
+                                                        className="text-muted-foreground hover:text-white rounded-lg opacity-0 group-hover/item:opacity-100 transition-all bg-transparent border-none shadow-none"
                                                         title="Remove from group"
                                                         icon={UserMinus}
                                                     />
@@ -1262,15 +1262,15 @@ export function ChatLayout() {
                         </div>
 
                         {/* Input Composer */}
-                        <div className="bg-white border-t border-gray-200/80 px-1 md:px-1 py-1 z-20">
+                        <div className="bg-background border-t border-border px-1 md:px-1 py-1 z-20">
                             {/* Reply / Edit Banner */}
                             {(replyToMessage || editingMessage) && (
-                                <div className="mb-2 px-3 py-2 bg-gray-50 border-l-[3px] border-primary rounded-r-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                                <div className="mb-2 px-3 py-2 bg-muted border-l-[3px] border-primary rounded-r-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
                                     <div className="flex-1 min-w-0 pr-3">
                                         <p className="text-[10px] font-semibold text-primary mb-0.5">
                                             {editingMessage ? 'Editing Message' : `Replying to ${replyToMessage?.sender?.name == user.name ? 'Yourself' : replyToMessage?.sender?.name || 'Message'}`}
                                         </p>
-                                        <p className="text-[11px] text-gray-500 truncate">
+                                        <p className="text-[11px] text-muted-foreground truncate">
                                             {(editingMessage?.content || replyToMessage?.content || '').replace(/!\[.*?\]\(.*?\)/g, '📷 Photo')}
                                         </p>
                                     </div>
@@ -1293,9 +1293,9 @@ export function ChatLayout() {
                             {stagedFiles.length > 0 && (
                                 <div className="flex flex-wrap gap-2 mb-2">
                                     {stagedFiles.map((file, i) => (
-                                        <div key={i} className="group relative flex items-center bg-gray-50 border border-gray-200/80 pl-2 pr-1 py-1 rounded-xl hover:border-primary/30 transition-all">
+                                        <div key={i} className="group relative flex items-center bg-muted border border-border pl-2 pr-1 py-1 rounded-xl hover:border-primary/30 transition-all">
                                             {file.type.startsWith('image/') ? (
-                                                <div className="w-8 h-8 rounded-lg overflow-hidden bg-gray-200 mr-2">
+                                                <div className="w-8 h-8 rounded-lg overflow-hidden bg-muted-foreground/10 mr-2">
                                                     <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
                                                 </div>
                                             ) : (
@@ -1304,8 +1304,8 @@ export function ChatLayout() {
                                                 </div>
                                             )}
                                             <div className="flex flex-col mr-1.5 max-w-20">
-                                                <span className="text-[10px] font-semibold text-gray-700 truncate">{file.name}</span>
-                                                <span className="text-[9px] text-gray-400">{(file.size / 1024).toFixed(0)} KB</span>
+                                                <span className="text-[10px] font-semibold text-foreground truncate">{file.name}</span>
+                                                <span className="text-[9px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
                                             </div>
                                             <button
                                                 type="button"
@@ -1322,8 +1322,8 @@ export function ChatLayout() {
                             
                             {/* Preview Mode Render */}
                             {isPreviewMode && messageDraft.trim() && (
-                                <div className="my-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200/60 max-h-37.5 overflow-y-auto custom-scrollbar">
-                                    <div className="prose prose-sm max-w-none prose-p:text-gray-700">
+                                <div className="my-3 px-4 py-3 bg-muted rounded-xl border border-border max-h-37.5 overflow-y-auto custom-scrollbar">
+                                    <div className="prose prose-sm max-w-none prose-p:text-foreground/80">
                                         <MarkdownRenderer content={messageDraft} />
                                     </div>
                                 </div>
@@ -1346,11 +1346,11 @@ export function ChatLayout() {
                                     px='px-3.5'
                                     py='py-3.5'
                                     onClick={() => document.getElementById('chat-file-upload')?.click()}
-                                    className="rounded-xl text-gray-400 hover:text-primary shrink-0 self-end active:scale-95 shadow-md shadow-gray-400/20 transition-all"
+                                    className="rounded-xl text-muted-foreground hover:text-primary shrink-0 self-end active:scale-95 shadow-md shadow-black/10 transition-all"
                                     title="Attach file"
                                 />
 
-                                <div className="flex-1 relative flex items-center bg-gray-100/80 border border-transparent rounded-2xl focus-within:bg-white focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                                <div className="flex-1 relative flex items-center bg-muted/80 border border-transparent rounded-2xl focus-within:bg-card focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
                                     <textarea
                                         ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
                                         value={messageDraft}
@@ -1361,16 +1361,16 @@ export function ChatLayout() {
                                         }}
                                         onKeyDown={handleKeyDown}
                                         onFocus={handleEditorFocus}
-                                        placeholder={stagedFiles.length > 0 ? "Add a caption..." : "Type a message..."}
+                                        placeholder={stagedFiles.length > 0 ? "Add a caption..." : "Type a message... (Shift + Enter for new line)"}
                                         rows={1}
-                                        className="w-full px-4 py-3 bg-transparent border-none text-[14px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-0 resize-none max-h-30 leading-relaxed"
+                                        className="w-full px-4 py-3 bg-transparent border-none text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-30 leading-relaxed"
                                     />
 
                                     {/* Preview Toggle Button */}
                                     <button
                                         type="button"
                                         onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                        className={`absolute right-2 bottom-2 px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors ${isPreviewMode ? 'bg-primary/10 text-primary' : 'bg-gray-200/60 text-gray-500 hover:bg-gray-200'} shrink-0`}
+                                        className={`absolute right-2 bottom-2 px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors ${isPreviewMode ? 'bg-primary/10 text-primary' : 'bg-muted-foreground/10 text-muted-foreground hover:bg-muted-foreground/20'} shrink-0`}
                                         title={isPreviewMode ? "Write text" : "Preview markdown"}
                                     >
                                         {isPreviewMode ? 'Edit' : 'Preview'}
@@ -1393,11 +1393,11 @@ export function ChatLayout() {
                 ) : (
                     /* Empty State */
                     <div className="flex-1 flex flex-col items-center justify-center chat-bg-pattern">
-                        <div className="w-20 h-20 bg-white rounded-xl flex items-center justify-center shadow-sm border border-gray-200/60 mb-5">
-                            <MessageSquarePlus size={36} className="text-gray-300" />
+                        <div className="w-20 h-20 bg-card rounded-xl flex items-center justify-center shadow-sm border border-border mb-5">
+                            <MessageSquarePlus size={36} className="text-muted-foreground/30" />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-700 mb-1">Your Messages</h3>
-                        <p className="text-sm text-gray-400 max-w-xs text-center">Select a conversation or start a new one to begin chatting</p>
+                        <h3 className="text-lg font-bold text-foreground mb-1">Your Messages</h3>
+                        <p className="text-sm text-muted-foreground max-w-xs text-center">Select a conversation or start a new one to begin chatting</p>
                     </div>
                 )}
             </div>

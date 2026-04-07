@@ -129,7 +129,7 @@ export function CustomSelect<T extends string = string>({
                         ? 'border-primary ring-4 ring-primary/10 bg-card'
                         : error
                             ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/50'
-                            : 'border-white/10 bg-primary/5 hover:border-white/20',
+                            : 'border-border bg-primary/5 hover:border-border',
                     disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
                     "text-card-text font-bold text-left",
                     className
@@ -170,10 +170,10 @@ export function CustomSelect<T extends string = string>({
                         width: coords.width,
                         zIndex: 9999
                     }}
-                    className="py-2 bg-card border border-white/10 rounded-sm shadow-2xl max-h-80 flex flex-col animate-in fade-in zoom-in duration-100"
+                    className="py-2 bg-card border border-border rounded-sm shadow-2xl max-h-80 flex flex-col animate-in fade-in zoom-in duration-100"
                 >
                     {searchable && (
-                        <div className="px-3 pb-2 border-b border-white/5">
+                        <div className="px-3 pb-2 border-b border-border">
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <svg className="h-4 w-4 text-card-text/40" viewBox="0 0 20 20" fill="currentColor">
@@ -182,7 +182,7 @@ export function CustomSelect<T extends string = string>({
                                 </div>
                                 <input
                                     type="text"
-                                    className="block w-full pl-9 pr-3 py-2 border border-white/10 rounded-sm text-xs bg-primary/5 text-card-text placeholder-card-text/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                    className="block w-full pl-9 pr-3 py-2 border border-border rounded-sm text-xs bg-primary/5 text-card-text placeholder-card-text/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
                                     placeholder="Search..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}

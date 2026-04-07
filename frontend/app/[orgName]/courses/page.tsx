@@ -143,7 +143,7 @@ export default function CoursesPage() {
             sortKey: 'name',
             accessor: (row: Course) => (
                 <div className="flex flex-col">
-                    <span className="font-semibold text-card-text">{row.name}</span>
+                    <span className="font-semibold text-card-foreground">{row.name}</span>
                 </div>
             )
         },
@@ -151,7 +151,7 @@ export default function CoursesPage() {
             header: 'Description',
             sortable: true,
             sortKey: 'description',
-            accessor: (row: Course) => row.description || <span className="text-gray-400 italic">No description</span>
+            accessor: (row: Course) => row.description || <span className="text-muted-foreground/50 italic">No description</span>
         },
         {
             header: 'Last Updated',
@@ -159,10 +159,10 @@ export default function CoursesPage() {
             sortKey: 'updatedAt',
             accessor: (row: Course) => (
                 <div className="flex flex-col">
-                    <span className="font-medium text-card-text/80">
+                    <span className="font-medium text-card-foreground/80">
                         {row.updatedBy || 'System'}
                     </span>
-                    <span className="text-xs text-card-text/40">
+                    <span className="text-xs text-muted-foreground/40">
                         {row.updatedAt ? new Date(row.updatedAt).toLocaleString() : 'Never'}
                     </span>
                 </div>
@@ -215,7 +215,7 @@ export default function CoursesPage() {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
                 <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name or description..." />
@@ -228,13 +228,13 @@ export default function CoursesPage() {
                                 className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all cursor-pointer group select-none"
                             >
                                 <button
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMyCourses ? 'bg-primary' : 'bg-gray-200'}`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMyCourses ? 'bg-primary' : 'bg-muted'}`}
                                 >
                                     <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showOnlyMyCourses ? 'translate-x-6' : 'translate-x-1'}`}
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${showOnlyMyCourses ? 'translate-x-6' : 'translate-x-1'}`}
                                     />
                                 </button>
-                                <span className="text-xs font-bold text-card-text uppercase tracking-wider">My Courses</span>
+                                <span className="text-xs font-bold text-card-foreground uppercase tracking-wider">My Courses</span>
                             </div>
                         )}
                         {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
@@ -304,7 +304,7 @@ export default function CoursesPage() {
                             id="description"
                             value={editFormData.description}
                             onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                            className="w-full px-6 py-4 rounded-sm border border-gray-200/20 bg-primary/5 focus:bg-card focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all min-h-[120px] text-card-text font-bold resize-none"
+                            className="w-full px-6 py-4 rounded-sm border border-border bg-input focus:bg-background focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all min-h-[120px] text-card-foreground font-bold resize-none"
                             placeholder="Briefly describe this course..."
                         />
                     </div>
