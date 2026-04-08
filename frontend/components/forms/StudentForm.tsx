@@ -540,7 +540,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                                 error={!!errors.address}
                                 icon={MapPin}
                                 placeholder="123 Education Lane, Learning City"
-                                className="min-h-[160px]"
+                                className="min-h-40"
                             />
                         </div>
                         {errors.address && <p className="mt-1 text-xs text-red-500 font-bold">{errors.address.message}</p>}

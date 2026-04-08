@@ -151,12 +151,13 @@ export default function CreateSectionPage() {
                         </div>
                     </div>
 
-                    < div className="pt-10 mt-10 border-t border-gray-100 flex justify-end gap-5" >
+                    < div className="pt-10 mt-10 border-t border-border flex justify-end gap-5" >
                         <Link
                             href={`/${orgSlug}/sections`}
-                            className="px-8 py-3 text-base font-bold text-secondary-text bg-secondary rounded-sm hover:brightness-110 transition-all hover:scale-105 active:scale-95 flex items-center shadow-lg border border-transparent"
                         >
-                            Cancel
+                            <Button type="button" variant="secondary" className="px-10 h-12">
+                                Cancel
+                            </Button>
                         </Link>
                         < Button
                             type="submit"

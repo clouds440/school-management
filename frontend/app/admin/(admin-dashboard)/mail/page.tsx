@@ -160,13 +160,13 @@ export default function MailPage() {
             sortKey: 'subject',
             accessor: (row: MailItem) => (
                 <div className="flex items-start gap-3 min-0">
-                    <div className="w-10 h-10 bg-indigo-50 rounded-sm flex items-center justify-center text-indigo-600 shrink-0">
+                    <div className="w-10 h-10 bg-card/5 rounded-sm flex items-center justify-center text-primary shrink-0">
                         <MessageSquare className="w-5 h-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-black text-gray-900 leading-tight truncate">{row.subject}</h4>
+                        <h4 className="text-sm font-black text-foreground leading-tight truncate">{row.subject}</h4>
                         <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] uppercase font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-sm">{row.category.replace('_', ' ')}</span>
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground bg-card/5 px-1.5 py-0.5 rounded-sm">{row.category.replace('_', ' ')}</span>
                             <span className="text-[10px] items-center gap-1 text-gray-400 font-bold hidden sm:flex">
                                 <Hash className="w-2.5 h-2.5" />
                                 {row.id.slice(0, 8)}
@@ -187,9 +187,9 @@ export default function MailPage() {
                                     variant="brand"
                                     size="sm"
                                     user={{ ...row.creator, orgLogoUrl: row.organization.logoUrl, orgName: row.organization.name }}
-                                    className="w-8 h-8 border border-indigo-100"
+                                    className="w-8 h-8 border border-border/10"
                                 />
-                                <div className="absolute bottom-0 -right-1 w-4 h-4 rounded-full bg-white border border-gray-100 flex items-center justify-center overflow-hidden">
+                                    <div className="absolute bottom-0 -right-1 w-4 h-4 rounded-full bg-white border border-border/10 flex items-center justify-center overflow-hidden">
                                     <BrandIcon
                                         variant="user"
                                         size="sm"
@@ -207,8 +207,8 @@ export default function MailPage() {
                             />
                         )}
                         <div className="min-w-0">
-                            <p className="text-xs font-black text-gray-700 truncate max-w-[120px]">{row.creator?.name || row.creator?.email || 'Unknown'}</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase">{row.creatorRole?.replace('_', ' ') || 'N/A'}</p>
+                            <p className="text-xs font-black text-foreground truncate max-w-30">{row.creator?.name || row.creator?.email || 'Unknown'}</p>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase">{row.creatorRole?.replace('_', ' ') || 'N/A'}</p>
                         </div>
                     </div>
                 );
@@ -220,20 +220,20 @@ export default function MailPage() {
                 <div className="flex items-center gap-2">
                     {row.assignees && row.assignees.length > 0 ? (
                         <>
-                            <div className="flex -space-x-2 mr-1">
+                                        <div className="flex -space-x-2 mr-1">
                                 {row.assignees.slice(0, 2).map((a) => (
-                                    <div key={a.id} className="w-7 h-7 border-2 border-white rounded-full bg-indigo-100 shadow-sm">
+                                    <div key={a.id} className="w-7 h-7 border-2 border-border rounded-full bg-card/5 shadow-sm">
                                         <BrandIcon variant="user" size="sm" user={a} className="w-full h-full" />
                                     </div>
                                 ))}
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-gray-700 truncate max-w-[120px]">
+                                <p className="text-xs font-bold text-foreground truncate max-w-30">
                                     {row.assignees.length > 1
                                         ? `${row.assignees[0].name || row.assignees[0].email} +${row.assignees.length - 1}`
                                         : (row.assignees[0].name || row.assignees[0].email)}
                                 </p>
-                                <p className="text-[10px] font-bold text-indigo-400 uppercase">
+                                <p className="text-[10px] font-bold text-primary/80 uppercase">
                                     {row.assignees.length > 1 ? 'Multiple' : 'Personal'}
                                 </p>
                             </div>
@@ -244,7 +244,7 @@ export default function MailPage() {
                                 <span className="scale-75">GRP</span>
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-gray-700 truncate max-w-[120px]">
+                                <p className="text-xs font-bold text-gray-700 truncate max-w-30">
                                     {row.targetRole ? row.targetRole.replace('_', ' ') : 'Platform Support'}
                                 </p>
                                 <p className="text-[10px] font-bold text-orange-400 uppercase">Team</p>
@@ -267,9 +267,9 @@ export default function MailPage() {
         {
             header: 'Messages',
             accessor: (row: MailItem) => (
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 min-w-[30px] justify-center">
-                        <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
+                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-card/5 rounded-full text-[10px] font-black text-muted-foreground min-w-7.5 justify-center">
+                        <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                         {row._count?.messages || 0}
                     </div>
                     {row.unreadCount > 0 && (
@@ -309,11 +309,11 @@ export default function MailPage() {
                                     { value: 'ALL', label: 'All Statuses', badge: state.stats.mail?.total },
                                     { value: MailStatus.OPEN, label: 'Open', badge: state.stats.mail?.countsByStatus?.[MailStatus.OPEN], icon: Clock, iconClassName: 'text-blue-500' },
                                     { value: MailStatus.IN_PROGRESS, label: 'In Progress', badge: state.stats.mail?.countsByStatus?.[MailStatus.IN_PROGRESS], icon: ArrowUpRight, iconClassName: 'text-amber-500' },
-                                    { value: MailStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[MailStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-indigo-500' },
+                                    { value: MailStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[MailStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-primary/80' },
                                     { value: MailStatus.RESOLVED, label: 'Resolved', badge: state.stats.mail?.countsByStatus?.[MailStatus.RESOLVED], icon: CheckCircle2, iconClassName: 'text-green-500' },
                                     { value: MailStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[MailStatus.CLOSED], icon: XCircle, iconClassName: 'text-gray-500' },
                                 ]}
-                                className="w-full sm:w-[240px]"
+                                className="w-full sm:w-60"
                                 placeholder="Status"
                                 icon={Filter}
                             />
@@ -326,7 +326,7 @@ export default function MailPage() {
                         <Button
                             onClick={() => setNewMailOpen(true)}
                             icon={MailPlus}
-                            className="flex items-center gap-2 px-8 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-200 shrink-0 border-none"
+                            className="flex items-center gap-2 px-8 bg-primary text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-primary/80 transition-all active:scale-95 shadow-lg shadow-primary/20 shrink-0 border-none"
                         >
                             NEW MAIL
                         </Button>

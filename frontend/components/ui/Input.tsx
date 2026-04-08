@@ -21,7 +21,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             block w-full rounded-sm border bg-input 
             ${Icon ? 'pl-11' : 'pl-4'} pr-4 py-3 
             text-card-foreground placeholder:text-muted-foreground 
-            transition-all duration-200 shadow-sm
+            transition-all duration-200 shadow-sm outline-none
             ${error 
                 ? 'border-destructive ring-2 ring-destructive/20 bg-destructive/5 focus:border-primary focus:ring-primary/20' 
                 : 'border-border focus:bg-input focus:border-primary focus:ring-2 focus:ring-primary/20'

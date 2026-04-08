@@ -12,6 +12,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { useGlobal } from '@/context/GlobalContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+import { Button } from '@/components/ui/Button';
 
 type PlatformAdminParams = BasePaginationParams;
 
@@ -156,12 +157,12 @@ export default function PlatformAdminsPage() {
             sortKey: 'name',
             accessor: (row) => (
                 <div className="flex items-start gap-4 min-w-0">
-                    <div className="w-10 h-10 bg-purple-50 rounded-sm flex items-center justify-center text-purple-600 shrink-0">
+                    <div className="w-10 h-10 bg-primary/10 rounded-sm flex items-center justify-center text-primary shrink-0">
                         <Users className="w-5 h-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-black text-gray-900 leading-tight wrap-break-word">{row.name}</h4>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mt-0.5">{row.role.replace('_', ' ')}</span>
+                        <h4 className="text-sm font-black text-foreground leading-tight wrap-break-word">{row.name}</h4>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mt-0.5">{row.role.replace('_', ' ')}</span>
                     </div>
                 </div>
             )
@@ -172,13 +173,13 @@ export default function PlatformAdminsPage() {
             sortKey: 'email',
             accessor: (row) => (
                 <div className="space-y-1">
-                    <div className="flex items-center text-xs font-medium text-gray-600 gap-1.5">
-                        <Mail className="w-3 h-3 text-purple-400" />
+                    <div className="flex items-center text-xs font-medium text-muted-foreground gap-1.5">
+                        <Mail className="w-3 h-3 text-primary/80" />
                         {row.email}
                     </div>
                     {row.phone && (
-                        <div className="flex items-center text-xs font-medium text-gray-600 gap-1.5">
-                            <MessageSquare className="w-3 h-3 text-purple-400" />
+                        <div className="flex items-center text-xs font-medium text-muted-foreground gap-1.5">
+                            <MessageSquare className="w-3 h-3 text-primary/80" />
                             {row.phone}
                         </div>
                     )}
@@ -217,7 +218,7 @@ export default function PlatformAdminsPage() {
     if (loading || (!user && !loading)) {
         return (
             <div className="flex flex-1 items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
         );
     }
@@ -237,13 +238,15 @@ export default function PlatformAdminsPage() {
                             placeholder="Search admins by name or email..."
                         />
                     </div>
-                    <button
+                    <Button
+                        icon={UserPlus}
+                        variant="primary"
+                        type='button'
+                        title='Add New Admin Profile'
                         onClick={() => handleOpenAdminModal('CREATE')}
-                        className="px-6 py-3 rounded-sm bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 w-full md:w-auto uppercase tracking-widest"
                     >
-                        <UserPlus className="w-4 h-4" />
                         Add Admin
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="flex-1 min-h-0">
@@ -282,7 +285,7 @@ export default function PlatformAdminsPage() {
                             required
                             value={adminFormData.name}
                             onChange={e => setAdminFormData(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full px-4 py-3 rounded-sm bg-gray-50/50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-bold text-gray-900"
+                            className="w-full px-4 py-3 rounded-sm bg-card/5 border border-border/10 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-bold text-foreground"
                             placeholder="John Doe"
                         />
                     </div>
@@ -294,7 +297,7 @@ export default function PlatformAdminsPage() {
                                 required
                                 value={adminFormData.email}
                                 onChange={e => setAdminFormData(prev => ({ ...prev, email: e.target.value }))}
-                                className="w-full px-4 py-3 rounded-sm bg-gray-50/50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-bold text-gray-900"
+                                className="w-full px-4 py-3 rounded-sm bg-card/5 border border-border/10 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-bold text-foreground"
                                 placeholder="john@example.com"
                             />
                         </div>
@@ -306,7 +309,7 @@ export default function PlatformAdminsPage() {
                             autoComplete='off'
                             value={adminFormData.phone}
                             onChange={e => setAdminFormData(prev => ({ ...prev, phone: e.target.value }))}
-                            className="w-full px-4 py-3 rounded-sm bg-gray-50/50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-bold text-gray-900"
+                            className="w-full px-4 py-3 rounded-sm bg-card/5 border border-border/10 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-bold text-foreground"
                             placeholder="+1 (555) 000-0000"
                         />
                     </div>
@@ -319,7 +322,7 @@ export default function PlatformAdminsPage() {
                             required={adminModalMode === 'CREATE'}
                             value={adminFormData.password}
                             onChange={e => setAdminFormData(prev => ({ ...prev, password: e.target.value }))}
-                            className="w-full px-4 py-3 rounded-sm bg-gray-50/50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-bold text-gray-900"
+                            className="w-full px-4 py-3 rounded-sm bg-card/5 border border-border/10 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-bold text-foreground"
                             placeholder="••••••••"
                         />
                     </div>

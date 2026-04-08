@@ -104,14 +104,14 @@ export function ChatSettingsModal({
 
     return (
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-md rounded-sm shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-card w-full max-w-md rounded-sm shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-border">
                 {/* Header */}
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div className="p-4 border-b border-border flex justify-between items-center bg-card/5">
                     <div>
-                        <h3 className="text-xl font-bold text-gray-800">Chat Settings</h3>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Group Management</p>
+                        <h3 className="text-xl font-bold text-foreground">Chat Settings</h3>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">Group Management</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-sm transition-colors text-gray-400 hover:text-gray-600">
+                    <button onClick={onClose} className="p-2 hover:bg-card/10 rounded-sm transition-colors text-muted-foreground hover:text-foreground">
                         <X size={20} />
                     </button>
                 </div>
@@ -138,24 +138,24 @@ export function ChatSettingsModal({
 
                         <div className="space-y-4">
                             <div>
-                                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block ml-1">Group Name</label>
+                                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-widest mb-1.5 block ml-1">Group Name</label>
                                 <Input
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="Enter group name"
                                     disabled={!isGroupAdmin}
-                                    className="font-bold text-gray-700 bg-gray-50/50 focus:bg-white"
+                                    className="font-bold text-foreground bg-card/5 focus:bg-card/10"
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <div className="h-px bg-gray-100" />
+                    <div className="h-px bg-border" />
 
                     {/* Participants Section */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest block ml-1">Participants</label>
+                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block ml-1">Participants</label>
                             {isGroupAdmin && (
                                 <button
                                     onClick={() => { onClose(); onAddParticipants(); }}
@@ -167,17 +167,17 @@ export function ChatSettingsModal({
                             )}
                         </div>
 
-                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="space-y-2 max-h-75 overflow-y-auto pr-2 custom-scrollbar">
                             {chat.participants?.filter(p => p.isActive).map(p => (
-                                <div key={p.id} className="flex items-center justify-between p-2 rounded-sm border border-gray-50 bg-gray-50/30 group/item transition-all hover:bg-white hover:border-gray-100 hover:shadow-sm">
+                                <div key={p.id} className="flex items-center justify-between p-2 rounded-sm border border-border/10 bg-card/30 group/item transition-all hover:bg-card/80 hover:border-border hover:shadow-sm">
                                     <div className="flex items-center space-x-3">
                                         <BrandIcon variant="user" user={p.user} size="sm" className="w-8 h-8" />
                                         <div className="min-w-0">
-                                            <p className="text-xs font-bold text-gray-800 truncate">
+                                            <p className="text-xs font-bold text-foreground truncate">
                                                 {p.user?.name} {p.userId === currentUser.id && '(You)'}
                                             </p>
                                             <div className="flex items-center space-x-2">
-                                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
+                                                <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter">
                                                     {p.user?.role?.toLowerCase().replace('_', ' ')}
                                                 </p>
                                                 {p.userId === chat.creatorId && (
@@ -192,7 +192,7 @@ export function ChatSettingsModal({
                                     {isGroupAdmin && p.userId !== currentUser.id && p.userId !== chat.creatorId && (
                                         <button
                                             onClick={() => handleRemoveParticipant(p.userId)}
-                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-sm opacity-0 group-hover/item:opacity-100 transition-all"
+                                            className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-sm opacity-0 group-hover/item:opacity-100 transition-all"
                                             title="Remove from group"
                                         >
                                             <UserMinus size={14} />
@@ -206,7 +206,7 @@ export function ChatSettingsModal({
 
                 {/* Footer */}
                 {isGroupAdmin && (
-                    <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+                    <div className="p-4 bg-card/5 border-t border-border flex justify-end space-x-3">
                         <Button variant="secondary" onClick={onClose} py="py-2" px="px-4">Cancel</Button>
                         <Button
                             variant="primary"

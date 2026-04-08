@@ -27,17 +27,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
         let variantClasses = "";
         if (variant === 'primary') {
-            variantClasses = "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-2xl hover:-translate-y-1 focus:ring-primary/20 disabled:bg-primary/50 disabled:hover:translate-y-0";
+            variantClasses = "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/20 hover:-translate-y-0.5 focus:ring-primary/20 disabled:bg-primary/50";
         } else if (variant === 'secondary') {
-            variantClasses = "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80 hover:shadow-lg hover:-translate-y-1 focus:ring-secondary/20 disabled:bg-secondary/50 disabled:text-muted-foreground disabled:hover:translate-y-0";
+            variantClasses = "bg-accent text-foreground border-border hover:bg-accent/80 hover:shadow-md hover:-translate-y-0.5 focus:ring-secondary/20 disabled:bg-secondary/50 disabled:text-muted-foreground";
         } else if (variant === 'danger') {
-            variantClasses = "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-2xl hover:-translate-y-1 focus:ring-destructive/20 disabled:bg-destructive/30 disabled:hover:translate-y-0";
+            variantClasses = "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-destructive/20 hover:-translate-y-0.5 focus:ring-destructive/20 disabled:bg-destructive/30";
         } else if (variant === 'success') {
-            variantClasses = "bg-green-600 text-white hover:bg-green-700 hover:shadow-2xl hover:-translate-y-1 focus:ring-green-500/20 disabled:bg-green-300 disabled:hover:translate-y-0";
+            variantClasses = "bg-emerald-600 text-foreground hover:bg-emerald-700 hover:shadow-emerald-500/20 hover:-translate-y-0.5 focus:ring-emerald-500/20 disabled:bg-emerald-300";
         } else if (variant === 'warning') {
-            variantClasses = "bg-yellow-600 text-white hover:bg-yellow-700 hover:shadow-2xl hover:-translate-y-1 focus:ring-yellow-500/20 disabled:bg-yellow-300 disabled:hover:translate-y-0";
+            variantClasses = "bg-amber-600 text-foreground hover:bg-amber-700 hover:shadow-amber-500/20 hover:-translate-y-0.5 focus:ring-amber-500/20 disabled:bg-amber-300";
         } else if (variant === 'black') {
-            variantClasses = "bg-black text-white hover:bg-black/80 hover:shadow-2xl hover:-translate-y-1 focus:ring-black/20 disabled:bg-black/30 disabled:hover:translate-y-0";
+            variantClasses = "bg-black/60 text-background hover:text-foreground hover:bg-background/80 border-border hover:shadow-foreground/10 hover:-translate-y-0.5 focus:ring-foreground/20 disabled:opacity-50";
         }
 
         return (

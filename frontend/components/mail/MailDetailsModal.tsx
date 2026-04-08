@@ -133,7 +133,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
             title={
                 mail ? (
                     <div className="flex items-center w-full pr-12 text-sm sm:text-base md:text-xl">
-                        <span className="text-xl font-black text-gray-900">{mail.subject}</span>
+                        <span className="text-xl font-black text-foreground">{mail.subject}</span>
                     </div>
                 ) : undefined
             }
@@ -206,7 +206,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
                                     Reply to Thread
                                 </Button>
                             ) : (
-                                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                                     Thread is {mail.status}
                                 </div>
                             )}

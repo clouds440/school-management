@@ -142,7 +142,7 @@ export default function SettingsPage() {
         <div className="flex flex-1 flex-col max-w-7xl mx-auto w-full">
             <div className="mb-2">
                 <div className="mt-2 flex items-center gap-5">
-                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-sm border border-border shadow-xl">
+                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-sm border border-primary/20 shadow-xl">
                         <Settings className="w-10 h-10 text-primary" />
                     </div>
                     <div>
@@ -156,7 +156,7 @@ export default function SettingsPage() {
                 {orgData?.status === 'REJECTED' && (
                     <div className="mb-8 p-6 bg-destructive/10 border border-destructive/20 rounded-sm flex flex-col md:flex-row items-center justify-between gap-6">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 bg-red-100/50 rounded-sm text-red-600">
+                            <div className="p-3 bg-destructive/20 rounded-sm text-destructive">
                                 <ShieldOff className="w-6 h-6" />
                             </div>
                             <div>
@@ -166,7 +166,7 @@ export default function SettingsPage() {
                                         content={orgData?.statusHistory && orgData.statusHistory.length > 0
                                             ? orgData.statusHistory[orgData.statusHistory.length - 1].message
                                             : 'Please correct the details below and re-submit for review.'}
-                                        className="text-sm text-destructive font-medium prose prose-red prose-sm max-w-none opacity-70"
+                                        className="text-sm text-destructive font-medium prose prose-red dark:prose-invert prose-sm max-w-none opacity-80"
                                     />
                                 </div>
                             </div>
@@ -174,10 +174,10 @@ export default function SettingsPage() {
                         <button
                             onClick={handleReapply}
                             disabled={reapplying}
-                            className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-sm font-bold transition-all shadow-lg shadow-red-600/20 active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-8 py-3 rounded-sm font-bold transition-all shadow-lg hover:shadow-destructive/20 active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
                         >
                             {reapplying ? (
-                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
                             ) : (
                                 <RefreshCw className="w-4 h-4" />
                             )}
@@ -189,7 +189,7 @@ export default function SettingsPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Logo section */}
-                    <div className="flex flex-col items-center gap-2 pb-6 border-b border-white/10">
+                    <div className="flex flex-col items-center gap-2 pb-6 border-b border-border/50">
                         <Label className="mb-1">Organization Logo</Label>
                         <PhotoUploadPicker
                             currentImageUrl={orgData?.logoUrl}
@@ -221,11 +221,7 @@ export default function SettingsPage() {
 
                         <div>
                             <Label>Primary Accent Color</Label>
-                            <div className="flex items-center gap-4 mt-2">
-                                <div
-                                    className="w-12 h-12 rounded-sm border border-white/10 shadow-inner shrink-0"
-                                    style={{ backgroundColor: formData.accentColor.primary }}
-                                />
+                            <div className="flex items-center gap-2">
                                 <div className="flex-1">
                                     <input
                                         type="color"
@@ -236,7 +232,7 @@ export default function SettingsPage() {
                                             // live preview
                                             setPrimaryColor(newPrimary).catch(() => { });
                                         }}
-                                        className="w-full h-10 p-1 rounded-sm border border-white/10 bg-primary/5 cursor-pointer"
+                                        className="w-full h-12 rounded-sm border border-border cursor-pointer"
                                     />
                                     <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase tracking-widest leading-none">HEX: {formData.accentColor.primary}</p>
                                 </div>
@@ -256,7 +252,7 @@ export default function SettingsPage() {
                                                 setFormData({ ...formData, accentColor: { ...formData.accentColor, mode: m } });
                                                 setThemeMode(m).catch(() => { });
                                             }}
-                                            className={`px-3 py-2 rounded-md border text-sm font-bold transition-all ${formData.accentColor.mode === m ? 'bg-primary text-primary-foreground border-primary shadow-lg' : 'bg-secondary/50 text-muted-foreground border-border hover:bg-secondary'}`}>
+                                            className={`px-3 py-2 rounded-md border text-sm font-bold transition-all ${themeMode === m ? 'bg-primary text-primary-foreground border-primary shadow-lg' : 'bg-secondary/50 text-muted-foreground border-border hover:bg-secondary'}`}>
                                             {m === ThemeMode.SYSTEM ? 'System' : m === ThemeMode.LIGHT ? 'Light' : 'Dark'}
                                         </button>
                                     ))}
@@ -302,7 +298,7 @@ export default function SettingsPage() {
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t border-white/10 flex justify-end">
+                    <div className="pt-4 border-t border-border/50 flex justify-end">
                         <Button
                             type="submit"
                             className="px-10"

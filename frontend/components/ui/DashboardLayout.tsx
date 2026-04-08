@@ -110,7 +110,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                         <div className="ml-auto opacity-40 hover:opacity-100 transition-opacity">
                             <BackButton
                                 {...(effectiveExpanded ? { label: activeLink?.label } : { label: "" })}
-                                className="bg-transparent! border-none! shadow-none! text-black! py-1.5! px-2.5! outline-none! focus:outline-none!"
+                                className="bg-transparent! border-none! shadow-none! text-foreground! py-1.5! px-2.5! outline-none! focus:outline-none!"
                             />
                         </div>
                     </div>
@@ -132,14 +132,14 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                 className={`
                                     flex items-center rounded-sm transition-all group relative
                                     ${isActive
-                                        ? 'bg-sidebar-active text-sidebar-active-text shadow-[0_8px_16px_var(--shadow-color)]'
+                                        ? 'bg-primary/30 text-primary shadow-[0_8px_16px_var(--shadow-color)]'
                                         : 'text-sidebar-text/70 hover:bg-sidebar-text/10 hover:text-sidebar-text'
                                     }
                                     ${!effectiveExpanded ? 'lg:justify-center p-3' : 'px-4 py-3 space-x-3'}
                                 `}
                                 title={!effectiveExpanded ? link.label : undefined}
                             >
-                                <link.icon className={`w-5 h-5 shrink-0 transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                                <link.icon className={`w-5 h-5 shrink-0 text-primary/80 transition-transform ${isActive ? 'scale-110 text-primary' : 'group-hover:scale-110'}`} />
                                 <span className={`font-bold text-sm tracking-wide ml-2 ${!effectiveExpanded ? 'lg:hidden' : 'block'}`}>
                                     {link.label}
                                 </span>
@@ -147,11 +147,11 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     <span className={`
                                         flex items-center justify-center shrink-0
                                         ${!effectiveExpanded
-                                            ? 'absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full'
+                                            ? 'absolute -top-1 -right-1 min-w-4.5 h-4.5 px-1 rounded-full'
                                             : 'ml-auto px-2 py-0.5 rounded-full'
                                         } 
                                         text-[10px] font-black tracking-tighter animate-in zoom-in duration-300 
-                                        ${link.badge === 0 ? 'bg-muted text-muted-foreground' : `${link.label === 'Messages' ? 'bg-red-500' : 'bg-primary'} text-white shadow-sm ring-2 ring-white/30`}
+                                        ${link.badge === 0 ? 'bg-muted text-muted-foreground' : `${link.label === 'Messages' ? 'bg-red-500' : 'bg-primary/20'} text-primary shadow-sm ring-2 ring-primary/60`}
                                     `}>
                                         {link.badge}
                                     </span>
@@ -169,7 +169,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                 <BrandIcon variant="user" size="sm" className="w-9 h-9" />
                             </div>
                             <div className={`overflow-hidden transition-all ml-2 ${!effectiveExpanded ? 'lg:hidden lg:w-0' : 'w-auto'}`}>
-                                <div className="text-xs font-black text-sidebar-text truncate max-w-[120px]">{user.name || user.email}</div>
+                                <div className="text-xs font-black text-sidebar-text truncate max-w-30">{user.name || user.email}</div>
                                 <div className="text-[9px] font-bold text-sidebar-text/60 uppercase tracking-tighter leading-none mt-0.5">{user.designation || user.role?.replace('_', ' ')}</div>
                             </div>
                         </div>
@@ -183,10 +183,10 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     e.preventDefault();
                                     router.push(`/${user.orgSlug}/mail`);
                                 }}
-                                className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-sidebar-active' : 'bg-sidebar hover:bg-sidebar-text/30'} transition-all py-3 border border-transparent shadow-sm relative`}
+                                className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-primary/30 text-primary' : 'bg-sidebar hover:bg-sidebar-text/30'} transition-all py-3 border border-transparent shadow-sm relative`}
                                 title="Mail"
                             >
-                                <Mail className="w-4 h-4 shrink-0" />
+                                <Mail className="w-4 h-4 shrink-0 text-primary/80" />
                                 {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Mail</span>}
                                 {/* Always show a mail count; gray when zero */}
                                 <span className={`ml-auto ${mailCount.unread > 0 ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground'} ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
@@ -200,10 +200,10 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                 e.preventDefault();
                                 router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : `/${user?.orgSlug}/change-password`);
                             }}
-                            className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-sidebar-active' : 'bg-sidebar hover:bg-sidebar-text/30'}  transition-all py-3 border border-transparent shadow-sm`}
+                            className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-primary/30 text-primary' : 'bg-sidebar hover:bg-sidebar-text/30'}  transition-all py-3 border border-transparent shadow-sm`}
                             title="Change Password"
                         >
-                            <Key className="w-4 h-4 shrink-0" />
+                            <Key className="w-4 h-4 shrink-0 text-primary/80" />
                             {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Change Password</span>}
                         </Link>
 
@@ -213,10 +213,10 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                 e.preventDefault();
                                 router.push('/contact');
                             }}
-                            className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname === '/contact' ? 'bg-sidebar-active' : 'bg-sidebar hover:bg-sidebar-text/30'}  transition-all py-3 border border-transparent shadow-sm`}
+                            className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname === '/contact' ? 'bg-primary/30 text-primary' : 'bg-sidebar hover:bg-sidebar-text/30'}  transition-all py-3 border border-transparent shadow-sm`}
                             title="Contact Us"
                         >
-                            <MessageCircleQuestionMark className="w-4 h-4 shrink-0" />
+                            <MessageCircleQuestionMark className="w-4 h-4 shrink-0 text-primary/80" />
                             {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Contact Us</span>}
                         </Link>
 
@@ -225,7 +225,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                             className={`flex items-center cursor-pointer ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} w-full rounded-sm text-red-500 bg-red-500/10 hover:bg-red-500/30 transition-all py-3 border border-transparent shadow-sm`}
                             title="Log out"
                         >
-                            <LogOut className="w-4 h-4 shrink-0" />
+                            <LogOut className="w-4 h-4 shrink-0 text-red-500/80" />
                             {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Log out</span>}
                         </button>
                     </div>
@@ -244,7 +244,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                 </button>
 
                 {/* Universal Content Wrapper - This is the ONLY scrollable area */}
-                <div className={`flex-1 min-h-0 w-full ${showPadding ? 'px-[3px] md:px-2 py-1 md:py-2 bg-background' : 'p-0 bg-card'} overflow-y-auto custom-scrollbar flex flex-col`}>
+                <div className={`flex-1 min-h-0 w-full ${showPadding ? 'px-0.75 md:px-2 py-1 md:py-2 bg-background' : 'p-0 bg-card'} overflow-y-auto custom-scrollbar flex flex-col`}>
                     {children}
                 </div>
             </main>

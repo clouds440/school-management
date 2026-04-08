@@ -77,7 +77,7 @@ interface MailTemplatesProps {
 export function MailTemplates({ onSelect, className = '' }: MailTemplatesProps) {
     return (
         <div className={`space-y-3 ${className}`}>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Quick Templates</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Quick Templates</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {ADMIN_REPLY_TEMPLATES.map((template) => {
                     const Icon = template.icon;
@@ -85,7 +85,7 @@ export function MailTemplates({ onSelect, className = '' }: MailTemplatesProps) 
                         <button
                             key={template.id}
                             onClick={() => onSelect(template.content)}
-                            className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-sm hover:border-indigo-300 hover:shadow-md transition-all text-left group"
+                            className="flex items-center gap-3 p-3 bg-card border border-border rounded-sm hover:border-indigo-300 hover:shadow-md transition-all text-left group"
                         >
                             <div className={`p-2 rounded-sm shrink-0 ${
                                 template.variant === 'success' ? 'bg-emerald-50 text-emerald-600' :
@@ -96,8 +96,8 @@ export function MailTemplates({ onSelect, className = '' }: MailTemplatesProps) 
                                 <Icon className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[11px] font-black text-gray-700 truncate">{template.name}</p>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase truncate">Click to insert</p>
+                                <p className="text-[11px] font-black text-foreground truncate">{template.name}</p>
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase truncate">Click to insert</p>
                             </div>
                         </button>
                     );

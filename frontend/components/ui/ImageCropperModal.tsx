@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
-import { X, Check, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import { X, Check, ZoomIn, ZoomOut, RotateCw, Loader2 } from 'lucide-react';
 
 interface ImageCropperModalProps {
   /** The raw data-url of the image to crop */
@@ -52,6 +52,7 @@ async function getCroppedBlob(imageSrc: string, pixelCrop: Area): Promise<Blob> 
 }
 
 import { ModalOverlay } from './Modal';
+import { Button } from './Button';
 
 export function ImageCropperModal({
   imageSrc,
@@ -150,26 +151,24 @@ export function ImageCropperModal({
 
       {/* Actions */}
       <div className="flex gap-3 px-5 py-5 bg-muted/30 border-t border-border shrink-0">
-        <button
+        <Button
           type="button"
+          variant="secondary"
           onClick={onCancel}
-          className="flex-1 py-3 rounded-sm border border-border text-xs font-black uppercase tracking-widest text-muted-foreground hover:bg-card hover:border-border transition-all active:scale-95"
+          className="flex-1 uppercase tracking-widest"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant='primary'
           onClick={handleConfirm}
           disabled={confirming}
-          className="flex-1 py-3 rounded-sm bg-primary text-xs font-black uppercase tracking-widest text-white hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-60 active:scale-95 shadow-lg shadow-primary/20"
+          icon={Check}
+          className="flex-1 uppercase tracking-widest btn-haptic"
         >
-          {confirming ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Check className="w-4 h-4" />
-          )}
-          Use This Crop
-        </button>
+          {confirming ? "Processing..." : "Use This Crop"}
+        </Button>
       </div>
     </ModalOverlay>
   );

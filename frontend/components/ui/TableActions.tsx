@@ -26,14 +26,14 @@ interface TableActionsProps {
 }
 
 const adminActionConfig: Record<AdminActionVariant, { icon: React.ElementType, color: string, defaultTitle: string }> = {
-    approve: { icon: Check, color: 'text-emerald-600 hover:bg-emerald-600', defaultTitle: 'Approve' },
-    reject: { icon: X, color: 'text-red-600 hover:bg-red-600', defaultTitle: 'Reject' },
-    suspend: { icon: ShieldAlert, color: 'text-orange-600 hover:bg-orange-600', defaultTitle: 'Suspend' },
-    unsuspend: { icon: Check, color: 'text-indigo-600 hover:bg-indigo-600', defaultTitle: 'Unsuspend' },
-    reapprove: { icon: Check, color: 'text-indigo-600 hover:bg-indigo-600', defaultTitle: 'Re-approve' },
-    resolve: { icon: CheckCircle2, color: 'text-indigo-600 hover:bg-indigo-600', defaultTitle: 'Resolve' },
-    editMessage: { icon: MessageSquareText, color: 'text-blue-600 hover:bg-blue-600', defaultTitle: 'Edit Message' },
-    mail: { icon: Send, color: 'text-indigo-600 hover:bg-indigo-600', defaultTitle: 'Send Mail' }
+    approve: { icon: Check, color: 'text-emerald-600 hover:bg-emerald-500/10', defaultTitle: 'Approve' },
+    reject: { icon: X, color: 'text-red-600 hover:bg-red-500/10', defaultTitle: 'Reject' },
+    suspend: { icon: ShieldAlert, color: 'text-orange-600 hover:bg-orange-500/10', defaultTitle: 'Suspend' },
+    unsuspend: { icon: Check, color: 'text-primary hover:bg-primary/10', defaultTitle: 'Unsuspend' },
+    reapprove: { icon: Check, color: 'text-primary hover:bg-primary/10', defaultTitle: 'Re-approve' },
+    resolve: { icon: CheckCircle2, color: 'text-primary hover:bg-primary/10', defaultTitle: 'Resolve' },
+    editMessage: { icon: MessageSquareText, color: 'text-blue-600 hover:bg-blue-500/10', defaultTitle: 'Edit Message' },
+    mail: { icon: Send, color: 'text-primary hover:bg-primary/10', defaultTitle: 'Send Mail' }
 };
 
 export const TableActions: React.FC<TableActionsProps> = ({
@@ -60,7 +60,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                         e.stopPropagation();
                         onView();
                     }}
-                    className="text-primary hover:text-white px-3 py-2.5 hover:bg-primary border border-primary/10 rounded-sm transition-all shadow-sm active:scale-95 group relative flex items-center gap-2"
+                    className="text-primary cursor-pointer hover:text-primary hover:bg-primary/10 border border-primary/20 rounded-sm transition-all shadow-xs active:scale-95 group relative flex items-center gap-2"
                     title="View"
                 >
                     <Eye className="w-4 h-4" />
@@ -74,7 +74,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                         e.stopPropagation();
                         onEdit();
                     }}
-                    className="text-primary hover:text-white px-3 py-2.5 hover:bg-primary border border-primary/10 rounded-sm transition-all shadow-sm hover:shadow-[0_8px_16px_var(--shadow-color)] active:scale-95 group relative flex items-center gap-2"
+                    className="text-primary cursor-pointer hover:text-primary px-3 py-2.5 hover:bg-primary/10 border border-primary/20 rounded-sm transition-all shadow-xs active:scale-95 group relative flex items-center gap-2"
                     title={editTitle}
                 >
                     <div className="flex items-center gap-2">
@@ -101,7 +101,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                             action.onClick();
                         }}
                         disabled={action.disabled || action.loading}
-                        className={`${config.color} hover:text-white px-3 py-2.5 border border-current/10 rounded-sm transition-all shadow-sm active:scale-95 disabled:opacity-50 group relative flex items-center gap-2`}
+                        className={`${config.color} cursor-pointer px-3 py-2.5 border border-current/20 rounded-sm transition-all shadow-xs active:scale-95 disabled:opacity-50 group relative flex items-center gap-2`}
                         title={label}
                     >
                         {action.loading ? (
@@ -121,7 +121,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                         onDelete();
                     }}
                     disabled={isDeleting}
-                    className="text-red-600 hover:text-white px-3 py-2.5 hover:bg-red-600 border border-red-600/10 rounded-sm transition-all shadow-sm hover:shadow-red-200 active:scale-95 disabled:opacity-50 group flex items-center gap-2"
+                    className="text-red-600 cursor-pointer hover:bg-red-500/50 px-3 py-2.5 border border-red-500/20 rounded-sm transition-all shadow-xs active:scale-95 disabled:opacity-50 group flex items-center gap-2"
                     title={deleteTitle}
                 >
                     {isDeleting ? (

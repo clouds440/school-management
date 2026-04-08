@@ -159,7 +159,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-12" noValidate>
             {/* Mandatory Information */}
-            <div className="bg-card p-6 rounded-sm border border-black/10">
+            <div className="bg-card p-6 rounded-sm border border-border">
                 <div className="flex flex-col md:flex-row gap-8 items-start mb-10">
                     <div className="shrink-0 group relative">
                         <PhotoUploadPicker
@@ -298,7 +298,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
             </div>
 
             {/* Workplace & Compensation */}
-            <div className="bg-card p-8 rounded-sm border border-black/10 shadow-sm">
+            <div className="bg-card p-8 rounded-sm border border-border shadow-sm">
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
                     <div className="p-2 bg-primary/10 rounded-sm">
                         <ShieldCheck className="w-5 h-5 text-primary" />
@@ -352,7 +352,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
 
                 <div className={`mt-8 p-5 bg-primary/5 rounded-sm border border-primary/10 flex items-center justify-between group transition-all select-none ${currentUser?.role !== Role.ORG_ADMIN ? 'cursor-not-allowed' : 'hover:bg-primary/10'}`}>
                     <div className={`flex items-center gap-4 ${currentUser?.role !== Role.ORG_ADMIN ? 'pointer-events-none opacity-70' : ''}`}>
-                        <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 cursor-pointer ${formData.isManager ? 'bg-primary' : 'bg-gray-200'}`}
+                        <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 cursor-pointer ${formData.isManager ? 'bg-primary' : 'bg-card/5'}`}
                             onClick={() => {
                                 if (currentUser?.role !== Role.ORG_ADMIN) return;
                                 setValue('isManager', !formData.isManager);
@@ -374,7 +374,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
             </div>
 
             {/* Assignments */}
-            <div className="bg-card p-8 rounded-sm border border-black/10 shadow-sm">
+            <div className="bg-card p-8 rounded-sm border border-border/10 shadow-sm">
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
                     <div className="p-2 bg-primary/10 rounded-sm">
                         <Plus className="w-5 h-5 text-primary" />
@@ -407,7 +407,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
             </div>
 
             {/* Personal Details */}
-            <div className="bg-card p-8 rounded-sm border border-black/10 shadow-sm">
+            <div className="bg-card p-8 rounded-sm border border-border/10 shadow-sm">
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
                     <div className="p-2 bg-primary/10 rounded-sm">
                         <User className="w-5 h-5 text-primary" />
@@ -460,7 +460,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                                 error={!!errors.address}
                                 icon={MapPin}
                                 placeholder="123 Education Lane, Learning City"
-                                className="min-h-[160px]"
+                                className="min-h-40"
                             />
                         </div>
                         {errors.address && <p className="mt-1 text-xs text-red-500 font-bold">{errors.address.message}</p>}

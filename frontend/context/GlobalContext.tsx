@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { AdminStats, OrgStats, Role, Organization, Teacher, Student, Section, Course } from '@/types';
+import { AdminStats, OrgStats, Role, Organization, Teacher, Student, Section, Course, ThemeMode } from '@/types';
 import { Toast, ToastType } from '@/components/ui/Toast';
 
 // --- Types ---
@@ -24,6 +24,7 @@ export interface JwtPayload {
     status?: string;
     isFirstLogin?: boolean;
     userName?: string;
+    themeMode?: ThemeMode;
     iat: number;
     exp: number;
 }
@@ -166,13 +167,13 @@ function globalReducer(state: GlobalState, action: Action): GlobalState {
         case 'AUTH_SET_PROFILE':
             return { ...state, auth: { ...state.auth, userProfile: action.payload } };
         case 'STATS_SET_ADMIN':
-            return { 
-                ...state, 
-                stats: { 
-                    ...state.stats, 
+            return {
+                ...state,
+                stats: {
+                    ...state.stats,
                     admin: action.payload,
                     mail: { unread: action.payload.UNREAD_MAIL, total: action.payload.TOTAL_MAIL }
-                } 
+                }
             };
         case 'STATS_SET_ORG':
             return { ...state, stats: { ...state.stats, org: action.payload } };
@@ -256,7 +257,7 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
                         decoded.userName = decoded.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
                     }
                     if (decoded.sub && !decoded.id) decoded.id = decoded.sub;
-                    
+
                     dispatch({ type: 'AUTH_SET_SESSION', payload: { user: decoded, token: storedToken } });
                 }
             } catch (e) {

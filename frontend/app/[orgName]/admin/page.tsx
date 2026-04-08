@@ -69,10 +69,10 @@ export default function AdminPage() {
                         <span className="text-3xl font-black text-yellow-600">{state.stats.mail?.unread ?? 0}</span>
                         <span className="text-xs opacity-60">{state.stats.mail?.total ?? 0} total requests</span>
                     </div>
-                    <div className="p-6 bg-card text-card-text backdrop-blur-sm rounded-sm border border-white/30 shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
+                    <div className="p-6 bg-card text-card-foreground backdrop-blur-sm rounded-sm border border-border shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
                         <span className="text-xs font-black opacity-40 uppercase tracking-widest">System Health</span>
-                        <div className="flex items-center gap-2 text-green-600 font-bold">
-                            <div className="w-2 h-2 rounded-full bg-green-600 animate-pulse"></div>
+                        <div className="flex items-center gap-2 text-emerald-600 font-bold">
+                            <div className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></div>
                             <span>All systems go</span>
                         </div>
                     </div>
@@ -82,7 +82,7 @@ export default function AdminPage() {
                     {/* Recent Activity */}
                     <div className="lg:col-span-2 space-y-4">
                         <h3 className="text-lg font-black text-card-foreground flex items-center gap-2"><Clock className="w-5 h-5" /> Recent Activity</h3>
-                        <div className="bg-card/40 backdrop-blur-sm border border-border rounded-sm p-4 shadow-md space-y-3">
+                        <div className="bg-card/60 backdrop-blur-sm border border-border rounded-sm p-4 shadow-md space-y-3">
                             {[1, 2, 3].map(i => (
                                 <div key={i} className="flex items-start gap-3 border-b border-border/50 pb-2 last:border-0">
                                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
@@ -92,7 +92,7 @@ export default function AdminPage() {
                                         <p className="text-sm font-bold text-foreground">New teacher registered</p>
                                         <p className="text-xs text-muted-foreground font-medium">Dr. Sarah Johnson · 2 hours ago</p>
                                     </div>
-                                    <span className="text-xs bg-yellow-500/20 text-yellow-800 px-2 py-0.5 rounded-full font-bold">Pending</span>
+                                    <span className="text-xs bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-bold">Pending</span>
                                 </div>
                             ))}
                         </div>
@@ -101,17 +101,17 @@ export default function AdminPage() {
                     {/* Quick Actions */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-black text-card-foreground flex items-center gap-2"><PlusCircle className="w-5 h-5" /> Quick Actions</h3>
-                        <div className="bg-card/40 backdrop-blur-sm border border-border rounded-sm p-4 shadow-md space-y-2">
-                            <Link href={`/${payload.orgSlug}/teachers/add`} className="flex items-center gap-3 p-2 hover:bg-white/20 rounded transition text-gray-700 hover:text-gray-900 font-bold">
+                        <div className="bg-card/60 backdrop-blur-sm border border-border rounded-sm p-4 shadow-md space-y-2">
+                            <Link href={`/${payload.orgSlug}/teachers/add`} className="flex items-center gap-3 p-2 hover:bg-accent/50 rounded transition text-muted-foreground hover:text-foreground font-bold">
                                 <UserPlus className="w-4 h-4 text-primary" /> Add Teacher
                             </Link>
-                            <Link href={`/${payload.orgSlug}/students/add`} className="flex items-center gap-3 p-2 hover:bg-white/20 rounded transition text-gray-700 hover:text-gray-900 font-bold">
+                            <Link href={`/${payload.orgSlug}/students/add`} className="flex items-center gap-3 p-2 hover:bg-accent/50 rounded transition text-muted-foreground hover:text-foreground font-bold">
                                 <UserPlus className="w-4 h-4 text-primary" /> Add Student
                             </Link>
-                            <Link href={`/${payload.orgSlug}/courses/create`} className="flex items-center gap-3 p-2 hover:bg-white/20 rounded transition text-gray-700 hover:text-gray-900 font-bold">
+                            <Link href={`/${payload.orgSlug}/courses/create`} className="flex items-center gap-3 p-2 hover:bg-accent/50 rounded transition text-muted-foreground hover:text-foreground font-bold">
                                 <PlusCircle className="w-4 h-4 text-primary" /> Create Course
                             </Link>
-                            <Link href={`/${payload.orgSlug}/settings`} className="flex items-center gap-3 p-2 hover:bg-accent rounded transition text-muted-foreground hover:text-foreground font-bold">
+                            <Link href={`/${payload.orgSlug}/settings`} className="flex items-center gap-3 p-2 hover:bg-accent/50 rounded transition text-muted-foreground hover:text-foreground font-bold">
                                 <Settings className="w-4 h-4 text-primary" /> Org Settings
                             </Link>
                         </div>

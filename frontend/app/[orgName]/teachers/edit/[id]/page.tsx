@@ -64,7 +64,7 @@ export default function EditTeacherPage() {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="flex flex-col items-center gap-4 text-white/60">
-                    <Loader2 className="w-10 h-10 animate-spin text-white" />
+                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
                     <p className="font-bold text-sm uppercase tracking-widest">Loading Teacher Data...</p>
                 </div>
             </div>

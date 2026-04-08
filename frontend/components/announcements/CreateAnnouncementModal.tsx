@@ -165,11 +165,11 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
                             value={priority}
                             onChange={(val) => setPriority(val as AnnouncementPriority)}
                             options={[
-                                { value: AnnouncementPriority.LOW, label: 'Low', icon: Megaphone, iconClassName: 'text-gray-400' },
-                                { value: AnnouncementPriority.NORMAL, label: 'Normal', icon: Megaphone, iconClassName: 'text-blue-400' },
-                                { value: AnnouncementPriority.HIGH, label: 'High', icon: Megaphone, iconClassName: 'text-orange-500' },
-                                { value: AnnouncementPriority.URGENT, label: 'Urgent 🔴', icon: Megaphone, iconClassName: 'text-red-600' },
-                            ]}
+                                    { value: AnnouncementPriority.LOW, label: 'Low', icon: Megaphone, iconClassName: 'text-muted-foreground' },
+                                    { value: AnnouncementPriority.NORMAL, label: 'Normal', icon: Megaphone, iconClassName: 'text-blue-400' },
+                                    { value: AnnouncementPriority.HIGH, label: 'High', icon: Megaphone, iconClassName: 'text-orange-500' },
+                                    { value: AnnouncementPriority.URGENT, label: 'Urgent 🔴', icon: Megaphone, iconClassName: 'text-red-600' },
+                                ]}
                         />
                     </div>
 
@@ -192,7 +192,7 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                         <Label>Select {targetType.toLowerCase().replace('_', ' ')} <span className="text-red-500">*</span></Label>
                             {targetType === TargetType.ORG && !isPlatformAdmin ? (
-                            <div className="px-4 py-3 bg-card/80 border border-white/10 rounded-sm text-sm font-bold text-card-text/60 flex items-center gap-2">
+                            <div className="px-4 py-3 bg-card/80 border border-border/10 rounded-sm text-sm font-bold text-card-text/60 flex items-center gap-2">
                                 <Building2 className="w-4 h-4" />
                                 Current Organization
                             </div>
@@ -224,7 +224,7 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
                     />
                 </div>
 
-                <div className="flex justify-end space-x-4 pt-6 border-t border-white/5 bg-gray-50/5 -mx-8 -mb-8 px-8 pb-8">
+                <div className="flex justify-end space-x-4 pt-6 border-t border-border/5 bg-card/5 -mx-8 -mb-8 px-8 pb-8">
                     <Button variant="secondary" onClick={onClose} type="button" px="px-8" py="py-2.5">
                         Cancel
                     </Button>

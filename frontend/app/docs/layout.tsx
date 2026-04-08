@@ -73,22 +73,22 @@ export default function DocsLayout({
   ];
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-background">
       {/* Docs Sidebar */}
-      <aside className="w-72 hidden lg:block border-r border-gray-100 sticky top-16 h-full overflow-y-auto scrollbar-none py-8 px-6">
+      <aside className="w-72 hidden lg:block border-r border-border sticky top-16 h-full overflow-y-auto scrollbar-none py-8 px-6">
         <div className="mb-8 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search docs..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           />
         </div>
 
         <nav className="space-y-8">
           {sections.map((section) => (
             <div key={section.title} className="space-y-3">
-              <h4 className="flex items-center text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <h4 className="flex items-center text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 <span className="mr-2 opacity-70">{section.icon}</span>
                 {section.title}
               </h4>
@@ -97,7 +97,7 @@ export default function DocsLayout({
                   <li key={link.name}>
                     <Link
                       href={link.href}
-                      className="text-sm font-medium text-gray-600 hover:text-primary hover:bg-primary/5 px-2 py-1.5 rounded-sm block transition-all"
+                      className="text-sm font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 px-2 py-1.5 rounded-sm block transition-all"
                     >
                       {link.name}
                     </Link>

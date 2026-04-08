@@ -31,7 +31,7 @@ export function BackButton({
                 onClick={handleBack}
                 className={className}
                 icon={ArrowLeft}
-                variant="black"
+                variant="secondary"
                 title="Go back to previous page"
             >
                 {label && <span>{label}</span>}

@@ -32,22 +32,22 @@ function AttachmentPreview({ file }: { file: Attachment }) {
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 p-2 bg-white/50 border border-black/5 rounded-full hover:bg-white hover:shadow-sm transition-all group max-w-sm"
+            className="flex items-center gap-2 p-2 bg-card/50 border border-border/5 rounded-full hover:bg-card/60 hover:shadow-sm transition-all group max-w-sm"
         >
             {isImage ? (
-                <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-black/5 relative shadow-sm hover:scale-105 transition-transform duration-300">
+                <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-border/10 relative shadow-sm hover:scale-105 transition-transform duration-300">
                     <Image src={url} alt={file.filename} fill className="object-cover" unoptimized />
                 </div>
             ) : (
-                <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center shrink-0 border border-indigo-100 shadow-sm">
-                    <FileText className="w-5 h-5 text-indigo-500" />
+                <div className="w-10 h-10 bg-card/5 rounded-full flex items-center justify-center shrink-0 border border-border/10 shadow-sm">
+                    <FileText className="w-5 h-5 text-primary" />
                 </div>
             )}
             <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-black text-gray-700 truncate">{file.filename}</p>
-                <p className="text-[9px] font-bold text-gray-400 uppercase">{(file.size / 1024).toFixed(1)} KB</p>
+                <p className="text-[10px] font-black text-foreground truncate">{file.filename}</p>
+                <p className="text-[9px] font-bold text-muted-foreground uppercase">{(file.size / 1024).toFixed(1)} KB</p>
             </div>
-            <Download className="w-3 h-3 text-gray-300 group-hover:text-indigo-500 transition-colors" />
+            <Download className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
         </a>
     );
 }
@@ -55,26 +55,26 @@ function AttachmentPreview({ file }: { file: Attachment }) {
 function MessageBubble({ message, isOwn }: { message: MailMessageType; isOwn: boolean }) {
     return (
         <div className="flex gap-3">
-            <BrandIcon variant="user" size="sm" user={message.sender} className={`w-8 h-8 ${isOwn ? 'ring-2 ring-indigo-500/20' : ''}`} />
+            <BrandIcon variant="user" size="sm" user={message.sender} className={`w-8 h-8 ${isOwn ? 'ring-2 ring-primary/20' : ''}`} />
             <div className="flex-1 max-w-[90%]">
                 <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[11px] font-black text-gray-700">
+                    <span className="text-[11px] font-black text-foreground">
                         {message.sender?.name || message.sender?.email}
                     </span>
                     {message.sender?.role && (
-                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
                             {message.sender.role.replace('_', ' ')}
                         </span>
                     )}
                     {isOwn && (
-                        <span className="text-[8px] font-black text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">You</span>
+                        <span className="text-[8px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">You</span>
                     )}
                 </div>
-                <div className={`inline-block p-4 rounded-sm shadow-sm ${isOwn ? 'bg-indigo-50/50 border border-indigo-100/50' : 'bg-white border border-gray-100'} text-left w-full`}>
-                    <MarkdownRenderer content={message.content} className="text-sm text-gray-800" />
+                <div className={`inline-block p-4 rounded-sm shadow-sm ${isOwn ? 'bg-primary/10 border border-border/50' : 'bg-card border border-border'} text-left w-full`}>
+                    <MarkdownRenderer content={message.content} className="text-sm text-foreground" />
 
                     {message.files && message.files.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-2">
+                            <div className="mt-3 pt-3 border-t border-border flex flex-col gap-2">
                             {message.files.map(file => (
                                 <AttachmentPreview key={file.id} file={file} />
                             ))}
@@ -82,8 +82,8 @@ function MessageBubble({ message, isOwn }: { message: MailMessageType; isOwn: bo
                     )}
                 </div>
                 <div className="flex items-center gap-1 mt-1">
-                    <Clock className="w-3 h-3 text-gray-300" />
-                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
+                    <Clock className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter">
                         {new Date(message.createdAt).toLocaleString()}
                     </span>
                 </div>
@@ -109,13 +109,13 @@ function ActionLogItem({ log }: { log: MailActionLog }) {
     };
 
     return (
-        <div className="flex items-center gap-2 py-2 px-4 bg-gray-50/50 rounded-sm border border-gray-100/50 mx-8">
-            <div className="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0" />
-            <span className="text-[10px] text-gray-500 font-medium">
-                <span className="font-black uppercase text-gray-700">{log.performer?.name || 'System'}</span>
+        <div className="flex items-center gap-2 py-2 px-4 bg-card/50 rounded-sm border border-border/50 mx-8">
+            <div className="w-1.5 h-1.5 rounded-full bg-border shrink-0" />
+            <span className="text-[10px] text-muted-foreground font-medium">
+                <span className="font-black uppercase text-foreground">{log.performer?.name || 'System'}</span>
                 {' '}{getActionLabel(log.action)}
             </span>
-            <span className="text-[9px] text-gray-400 ml-auto font-bold uppercase">
+            <span className="text-[9px] text-muted-foreground ml-auto font-bold uppercase">
                 {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
         </div>
@@ -188,7 +188,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
 
         return (
             <div className="flex flex-col h-full">
-                <div className="px-6 py-2 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between shrink-0">
+                <div className="px-6 py-2 bg-card/5 border-b border-border flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-4">
                         <div className="flex -space-x-2">
                             <BrandIcon variant="user" size="sm" user={mail.creator} className="border-2 border-white/80 shadow-sm" />
@@ -203,10 +203,10 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                             )}
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Conversation Between</p>
-                            <p className="text-sm font-bold text-gray-700">
+                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Conversation Between</p>
+                            <p className="text-sm font-bold text-foreground">
                                 {mail.creator.name || mail.creator.email}
-                                <span className="mx-2 text-gray-300">→</span>
+                                <span className="mx-2 text-muted-foreground">→</span>
                                 {mail.assignees.length > 0 ? (
                                     mail.assignees.length > 3
                                         ? `${mail.assignees.slice(0, 2).map(a => a.name || a.email).join(', ')} and ${mail.assignees.length - 2} others`
@@ -218,7 +218,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                         </div>
                     </div>
                     <div className="text-right">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Priority</p>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Priority</p>
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${mail.priority === 'URGENT' ? 'bg-red-100 text-red-600' :
                             mail.priority === 'HIGH' ? 'bg-orange-100 text-orange-600' :
                                 'bg-blue-100 text-blue-600'
@@ -228,9 +228,9 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-6 py-6 px-4 custom-scrollbar min-h-[300px]">
+                <div className="flex-1 overflow-y-auto space-y-6 py-6 px-4 custom-scrollbar min-h-75">
                     {timeline.length === 0 && (
-                        <div className="flex items-center justify-center py-12 text-gray-400">
+                        <div className="flex items-center justify-center py-12 text-muted-foreground">
                             <MessageSquare className="w-12 h-12 opacity-10 mb-2" />
                             <p className="text-sm font-medium">No messages yet</p>
                         </div>
@@ -247,15 +247,15 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                         )
                     )}
 
-                    {!isClosed && <div ref={replyAreaRef} className="pt-4 mt-8 border-t border-gray-100">
+                    {!isClosed && <div ref={replyAreaRef} className="pt-4 mt-8 border-t border-border">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Post a Reply</h3>
+                            <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Post a Reply</h3>
 
                             <div className="flex items-center gap-4">
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="flex items-center gap-2 text-gray-400 hover:text-indigo-600 transition-colors p-1"
+                                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors p-1"
                                 >
                                     <Paperclip className="w-4 h-4" />
                                     <span className="text-[10px] font-black uppercase tracking-widest">Attach Files</span>
@@ -274,10 +274,10 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                         {selectedFiles.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in slide-in-from-top-1">
                                 {selectedFiles.map((file, i) => (
-                                    <div key={i} className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-sm">
-                                        {file.type.startsWith('image/') ? <ImageIcon className="w-3 h-3 text-indigo-400" /> : <FileText className="w-3 h-3 text-indigo-400" />}
-                                        <span className="text-[10px] font-bold text-indigo-900 truncate max-w-[150px]">{file.name}</span>
-                                        <button onClick={() => removeFile(i)} className="p-0.5 hover:bg-indigo-200 rounded-full text-indigo-400 transition-colors">
+                                    <div key={i} className="flex items-center gap-2 bg-card/5 border border-border px-3 py-1.5 rounded-sm">
+                                        {file.type.startsWith('image/') ? <ImageIcon className="w-3 h-3 text-primary/80" /> : <FileText className="w-3 h-3 text-primary/80" />}
+                                        <span className="text-[10px] font-bold text-foreground truncate max-w-37.5">{file.name}</span>
+                                        <button onClick={() => removeFile(i)} className="p-0.5 hover:bg-card/10 rounded-full text-primary/80 transition-colors">
                                             <X className="w-3 h-3" />
                                         </button>
                                     </div>
@@ -300,7 +300,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                                 onClick={handleSend}
                                 isLoading={sending}
                                 loadingId="reply-submit"
-                                className="flex items-center gap-2 px-8 py-2.5 bg-indigo-600 text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all border-none shadow-lg shadow-indigo-200"
+                                className="flex items-center gap-2 px-8 py-2.5 bg-primary text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-primary/80 transition-all border-none shadow-lg shadow-primary/20"
                                 icon={Send}
                             >
                                 SEND REPLY
@@ -309,7 +309,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                     </div>}
 
                     {isClosed && (
-                        <div className="border-t border-gray-100 py-6 text-center bg-gray-50/50 rounded-b-sm font-black text-gray-400 uppercase text-[10px] tracking-widest">
+                        <div className="border-t border-border py-6 text-center bg-card/5 rounded-b-sm font-black text-muted-foreground uppercase text-[10px] tracking-widest">
                             This mail is closed — no further replies
                         </div>
                     )}

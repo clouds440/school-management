@@ -190,7 +190,7 @@ export default function OrganizationsPage() {
             sortKey: 'name',
             accessor: (row) => (
                 <div className="flex items-start gap-4 min-w-0">
-                    <div className={`w-10 h-10 ${row.logoUrl ? 'bg-transparent' : 'bg-indigo-50'} rounded-sm flex items-center justify-center text-indigo-600 shrink-0`}>
+                    <div className={`w-10 h-10 ${row.logoUrl ? 'bg-transparent' : 'bg-card/5'} rounded-sm flex items-center justify-center text-primary shrink-0`}>
                         {row.logoUrl ? (
                             <Image src={getPublicUrl(row.logoUrl)} alt="Org Logo/Icon" width={40} height={40} className="w-10 h-10 bg-transparent rounded-full object-contain" unoptimized />
                         ) : (
@@ -198,8 +198,8 @@ export default function OrganizationsPage() {
                         )}
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-black text-gray-900 leading-tight">{row.name}</h4>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{row.type.replace('_', ' ')}</span>
+                        <h4 className="text-sm font-black text-foreground leading-tight">{row.name}</h4>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">{row.type.replace('_', ' ')}</span>
                     </div>
                 </div>
             )
@@ -210,12 +210,12 @@ export default function OrganizationsPage() {
             sortKey: 'email',
             accessor: (row) => (
                 <div className="space-y-1">
-                    <div className="flex items-center text-xs font-medium text-gray-600 gap-1.5">
-                        <MapPin className="w-3 h-3 text-indigo-400" />
+                    <div className="flex items-center text-xs font-medium text-muted-foreground gap-1.5">
+                        <MapPin className="w-3 h-3 text-primary/80" />
                         {row.location || 'N/A'}
                     </div>
-                    <div className="flex items-center text-xs font-medium text-gray-600 gap-1.5">
-                        <Mail className="w-3 h-3 text-indigo-400" />
+                    <div className="flex items-center text-xs font-medium text-muted-foreground gap-1.5">
+                        <Mail className="w-3 h-3 text-primary/80" />
                         {row.email || 'N/A'}
                     </div>
                 </div>
@@ -288,7 +288,7 @@ export default function OrganizationsPage() {
                         <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                             <button
                                 onClick={() => handleSendMail(row)}
-                                className="py-2 px-3 bg-indigo-100 hover:bg-indigo-200 text-gray-400 hover:text-indigo-600 rounded-sm transition-all"
+                                className="py-2 px-3 bg-card/5 hover:bg-card/10 text-muted-foreground hover:text-primary rounded-sm transition-all"
                                 title="Send Mail"
                             >
                                 <Send className="w-4 h-4" />
@@ -320,7 +320,7 @@ export default function OrganizationsPage() {
             {
                 label: 'Status History',
                 value: org.statusHistory && org.statusHistory.length > 0 ? (
-                    <div className="space-y-4 mt-2 max-h-[500px] overflow-y-auto pr-6 custom-scrollbar -ml-2">
+                    <div className="space-y-4 mt-2 max-h-125 overflow-y-auto pr-6 custom-scrollbar -ml-2">
                         {[...org.statusHistory].reverse().map((entry, idx) => (
                             <div key={idx} className="relative pl-8 border-l-2 border-primary/10 last:border-l-0 pb-8 last:pb-2">
                                 <div className="absolute left-2 top-0.5 w-5 h-5 rounded-full bg-card border-4 border-primary/20 flex items-center justify-center shadow-sm">
@@ -392,14 +392,14 @@ export default function OrganizationsPage() {
                                 key={tab.id}
                                 onClick={() => updateQueryParams({ status: tab.id, page: 1 })}
                                 className={`px-5 py-2.5 rounded-sm font-bold text-sm cursor-pointer transition-all flex items-center gap-2 shadow-sm border whitespace-nowrap ${activeStatusTab === tab.id
-                                    ? 'bg-white border-gray-200 text-gray-900 shadow-[0_4px_12px_rgba(0,0,0,0.05)]'
-                                    : 'bg-gray-100/50 border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                                    ? 'bg-card border-border text-foreground shadow-[0_4px_12px_rgba(0,0,0,0.05)]'
+                                    : 'bg-card/5 border-transparent text-muted-foreground hover:bg-card/10 hover:text-foreground'
                                     }`}
                             >
                                 <tab.icon className={`w-4 h-4 ${activeStatusTab === tab.id ? tab.color : 'opacity-40'}`} />
                                 <span>{tab.label}</span>
                                 {tab.count !== undefined && (
-                                    <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter transition-all ${activeStatusTab === tab.id ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-400'
+                                    <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter transition-all ${activeStatusTab === tab.id ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 text-gray-400'
                                         }`}>
                                         {tab.count}
                                     </span>
@@ -428,7 +428,7 @@ export default function OrganizationsPage() {
                                 { value: 'ONLINE_SCHOOL', label: 'Online School', icon: MonitorPlay },
                                 { value: 'OTHER', label: 'Other', icon: Info },
                             ]}
-                            className="w-full sm:w-[200px] px-3"
+                            className="w-full sm:w-50 px-3"
                             placeholder="Org Type"
                         />
 

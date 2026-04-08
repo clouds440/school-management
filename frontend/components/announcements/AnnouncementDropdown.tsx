@@ -126,25 +126,25 @@ export function AnnouncementDropdown() {
             <button
                 onClick={toggleOpen}
                 title="Announcements"
-                className="relative p-2 text-gray-600 hover:text-primary hover:bg-primary/5 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="relative p-2 text-primary/80 hover:text-primary hover:bg-primary/10 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
                 aria-label="Announcements"
             >
                 <Megaphone className="w-5 h-5" />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex items-center justify-center w-[22px] h-[22px] text-[12px] font-bold text-white bg-blue-500 rounded-full border-2 border-white shadow-sm animate-in zoom-in">
+                    <span className="absolute -top-1 -right-1 flex items-center justify-center w-5.5 h-5.5 text-[12px] font-bold text-white bg-blue-500 rounded-full border-2 border-white shadow-sm animate-in zoom-in">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-100/80 overflow-hidden transform origin-top-right animate-in fade-in slide-in-from-top-2 z-50">
-                    <div className="flex items-center justify-between px-4 py-3 bg-blue-50/80 border-b border-blue-100/50 backdrop-blur-sm">
-                        <h3 className="font-semibold text-blue-900">Announcements</h3>
+                 <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-card rounded-xl shadow-2xl border border-border/80 overflow-hidden transform origin-top-right animate-in fade-in slide-in-from-top-2 z-50">
+                    <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border backdrop-blur-sm">
+                        <h3 className="font-semibold text-foreground">Announcements</h3>
                         {user.role !== Role.STUDENT && (
                             <button
                                 onClick={() => { setIsOpen(false); setIsCreateModalOpen(true); }}
-                                className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center space-x-1 transition-colors"
+                                className="text-xs font-medium text-primary/80 hover:text-primary cursor-pointer hover:underline flex items-center space-x-1 transition-colors"
                             >
                                 <Plus className="w-3 h-3" />
                                 <span>Create</span>
@@ -152,13 +152,13 @@ export function AnnouncementDropdown() {
                         )}
                     </div>
 
-                    <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                        {isLoading ? (
-                            <div className="flex justify-center items-center py-8">
-                                <Loader2 className="w-6 h-6 animate-spin text-blue-500 opacity-50" />
-                            </div>
-                        ) : announcements.length > 0 ? (
-                            <div className="divide-y divide-gray-50">
+                            <div className="max-h-100 overflow-y-auto custom-scrollbar">
+                                {isLoading ? (
+                                    <div className="flex justify-center items-center py-8">
+                                        <Loader2 className="w-6 h-6 animate-spin text-blue-500 opacity-50" />
+                                    </div>
+                                ) : announcements.length > 0 ? (
+                                    <div className="divide-y divide-border">
                                 {announcements.map((announcement) => {
                                     const priorityColors = {
                                         LOW: 'bg-gray-50/50 hover:bg-gray-100/80 border-l-gray-300',
@@ -183,13 +183,11 @@ export function AnnouncementDropdown() {
                                             className={`p-4 transition-all border-l-4 ${bgClass} group`}
                                         >
                                             {/* Creator Info */}
-                                            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-gray-50">
+                                            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-border">
                                                 <BrandIcon variant="user" size="sm" user={creator} className="w-8 h-8" />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <p className="text-xs font-black text-gray-900 truncate">
-                                                            {creator?.name || 'Unknown User'}
-                                                        </p>
+                                                        <div className="text-xs font-black text-foreground truncate">{creator?.name || 'Unknown User'}</div>
                                                         {(lastSeen === 0 || new Date(announcement.createdAt).getTime() > lastSeen + 1000) && (
                                                             <span className="shrink-0 text-[8px] font-black bg-blue-500 text-white px-1.5 py-0.5 rounded-full animate-pulse uppercase tracking-[0.2em] shadow-sm">
                                                                 New
@@ -200,9 +198,9 @@ export function AnnouncementDropdown() {
                                                         <span className="text-[9px] font-black text-blue-600/70 uppercase tracking-widest bg-blue-50/50 border border-blue-100/30 px-1.5 py-0.5 rounded-sm">
                                                             {creator?.role?.replace('_', ' ') || 'SYSTEM'}
                                                         </span>
-                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">
+                                                        <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">
                                                             {formatDistanceToNow(new Date(announcement.createdAt), { addSuffix: true })}
-                                                        </p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -216,13 +214,13 @@ export function AnnouncementDropdown() {
                                                         {announcement.title}
                                                     </h4>
                                                 </div>
-                                                <div className="shrink-0 flex items-center gap-1.5 text-[9px] font-black text-gray-400 uppercase tracking-widest bg-white border border-gray-100 px-2 py-1 rounded-sm shadow-sm group-hover:border-blue-100 group-hover:text-blue-500 transition-colors">
+                                                <div className="shrink-0 flex items-center gap-1.5 text-[9px] font-black text-muted-foreground uppercase tracking-widest bg-card border border-border px-2 py-1 rounded-sm shadow-sm group-hover:border-blue-100 group-hover:text-blue-500 transition-colors">
                                                     {targetIcons[announcement.targetType] || <Megaphone className="w-3 h-3" />}
                                                     <span>{announcement.targetType}</span>
                                                 </div>
                                             </div>
 
-                                            <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-medium">
+                                            <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap font-medium">
                                                 {announcement.body}
                                             </p>
 
@@ -243,9 +241,9 @@ export function AnnouncementDropdown() {
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                                <Megaphone className="w-10 h-10 text-gray-200 mb-3" />
-                                <p className="text-sm font-medium text-gray-500">No recent announcements</p>
-                                <p className="text-xs text-gray-400 mt-1">Check back later.</p>
+                                <Megaphone className="w-10 h-10 text-muted-foreground mb-3" />
+                                <p className="text-sm font-medium text-muted-foreground">No recent announcements</p>
+                                <p className="text-xs text-muted-foreground mt-1">Check back later.</p>
                             </div>
                         )}
                     </div>

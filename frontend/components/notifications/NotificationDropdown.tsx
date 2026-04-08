@@ -20,7 +20,7 @@ export function NotificationDropdown() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Fetch notifications initially via notificationsStore
@@ -94,21 +94,21 @@ export function NotificationDropdown() {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 title="Notifications"
-                className="relative p-2 text-gray-600 hover:text-primary hover:bg-primary/5 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="relative p-2 text-primary/80 hover:text-primary hover:bg-primary/10 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-primary/20"
                 aria-label="Notifications"
             >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex items-center justify-center w-[22px] h-[22px] text-[12px] font-bold text-white bg-red-500 rounded-full border-2 border-white shadow-sm animate-in zoom-in">
+                    <span className="absolute -top-1 -right-1 flex items-center justify-center w-5.5 h-5.5 text-[12px] font-bold text-white bg-red-500 rounded-full border-2 border-white shadow-sm animate-in zoom-in">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-100/80 overflow-hidden transform origin-top-right animate-in fade-in slide-in-from-top-2 z-50">
-                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50/80 border-b border-gray-100 backdrop-blur-sm">
-                        <h3 className="font-semibold text-gray-800">Notifications</h3>
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-card rounded-xl shadow-2xl border border-border/80 overflow-hidden transform origin-top-right animate-in fade-in slide-in-from-top-2 z-50">
+                    <div className="flex items-center justify-between px-4 py-3 bg-card/5 border-b border-border backdrop-blur-sm">
+                        <h3 className="font-semibold text-foreground">Notifications</h3>
                         {unreadCount > 0 && (
                             <button
                                 onClick={markAllAsRead}
@@ -120,34 +120,34 @@ export function NotificationDropdown() {
                         )}
                     </div>
 
-                    <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                    <div className="max-h-100 overflow-y-auto custom-scrollbar">
                         {isLoading ? (
                             <div className="flex justify-center items-center py-8">
                                 <Loader2 className="w-6 h-6 animate-spin text-primary opacity-50" />
                             </div>
                         ) : notifications.length > 0 ? (
-                            <div className="divide-y divide-gray-50">
+                            <div className="divide-y divide-border">
                                 {notifications.map((notif) => {
                                     const content = (
                                         <>
                                             <div className={`mt-1 mr-3 w-2 h-2 rounded-full shrink-0 ${!notif.isRead ? 'bg-primary shadow-[0_0_8px_rgba(var(--color-primary),0.5)]' : 'bg-transparent'}`} />
                                             <div className="flex-1 min-w-0">
-                                                <p className={`text-sm tracking-tight ${!notif.isRead ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                                                <p className={`text-sm tracking-tight ${!notif.isRead ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground'}`}>
                                                     {notif.title}
                                                 </p>
                                                 {notif.body && (
-                                                    <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">
+                                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
                                                         {notif.body}
                                                     </p>
                                                 )}
-                                                <p className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-wider">
+                                                <p className="text-[10px] text-muted-foreground mt-2 font-medium uppercase tracking-wider">
                                                     {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
                                                 </p>
                                             </div>
                                         </>
                                     );
 
-                                    const className = `flex items-start p-4 hover:bg-gray-50 transition-colors cursor-pointer ${!notif.isRead ? 'bg-primary/5' : ''}`;
+                                    const className = `flex items-start p-4 hover:bg-card/10 transition-colors cursor-pointer ${!notif.isRead ? 'bg-primary/5' : ''}`;
                                     const handleClick = () => {
                                         if (!notif.isRead) markAsRead(notif.id);
                                         setIsOpen(false);
@@ -170,9 +170,9 @@ export function NotificationDropdown() {
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                                <Bell className="w-10 h-10 text-gray-200 mb-3" />
-                                <p className="text-sm font-medium text-gray-500">No new notifications</p>
-                                <p className="text-xs text-gray-400 mt-1">You're all caught up!</p>
+                                <Bell className="w-10 h-10 text-muted-foreground mb-3" />
+                                <p className="text-sm font-medium text-muted-foreground">No new notifications</p>
+                                <p className="text-xs text-muted-foreground mt-1">You're all caught up!</p>
                             </div>
                         )}
                     </div>

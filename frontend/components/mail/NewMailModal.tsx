@@ -348,7 +348,7 @@ export function NewMailModal({
             maxWidth="max-w-7xl"
             feedback={
                 error ? (
-                    <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-sm text-red-600 animate-shake">
+                        <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-sm text-red-600 animate-shake">
                         <AlertCircle className="w-4 h-4 shrink-0" />
                         <p className="text-[11px] font-bold uppercase tracking-wider">{error}</p>
                     </div>
@@ -361,22 +361,22 @@ export function NewMailModal({
             }
         >
             <div>
-                <div className="grid grid-cols-1 gap-3">
+                        <div className="grid grid-cols-1 gap-3">
                     {/* Left Column: Basic Info */}
                     <div className="space-y-3">
                         <div>
-                            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Subject</label>
+                            <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">Subject</label>
                             <input
                                 type="text"
                                 value={subject}
                                 onChange={(e) => setSubject(e.target.value)}
                                 placeholder="Explain your issue briefly"
-                                className="w-full px-5 py-4 rounded-sm bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-gray-900 font-bold text-base"
+                                className="w-full px-5 py-4 rounded-sm bg-card/5 border border-border focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground font-bold text-base"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Recipients</label>
+                            <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">Recipients</label>
                             <CustomMultiSelect
                                 values={targetIds}
                                 onChange={handleTargetChange}
@@ -389,7 +389,7 @@ export function NewMailModal({
                                 placeholder={searching ? "Loading recipients..." : "Select one or more recipients..."}
                             />
                             {targetIds.length > 0 && (
-                                <div className="mt-3 space-y-2">
+                                        <div className="mt-3 space-y-2">
                                     {selectedTargets.map(t => (
                                         <div key={t.id} className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-sm uppercase tracking-wider block">
                                             {t.type === 'USER'
@@ -404,7 +404,7 @@ export function NewMailModal({
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Category</label>
+                                <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">Category</label>
                                 <CustomSelect
                                     value={category}
                                     onChange={(val) => setCategory(val)}
@@ -414,7 +414,7 @@ export function NewMailModal({
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Priority</label>
+                                <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">Priority</label>
                                 <CustomSelect
                                     value={priority}
                                     onChange={(val) => setPriority(val)}
@@ -438,7 +438,7 @@ export function NewMailModal({
                                                 e.stopPropagation();
                                                 setNoReply(e.target.checked);
                                             }}
-                                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                                            className="w-4 h-4 text-indigo-600 border-border rounded focus:ring-indigo-500 cursor-pointer"
                                         />
                                         <span className="text-xs font-bold text-indigo-900 uppercase tracking-widest cursor-pointer select-none">
                                             No Reply Needed (Broadcast)
@@ -454,18 +454,18 @@ export function NewMailModal({
                     <div className="space-y-6 flex flex-col h-full">
                         <div className="pt-2">
                             <div className="flex items-center justify-between mb-3">
-                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Attachments</label>
+                                <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Attachments</label>
                                 <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">{selectedFiles.length} / 5</span>
                             </div>
 
-                            <div className="flex flex-wrap gap-2 min-h-[44px] p-3 bg-gray-50 border border-dashed border-gray-200 rounded-sm">
+                            <div className="flex flex-wrap gap-2 min-h-11 p-3 bg-card/5 border border-dashed border-border rounded-sm">
                                 {selectedFiles.map((file, i) => (
-                                    <div key={i} className="flex items-center gap-2 bg-white border border-gray-200 pl-3 pr-2 py-1.5 rounded-sm shadow-sm animate-in fade-in zoom-in duration-200">
+                                    <div key={i} className="flex items-center gap-2 bg-card border border-border pl-3 pr-2 py-1.5 rounded-sm shadow-sm animate-in fade-in zoom-in duration-200">
                                         <div className="w-6 h-6 rounded-sm bg-indigo-50 flex items-center justify-center text-indigo-600">
                                             {file.type.startsWith('image/') ? <ImageIcon className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
                                         </div>
-                                        <span className="text-[11px] font-bold text-gray-700 max-w-[100px] truncate">{file.name}</span>
-                                        <button type="button" onClick={() => removeFile(i)} className="p-1 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors ml-1">
+                                        <span className="text-[11px] font-bold text-foreground max-w-25 truncate">{file.name}</span>
+                                        <button type="button" onClick={() => removeFile(i)} className="p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-full transition-colors ml-1">
                                             <X className="w-3 h-3" />
                                         </button>
                                     </div>
@@ -475,7 +475,7 @@ export function NewMailModal({
                                     <button
                                         type="button"
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="h-[34px] flex items-center gap-2 px-4 border border-dashed border-gray-300 rounded-sm text-gray-400 hover:border-indigo-500 hover:text-indigo-600 hover:bg-white transition-all group"
+                                        className="h-8.5 flex items-center gap-2 px-4 border border-dashed border-border rounded-sm text-muted-foreground hover:border-indigo-500 hover:text-indigo-600 hover:bg-card/80 transition-all group"
                                     >
                                         <Paperclip className="w-3.5 h-3.5" />
                                         <span className="text-[10px] font-black uppercase tracking-wider">Add File</span>

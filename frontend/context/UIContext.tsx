@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import { usePathname } from 'next/navigation';
 import { useGlobal, ModalConfig, DataField } from './GlobalContext';
 

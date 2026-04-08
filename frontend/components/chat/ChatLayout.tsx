@@ -12,8 +12,8 @@ import { BrandIcon } from '../ui/Brand';
 import { Chat, ChatMessage, ChatType, ChatMessageType, PaginatedResponse, Role, User } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import {
-    Search, Plus, MessageSquarePlus, Send, MoreVertical, X, Loader2, FileUp,
-    UserMinus, Trash2, Info, ChevronLeft, Check, CheckCheck, ArrowDown, FileText, Reply, ArrowUp, Download,
+    Search, Plus, MessageSquarePlus, Send, MoreVertical, X, Loader2, Paperclip,
+    UserMinus, Trash2, Info, ChevronLeft, Check, CheckCheck, ArrowDown, Pencil, Reply, ArrowUp, Download,
     Copy
 } from 'lucide-react';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
@@ -414,22 +414,24 @@ export function ChatLayout() {
 
     // 5. Image click handler for thumbnails
     useEffect(() => {
-        if (!messagesContainerRef.current) return;
-
+        // Attach a document-level click handler and filter clicks that originate from images
         const handleImageClick = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            if (target.tagName === 'IMG' && (target.closest('.message-content') || target.closest('.naked-image-container'))) {
-                const imgSrc = (target as HTMLImageElement).src;
-                if (imgSrc) {
-                    setPreviewImageUrl(imgSrc);
-                }
+            const target = e.target as HTMLElement | null;
+            if (!target) return;
+
+            // Find the nearest <img> element from the event target (covers clicks on children)
+            const imgEl = (target.closest && (target.closest('img') as HTMLImageElement | null)) || (target.tagName === 'IMG' ? (target as HTMLImageElement) : null);
+            if (!imgEl) return;
+
+            // Ensure the image is inside the messages container and either inside a naked-image-container or message-content
+            if (messagesContainerRef.current && messagesContainerRef.current.contains(imgEl) && (imgEl.closest('.message-content') || imgEl.closest('.naked-image-container'))) {
+                const imgSrc = imgEl.src;
+                if (imgSrc) setPreviewImageUrl(imgSrc);
             }
         };
 
-        const container = messagesContainerRef.current;
-        container.addEventListener('click', handleImageClick);
-
-        return () => container.removeEventListener('click', handleImageClick);
+        document.addEventListener('click', handleImageClick);
+        return () => document.removeEventListener('click', handleImageClick);
     }, []);
 
     const activeChat = useMemo(() => chats.find(c => c.id === activeChatId), [chats, activeChatId]);
@@ -495,6 +497,15 @@ export function ChatLayout() {
 
             setMessageDraft('');
             setReplyToMessage(null);
+            // Reset textarea size back to single-line after sending
+            setTimeout(() => {
+                const ta = textareaRef.current as unknown as HTMLTextAreaElement | null;
+                if (ta) {
+                    ta.style.height = 'auto';
+                    try { ta.setSelectionRange(0, 0); } catch (e) { /* ignore */ }
+                    ta.rows = 1;
+                }
+            }, 0);
             setIsSending(false);
             textareaRef.current?.focus();
             // sender's own message — no need to call markAsRead here (guarded elsewhere)
@@ -631,7 +642,7 @@ export function ChatLayout() {
         }, 50);
     }, []);
 
-    
+
     const handleCopyText = useCallback((msg: ChatMessage) => {
         navigator.clipboard.writeText(msg.content).then(() => {
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Message text copied to clipboard', type: 'success' } });
@@ -642,29 +653,12 @@ export function ChatLayout() {
     }, []);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter') {
-            if (e.shiftKey) {
-                const target = e.currentTarget;
-                if (!target) return;
-                const start = target.selectionStart || 0;
-                const end = target.selectionEnd || 0;
-                const value = target.value;
-                setMessageDraft(value.substring(0, start) + "\n" + value.substring(end));
-                setTimeout(() => {
-                    if (target) {
-                        try {
-                            target.setSelectionRange(start + 1, start + 1);
-                        } catch (e) {
-                            console.warn('Failed to set selection range', e);
-                        }
-                    }
-                }, 0);
-                return;
-            }
+        if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage();
         }
     };
+
 
     const handleEditorFocus = () => {
         if (token && activeChatId) {
@@ -672,6 +666,18 @@ export function ChatLayout() {
             setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, unreadCount: 0 } : c));
         }
     };
+
+    // Keep textarea height in sync when programmatically changing its value
+    useEffect(() => {
+        const ta = textareaRef.current as unknown as HTMLTextAreaElement | null;
+        if (!ta) return;
+        try {
+            ta.style.height = 'auto';
+            ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+        } catch (err) {
+            // ignore
+        }
+    }, [messageDraft]);
 
     const isGroupAdmin = useMemo(() => {
         if (!activeChat || !user) return false;
@@ -734,15 +740,15 @@ export function ChatLayout() {
                 <div className="px-5 py-4 border-b border-border bg-card/50 flex justify-between items-center">
                     <div>
                         <h2 className="text-lg font-extrabold text-foreground tracking-tight">Messages</h2>
-                        <p className="text-[10px] text-muted-foreground font-semibold tracking-wide mt-0.5">{chats.length} conversation{chats.length !== 1 ? 's' : ''}</p>
+                        <p className="text-[13px] text-muted-foreground font-semibold tracking-wide mt-0.5">{chats.length} conversation{chats.length !== 1 ? 's' : ''}</p>
                     </div>
                     {user.role !== Role.STUDENT && (
                         <button
                             onClick={() => setIsNewChatModalOpen(true)}
-                            className="p-2.5 bg-primary text-white rounded-xl hover:bg-primary-hover transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 active:scale-95"
+                            className="p-2.5 bg-primary/30 text-primary rounded-xl hover:bg-primary-hover transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 active:scale-95"
                             title="New Chat"
                         >
-                            <MessageSquarePlus size={18} />
+                            <MessageSquarePlus size={18} className="text-primary/80 hover:text-primary" />
                         </button>
                     )}
                 </div>
@@ -750,7 +756,7 @@ export function ChatLayout() {
                 {/* Search */}
                 <div className="px-4 py-3">
                     <div className="relative">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/40 pointer-events-none" />
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/80 pointer-events-none" />
                         <input
                             type="text"
                             placeholder="Search conversations..."
@@ -777,11 +783,11 @@ export function ChatLayout() {
                         </div>
                     ) : filteredChats.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
-                                <MessageSquarePlus size={28} className="text-gray-300" />
+                            <div className="w-16 h-16 bg-primary/30 rounded-2xl flex items-center justify-center mb-4">
+                                <MessageSquarePlus size={28} className="text-primary/80" />
                             </div>
-                            <p className="text-sm font-semibold text-gray-500 mb-1">No conversations yet</p>
-                            <p className="text-xs text-gray-400">Start a new chat to begin messaging</p>
+                            <p className="text-sm font-semibold text-foreground mb-1">No conversations yet</p>
+                            <p className="text-xs text-muted-foreground">Start a new chat to begin messaging</p>
                         </div>
                     ) : (
                         filteredChats.map(chat => {
@@ -823,13 +829,13 @@ export function ChatLayout() {
                                                 {displayName}
                                             </h4>
                                             {lastMsg && (
-                                                <span className={`text-[10px] shrink-0 ${hasUnread ? 'text-primary font-bold' : 'text-muted-foreground font-medium'}`}>
+                                                <span className={`text-[13px] shrink-0 ${hasUnread ? 'text-primary font-bold' : 'text-muted-foreground font-medium'}`}>
                                                     {formatDistanceToNow(new Date(lastMsg.createdAt), { addSuffix: false })}
                                                 </span>
                                             )}
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <p className={`text-[12px] truncate flex-1 ${hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                                            <p className={`text-[13px] truncate flex-1 ${hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                                                 {lastMsg ? (
                                                     <>
                                                         <span className="text-muted-foreground">{lastMsg.senderId === user.id ? 'You: ' : (chat.type === ChatType.GROUP ? `${lastMsg.sender?.name?.split(' ')[0]}: ` : '')}</span>
@@ -847,11 +853,11 @@ export function ChatLayout() {
                                                         )}
                                                     </>
                                                 ) : (
-                                                    <span className="italic text-gray-400">Tap to start chatting</span>
+                                                    <span className="italic text-muted-foreground">Tap to start chatting</span>
                                                 )}
                                             </p>
                                             {hasUnread && (
-                                                <span className="ml-2 flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-bold text-white bg-primary rounded-full">
+                                                <span className="ml-2 flex items-center justify-center min-w-5 h-5 px-1.5 text-[13px] font-bold text-foreground bg-primary/30 rounded-full">
                                                     {chat.unreadCount}
                                                 </span>
                                             )}
@@ -881,7 +887,7 @@ export function ChatLayout() {
                                         className="p-1.5 -ml-1 text-foreground/60 hover:text-primary hover:bg-muted rounded-xl transition-all active:scale-95"
                                         onClick={() => setActiveChatId(null)}
                                     >
-                                        <ChevronLeft size={22} />
+                                        <ChevronLeft size={22} className="text-primary/80 hover:text-primary" />
                                     </button>
                                 )}
                                 <UserAvatar
@@ -899,7 +905,7 @@ export function ChatLayout() {
                                         type='button'
                                         id="participants-toggle"
                                         onClick={() => setShowParticipants(!showParticipants)}
-                                        className={`text-[11px] font-semibold rounded-md transition-all flex items-center ${showParticipants ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                                        className={`text-[13px] font-semibold rounded-md transition-all flex items-center ${showParticipants ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
                                     >
                                         {activeChat.type === ChatType.GROUP
                                             ? `${activeChat.participants?.filter(p => p.isActive).length || 0} members`
@@ -934,7 +940,7 @@ export function ChatLayout() {
                             >
                                 {isLoadingMessages ? (
                                     <div className="flex flex-col items-center justify-center py-16 space-y-3">
-                                        <Loader2 className="w-6 h-6 animate-spin text-primary/40" />
+                                        <Loader2 className="w-6 h-6 animate-spin text-primary/80" />
                                         <span className="text-xs text-muted-foreground font-medium">Loading messages...</span>
                                     </div>
                                 ) : (
@@ -947,7 +953,7 @@ export function ChatLayout() {
                                                     variant="secondary"
                                                     px="px-4"
                                                     py="py-1.5"
-                                                    className="bg-card/90 backdrop-blur-sm border border-border rounded-full text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/30 transition-all shadow-sm active:scale-95 flex items-center"
+                                                    className="bg-card/90 backdrop-blur-sm border border-border rounded-full text-[13px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/30 transition-all shadow-sm active:scale-95 flex items-center"
                                                     icon={isLoadingMore ? Loader2 : ArrowUp}
                                                 >
                                                     {isLoadingMore ? 'Loading...' : 'Load earlier'}
@@ -961,10 +967,10 @@ export function ChatLayout() {
                                             if (msg.type === ChatMessageType.SYSTEM) {
                                                 return (
                                                     <div key={msg.id}>
-                                                        {showDateSep && <div className="chat-date-separator"><span>{formatDateLabel(msg.createdAt)}</span></div>}
+                                                        {showDateSep && <div className="chat-date-separator bg-card text-foreground"><span>{formatDateLabel(msg.createdAt)}</span></div>}
                                                         <div className="flex justify-center py-2">
-                                                            <div className="bg-card/80 backdrop-blur-sm text-muted-foreground px-4 py-1.5 rounded-full text-[11px] font-medium flex items-center border border-border shadow-sm">
-                                                                <Info size={12} className="mr-1.5 text-muted-foreground/60" />
+                                                            <div className="bg-card/80 backdrop-blur-sm text-muted-foreground px-4 py-1.5 rounded-full text-[13px] font-medium flex items-center border border-border shadow-sm">
+                                                                <Info size={12} className="mr-1.5 text-primary/80" />
                                                                 {msg.content}
                                                             </div>
                                                         </div>
@@ -999,7 +1005,7 @@ export function ChatLayout() {
 
                                                         <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] min-w-0 ${isMine ? 'items-end' : 'items-start'}`}>
                                                             {activeChat.type === ChatType.GROUP && !isMine && showAvatar && (
-                                                                <span className="text-[10px] font-semibold text-primary/70 mb-0.5 ml-1 tracking-wide">
+                                                                <span className="text-[13px] font-semibold text-primary/70 mb-0.5 ml-1 tracking-wide">
                                                                     {msg.sender?.name}
                                                                 </span>
                                                             )}
@@ -1011,11 +1017,11 @@ export function ChatLayout() {
                                                                         return (
                                                                             <div
                                                                                 onClick={(e) => { e.stopPropagation(); scrollToMessage(msg.replyTo!.id); }}
-                                                                                className={`mb-0.5 px-3 py-1.5 rounded-lg border-l-[3px] text-[12px] max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity
-                                                                            ${isMineRepliedTo ? 'bg-primary/85  border-primary text-white' : 'bg-muted border-border text-foreground'}`}
+                                                                                className={`mb-0.5 px-3 py-1.5 rounded-lg border-l-[3px] text-[14px] max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity text-foreground
+                                                                            ${isMineRepliedTo ? 'bg-primary/70  border-primary text-muted' : 'bg-muted border-border'}`}
                                                                             >
-                                                                                <p className="font-semibold mb-0.5 text-[10px] flex items-center">
-                                                                                    <Reply size={10} className='mr-1 rotate-180' />
+                                                                                <p className="font-semibold mb-0.5 text-[14px] flex items-center">
+                                                                                    <Reply size={10} className='mr-1 rotate-180 text-foreground' />
                                                                                     {msg.replyTo.sender?.name || 'Someone'}
                                                                                 </p>
                                                                                 <p className="truncate line-clamp-1 opacity-95">
@@ -1027,7 +1033,7 @@ export function ChatLayout() {
                                                                     {isDeleted ? (
                                                                         <div className={`px-3.5 py-2 rounded-2xl mb-5 text-[13px] leading-relaxed bg-card text-muted-foreground border border-border ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
                                                                             <div className="flex items-center space-x-1.5 italic">
-                                                                                <Trash2 size={13} className="opacity-50" />
+                                                                                <Trash2 size={13} className="opacity-50 text-primary/80" />
                                                                                 <span>Message deleted {msg.deletedBy?.name ? `by ${msg.deletedBy.name}` : ''}</span>
                                                                             </div>
                                                                         </div>
@@ -1052,18 +1058,18 @@ export function ChatLayout() {
                                                                                             <div
                                                                                                 key={idx}
                                                                                                 className={`message-bubble
-                                                                                            px-3.5 py-2 rounded-2xl text-[14px] leading-relaxed relative transition-all duration-300
+                                                                                            px-3.5 py-2 rounded-2xl leading-relaxed relative transition-all duration-300
                                                                                             ${isMine
-                                                                                                        ? 'bg-primary text-white rounded-br-sm shadow-lg shadow-primary'
+                                                                                                        ? 'bg-primary text-foreground rounded-br-sm shadow-lg shadow-primary'
                                                                                                         : 'bg-card border border-border rounded-bl-sm shadow-lg shadow-black/5'
                                                                                                     }
                                                                                             ${highlightedMessageId === msg.id ? 'ring-2 ring-primary/30 shadow-md' : ''}
-                                                                                            `}
-                                                                                                >
-                                                                                                    <div className={`prose prose-sm max-w-full ${isMine && highlightedMessageId !== msg.id ? 'prose-invert prose-p:text-white' : 'prose-p:text-foreground'}`}>
-                                                                                                        <MarkdownRenderer content={segment} className={`${isMine ? 'text-white!' : 'text-(--card-text)!'} whitespace-pre-wrap wrap-break-word`} />
-                                                                                                    </div>
+                                                                                            `}>
+
+                                                                                                <div className={`prose prose-sm max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground'}`}>
+                                                                                                    <MarkdownRenderer content={segment} className={`${isMine ? 'text-muted!' : 'text-(--card-text)!'} whitespace-pre-wrap wrap-break-word`} />
                                                                                                 </div>
+                                                                                            </div>
                                                                                         );
                                                                                     })}
 
@@ -1071,13 +1077,13 @@ export function ChatLayout() {
                                                                                     <div className="flex items-center mb-5 space-x-1 px-1">
                                                                                         <span className="text-[12px] text-muted-foreground font-medium">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                                                         {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
-                                                                                            <span className="text-[12px] text-muted-foreground font-medium italic opacity-80">Edited</span>
+                                                                                            <span className="text-[12px] text-muted-foreground font-medium italic opacity-90">Edited</span>
                                                                                         )}
                                                                                         {isMine && (
                                                                                             msg.readBy && msg.readBy.length > 0 ? (
-                                                                                                <CheckCheck className="w-3.5 h-3.5 text-blue-600" strokeWidth={2.5} />
+                                                                                                <CheckCheck className="w-3.5 h-3.5 text-primary/80" strokeWidth={2.5} />
                                                                                             ) : (
-                                                                                                <Check className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
+                                                                                                <Check className="w-3.5 h-3.5 text-primary/80" strokeWidth={2.5} />
                                                                                             )
                                                                                         )}
                                                                                     </div>
@@ -1089,15 +1095,16 @@ export function ChatLayout() {
 
                                                                 {/* Actions */}
                                                                 {!isDeleted && (
-                                                                    <div className={
-                                                                        isDesktop
-                                                                            ? `relative shrink-0 flex items-center justify-center transition-all mb-4.5 ${openDropdownId !== msg.id ? 'opacity-0 group-hover/content:opacity-100' : 'opacity-100'}`
-                                                                            : `relative shrink-0 flex items-center justify-center transition-all mb-4.5 ${showActionsOnMobile || openDropdownId === msg.id ? 'opacity-100' : 'opacity-0'}`
-                                                                    }>
+                                                                    <div className={`relative shrink-0 flex items-center justify-center transition-all mb-4.5
+                                                                        ${isDesktop
+                                                                            ? `${openDropdownId !== msg.id ? 'opacity-0 group-hover/content:opacity-100' : 'opacity-100'}`
+                                                                            : `${showActionsOnMobile || openDropdownId === msg.id ? 'opacity-100' : 'opacity-0'}`
+                                                                        }
+                                                                    `}>
                                                                         <button
                                                                             onClick={(e) => {
                                                                                 // Ensure native handlers don't immediately close the dropdown
-                                                                                try { (e.nativeEvent as any).stopImmediatePropagation(); } catch (err) { }
+                                                                                try { (e.nativeEvent).stopImmediatePropagation(); } catch (err) { }
                                                                                 e.preventDefault();
                                                                                 e.stopPropagation();
                                                                                 // Suppress global close briefly for this message id
@@ -1105,31 +1112,31 @@ export function ChatLayout() {
                                                                                 window.setTimeout(() => { if (suppressCloseRef.current === msg.id) suppressCloseRef.current = null; }, 300);
                                                                                 setOpenDropdownId(prev => prev === msg.id ? null : msg.id);
                                                                             }}
-                                                                            className={`p-1.5 rounded-lg transition-all border shadow-sm ${openDropdownId === msg.id ? 'bg-primary/5 text-primary border-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-card border-border bg-card/90 backdrop-blur-sm'} more-actions-btn`}
+                                                                            className={`p-1.5 rounded-lg transition-all border shadow-sm ${openDropdownId === msg.id ? 'bg-primary/40 text-primary border-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-card border-border bg-card/90 backdrop-blur-sm'} more-actions-btn`}
                                                                             title="More actions"
                                                                         >
-                                                                            <MoreVertical size={13} />
+                                                                            <MoreVertical size={15} className="text-primary/80 hover:text-primary" />
                                                                         </button>
                                                                         {openDropdownId === msg.id && (
-                                                                            <div className={`absolute ${isMine ? 'right-0' : 'left-0'} bottom-full mb-1 w-32 bg-card border border-border rounded-xl shadow-xl z-70 flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
+                                                                            <div className={`absolute ${isMine ? 'right-0' : 'left-0'} bottom-full mb-1 w-32 bg-card border border-border rounded-xl shadow-xl z-70 flex flex-col animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
                                                                                 <button
                                                                                     onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleReply(msg); }}
-                                                                                    className="w-full text-left px-3 py-2 text-[12px] text-foreground/70 hover:bg-muted flex items-center mb-0.5"
+                                                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center mb-0.5"
                                                                                 >
-                                                                                    <Reply size={12} className="mr-2 opacity-70" /> Reply
+                                                                                    <Reply size={12} className="mr-2 opacity-85 text-purple-700" /> Reply
                                                                                 </button>
                                                                                 <button
                                                                                     onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleCopyText(msg); }}
-                                                                                    className="w-full text-left px-3 py-2 text-[12px] text-foreground/70 hover:bg-muted flex items-center mb-0.5"
+                                                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center mb-0.5"
                                                                                 >
-                                                                                    <Copy size={12} className="mr-2 opacity-70" /> Copy Text
+                                                                                    <Copy size={12} className="mr-2 opacity-85 text-yellow-400" /> Copy Text
                                                                                 </button>
                                                                                 {isMine && (
                                                                                     <button
                                                                                         onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleEditMessage(msg); }}
-                                                                                        className="w-full text-left px-3 py-2 text-[12px] text-gray-600 hover:bg-gray-50 flex items-center mb-0.5"
+                                                                                        className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center mb-0.5"
                                                                                     >
-                                                                                        <FileText size={12} className="mr-2 opacity-70 text-emerald-500" /> Edit
+                                                                                        <Pencil size={12} className="mr-2 opacity-85 text-green-400" /> Edit
                                                                                     </button>
                                                                                 )}
                                                                                 {Array.from(msg.content.matchAll(/\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g)).map((match, idx) => {
@@ -1138,19 +1145,19 @@ export function ChatLayout() {
                                                                                         <button
                                                                                             key={idx}
                                                                                             onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDownload(e, match[2], label || 'download') }}
-                                                                                            className="w-full text-left px-3 py-2 text-[12px] text-gray-600 hover:bg-gray-50 flex items-center mb-0.5"
+                                                                                            className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center mb-0.5"
                                                                                         >
-                                                                                            <Download size={12} className="mr-2 opacity-70 text-blue-500" />
-                                                                                            {label ? `Download: ${label}` : 'Download'}
+                                                                                            <Download size={12} className="mr-2 opacity-85 text-blue-400" />
+                                                                                            Download
                                                                                         </button>
                                                                                     );
                                                                                 })}
                                                                                 {(isMine || user.role === Role.ORG_ADMIN) && (
                                                                                     <button
                                                                                         onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDeleteMessage(msg.id); }}
-                                                                                        className="w-full text-left px-3 py-2 text-[12px] text-red-600 hover:bg-red-50 flex items-center mt-1 border-t border-gray-100 pt-2"
+                                                                                        className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-700/30 flex items-center mt-1 border-t border-border pt-2"
                                                                                     >
-                                                                                        <Trash2 size={12} className="mr-2 opacity-70" /> Delete
+                                                                                        <Trash2 size={12} className="mr-2 opacity-85 text-primary/80" /> Delete
                                                                                     </button>
                                                                                 )}
                                                                             </div>
@@ -1187,12 +1194,12 @@ export function ChatLayout() {
 
                             {/* History Mode Banner */}
                             {isViewingHistory && (
-                                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-foreground text-background px-4 py-2 rounded-full shadow-lg backdrop-blur-sm flex items-center space-x-3 text-[11px] font-semibold animate-in slide-in-from-top duration-300">
+                                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-foreground text-background px-4 py-2 rounded-full shadow-lg backdrop-blur-sm flex items-center space-x-3 text-[13px] font-semibold animate-in slide-in-from-top duration-300">
                                     <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
                                     <span>Viewing history</span>
                                     <button
                                         onClick={() => activeChatId && fetchInitialMessages(activeChatId)}
-                                        className="bg-background text-foreground px-3 py-1 rounded-full hover:bg-muted transition-colors font-bold text-[10px]"
+                                        className="bg-background text-foreground px-3 py-1 rounded-full hover:bg-muted transition-colors font-bold text-[13px]"
                                     >
                                         Jump to present
                                     </button>
@@ -1204,12 +1211,12 @@ export function ChatLayout() {
                                 <button
                                     type="button"
                                     onClick={() => isViewingHistory ? (activeChatId && fetchInitialMessages(activeChatId)) : scrollToBottom()}
-                                    className="absolute bottom-6 right-6 z-30 p-2.5 bg-card text-foreground/70 rounded-full shadow-lg border border-border hover:bg-primary hover:text-white hover:border-primary transition-all active:scale-95 group"
+                                    className="absolute bottom-6 right-6 z-30 p-2.5 bg-card text-foreground/70 rounded-full shadow-lg border border-border hover:bg-primary/30 hover:text-primary hover:border-primary transition-all active:scale-95 group"
                                     title={isViewingHistory ? "Jump to Present" : "Scroll to bottom"}
                                 >
-                                    <ArrowDown size={18} className="group-hover:translate-y-0.5 transition-transform" />
+                                    <ArrowDown size={18} className="group-hover:translate-y-0.5 transition-transform text-primary/80" />
                                     {!isViewingHistory && unreadSinceScroll > 0 && (
-                                        <span className="absolute -top-1.5 -right-1.5 bg-primary text-white text-[9px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-card shadow-sm">
+                                        <span className="absolute -top-1.5 -right-1.5 bg-primary/30 text-primary text-[9px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-card shadow-sm">
                                             {unreadSinceScroll}
                                         </span>
                                     )}
@@ -1230,7 +1237,7 @@ export function ChatLayout() {
                                             className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted rounded-lg transition-colors"
                                             title="Close"
                                         >
-                                            <X size={16} />
+                                            <X size={16} className="text-primary/80 hover:text-primary" />
                                         </button>
                                     </div>
                                     <div className="flex-1 overflow-y-auto p-3 space-y-0.5 custom-scrollbar">
@@ -1240,7 +1247,7 @@ export function ChatLayout() {
                                                     <UserAvatar targetUser={p.user} className="w-8 h-8" />
                                                     <div className="min-w-0">
                                                         <p className="text-[13px] font-semibold text-foreground truncate">{p.user?.name} {p.userId === user.id && <span className="text-muted-foreground font-normal">(You)</span>}</p>
-                                                        <p className="text-[10px] text-muted-foreground font-medium capitalize truncate">{p.user?.role?.toLowerCase().replace('_', ' ')}</p>
+                                                        <p className="text-[13px] text-muted-foreground font-medium capitalize truncate">{p.user?.role?.toLowerCase().replace('_', ' ')}</p>
                                                     </div>
                                                 </div>
                                                 {isGroupAdmin && p.userId !== user.id && p.userId !== activeChat.creatorId && (
@@ -1249,7 +1256,7 @@ export function ChatLayout() {
                                                         px="p-1.5"
                                                         py="p-1.5"
                                                         onClick={() => handleRemoveParticipant(p.userId)}
-                                                        className="text-muted-foreground hover:text-white rounded-lg opacity-0 group-hover/item:opacity-100 transition-all bg-transparent border-none shadow-none"
+                                                        className="text-muted-foreground hover:text-primary rounded-lg opacity-0 group-hover/item:opacity-100 transition-all bg-transparent border-none shadow-none"
                                                         title="Remove from group"
                                                         icon={UserMinus}
                                                     />
@@ -1267,14 +1274,14 @@ export function ChatLayout() {
                             {(replyToMessage || editingMessage) && (
                                 <div className="mb-2 px-3 py-2 bg-muted border-l-[3px] border-primary rounded-r-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
                                     <div className="flex-1 min-w-0 pr-3">
-                                        <p className="text-[10px] font-semibold text-primary mb-0.5">
+                                        <p className="text-[13px] font-semibold text-primary mb-0.5">
                                             {editingMessage ? 'Editing Message' : `Replying to ${replyToMessage?.sender?.name == user.name ? 'Yourself' : replyToMessage?.sender?.name || 'Message'}`}
                                         </p>
-                                        <p className="text-[11px] text-muted-foreground truncate">
+                                        <p className="text-[13px] text-muted-foreground truncate">
                                             {(editingMessage?.content || replyToMessage?.content || '').replace(/!\[.*?\]\(.*?\)/g, '📷 Photo')}
                                         </p>
                                     </div>
-                                    <button
+                                        <button
                                         onClick={() => {
                                             setReplyToMessage(null);
                                             if (editingMessage) {
@@ -1282,9 +1289,9 @@ export function ChatLayout() {
                                                 setMessageDraft('');
                                             }
                                         }}
-                                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/40 rounded-lg transition-colors"
                                     >
-                                        <X size={14} />
+                                        <X size={14} className="text-primary/80 hover:text-primary" />
                                     </button>
                                 </div>
                             )}
@@ -1300,26 +1307,26 @@ export function ChatLayout() {
                                                 </div>
                                             ) : (
                                                 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary mr-2">
-                                                    <FileText size={14} />
+                                                    <Pencil size={14} className="text-primary/80" />
                                                 </div>
                                             )}
                                             <div className="flex flex-col mr-1.5 max-w-20">
-                                                <span className="text-[10px] font-semibold text-foreground truncate">{file.name}</span>
-                                                <span className="text-[9px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
+                                                <span className="text-[13px] font-semibold text-foreground truncate">{file.name}</span>
+                                                <span className="text-[11px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
                                             </div>
                                             <button
                                                 type="button"
                                                 title='Remove'
                                                 onClick={() => removeStagedFile(i)}
-                                                className="p-0.5 text-gray-400 hover:text-red-500 rounded-full transition-all"
+                                                className="p-0.5 text-foreground hover:text-red-500 rounded-full transition-all"
                                             >
-                                                <X size={12} />
+                                                <X size={12} className="text-primary/80 hover:text-primary" />
                                             </button>
                                         </div>
                                     ))}
                                 </div>
                             )}
-                            
+
                             {/* Preview Mode Render */}
                             {isPreviewMode && messageDraft.trim() && (
                                 <div className="my-3 px-4 py-3 bg-muted rounded-xl border border-border max-h-37.5 overflow-y-auto custom-scrollbar">
@@ -1341,8 +1348,8 @@ export function ChatLayout() {
                                 />
                                 <Button
                                     type="button"
-                                    icon={FileUp}
-                                    variant="secondary"
+                                    icon={Paperclip}
+                                    variant="warning"
                                     px='px-3.5'
                                     py='py-3.5'
                                     onClick={() => document.getElementById('chat-file-upload')?.click()}
@@ -1350,18 +1357,23 @@ export function ChatLayout() {
                                     title="Attach file"
                                 />
 
-                                <div className="flex-1 relative flex items-center bg-muted/80 border border-transparent rounded-2xl focus-within:bg-card focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                                <div className={`${messageDraft.includes('\n') ? 'py-3' : 'py-0'}
+                                        flex-1 relative flex items-center bg-muted/80 border border-transparent rounded-2xl focus-within:bg-card
+                                        focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all`}>
                                     <textarea
                                         ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
                                         value={messageDraft}
                                         onChange={(e) => {
-                                            setMessageDraft(e.target.value);
-                                            e.target.style.height = 'auto';
-                                            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                                            const el = e.target;
+                                            setMessageDraft(el.value);
+
+                                            el.style.height = 'auto';
+                                            el.style.height = el.scrollHeight + 'px';
+                                            el.style.height = Math.min(el.scrollHeight, 200) + 'px';
                                         }}
                                         onKeyDown={handleKeyDown}
                                         onFocus={handleEditorFocus}
-                                        placeholder={stagedFiles.length > 0 ? "Add a caption..." : "Type a message... (Shift + Enter for new line)"}
+                                        placeholder={stagedFiles.length > 0 ? "Add a caption..." : `Type a message... ${isDesktop ? '(Shift + Enter for new line)' : ''}`}
                                         rows={1}
                                         className="w-full px-4 py-3 bg-transparent border-none text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-30 leading-relaxed"
                                     />
@@ -1370,7 +1382,7 @@ export function ChatLayout() {
                                     <button
                                         type="button"
                                         onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                        className={`absolute right-2 bottom-2 px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors ${isPreviewMode ? 'bg-primary/10 text-primary' : 'bg-muted-foreground/10 text-muted-foreground hover:bg-muted-foreground/20'} shrink-0`}
+                                        className={`absolute right-2 bottom-3 cursor-pointer px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors ${isPreviewMode ? 'bg-primary/10 text-primary' : 'bg-muted-foreground/10 text-muted-foreground hover:bg-muted-foreground/20'} shrink-0`}
                                         title={isPreviewMode ? "Write text" : "Preview markdown"}
                                     >
                                         {isPreviewMode ? 'Edit' : 'Preview'}
@@ -1394,7 +1406,7 @@ export function ChatLayout() {
                     /* Empty State */
                     <div className="flex-1 flex flex-col items-center justify-center chat-bg-pattern">
                         <div className="w-20 h-20 bg-card rounded-xl flex items-center justify-center shadow-sm border border-border mb-5">
-                            <MessageSquarePlus size={36} className="text-muted-foreground/30" />
+                            <MessageSquarePlus size={36} className="text-primary/80" />
                         </div>
                         <h3 className="text-lg font-bold text-foreground mb-1">Your Messages</h3>
                         <p className="text-sm text-muted-foreground max-w-xs text-center">Select a conversation or start a new one to begin chatting</p>
@@ -1405,7 +1417,7 @@ export function ChatLayout() {
             {/* Image Preview Modal */}
             {previewImageUrl && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-accent backdrop-blur-sm"
                     onClick={() => setPreviewImageUrl(null)}
                 >
                     <div className="relative max-w-4xl max-h-screen p-4">
@@ -1418,9 +1430,9 @@ export function ChatLayout() {
                             title='Close'
                             type='button'
                             onClick={() => setPreviewImageUrl(null)}
-                            className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                            className="absolute top-4 right-4 p-2 bg-accent/80 hover:bg-accent/70 rounded-full transition-colors"
                         >
-                            <X size={24} className="text-white" />
+                            <X size={24} className="text-primary/80 hover:text-primary" />
                         </button>
                     </div>
                 </div>

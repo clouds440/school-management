@@ -27,7 +27,7 @@ interface StatusBadgeProps {
 export function MailStatusBadge({ status, className = '' }: StatusBadgeProps) {
     const cfg = STATUS_CONFIG[status] || STATUS_CONFIG[MailStatus.OPEN];
     return (
-        <span className={`inline-flex items-center justify-center px-2 py-[3px] rounded-full text-[10px] uppercase font-black tracking-widest border leading-none ${cfg.bg} ${cfg.text} ${cfg.border} ${className}`}>
+        <span className={`inline-flex items-center justify-center px-2 py-0.75 rounded-full text-[10px] uppercase font-black tracking-widest border leading-none ${cfg.bg} ${cfg.text} ${cfg.border} ${className}`}>
             {cfg.label}
         </span>
     );
@@ -41,7 +41,7 @@ interface PriorityBadgeProps {
 export function MailPriorityBadge({ priority, className = '' }: PriorityBadgeProps) {
     const cfg = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.NORMAL;
     return (
-        <span className={`inline-flex items-center justify-center px-2 py-[3px] rounded-full text-[10px] uppercase font-black tracking-widest border leading-none ${cfg.bg} ${cfg.text} ${cfg.border} ${className}`}>
+        <span className={`inline-flex items-center justify-center px-2 py-0.75 rounded-full text-[10px] uppercase font-black tracking-widest border leading-none ${cfg.bg} ${cfg.text} ${cfg.border} ${className}`}>
             {cfg.label}
         </span>
     );

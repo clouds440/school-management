@@ -17,7 +17,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
             // Override image rendering to use getPublicUrl
             renderer.image = ({ href, title, text }) => {
                 const url = getPublicUrl(href);
-                return `<img src="${url}" alt="${text}" title="${title || ''}" class="max-w-full h-auto rounded-lg shadow-sm my-2 border border-gray-100" />`;
+                return `<img src="${url}" alt="${text}" title="${title || ''}" class="max-w-full h-auto rounded-lg shadow-sm my-2 border border-border" />`;
             };
 
             // Override link rendering for external/internal links
@@ -49,7 +49,9 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
                 gfm: true,   // GitHub Flavored Markdown
                 renderer,
             });
-            return marked.parse(content || '');
+            // Trim trailing newlines to avoid stray empty lines inside chat bubbles
+            const sanitized = (content || '').replace(/\n+$/g, '');
+            return marked.parse(sanitized);
         } catch (error) {
             console.error('Markdown parsing error:', error);
             return content || '';
@@ -62,10 +64,10 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
             dangerouslySetInnerHTML={{ __html: htmlContent }}
             dir="auto"
             style={{
-                    lineHeight: '1.6',
-                    wordBreak: 'break-word',
-                    overflowWrap: 'anywhere'
-                }}
+                        lineHeight: '1.6',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'anywhere'
+                    }}
         />
     );
 };
@@ -77,14 +79,17 @@ if (typeof document !== 'undefined') {
         const style = document.createElement('style');
         style.id = styleId;
         style.innerHTML = `
-            .markdown-content { color: #1f2937; overflow-wrap: anywhere; word-break: break-word; white-space: pre-wrap; }
-            .markdown-content p { margin-bottom: 1rem; line-height: 1.7; }
+                /* Let the surrounding container (e.g. .message-bubble) control white-space.
+                    Use inherit so we avoid conflicting pre-wrap rules that cause extra blank lines. */
+                .markdown-content { color: #1f2937; overflow-wrap: anywhere; word-break: break-word; white-space: inherit; }
+            /* Remove paragraph bottom margins to avoid extra space inside message bubbles */
+            .markdown-content p { margin: 0 0 0 0; line-height: 1.6; }
             .markdown-content p:last-child { margin-bottom: 0; }
             .markdown-content strong { font-weight: 800; color: #111827; }
             .markdown-content a { color: #4338ca; text-decoration: underline; font-weight: 700; text-underline-offset: 2px; }
             .markdown-content a:hover { color: #3730a3; opacity: 0.9; }
-            .markdown-content ul, .markdown-content ol { margin-bottom: 1rem; padding-left: 1.5rem; }
-            .markdown-content li { margin-bottom: 0.5rem; }
+            .markdown-content ul, .markdown-content ol { margin: 0 0 0 0; padding-left: 1rem; }
+            .markdown-content li { margin: 0 0 0 0; }
             .markdown-content ul { list-style-type: disc; }
             .markdown-content ol { list-style-type: decimal; }
             .markdown-content h1, .markdown-content h2, .markdown-content h3 { 
@@ -113,8 +118,9 @@ if (typeof document !== 'undefined') {
                 font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
                 color: #991b1b;
             }
-            .markdown-content pre { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+            .markdown-content pre { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; margin: 0; }
             .markdown-content code { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+            .markdown-content img { margin: 0; display: block; }
         `;
         document.head.appendChild(style);
     }

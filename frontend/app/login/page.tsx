@@ -52,8 +52,8 @@ export default function LoginPage() {
       {/* Left Column: Branding Assets (Hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-10 overflow-hidden bg-background">
         {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-pulse"></div>
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-pulse delay-700"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/20 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse delay-700"></div>
 
         <div className="relative z-10 w-full max-w-lg text-center lg:text-left space-y-16 animate-in fade-in slide-in-from-left duration-1000">
           <div className="space-y-4">
@@ -75,8 +75,8 @@ export default function LoginPage() {
         </div>
 
         {/* Footer branding */}
-        <div className="absolute bottom-8 left-12 z-10 flex items-center space-x-2 opacity-50 hover:opacity-100 transition-opacity duration-300">
-          <p className="text-[10px] font-black text-white uppercase tracking-widest">&copy; 2026 {PLATFORM_NAME} Global Inc.</p>
+        <div className="absolute bottom-8 left-12 z-10 flex items-center space-x-2 opacity-30 hover:opacity-100 transition-opacity duration-300">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">&copy; 2026 {PLATFORM_NAME} Global Inc.</p>
         </div>
       </div>
 

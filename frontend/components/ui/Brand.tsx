@@ -76,7 +76,7 @@ export function BrandIcon({
         </div>
       ) : (
         <div className={`w-full h-full ${variant === 'brand' ? 'rotate-3 group-hover:rotate-0' : 'bg-primary/60'} flex items-center justify-center rounded-full shadow-lg shadow-primary/5 transition-transform group-hover:scale-110`}>
-          <FallbackIcon className={`${iconSizes[size]} ${variant === 'brand' ? 'text-white' : 'text-primary'}`} />
+          <FallbackIcon className={`${iconSizes[size]} ${variant === 'brand' ? 'text-foreground' : 'text-primary'}`} />
         </div>
       )}
     </div>
@@ -112,7 +112,7 @@ export function Brand({
   const isOrgBrandingActive = !forcePlatform && isDashboardContext && activeUser?.orgName;
 
   const displayName = isOrgBrandingActive ? activeUser.orgName : PLATFORM_NAME;
-  const nameStyles = isOrgBrandingActive ? 'text-foreground' : (useGradient ? 'text-transparent bg-clip-text bg-linear-to-r from-primary via-indigo-600 to-purple-600' : 'text-foreground');
+  const nameStyles = isOrgBrandingActive ? 'text-primary' : (useGradient ? 'text-transparent bg-clip-text bg-linear-to-r from-primary via-indigo-600 to-purple-600' : 'text-foreground');
 
   const sizeTextClasses = {
     sm: 'text-lg',

@@ -29,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = React.useCallback(async () => {
         const currentToken = token;
         localStorage.removeItem('token');
+        localStorage.removeItem('themeMode');
         dispatch({ type: 'AUTH_LOGOUT' });
         router.replace('/login');
         if (currentToken) {

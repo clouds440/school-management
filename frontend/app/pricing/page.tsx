@@ -6,15 +6,15 @@ import { PLATFORM_NAME } from '@/lib/constants';
 
 export default function PricingPage() {
   return (
-    <div className="flex flex-col bg-white">
+    <div className="flex flex-col bg-background">
       {/* Hero */}
-      <section className="pt-24 pb-16 md:pt-32 md:pb-40 bg-gray-50/50 border-b border-gray-100">
+      <section className="pt-24 pb-16 md:pt-32 md:pb-40 bg-card border-b border-border">
         <div className="container mx-auto px-6 text-center max-w-4xl">
           <Reveal>
-            <h1 className="text-4xl md:text-6xl font-black text-gray-900 mb-6 tracking-tight">Simple, Transparent <span className="text-primary">Pricing</span></h1>
+            <h1 className="text-4xl md:text-6xl font-black text-foreground mb-6 tracking-tight">Simple, Transparent <span className="text-primary">Pricing</span></h1>
           </Reveal>
           <Reveal delay={200}>
-            <p className="text-xl text-gray-600 font-medium leading-relaxed">
+            <p className="text-xl text-muted-foreground font-medium leading-relaxed">
               Choose the plan that fits your institution's size. No hidden fees, no complex contracts.
             </p>
           </Reveal>
@@ -52,19 +52,19 @@ export default function PricingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-gray-900 border-t border-gray-800">
+      <section className="py-20 bg-card border-t border-border">
         <div className="container mx-auto px-6 text-center space-y-8">
           <Reveal>
-            <h2 className="text-3xl font-bold text-white">Still have questions?</h2>
+            <h2 className="text-3xl font-bold text-foreground">Still have questions?</h2>
           </Reveal>
           <Reveal delay={200}>
-            <p className="text-gray-400 max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               Our team is ready to help you find the perfect fit for your institution.
               Join 100+ schools scaling with {PLATFORM_NAME}.
             </p>
           </Reveal>
           <Reveal delay={400}>
-            <Link href="/contact" className="inline-flex items-center px-8 py-4 bg-primary text-white rounded-xl font-bold hover:bg-primary-hover transition-all">
+            <Link href="/contact" className="inline-flex items-center px-8 py-4 bg-primary text-foreground rounded-xl font-bold hover:bg-primary-hover transition-all">
               Contact Sales <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Reveal>
@@ -77,19 +77,19 @@ export default function PricingPage() {
 function PricingCard({ tier, price, description, features, highlighted = false, delay }: { tier: string, price: string, description: string, features: string[], highlighted?: boolean, delay: number }) {
   return (
     <Reveal delay={delay}>
-      <div className={`p-8 rounded-3xl border ${highlighted ? 'border-primary ring-4 ring-primary/5 bg-white shadow-2xl' : 'border-gray-100 bg-white'} space-y-8 h-full flex flex-col`}>
+      <div className={`p-8 rounded-3xl border ${highlighted ? 'border-primary ring-4 ring-primary/5 bg-primary/60  shadow-2xl' : 'border-border bg-card'} space-y-8 h-full flex flex-col`}>
         <div className="space-y-4">
           <h3 className="text-sm font-black text-primary uppercase tracking-widest">{tier}</h3>
           <div className="flex items-baseline space-x-1">
-            <span className="text-5xl font-black text-gray-900">{price}</span>
-            {price !== 'Custom' && <span className="text-gray-500 font-bold">/mo</span>}
+            <span className="text-5xl font-black text-foreground">{price}</span>
+            {price !== 'Custom' && <span className="text-muted-foreground font-bold">/mo</span>}
           </div>
-          <p className="text-gray-500 font-medium leading-relaxed">{description}</p>
+          <p className="text-muted-foreground font-medium leading-relaxed">{description}</p>
         </div>
 
         <ul className="space-y-4 flex-1">
           {features.map((f, i) => (
-            <li key={i} className="flex items-center text-gray-700 font-bold text-sm">
+            <li key={i} className="flex items-center text-muted-foreground font-bold text-sm">
               <Check className="w-5 h-5 text-green-500 mr-3 shrink-0" />
               {f}
             </li>
@@ -98,7 +98,7 @@ function PricingCard({ tier, price, description, features, highlighted = false, 
 
         <Link
           href="/register"
-          className={`w-full py-4 rounded-xl font-bold text-center transition-all ${highlighted ? 'bg-primary text-white hover:bg-primary-hover shadow-xl shadow-primary/20' : 'bg-gray-50 text-gray-900 hover:bg-gray-100'}`}
+          className={`w-full py-4 rounded-xl font-bold text-center transition-all ${highlighted ? 'bg-primary text-foreground hover:bg-primary-hover shadow-xl shadow-primary/20' : 'bg-card text-foreground hover:bg-card'}`}
         >
           {price === 'Custom' ? 'Contact Us' : 'Get Started'}
         </Link>

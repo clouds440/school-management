@@ -11,8 +11,8 @@ interface ThemeContextType {
     themeMode: ThemeMode;
     setThemeMode: (mode: ThemeMode) => Promise<void>;
     setPrimaryColor: (primary: string) => Promise<void>;
-        setThemeColors: (primary: string, secondary: string) => void;
-        refreshTheme: () => Promise<void>;
+    setThemeColors: (primary: string, secondary: string) => void;
+    refreshTheme: () => Promise<void>;
 }
 
 const DEFAULT_PRIMARY = '#4f46e5'; // indigo-600
@@ -24,7 +24,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const { user, token } = useAuth();
     const [primaryColor, setPrimaryColorState] = useState(DEFAULT_PRIMARY);
     const [secondaryColor, setSecondaryColor] = useState(DEFAULT_SECONDARY);
-    const [themeMode, setThemeModeState] = useState<ThemeMode>(ThemeMode.SYSTEM);
+    const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('themeMode');
+            if (saved === ThemeMode.DARK || saved === ThemeMode.LIGHT || saved === ThemeMode.SYSTEM) {
+                return saved as ThemeMode;
+            }
+        }
+        return user?.themeMode || ThemeMode.SYSTEM;
+    });
 
     const applyTheme = useCallback((primary: string, secondary: string, mode?: ThemeMode) => {
         const root = document.documentElement;
@@ -46,10 +54,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // Global foreground (text) color depends on mode
         const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         const effectiveMode = (mode && mode !== ThemeMode.SYSTEM) ? mode : (prefersDark ? ThemeMode.DARK : ThemeMode.LIGHT);
-        
+
         // --- Semantic Variable Injection ---
         const isDark = effectiveMode === ThemeMode.DARK;
-        
+
         // 1. Core Backgrounds & Foregrounds
         if (isDark) {
             root.style.setProperty('--background', '#030816'); // Very dark slate
@@ -135,6 +143,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Preview-only: set theme mode locally (no DB persistence). Settings form will persist on save.
     const setThemeMode = useCallback(async (mode: ThemeMode) => {
         setThemeModeState(mode);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('themeMode', mode);
+        }
         // recompute secondary from current primary
         const computedSecondary = mode === ThemeMode.DARK ? adjustBrightness(primaryColor, -85) : adjustBrightness(primaryColor, 90);
         setSecondaryColor(computedSecondary);
@@ -151,8 +162,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             const settings = await api.org.getOrgData(token);
             if (settings.accentColor) {
                 const primary = settings.accentColor.primary || DEFAULT_PRIMARY;
-                const mode = (settings.accentColor.mode as ThemeMode) || ThemeMode.SYSTEM;
-                setThemeModeState(mode);
+                // Use the component's state or user's preferred theme, don't force from org settings if not present
+                const mode = themeMode || user?.themeMode || ThemeMode.SYSTEM;
                 const secondary = settings.accentColor.secondary || (mode === ThemeMode.DARK ? adjustBrightness(primary, -85) : adjustBrightness(primary, 90));
                 setPrimaryColorState(primary);
                 setSecondaryColor(secondary);
@@ -164,7 +175,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             console.error('Failed to fetch theme settings:', error);
             setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
         }
-    }, [token, user, setThemeColors]);
+    }, [token, user, setThemeColors, themeMode, applyTheme]);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
