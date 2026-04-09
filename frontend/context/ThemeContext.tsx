@@ -31,7 +31,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                 return saved as ThemeMode;
             }
         }
-        return user?.themeMode || ThemeMode.SYSTEM;
+        // Default to system preference if no saved value exists
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        return prefersDark ? ThemeMode.DARK : ThemeMode.LIGHT;
     });
 
     const applyTheme = useCallback((primary: string, secondary: string, mode?: ThemeMode) => {
@@ -147,7 +149,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             if (settings.accentColor) {
                 const primary = settings.accentColor.primary || DEFAULT_PRIMARY;
                 // Use the component's state or user's preferred theme, don't force from org settings if not present
-                const mode = themeMode || user?.themeMode || ThemeMode.SYSTEM;
+                const mode = themeMode ?? ThemeMode.SYSTEM;
                 const secondary = settings.accentColor.secondary || (mode === ThemeMode.DARK ? adjustBrightness(primary, -85) : adjustBrightness(primary, 90));
                 setPrimaryColorState(primary);
                 setSecondaryColor(secondary);
@@ -159,7 +161,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             console.error('Failed to fetch theme settings:', error);
             setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
         }
-    }, [token, user, setThemeColors, themeMode, applyTheme]);
+    }, [applyTheme, setThemeColors, themeMode, token, user?.orgSlug, user?.role]);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
