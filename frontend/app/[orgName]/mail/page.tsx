@@ -163,7 +163,7 @@ export default function OrgMailPage() {
                             className="w-8 h-8 rounded-full shadow-sm"
                         />
                         <div className="min-w-0">
-                            <p className="text-xs font-black text-gray-700 truncate max-w-[120px]">{row.creator?.name || row.creator?.email || 'Unknown'}</p>
+                            <p className="text-xs font-black text-gray-700 truncate max-w-30">{row.creator?.name || row.creator?.email || 'Unknown'}</p>
                             <p className="text-[10px] font-bold text-gray-400 uppercase">{row.creatorRole?.replace('_', ' ') || 'N/A'}</p>
                         </div>
                     </div>
@@ -191,7 +191,7 @@ export default function OrgMailPage() {
             header: 'Messages',
             accessor: (row: MailItem) => (
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 min-w-[30px] justify-center">
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 min-w-7.5 justify-center">
                         <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
                         {row._count?.messages || 0}
                     </div>

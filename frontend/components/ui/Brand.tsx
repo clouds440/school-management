@@ -18,6 +18,7 @@ interface BrandIconProps {
   className?: string;
   forcePlatform?: boolean;
   user?: Partial<JwtPayload> | any; // Supports both session user and external user data from APIs
+  initialsFallback?: boolean;
 }
 
 export function BrandIcon({
@@ -25,7 +26,8 @@ export function BrandIcon({
   size = 'md',
   className = "",
   forcePlatform = false,
-  user: externalUser
+  user: externalUser,
+  initialsFallback = false,
 }: BrandIconProps) {
   const { user: sessionUser } = useAuth();
   const pathname = usePathname();
@@ -51,6 +53,13 @@ export function BrandIcon({
     xl: 'w-8 h-8',
     hero: 'w-12 h-12',
   };
+  const initialsTextClasses: Record<BrandSize, string> = {
+    sm: 'text-sm',
+    md: 'text-base',
+    lg: 'text-lg',
+    xl: 'text-xl',
+    hero: 'text-3xl',
+  };
 
   // Logic for Logo/Avatar
   let displayLogo: string | null = null;
@@ -75,9 +84,49 @@ export function BrandIcon({
           />
         </div>
       ) : (
-        <div className={`w-full h-full ${variant === 'brand' ? 'rotate-3 group-hover:rotate-0' : 'bg-primary/60'} flex items-center justify-center rounded-full shadow-lg shadow-primary/5 transition-transform group-hover:scale-110`}>
-          <FallbackIcon className={`${iconSizes[size]} ${variant === 'brand' ? 'text-foreground' : 'text-primary'}`} />
-        </div>
+        // When no image: if user variant and initialsFallback requested, render initials with deterministic color
+        (variant === 'user' && (initialsFallback)) ? (
+          (() => {
+            const name = user?.name || user?.userName || '';
+
+            // FNV-1a hash
+            const fnv1aHash = (str: string) => {
+              let h = 2166136261 >>> 0;
+              for (let i = 0; i < str.length; i++) {
+                h ^= str.charCodeAt(i);
+                h = Math.imul(h, 16777619) >>> 0;
+              }
+              return h >>> 0;
+            };
+
+            const palette = [
+              '#F97316', '#EF4444', '#0EA5E9', '#10B981', '#A78BFA', '#F59E0B', '#EC4899', '#60A5FA', '#34D399', '#FB7185', '#8B5CF6', '#06B6D4', '#F472B6', '#7C3AED', '#E11D48', '#EA580C', '#0EA5A4', '#0369A1', '#059669', '#A3E635'
+            ];
+
+            const seed = user?.id || name || 'anon';
+            const color = palette[fnv1aHash(seed) % palette.length];
+
+            const getInitials = (n: string) => {
+              if (!n) return '?';
+              const parts = n.trim().split(/\s+/).filter(Boolean);
+              if (parts.length === 0) return '?';
+              if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+              return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            };
+
+            const initials = getInitials(name || seed || 'U');
+
+            return (
+              <div className={`w-full h-full flex items-center justify-center rounded-full shadow-lg shadow-primary/5 transition-transform group-hover:scale-110`} style={{ backgroundColor: color }}>
+                <span className={`inline-flex items-center justify-center w-full h-full text-white font-bold ${initialsTextClasses[size]}`}>{initials}</span>
+              </div>
+            );
+          })()
+        ) : (
+          <div className={`w-full h-full ${variant === 'brand' ? 'rotate-3 group-hover:rotate-0' : 'bg-primary/60'} flex items-center justify-center rounded-full shadow-lg shadow-primary/5 transition-transform group-hover:scale-110`}>
+            <FallbackIcon className={`${iconSizes[size]} ${variant === 'brand' ? 'text-foreground' : 'text-primary'}`} />
+          </div>
+        )
       )}
     </div>
   );

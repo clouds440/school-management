@@ -68,7 +68,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             root.style.setProperty('--muted-text', '#94a3b8'); // slate-400
             root.style.setProperty('--accent-bg', '#1e293b');
             root.style.setProperty('--accent-text', '#f1f5f9');
-            root.style.setProperty('--border-color', 'rgba(255, 255, 255, 0.1)');
+            root.style.setProperty('--border-color', 'rgba(255, 255, 255, 0.15)');
             root.style.setProperty('--input-bg', '#020617');
         } else {
             root.style.setProperty('--background', '#ffffff');
@@ -79,29 +79,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             root.style.setProperty('--muted-text', '#64748b'); // slate-500
             root.style.setProperty('--accent-bg', '#f1f5f9');
             root.style.setProperty('--accent-text', '#0f172a');
-            root.style.setProperty('--border-color', 'rgba(0, 0, 0, 0.06)'); // More subtle slate-200
+            root.style.setProperty('--border-color', 'rgba(0, 0, 0, 0.1)'); // More subtle slate-200
             root.style.setProperty('--input-bg', '#ffffff');
         }
 
         root.style.setProperty('--primary-text', primaryText);
         root.style.setProperty('--secondary-text', secondaryText);
 
-        // Sidebar Branding
-        // If secondary is "too white", we tint it slightly with primary for a branded look
-        const isSecondaryNeutral = isNeutral(secondary);
-        const sidebarBg = isSecondaryNeutral ? adjustBrightness(primary, 95) : secondary;
-        const sidebarText = getContrastColor(sidebarBg);
-
-        root.style.setProperty('--sidebar-bg', sidebarBg);
-        root.style.setProperty('--sidebar-text', sidebarText);
-        root.style.setProperty('--sidebar-active-bg', primary);
-        root.style.setProperty('--sidebar-active-text', primaryText);
-
-        // Sidebar defaults for dark mode if neutrals
-        if (isDark && isSecondaryNeutral) {
-            root.style.setProperty('--sidebar-bg', '#111827');
-            root.style.setProperty('--sidebar-text', '#f9fafb');
-        }
 
         // Tints & Atmospherics
         // Set doodle based on mode
@@ -114,7 +98,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Navbar defaults
-        root.style.setProperty('--navbar-bg', isDark ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.8)');
+        root.style.setProperty('--navbar-bg', isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)');
         root.style.setProperty('--navbar-text', isDark ? '#f8fafc' : '#0f172a');
 
         // Shadows

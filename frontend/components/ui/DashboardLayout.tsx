@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight, LogOut, X, Key, Mail, MessageCircleQuestionMark } from 'lucide-react';
+import { LogOut, X, Key, Mail, MessageCircleQuestionMark } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { useGlobal } from '@/context/GlobalContext';
@@ -89,7 +89,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
             {/* Mobile Overlay */}
             {isMobileOpen && (
                 <div
-                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-80 lg:hidden transition-opacity duration-300"
+                    className="fixed inset-0 bg-card/50 backdrop-blur-sm z-80 lg:hidden transition-opacity duration-300"
                     onClick={() => setIsMobileOpen(false)}
                 />
             )}
@@ -98,7 +98,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
             <aside
                 className={`
                     fixed lg:relative inset-y-0 left-0 z-90 transform transition-all duration-300 ease-in-out
-                    flex flex-col bg-sidebar text-sidebar-text border-r border-white/5 shadow-[4px_0_24px_var(--shadow-color)]
+                    flex flex-col bg-background text-sidebar-text border-r border-border shadow-[4px_0_24px_var(--shadow-color)]
                     ${isMobileOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0'}
                     ${effectiveExpanded ? 'lg:w-72' : 'lg:w-20'}
                     h-full shrink-0 overflow-hidden
@@ -133,7 +133,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     flex items-center rounded-sm transition-all group relative
                                     ${isActive
                                         ? 'bg-primary/30 text-primary shadow-[0_8px_16px_var(--shadow-color)]'
-                                        : 'text-sidebar-text/70 hover:bg-sidebar-text/10 hover:text-sidebar-text'
+                                        : 'text-sidebar-text/70 hover:text-foreground/70 hover:text-sidebar-text'
                                     }
                                     ${!effectiveExpanded ? 'lg:justify-center p-3' : 'px-4 py-3 space-x-3'}
                                 `}
@@ -183,7 +183,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     e.preventDefault();
                                     router.push(`/${user.orgSlug}/mail`);
                                 }}
-                                className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-primary/30 text-primary' : 'bg-sidebar hover:bg-sidebar-text/30'} transition-all py-3 border border-transparent shadow-sm relative`}
+                                className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'} transition-all py-3 border border-transparent shadow-sm relative`}
                                 title="Mail"
                             >
                                 <Mail className="w-4 h-4 shrink-0 text-primary/80" />
@@ -200,7 +200,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                 e.preventDefault();
                                 router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : `/${user?.orgSlug}/change-password`);
                             }}
-                            className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-primary/30 text-primary' : 'bg-sidebar hover:bg-sidebar-text/30'}  transition-all py-3 border border-transparent shadow-sm`}
+                            className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
                             title="Change Password"
                         >
                             <Key className="w-4 h-4 shrink-0 text-primary/80" />
@@ -213,7 +213,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                 e.preventDefault();
                                 router.push('/contact');
                             }}
-                            className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname === '/contact' ? 'bg-primary/30 text-primary' : 'bg-sidebar hover:bg-sidebar-text/30'}  transition-all py-3 border border-transparent shadow-sm`}
+                            className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname === '/contact' ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
                             title="Contact Us"
                         >
                             <MessageCircleQuestionMark className="w-4 h-4 shrink-0 text-primary/80" />
@@ -234,15 +234,6 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
-                <button
-                    type='button'
-                    title='Toggle Sidebar'
-                    onClick={() => setIsMobileOpen(true)}
-                    className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-primary text-primary-foreground rounded-sm shadow-xl border-2 border-white/20 active:scale-95 transition-all hover:bg-primary/90"
-                >
-                    <ChevronRight className="w-5 h-5 rotate-180" />
-                </button>
-
                 {/* Universal Content Wrapper - This is the ONLY scrollable area */}
                 <div className={`flex-1 min-h-0 w-full ${showPadding ? 'px-0.75 md:px-2 py-1 md:py-2 bg-background' : 'p-0 bg-card'} overflow-y-auto custom-scrollbar flex flex-col`}>
                     {children}

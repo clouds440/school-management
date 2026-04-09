@@ -14,11 +14,42 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
         try {
             const renderer = new marked.Renderer();
 
-            // Override image rendering to use getPublicUrl
-            renderer.image = ({ href, title, text }) => {
-                const url = getPublicUrl(href);
-                return `<img src="${url}" alt="${text}" title="${title || ''}" class="max-w-full h-auto rounded-lg shadow-sm my-2 border border-border" />`;
-            };
+                        // Helper to escape HTML in alt/title text
+                        const escapeHtml = (str?: string) => {
+                                if (!str) return '';
+                                return String(str)
+                                        .replace(/&/g, '&amp;')
+                                        .replace(/</g, '&lt;')
+                                        .replace(/>/g, '&gt;')
+                                        .replace(/"/g, '&quot;')
+                                        .replace(/'/g, '&#39;');
+                        };
+
+                        // Override image rendering to use getPublicUrl and graceful fallback
+                        renderer.image = ({ href, title, text }) => {
+                                const url = href ? getPublicUrl(href) : '';
+                                const alt = escapeHtml(text || title || 'Image');
+                                const titleAttr = escapeHtml(title || '');
+
+                                // Placeholder markup shown when no url or when image fails to load
+                                const placeholder = `
+                                        <div class="inline-block text-center">
+                                                <div class="absolute top-2 left-2 text-xs text-muted-foreground">${alt}</div>
+                                                <div class="w-35 h-35 border border-border rounded-md bg-card/40 flex items-center justify-center">
+                                                <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" class=\"w-6 h-6 text-muted-foreground\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"14\" rx=\"2\" ry=\"2\" /><path d=\"M8 14l2.5-3 2 2.5L16 10l4 6H6z\"/></svg>
+                                            </div>
+                                        </div>
+                                `;
+
+                                if (!url) return placeholder;
+
+                                // When url exists, render the image and replace it with the placeholder on error.
+                                // We encode the placeholder and decode it inside the onerror handler to avoid escaping issues.
+                                const placeholderEscaped = encodeURIComponent(placeholder);
+                                return `
+                                    <img src="${url}" alt="${alt}" title="${titleAttr}" class="max-w-full h-auto rounded-lg shadow-sm my-2 border border-border" onerror="this.outerHTML=decodeURIComponent('${placeholderEscaped}')" />
+                                `;
+                        };
 
             // Override link rendering for external/internal links
             renderer.link = ({ href, title, text }) => {
@@ -85,7 +116,7 @@ if (typeof document !== 'undefined') {
             /* Remove paragraph bottom margins to avoid extra space inside message bubbles */
             .markdown-content p { margin: 0 0 0 0; line-height: 1.6; }
             .markdown-content p:last-child { margin-bottom: 0; }
-            .markdown-content strong { font-weight: 800; color: #111827; }
+            .markdown-content strong, .markdown-content b { font-weight: 800; color: var(--foreground) !important; }
             .markdown-content a { color: #4338ca; text-decoration: underline; font-weight: 700; text-underline-offset: 2px; }
             .markdown-content a:hover { color: #3730a3; opacity: 0.9; }
             .markdown-content ul, .markdown-content ol { margin: 0 0 0 0; padding-left: 1rem; }

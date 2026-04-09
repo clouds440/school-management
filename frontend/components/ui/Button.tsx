@@ -27,7 +27,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
         let variantClasses = "";
         if (variant === 'primary') {
-            variantClasses = "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/20 hover:-translate-y-0.5 focus:ring-primary/20 disabled:bg-primary/50";
+            variantClasses = "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/20 hover:-translate-y-0.5 focus:ring-primary/20";
         } else if (variant === 'secondary') {
             variantClasses = "bg-accent text-foreground border-border hover:bg-accent/80 hover:shadow-md hover:-translate-y-0.5 focus:ring-secondary/20 disabled:bg-secondary/50 disabled:text-muted-foreground";
         } else if (variant === 'danger') {
@@ -48,7 +48,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           focus:outline-none focus:ring-4
           transition-all duration-300 shadow-lg
           ${variantClasses}
-          ${effectiveDisabled ? 'pointer-events-none cursor-not-allowed opacity-70' : ''}
+          ${effectiveDisabled ? 'pointer-events-none cursor-not-allowed opacity-90' : ''}
           ${className || ''}
         `}
                 disabled={effectiveDisabled}

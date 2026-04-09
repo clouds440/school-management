@@ -14,7 +14,8 @@ import { formatDistanceToNow } from 'date-fns';
 import {
     Search, Plus, MessageSquarePlus, Send, MoreVertical, X, Loader2, Paperclip,
     UserMinus, Trash2, Info, ChevronLeft, Check, CheckCheck, ArrowDown, Pencil, Reply, ArrowUp, Download,
-    Copy
+    Copy,
+    Eye
 } from 'lucide-react';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 import { Button } from '../ui/Button';
@@ -140,7 +141,7 @@ export function ChatLayout() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [showParticipants]);
 
-    // Helper: Get avatar with fallback
+    // Helper: Get avatar with fallback — delegate to `BrandIcon` which now supports initials fallback
     const UserAvatar = ({ targetUser, className = "w-8 h-8", groupIcon = false }: { targetUser?: { id?: string; name?: string | null; avatarUrl?: string | null; role?: Role; orgName?: string; orgLogoUrl?: string | null; avatarUpdatedAt?: string | null; userName?: string }, className?: string, groupIcon?: boolean }) => {
         if (groupIcon) {
             return (
@@ -150,12 +151,14 @@ export function ChatLayout() {
             );
         }
 
+        // Always use BrandIcon; ask it to render initials when no avatar is present
         return (
             <BrandIcon
                 variant="user"
                 size="sm"
                 user={targetUser}
                 className={className}
+                initialsFallback
             />
         );
     };
@@ -582,6 +585,10 @@ export function ChatLayout() {
         fetchChats();
     };
 
+    const getTimestamp = (timestamp: string) => {
+        return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
     const scrollToMessage = async (messageId: string) => {
         const element = document.getElementById(`msg-${messageId}`);
         if (element) {
@@ -699,6 +706,12 @@ export function ChatLayout() {
         return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
     };
 
+    const getTruncatedPreview = (content?: string, max = isDesktop ? 70 : 35) => {
+        if (!content) return '';
+        const cleaned = content.replace(/!\[.*?\]\(.*?\)/g, '[Image]').trim();
+        return cleaned.length > max ? cleaned.slice(0, max) + '...' : cleaned;
+    };
+
     // Disabled tap-to-show (use long-press on mobile instead)
     const handleMessageTap = (_msgId: string) => {
         return; // intentionally no-op; long-press will reveal actions on mobile
@@ -731,11 +744,11 @@ export function ChatLayout() {
     };
 
     return (
-        <div className="flex h-full bg-card lg:rounded-xl lg:shadow-md lg:border border-border overflow-hidden relative">
+        <div className="flex h-full bg-card lg:shadow-md lg:border border-border overflow-hidden relative">
             {/* ===== SIDEBAR ===== */}
             <div className={`
             ${activeChatId && !isDesktop ? 'hidden' : 'flex'} 
-            w-full lg:max-w-[320px] xl:max-w-85 border-r border-border flex-col bg-card h-full
+            w-full lg:max-w-[320px] xl:max-w-110 border-r border-border flex-col bg-card h-full
         `}>
                 <div className="px-5 py-4 border-b border-border bg-card/50 flex justify-between items-center">
                     <div>
@@ -927,8 +940,6 @@ export function ChatLayout() {
                                     />
                                 )}
                             </div>
-                            {/* Subtle bottom accent */}
-                            <div className="absolute bottom-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary/10 to-transparent" />
                         </div>
 
                         {/* Messages Area */}
@@ -936,7 +947,7 @@ export function ChatLayout() {
                             <div
                                 ref={messagesContainerRef}
                                 onScroll={handleScroll}
-                                className="flex-1 overflow-y-auto px-3 md:px-5 py-3 space-y-0.5 custom-scrollbar chat-bg-pattern"
+                                className="flex-1 overflow-y-auto px-3 md:px-5 py-3 space-y-0.5 custom-scrollbar chat-bg-pattern pb-16"
                             >
                                 {isLoadingMessages ? (
                                     <div className="flex flex-col items-center justify-center py-16 space-y-3">
@@ -967,7 +978,7 @@ export function ChatLayout() {
                                             if (msg.type === ChatMessageType.SYSTEM) {
                                                 return (
                                                     <div key={msg.id}>
-                                                        {showDateSep && <div className="chat-date-separator bg-card text-foreground"><span>{formatDateLabel(msg.createdAt)}</span></div>}
+                                                        {showDateSep && <div className="chat-date-separator"><span>{formatDateLabel(msg.createdAt)}</span></div>}
                                                         <div className="flex justify-center py-2">
                                                             <div className="bg-card/80 backdrop-blur-sm text-muted-foreground px-4 py-1.5 rounded-full text-[13px] font-medium flex items-center border border-border shadow-sm">
                                                                 <Info size={12} className="mr-1.5 text-primary/80" />
@@ -997,12 +1008,10 @@ export function ChatLayout() {
                                                     >
                                                         {!isMine && (
                                                             <div className="w-7 shrink-0 mr-2 flex flex-col justify-end mb-1">
-                                                                {isLastInGroup ? (
-                                                                    <UserAvatar targetUser={msg.sender} className="w-7 h-7 rounded-full" />
-                                                                ) : <div className="w-7 h-7" />}
+                                                                {isLastInGroup && <UserAvatar targetUser={msg.sender} className="w-7 h-7 rounded-full" />}
+
                                                             </div>
                                                         )}
-
                                                         <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] min-w-0 ${isMine ? 'items-end' : 'items-start'}`}>
                                                             {activeChat.type === ChatType.GROUP && !isMine && showAvatar && (
                                                                 <span className="text-[13px] font-semibold text-primary/70 mb-0.5 ml-1 tracking-wide">
@@ -1017,24 +1026,24 @@ export function ChatLayout() {
                                                                         return (
                                                                             <div
                                                                                 onClick={(e) => { e.stopPropagation(); scrollToMessage(msg.replyTo!.id); }}
-                                                                                className={`mb-0.5 px-3 py-1.5 rounded-lg border-l-[3px] text-[14px] max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity text-foreground
-                                                                            ${isMineRepliedTo ? 'bg-primary/70  border-primary text-muted' : 'bg-muted border-border'}`}
+                                                                                className={`mb-0.5 px-3 py-1.5 rounded-lg border-l-5 text-[14px] bg-muted max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity text-foreground
+                                                                            ${isMineRepliedTo ? 'border-primary' : 'border-foreground/70'}`}
                                                                             >
                                                                                 <p className="font-semibold mb-0.5 text-[14px] flex items-center">
-                                                                                    <Reply size={10} className='mr-1 rotate-180 text-foreground' />
+                                                                                    <Reply size={13} className='mr-1 rotate-180' />
                                                                                     {msg.replyTo.sender?.name || 'Someone'}
                                                                                 </p>
-                                                                                <p className="truncate line-clamp-1 opacity-95">
-                                                                                    {msg.replyTo.content.replace(/!\[.*?\]\(.*?\)/g, '[Image]')}
-                                                                                </p>
+                                                                                        <div className="truncate line-clamp-1 opacity-95">
+                                                                                            <MarkdownRenderer content={getTruncatedPreview(msg.replyTo.content)} className='text-foreground!' />
+                                                                                        </div>
                                                                             </div>
                                                                         );
                                                                     })()}
                                                                     {isDeleted ? (
-                                                                        <div className={`px-3.5 py-2 rounded-2xl mb-5 text-[13px] leading-relaxed bg-card text-muted-foreground border border-border ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
+                                                                        <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed bg-card text-muted-foreground border border-border ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
                                                                             <div className="flex items-center space-x-1.5 italic">
-                                                                                <Trash2 size={13} className="opacity-50 text-primary/80" />
-                                                                                <span>Message deleted {msg.deletedBy?.name ? `by ${msg.deletedBy.name}` : ''}</span>
+                                                                                <Trash2 size={13} className="opacity-50 text-red-500" />
+                                                                                <span>Message deleted {msg.deletedBy?.name ? `by ${msg.deletedBy.name} ` : ''} <span className='opacity-70'>{getTimestamp(msg.createdAt!)}</span></span>
                                                                             </div>
                                                                         </div>
                                                                     ) : (
@@ -1043,13 +1052,26 @@ export function ChatLayout() {
                                                                             const segments = msg.content.split(imageRegex).filter(s => s.trim() !== '');
 
                                                                             return (
-                                                                                <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} space-y-1`}>
+                                                                                <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} space-y-3`}>
                                                                                     {segments.map((segment, idx) => {
                                                                                         const isImage = segment.match(/^!\[.*?\]\(.*?\)$/);
                                                                                         if (isImage) {
                                                                                             return (
-                                                                                                <div key={idx} className={`naked-image-container max-w-full transition-all duration-500 rounded-xl ${highlightedMessageId === msg.id ? 'ring-3 ring-primary/30' : ''}`}>
-                                                                                                    <MarkdownRenderer content={segment} />
+                                                                                                <div key={idx} className={`naked-image-container max-w-full transition-all duration-500 rounded-xl relative ${highlightedMessageId === msg.id ? 'ring-3 ring-primary/30' : ''}`}>
+                                                                                                    <div className="relative">
+                                                                                                        <MarkdownRenderer content={segment} />
+                                                                                                        <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[11px] px-2 py-0.5 rounded-md flex items-center space-x-1">
+                                                                                                        {/* Timestamps and read receipts overlay for images */}
+                                                                                                            <span className="font-medium">{getTimestamp(msg.createdAt)}</span>
+                                                                                                            {isMine && (
+                                                                                                                msg.readBy && msg.readBy.length > 0 ? (
+                                                                                                                    <CheckCheck className="w-4 h-4 text-white" strokeWidth={2.5} />
+                                                                                                                ) : (
+                                                                                                                    <Check className="w-4 h-4 text-white" strokeWidth={2.5} />
+                                                                                                                )
+                                                                                                            )}
+                                                                                                        </div>
+                                                                                                    </div>
                                                                                                 </div>
                                                                                             );
                                                                                         }
@@ -1058,35 +1080,34 @@ export function ChatLayout() {
                                                                                             <div
                                                                                                 key={idx}
                                                                                                 className={`message-bubble
-                                                                                            px-3.5 py-2 rounded-2xl leading-relaxed relative transition-all duration-300
+                                                                                            px-3.5 py-2 rounded-2xl leading-relaxed relative transition-all duration-300 shadow-lg
                                                                                             ${isMine
-                                                                                                        ? 'bg-primary text-foreground rounded-br-sm shadow-lg shadow-primary'
-                                                                                                        : 'bg-card border border-border rounded-bl-sm shadow-lg shadow-black/5'
+                                                                                                        ? 'bg-primary text-foreground rounded-br-sm shadow-primary/50'
+                                                                                                        : 'bg-card border border-border rounded-bl-sm shadow-black/10 text-foreground!'
                                                                                                     }
                                                                                             ${highlightedMessageId === msg.id ? 'ring-2 ring-primary/30 shadow-md' : ''}
                                                                                             `}>
 
-                                                                                                <div className={`prose prose-sm max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground'}`}>
-                                                                                                    <MarkdownRenderer content={segment} className={`${isMine ? 'text-muted!' : 'text-(--card-text)!'} whitespace-pre-wrap wrap-break-word`} />
+                                                                                                <div className={`prose prose-sm max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground!'}`}>
+                                                                                                    <MarkdownRenderer content={segment} className={`${isMine ? 'text-foreground!' : 'text-(--card-text)!'} whitespace-pre-wrap wrap-break-word text-foreground!`} />
                                                                                                 </div>
+                                                                                                {/* Timestamps and read receipts */}
+                                                                                                <span className="text-[12px] text-foreground font-medium flex items-center justify-end space-x-1">
+                                                                                                    {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
+                                                                                                        <span className="text-[10px] text-foreground font-medium italic opacity-85">Edited</span>
+                                                                                                    )}
+                                                                                                    <span className='text-foreground/80'>{getTimestamp(msg.createdAt)}</span>
+                                                                                                    {isMine && (
+                                                                                                        msg.readBy && msg.readBy.length > 0 ? (
+                                                                                                            <CheckCheck className="w-4 h-4 text-foreground/70" strokeWidth={2.5} />
+                                                                                                        ) : (
+                                                                                                            <Check className="w-4 h-4 text-foreground/70" strokeWidth={2.5} />
+                                                                                                        )
+                                                                                                    )}
+                                                                                                </span>
                                                                                             </div>
                                                                                         );
                                                                                     })}
-
-                                                                                    {/* Timestamp & Read Receipts */}
-                                                                                    <div className="flex items-center mb-5 space-x-1 px-1">
-                                                                                        <span className="text-[12px] text-muted-foreground font-medium">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                                                        {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
-                                                                                            <span className="text-[12px] text-muted-foreground font-medium italic opacity-90">Edited</span>
-                                                                                        )}
-                                                                                        {isMine && (
-                                                                                            msg.readBy && msg.readBy.length > 0 ? (
-                                                                                                <CheckCheck className="w-3.5 h-3.5 text-primary/80" strokeWidth={2.5} />
-                                                                                            ) : (
-                                                                                                <Check className="w-3.5 h-3.5 text-primary/80" strokeWidth={2.5} />
-                                                                                            )
-                                                                                        )}
-                                                                                    </div>
                                                                                 </div>
                                                                             );
                                                                         })()
@@ -1095,7 +1116,7 @@ export function ChatLayout() {
 
                                                                 {/* Actions */}
                                                                 {!isDeleted && (
-                                                                    <div className={`relative shrink-0 flex items-center justify-center transition-all mb-4.5
+                                                                    <div className={`absolute top-0 shrink-0 flex items-center justify-center transition-all mb-4.5
                                                                         ${isDesktop
                                                                             ? `${openDropdownId !== msg.id ? 'opacity-0 group-hover/content:opacity-100' : 'opacity-100'}`
                                                                             : `${showActionsOnMobile || openDropdownId === msg.id ? 'opacity-100' : 'opacity-0'}`
@@ -1112,13 +1133,13 @@ export function ChatLayout() {
                                                                                 window.setTimeout(() => { if (suppressCloseRef.current === msg.id) suppressCloseRef.current = null; }, 300);
                                                                                 setOpenDropdownId(prev => prev === msg.id ? null : msg.id);
                                                                             }}
-                                                                            className={`p-1.5 rounded-lg transition-all border shadow-sm ${openDropdownId === msg.id ? 'bg-primary/40 text-primary border-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-card border-border bg-card/90 backdrop-blur-sm'} more-actions-btn`}
+                                                                            className={`p-1.5 rounded-lg transition-all border shadow-sm ${openDropdownId === msg.id ? 'bg-card/80 text-primary border-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-card border-border bg-card backdrop-blur-sm'} more-actions-btn`}
                                                                             title="More actions"
                                                                         >
                                                                             <MoreVertical size={15} className="text-primary/80 hover:text-primary" />
                                                                         </button>
                                                                         {openDropdownId === msg.id && (
-                                                                            <div className={`absolute ${isMine ? 'right-0' : 'left-0'} bottom-full mb-1 w-32 bg-card border border-border rounded-xl shadow-xl z-70 flex flex-col animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
+                                                                            <div className={`absolute ${isMine ? 'right-0' : 'left-0'} bottom-full overflow-hidden mb-1 w-32 bg-card border border-border rounded-xl shadow-xl z-70 flex flex-col animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
                                                                                 <button
                                                                                     onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleReply(msg); }}
                                                                                     className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center mb-0.5"
@@ -1157,7 +1178,7 @@ export function ChatLayout() {
                                                                                         onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDeleteMessage(msg.id); }}
                                                                                         className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-700/30 flex items-center mt-1 border-t border-border pt-2"
                                                                                     >
-                                                                                        <Trash2 size={12} className="mr-2 opacity-85 text-primary/80" /> Delete
+                                                                                        <Trash2 size={12} className="mr-2 opacity-85 text-red-500" /> Delete
                                                                                     </button>
                                                                                 )}
                                                                             </div>
@@ -1211,7 +1232,7 @@ export function ChatLayout() {
                                 <button
                                     type="button"
                                     onClick={() => isViewingHistory ? (activeChatId && fetchInitialMessages(activeChatId)) : scrollToBottom()}
-                                    className="absolute bottom-6 right-6 z-30 p-2.5 bg-card text-foreground/70 rounded-full shadow-lg border border-border hover:bg-primary/30 hover:text-primary hover:border-primary transition-all active:scale-95 group"
+                                    className="absolute bottom-16 right-16 z-30 p-2.5 bg-card text-foreground/70 rounded-full shadow-lg border border-border hover:bg-card/80 hover:text-primary hover:border-primary transition-all active:scale-95 group"
                                     title={isViewingHistory ? "Jump to Present" : "Scroll to bottom"}
                                 >
                                     <ArrowDown size={18} className="group-hover:translate-y-0.5 transition-transform text-primary/80" />
@@ -1266,139 +1287,143 @@ export function ChatLayout() {
                                     </div>
                                 </div>
                             )}
-                        </div>
-
-                        {/* Input Composer */}
-                        <div className="bg-background border-t border-border px-1 md:px-1 py-1 z-20">
-                            {/* Reply / Edit Banner */}
-                            {(replyToMessage || editingMessage) && (
-                                <div className="mb-2 px-3 py-2 bg-muted border-l-[3px] border-primary rounded-r-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
-                                    <div className="flex-1 min-w-0 pr-3">
-                                        <p className="text-[13px] font-semibold text-primary mb-0.5">
-                                            {editingMessage ? 'Editing Message' : `Replying to ${replyToMessage?.sender?.name == user.name ? 'Yourself' : replyToMessage?.sender?.name || 'Message'}`}
-                                        </p>
-                                        <p className="text-[13px] text-muted-foreground truncate">
-                                            {(editingMessage?.content || replyToMessage?.content || '').replace(/!\[.*?\]\(.*?\)/g, '📷 Photo')}
-                                        </p>
-                                    </div>
-                                        <button
-                                        onClick={() => {
-                                            setReplyToMessage(null);
-                                            if (editingMessage) {
-                                                setEditingMessage(null);
-                                                setMessageDraft('');
-                                            }
-                                        }}
-                                        className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/40 rounded-lg transition-colors"
-                                    >
-                                        <X size={14} className="text-primary/80 hover:text-primary" />
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Staged Files */}
-                            {stagedFiles.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mb-2">
-                                    {stagedFiles.map((file, i) => (
-                                        <div key={i} className="group relative flex items-center bg-muted border border-border pl-2 pr-1 py-1 rounded-xl hover:border-primary/30 transition-all">
-                                            {file.type.startsWith('image/') ? (
-                                                <div className="w-8 h-8 rounded-lg overflow-hidden bg-muted-foreground/10 mr-2">
-                                                    <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
-                                                </div>
-                                            ) : (
-                                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary mr-2">
-                                                    <Pencil size={14} className="text-primary/80" />
-                                                </div>
-                                            )}
-                                            <div className="flex flex-col mr-1.5 max-w-20">
-                                                <span className="text-[13px] font-semibold text-foreground truncate">{file.name}</span>
-                                                <span className="text-[11px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                title='Remove'
-                                                onClick={() => removeStagedFile(i)}
-                                                className="p-0.5 text-foreground hover:text-red-500 rounded-full transition-all"
+                            {/* Input Composer */}
+                            <div className="absolute bottom-0 w-full border-border px-1 md:px-1 py-1 z-20">
+                                {/* Reply / Edit Banner */}
+                                {(replyToMessage || editingMessage) && (
+                                    <div className="mb-2 px-3 py-2 bg-muted border-l-[3px] border-primary rounded-r-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                                        <div className="flex-1 min-w-0 pr-3">
+                                            <p className="text-[13px] font-semibold text-primary mb-0.5">
+                                                {editingMessage ? 'Editing Message' : `Replying to ${replyToMessage?.sender?.name == user.name ? 'Yourself' : replyToMessage?.sender?.name || 'Message'}`}
+                                            </p>
+                                            <div
+                                                onClick={() => { if (replyToMessage) scrollToMessage(replyToMessage.id); }}
+                                                className="text-[13px] text-muted-foreground! truncate cursor-pointer"
                                             >
-                                                <X size={12} className="text-primary/80 hover:text-primary" />
-                                            </button>
+                                                <MarkdownRenderer content={getTruncatedPreview(editingMessage?.content || replyToMessage?.content)} className='text-muted-foreground!' />
+                                            </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Preview Mode Render */}
-                            {isPreviewMode && messageDraft.trim() && (
-                                <div className="my-3 px-4 py-3 bg-muted rounded-xl border border-border max-h-37.5 overflow-y-auto custom-scrollbar">
-                                    <div className="prose prose-sm max-w-none prose-p:text-foreground/80">
-                                        <MarkdownRenderer content={messageDraft} />
+                                            <button
+                                            onClick={() => {
+                                                setReplyToMessage(null);
+                                                if (editingMessage) {
+                                                    setEditingMessage(null);
+                                                    setMessageDraft('');
+                                                }
+                                            }}
+                                            className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/40 rounded-lg transition-colors"
+                                        >
+                                            <X size={14} className="text-primary/80 hover:text-primary" />
+                                        </button>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {/* Composer Row */}
-                            <div className="flex items-center space-x-2">
-                                <input
-                                    title='Upload File'
-                                    type="file"
-                                    id="chat-file-upload"
-                                    className="hidden"
-                                    onChange={handleFileUpload}
-                                    multiple
-                                />
-                                <Button
-                                    type="button"
-                                    icon={Paperclip}
-                                    variant="warning"
-                                    px='px-3.5'
-                                    py='py-3.5'
-                                    onClick={() => document.getElementById('chat-file-upload')?.click()}
-                                    className="rounded-xl text-muted-foreground hover:text-primary shrink-0 self-end active:scale-95 shadow-md shadow-black/10 transition-all"
-                                    title="Attach file"
-                                />
+                                {/* Staged Files */}
+                                {stagedFiles.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {stagedFiles.map((file, i) => (
+                                            <div key={i} className="group relative flex items-center bg-muted border border-border pl-2 pr-1 py-1 rounded-xl hover:border-primary/30 transition-all">
+                                                {file.type.startsWith('image/') ? (
+                                                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-muted-foreground/10 mr-2">
+                                                        <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary mr-2">
+                                                        <Pencil size={14} className="text-primary/80" />
+                                                    </div>
+                                                )}
+                                                <div className="flex flex-col mr-1.5 max-w-20">
+                                                    <span className="text-[13px] font-semibold text-foreground truncate">{file.name}</span>
+                                                    <span className="text-[11px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    title='Remove'
+                                                    onClick={() => removeStagedFile(i)}
+                                                    className="p-0.5 text-foreground hover:text-red-500 rounded-full transition-all"
+                                                >
+                                                    <X size={12} className="text-primary/80 hover:text-primary" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
 
-                                <div className={`${messageDraft.includes('\n') ? 'py-3' : 'py-0'}
-                                        flex-1 relative flex items-center bg-muted/80 border border-transparent rounded-2xl focus-within:bg-card
-                                        focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all`}>
-                                    <textarea
-                                        ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
-                                        value={messageDraft}
-                                        onChange={(e) => {
-                                            const el = e.target;
-                                            setMessageDraft(el.value);
+                                {/* Preview Mode Render */}
+                                {isPreviewMode && messageDraft.trim() && (
+                                    <div className="my-3 px-4 py-3 bg-muted rounded-xl border border-border max-h-37.5 overflow-y-auto custom-scrollbar">
+                                        <div className="prose prose-sm max-w-none prose-p:text-foreground/80">
+                                            <MarkdownRenderer content={messageDraft} className='text-foreground!' />
+                                        </div>
+                                    </div>
+                                )}
 
-                                            el.style.height = 'auto';
-                                            el.style.height = el.scrollHeight + 'px';
-                                            el.style.height = Math.min(el.scrollHeight, 200) + 'px';
-                                        }}
-                                        onKeyDown={handleKeyDown}
-                                        onFocus={handleEditorFocus}
-                                        placeholder={stagedFiles.length > 0 ? "Add a caption..." : `Type a message... ${isDesktop ? '(Shift + Enter for new line)' : ''}`}
-                                        rows={1}
-                                        className="w-full px-4 py-3 bg-transparent border-none text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-30 leading-relaxed"
+                                {/* Composer Row */}
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        title='Upload File'
+                                        type="file"
+                                        id="chat-file-upload"
+                                        className="hidden"
+                                        onChange={handleFileUpload}
+                                        multiple
                                     />
 
-                                    {/* Preview Toggle Button */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                        className={`absolute right-2 bottom-3 cursor-pointer px-2.5 py-1 text-[10px] font-bold rounded-lg transition-colors ${isPreviewMode ? 'bg-primary/10 text-primary' : 'bg-muted-foreground/10 text-muted-foreground hover:bg-muted-foreground/20'} shrink-0`}
-                                        title={isPreviewMode ? "Write text" : "Preview markdown"}
-                                    >
-                                        {isPreviewMode ? 'Edit' : 'Preview'}
-                                    </button>
+                                    <div className={`pr-5 ${messageDraft.includes('\n') ? 'py-3' : 'py-0'}
+                                            flex-1 relative flex items-center bg-muted border border-transparent mx-2 rounded-2xl focus-within:bg-card
+                                            focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all`}>
+                                        <textarea
+                                            ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
+                                            value={messageDraft}
+                                            onChange={(e) => {
+                                                const el = e.target;
+                                                setMessageDraft(el.value);
+
+                                                el.style.height = 'auto';
+                                                el.style.height = el.scrollHeight + 'px';
+                                                el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+                                            }}
+                                            onKeyDown={handleKeyDown}
+                                            onFocus={handleEditorFocus}
+                                            placeholder={stagedFiles.length > 0 ? "Add a caption..." : `Message... ${isDesktop ? '(Shift + Enter for new line)' : ''}`}
+                                            rows={1}
+                                            className="w-full pl-20 pr-10 py-3 bg-transparent border-none text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-30 leading-relaxed"
+                                        />
+
+                                        {/* Preview Toggle Button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsPreviewMode(!isPreviewMode)}
+                                            className={`absolute left-3 bottom-3 text-primary/80 hover:text-primary hover:scale-110 cursor-pointer`}
+                                            title={isPreviewMode ? "Write text" : "Preview markdown"}
+                                        >
+                                            {isPreviewMode ? <Pencil size={24}/> : <Eye size={24} />}
+                                        </button>
+                                        {/* File Upload Button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => document.getElementById('chat-file-upload')?.click()}
+                                            className="absolute z-20 left-12 bottom-3 shrink-0 active:scale-95 transition-all rounded-xl"
+                                            title="Attach file"
+                                        >
+                                            <Plus size={22} className="text-primary/80 hover:text-primary hover:scale-115 cursor-pointer" />
+                                        </button>
+                                        {/* Send Button */}
+                                        {messageDraft.trim() && (
+                                            <button
+                                                type="button"
+                                                onClick={handleSendMessage}
+                                                disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
+                                                className="absolute right-4 bottom-2.5 z-20 shrink-0 active:scale-95"
+                                                title="Send"
+                                            >
+                                                <Send size={26} className="text-primary/80 hover:text-primary cursor-pointer" />
+                                            </button>
+                                        )
+                                        }
+                                    </div>
+                                    
                                 </div>
-                                <Button
-                                    type="button"
-                                    icon={isSending || isUploading ? Loader2 : Send}
-                                    variant="primary"
-                                    px='px-3.5'
-                                    py='py-3.5'
-                                    onClick={handleSendMessage}
-                                    disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
-                                    className="rounded-xl transition-all shrink-0 self-end active:scale-95 shadow-md shadow-primary/20"
-                                    title="Send"
-                                />
                             </div>
                         </div>
                     </>
