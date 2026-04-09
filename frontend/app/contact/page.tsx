@@ -124,7 +124,7 @@ export default function ContactPage() {
                 <div className="pt-4">
                   <Link
                     href="/login"
-                    className="px-8 py-3 bg-primary text-foreground rounded-sm font-bold hover:bg-primary-hover shadow-lg transition-all"
+                    className="px-8 py-3 bg-primary text-primary rounded-sm font-bold hover:brightness-95 shadow-lg transition-all"
                   >
                     Login to Continue
                   </Link>
@@ -149,7 +149,7 @@ export default function ContactPage() {
                 <div className="pt-6">
                   <Link
                     href={user.orgSlug ? `/${user.orgSlug}/mail` : '/admin/organizations'}
-                    className="px-8 py-3 bg-gray-900 text-foreground rounded-sm font-bold hover:bg-black shadow-lg transition-all"
+                    className="px-8 py-3 bg-primary text-primary-text rounded-sm font-bold hover:brightness-95 shadow-lg transition-all"
                   >
                     Go to Your Mailbox
                   </Link>
@@ -170,7 +170,7 @@ export default function ContactPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wider ml-1">Message</label>
+                  <label className="text-sm font-bold text-foreground uppercase tracking-wider ml-1">Message</label>
                   <MarkdownEditor
                     value={message}
                     onChange={setMessage}

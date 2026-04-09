@@ -9,7 +9,9 @@ interface MarkdownRendererProps {
     className?: string;
 }
 
-export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className = '' }) => {
+const failedMarkdownImageUrls = new Set<string>();
+
+export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
     const htmlContent = useMemo(() => {
         try {
             const renderer = new marked.Renderer();
@@ -41,13 +43,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
                                         </div>
                                 `;
 
-                                if (!url) return placeholder;
+                                if (!url || failedMarkdownImageUrls.has(url)) return placeholder;
 
                                 // When url exists, render the image and replace it with the placeholder on error.
                                 // We encode the placeholder and decode it inside the onerror handler to avoid escaping issues.
                                 const placeholderEscaped = encodeURIComponent(placeholder);
+                                const urlEscaped = encodeURIComponent(url);
                                 return `
-                                    <img src="${url}" alt="${alt}" title="${titleAttr}" class="max-w-full h-auto rounded-lg shadow-sm my-2 border border-border" onerror="this.outerHTML=decodeURIComponent('${placeholderEscaped}')" />
+                                    <img src="${url}" alt="${alt}" title="${titleAttr}" class="max-w-full h-auto rounded-lg shadow-sm my-2 border border-border" onerror="(window.__eduverseFailedMarkdownImages=window.__eduverseFailedMarkdownImages||{})[decodeURIComponent('${urlEscaped}')]=true;this.outerHTML=decodeURIComponent('${placeholderEscaped}')" />
                                 `;
                         };
 
@@ -82,6 +85,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
             });
             // Trim trailing newlines to avoid stray empty lines inside chat bubbles
             const sanitized = (content || '').replace(/\n+$/g, '');
+            if (typeof window !== 'undefined') {
+                const failedMap = (window as Window & { __eduverseFailedMarkdownImages?: Record<string, boolean> }).__eduverseFailedMarkdownImages;
+                if (failedMap) {
+                    Object.keys(failedMap).forEach((url) => {
+                        if (failedMap[url]) failedMarkdownImageUrls.add(url);
+                    });
+                }
+            }
             return marked.parse(sanitized);
         } catch (error) {
             console.error('Markdown parsing error:', error);
@@ -101,7 +112,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
                     }}
         />
     );
-};
+});
 
 // Add global CSS for markdown content
 if (typeof document !== 'undefined') {

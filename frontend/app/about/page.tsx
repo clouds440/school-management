@@ -4,9 +4,9 @@ import { Target, Eye, Heart, Shield, Award, Users } from 'lucide-react';
 
 export default function AboutPage() {
   return (
-    <div className="flex flex-col bg-white">
+    <div className="flex flex-col bg-background">
       {/* Hero */}
-      <section className="pt-24 pb-16 md:pt-32 md:pb-40 bg-gray-50/50 border-b border-gray-100">
+      <section className="pt-24 pb-16 md:pt-32 md:pb-40 bg-theme-bg border-b border-border">
         <div className="container mx-auto px-6 text-center max-w-4xl space-y-6">
           <Reveal>
             <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-bold mb-4 tracking-wide uppercase">
@@ -14,10 +14,10 @@ export default function AboutPage() {
             </div>
           </Reveal>
           <Reveal delay={200}>
-            <h1 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tight">Revolutionizing <span className="text-primary">Institutional Management</span></h1>
+            <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight">Revolutionizing <span className="text-primary">Institutional Management</span></h1>
           </Reveal>
           <Reveal delay={400}>
-            <p className="text-xl text-gray-600 font-medium leading-relaxed max-w-2xl mx-auto">
+            <p className="text-xl text-muted-text font-medium leading-relaxed max-w-2xl mx-auto">
               We bridge the gap between complex administration and human-first education,
               building tools that empower the next generation of academic excellence.
             </p>
@@ -30,11 +30,11 @@ export default function AboutPage() {
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
             <Reveal>
-              <div className="p-12 rounded-4xl bg-gray-900 text-white space-y-6 h-full border border-white/5 shadow-2xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
+              <div className="p-12 rounded-4xl bg-card-bg text-card-text space-y-6 h-full border border-border shadow-2xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                 <Target className="w-12 h-12 text-primary" />
                 <h2 className="text-3xl font-black">Our Mission</h2>
-                <p className="text-gray-400 text-lg leading-relaxed font-medium">
+                <p className="text-muted-text text-lg leading-relaxed font-medium">
                   To provide a unified, accessible, and high-performance digital ecosystem for educational institutions worldwide,
                   automating repetitive tasks so educators can focus on what truly matters: teaching.
                 </p>
@@ -42,11 +42,11 @@ export default function AboutPage() {
             </Reveal>
 
             <Reveal delay={200}>
-              <div className="p-12 rounded-4xl bg-white border border-gray-100 space-y-6 h-full shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
+              <div className="p-12 rounded-4xl bg-card-bg border border-border space-y-6 h-full shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                 <Eye className="w-12 h-12 text-primary" />
-                <h2 className="text-3xl font-black text-gray-900">Our Vision</h2>
-                <p className="text-gray-600 text-lg leading-relaxed font-medium">
+                <h2 className="text-3xl font-black text-card-text">Our Vision</h2>
+                <p className="text-muted-text text-lg leading-relaxed font-medium">
                   A future where school administration is seamless and invisible,
                   powered by technologies that foster transparency, accessibility, and excellence
                   across all academic borders.
@@ -58,14 +58,14 @@ export default function AboutPage() {
       </section>
 
       {/* Values */}
-      <section className="py-24 md:py-32 bg-gray-50/50">
+      <section className="py-24 md:py-32 bg-theme-bg">
         <div className="container mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
             <Reveal>
-              <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter uppercase">Core Values</h2>
+              <h2 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter uppercase">Core Values</h2>
             </Reveal>
             <Reveal delay={200}>
-              <p className="text-gray-500 text-lg font-medium">The principles that guide every feature we build.</p>
+              <p className="text-muted-text text-lg font-medium">The principles that guide every feature we build.</p>
             </Reveal>
           </div>
 
@@ -77,11 +77,11 @@ export default function AboutPage() {
             ].map((v, i) => (
               <Reveal key={i} delay={i * 200}>
                 <div className="space-y-6">
-                  <div className="w-16 h-16 rounded-2xl bg-white border border-gray-100 flex items-center justify-center shadow-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-card-bg border border-border flex items-center justify-center shadow-sm">
                     {v.icon}
                   </div>
-                  <h3 className="text-2xl font-black text-gray-900">{v.title}</h3>
-                  <p className="text-gray-500 font-medium leading-relaxed">{v.desc}</p>
+                  <h3 className="text-2xl font-black text-foreground">{v.title}</h3>
+                  <p className="text-muted-text font-medium leading-relaxed">{v.desc}</p>
                 </div>
               </Reveal>
             ))}

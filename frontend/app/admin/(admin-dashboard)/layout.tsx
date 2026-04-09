@@ -4,7 +4,6 @@ import { useEffect, useMemo, useCallback } from 'react';
 import { DashboardLayout, SidebarLink } from '@/components/ui/DashboardLayout';
 import { Building, Mail, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
 import statsStore from '@/lib/statsStore';
 import { Role } from '@/types';
 import { useSocket } from '@/hooks/useSocket';

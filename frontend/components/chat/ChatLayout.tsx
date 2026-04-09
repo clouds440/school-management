@@ -13,7 +13,7 @@ import { Chat, ChatMessage, ChatType, ChatMessageType, PaginatedResponse, Role, 
 import { formatDistanceToNow } from 'date-fns';
 import {
     Search, Plus, MessageSquarePlus, Send, MoreVertical, X, Loader2, Paperclip,
-    UserMinus, Trash2, Info, ChevronLeft, Check, CheckCheck, ArrowDown, Pencil, Reply, ArrowUp, Download,
+    UserMinus, Trash2, Info, ChevronLeft, Check, CheckCheck, ArrowDown, Pencil, Reply, ArrowUp, Download, RotateCcw,
     Copy,
     Eye
 } from 'lucide-react';
@@ -24,6 +24,16 @@ import { NewChatModal } from './NewChatModal';
 import { ChatSettingsModal } from './ChatSettingsModal';
 
 export function ChatLayout() {
+    type ChatMessageWithMeta = ChatMessage & {
+        readBy?: string[];
+        clientStatus?: 'sending' | 'failed' | 'sent';
+        retryPayload?: {
+            draftText: string;
+            stagedFiles: File[];
+            replyToMessage: ChatMessage | null;
+        };
+    };
+
     const { token, user } = useAuth();
     const { dispatch } = useGlobal();
     const { isDesktop } = useUI();
@@ -34,7 +44,7 @@ export function ChatLayout() {
     const [chats, setChats] = useState<Chat[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeChatId, setActiveChatId] = useState<string | null>(initialChatId);
-    const [messages, setMessages] = useState<(ChatMessage & { readBy?: string[] })[]>([]);
+    const [messages, setMessages] = useState<ChatMessageWithMeta[]>([]);
     const [isLoadingChats, setIsLoadingChats] = useState(true);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [messageDraft, setMessageDraft] = useState('');
@@ -91,6 +101,7 @@ export function ChatLayout() {
     const [hasMoreAfter, setHasMoreAfter] = useState(false);
     const [unreadSinceScroll, setUnreadSinceScroll] = useState(0);
     const [isAtBottom, setIsAtBottom] = useState(true);
+    const [showScrollToBottom, setShowScrollToBottom] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isLoadingNewer, setIsLoadingNewer] = useState(false);
     const [isViewingHistory, setIsViewingHistory] = useState(false);
@@ -102,10 +113,13 @@ export function ChatLayout() {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const longPressTimerRef = useRef<number | null>(null);
     const suppressCloseRef = useRef<string | null>(null);
+    const pendingMessageIdRef = useRef<string | null>(null);
+    const sendLockRef = useRef(false);
 
     const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
         messagesEndRef.current?.scrollIntoView({ behavior });
         setUnreadSinceScroll(0);
+        setShowScrollToBottom(false);
         if (activeChatId && token) {
             markAsReadGuard(activeChatId, '', token);
         }
@@ -114,10 +128,12 @@ export function ChatLayout() {
     const handleScroll = () => {
         if (!messagesContainerRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
         // Use a 50px threshold for "at bottom"
-        const atBottom = scrollHeight - scrollTop - clientHeight < 50;
+        const atBottom = distanceFromBottom < 50;
         setIsAtBottom(atBottom);
+        setShowScrollToBottom(distanceFromBottom > clientHeight * 2);
 
         if (atBottom && unreadSinceScroll > 0) {
             setUnreadSinceScroll(0);
@@ -276,6 +292,35 @@ export function ChatLayout() {
         }
     };
 
+    const reconcileIncomingMessage = useCallback((
+        prev: ChatMessageWithMeta[],
+        incoming: ChatMessage,
+        pendingId: string | null = null
+    ) => {
+        const normalizedIncoming: ChatMessageWithMeta =
+            incoming.senderId === user?.id ? { ...incoming, clientStatus: 'sent' } : incoming;
+        let next = prev;
+
+        if (pendingId) {
+            const pendingIndex = next.findIndex(message => message.id === pendingId);
+            if (pendingIndex > -1) {
+                next = [...next];
+                next[pendingIndex] = normalizedIncoming;
+            }
+        }
+
+        if (!next.some(message => message.id === incoming.id)) {
+            next = [...next, normalizedIncoming];
+        }
+
+        const seen = new Set<string>();
+        return next.filter(message => {
+            if (seen.has(message.id)) return false;
+            seen.add(message.id);
+            return true;
+        });
+    }, [user?.id]);
+
     // 3. Setup socket listen
     useEffect(() => {
         if (!subscribe || !token || !user) return;
@@ -285,14 +330,18 @@ export function ChatLayout() {
 
             if (message.chatId === activeChatId) {
                 setMessages(prev => {
-                    if (prev.some(m => m.id === message.id)) return prev;
-                    return [...prev, message];
+                    const pendingId = message.senderId === user.id ? pendingMessageIdRef.current : null;
+                    const next = reconcileIncomingMessage(prev, message, pendingId);
+                    if (pendingId && next !== prev) {
+                        pendingMessageIdRef.current = null;
+                    }
+                    return next;
                 });
 
                 // Smart scroll: only scroll if user is already at the bottom
                 // Also track unread messages if user is scrolled up
                 if (isAtBottom || message.senderId === user.id) {
-                    setTimeout(() => scrollToBottom(), 50);
+                    setTimeout(() => scrollToBottom(message.senderId === user.id ? 'instant' : 'smooth'), 50);
                 } else {
                     setUnreadSinceScroll(prev => prev + 1);
                 }
@@ -329,13 +378,18 @@ export function ChatLayout() {
         const unsubRead = subscribe('chat:read', (data: unknown) => {
             const readData = data as { chatId: string; userId: string; messageId: string };
             if (readData.chatId === activeChatId) {
-                setMessages(prev => prev.map(m => {
-                    if (m.senderId !== readData.userId && readData.messageId && readData.messageId >= m.id) {
+                setMessages(prev => {
+                    const readMessage = prev.find(candidate => candidate.id === readData.messageId);
+                    const readAt = readMessage ? new Date(readMessage.createdAt).getTime() : null;
+                    return prev.map(m => {
+                    const messageAt = new Date(m.createdAt).getTime();
+                    if (m.senderId !== readData.userId && readAt !== null && readAt >= messageAt) {
                         const readBy = Array.from(new Set([...(m.readBy || []), readData.userId]));
                         return { ...m, readBy };
                     }
                     return m;
-                }));
+                    });
+                });
             }
             if (readData.userId === user.id) {
                 setChats(prev => prev.map(c => {
@@ -397,7 +451,7 @@ export function ChatLayout() {
             unsubUpdate();
             unsubRoomLeft();
         };
-    }, [subscribe, activeChatId, token, user, dispatch, setActiveChatId]);
+    }, [subscribe, activeChatId, token, user, dispatch, setActiveChatId, isAtBottom, reconcileIncomingMessage]);
 
     // 4. Join/Leave rooms and Sync URL
     useEffect(() => {
@@ -454,23 +508,76 @@ export function ChatLayout() {
 
     const activeChatParticipantIds = useMemo(() => activeChat?.participants?.filter(p => p.isActive).map(p => p.userId) || [], [activeChat]);
 
-    const handleSendMessage = async () => {
-        if (!token || !activeChatId || (!messageDraft.trim() && stagedFiles.length === 0)) return;
+    const handleSendMessage = useCallback(async (retryMessage?: ChatMessageWithMeta) => {
+        const draftText = retryMessage?.retryPayload?.draftText ?? messageDraft.trim();
+        const filesToSend = retryMessage?.retryPayload?.stagedFiles ?? stagedFiles;
+        const replyTarget = retryMessage?.retryPayload?.replyToMessage ?? replyToMessage;
+
+        if (!token || !user || !activeChatId || (!draftText && filesToSend.length === 0)) return;
+        if (sendLockRef.current || isSending || isUploading) return;
+        sendLockRef.current = true;
         try {
             setIsSending(true);
-            let finalContent = messageDraft.trim();
+            let tempMessageId = retryMessage?.id;
+            const isRetry = !!retryMessage;
+            const organizationId = user?.organizationId ?? user?.orgId ?? null;
 
-            if (stagedFiles.length > 0) {
+            if (!editingMessage) {
+                if (!tempMessageId) {
+                    tempMessageId = `temp-${Date.now()}`;
+                    const optimisticMessage: ChatMessageWithMeta = {
+                        id: tempMessageId,
+                        chatId: activeChatId,
+                        senderId: user.id,
+                        organizationId,
+                        content: draftText || 'Sent an attachment',
+                        type: ChatMessageType.TEXT,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                        replyToId: replyTarget?.id || null,
+                        replyTo: replyTarget || null,
+                        clientStatus: 'sending',
+                        retryPayload: {
+                            draftText,
+                            stagedFiles: [...filesToSend],
+                            replyToMessage: replyTarget || null
+                        }
+                    };
+                    setMessages(prev => [...prev, optimisticMessage]);
+                    setTimeout(() => scrollToBottom('instant'), 0);
+                } else if (isRetry) {
+                    setMessages(prev => prev.map(msg => msg.id === tempMessageId ? {
+                        ...msg,
+                        clientStatus: 'sending',
+                        retryPayload: {
+                            draftText,
+                            stagedFiles: [...filesToSend],
+                            replyToMessage: replyTarget || null
+                        }
+                    } : msg));
+                }
+                pendingMessageIdRef.current = tempMessageId;
+            }
+
+            if (!isRetry) {
+                setMessageDraft('');
+                setReplyToMessage(null);
+                setStagedFiles([]);
+            }
+
+            let finalContent = draftText;
+
+            if (filesToSend.length > 0) {
                 setIsUploading(true);
-                const orgId = user?.orgId;
+                const orgId = user?.organizationId ?? user?.orgId;
                 if (!orgId) throw new Error('Organization ID missing');
 
                 const uploadResults = await Promise.all(
-                    stagedFiles.map(file => api.files.uploadFile(orgId, 'chat', activeChatId, file, token))
+                    filesToSend.map(file => api.files.uploadFile(orgId, 'chat', activeChatId, file, token))
                 );
 
                 const attachmentLinks = uploadResults.map((res, i) => {
-                    const file = stagedFiles[i];
+                    const file = filesToSend[i];
                     const url = res.url || res.path || '';
                     const isImage = file.type.startsWith('image/');
                     const isPdf = file.type === 'application/pdf';
@@ -487,7 +594,6 @@ export function ChatLayout() {
                 }).join('');
 
                 finalContent += attachmentLinks;
-                setStagedFiles([]);
                 setIsUploading(false);
             }
 
@@ -495,11 +601,18 @@ export function ChatLayout() {
                 await api.chat.editMessage(activeChatId, editingMessage.id, finalContent, token);
                 setEditingMessage(null);
             } else {
-                await api.chat.sendMessage(activeChatId, finalContent || 'Sent an attachment', token, replyToMessage?.id || undefined);
+                const sentMessage = await api.chat.sendMessage(activeChatId, finalContent || 'Sent an attachment', token, replyTarget?.id || undefined);
+                if (tempMessageId) {
+                    setMessages(prev => reconcileIncomingMessage(prev, sentMessage, tempMessageId));
+                }
+                pendingMessageIdRef.current = null;
+                setChats(prev => prev.map(chat => chat.id === activeChatId ? {
+                    ...chat,
+                    updatedAt: sentMessage.createdAt,
+                    messages: [sentMessage]
+                } : chat));
             }
 
-            setMessageDraft('');
-            setReplyToMessage(null);
             // Reset textarea size back to single-line after sending
             setTimeout(() => {
                 const ta = textareaRef.current as unknown as HTMLTextAreaElement | null;
@@ -510,18 +623,36 @@ export function ChatLayout() {
                 }
             }, 0);
             setIsSending(false);
-            textareaRef.current?.focus();
+            setTimeout(() => {
+                const ta = textareaRef.current as unknown as HTMLTextAreaElement | null;
+                ta?.focus();
+            }, 0);
             // sender's own message — no need to call markAsRead here (guarded elsewhere)
         } catch (err) {
             const error = err as Error;
             console.error(error);
+            const failedMessageId = retryMessage?.id ?? pendingMessageIdRef.current;
+            pendingMessageIdRef.current = null;
+            if (!editingMessage && failedMessageId) {
+                setMessages(prev => prev.map(msg => msg.id === failedMessageId ? {
+                    ...msg,
+                    clientStatus: 'failed',
+                    retryPayload: {
+                        draftText,
+                        stagedFiles: [...filesToSend],
+                        replyToMessage: replyTarget || null
+                    }
+                } : msg));
+            }
             setIsSending(false);
             setIsUploading(false);
             dispatch({ type: 'TOAST_ADD', payload: { message: error.message || 'Failed to send message', type: 'error' } });
+        } finally {
+            sendLockRef.current = false;
         }
-    };
+    }, [messageDraft, stagedFiles, replyToMessage, token, user, activeChatId, isSending, isUploading, editingMessage, reconcileIncomingMessage, dispatch]);
 
-    const handleDeleteMessage = (messageId: string) => {
+    const handleDeleteMessage = useCallback((messageId: string) => {
         if (!token || !activeChatId) return;
 
         setConfirmConfig({
@@ -538,7 +669,7 @@ export function ChatLayout() {
                 }
             }
         });
-    };
+    }, [token, activeChatId, dispatch]);
 
     const handleRemoveParticipant = (participantUserId: string) => {
         if (!token || !activeChatId) return;
@@ -585,11 +716,11 @@ export function ChatLayout() {
         fetchChats();
     };
 
-    const getTimestamp = (timestamp: string) => {
+    const getTimestamp = useCallback((timestamp: string) => {
         return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    };
+    }, []);
 
-    const scrollToMessage = async (messageId: string) => {
+    const scrollToMessage = useCallback(async (messageId: string) => {
         const element = document.getElementById(`msg-${messageId}`);
         if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -622,7 +753,7 @@ export function ChatLayout() {
                 setIsLoadingMessages(false);
             }
         }
-    };
+    }, [token, activeChatId, dispatch]);
 
     useEffect(() => {
         if (highlightedMessageId) {
@@ -631,7 +762,8 @@ export function ChatLayout() {
         }
     }, [highlightedMessageId]);
 
-    const handleReply = useCallback((msg: ChatMessage) => {
+    const handleReply = useCallback((msg: ChatMessageWithMeta) => {
+        if (msg.clientStatus === 'failed') return;
         setReplyToMessage(msg);
         setEditingMessage(null);
         setTimeout(() => {
@@ -639,7 +771,8 @@ export function ChatLayout() {
         }, 50);
     }, []);
 
-    const handleEditMessage = useCallback((msg: ChatMessage) => {
+    const handleEditMessage = useCallback((msg: ChatMessageWithMeta) => {
+        if (msg.clientStatus === 'failed') return;
         setEditingMessage(msg);
         setReplyToMessage(null);
         setMessageDraft(msg.content);
@@ -662,7 +795,8 @@ export function ChatLayout() {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            handleSendMessage();
+            if (sendLockRef.current || isSending || isUploading) return;
+            void handleSendMessage();
         }
     };
 
@@ -692,10 +826,8 @@ export function ChatLayout() {
         return activeChat.creatorId === user.id;
     }, [activeChat, user]);
 
-    if (!user) return null;
-
     // Date separator helper
-    const formatDateLabel = (dateStr: string) => {
+    const formatDateLabel = useCallback((dateStr: string) => {
         const d = new Date(dateStr);
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -704,35 +836,35 @@ export function ChatLayout() {
         if (msgDate.getTime() === today.getTime()) return 'Today';
         if (msgDate.getTime() === yesterday.getTime()) return 'Yesterday';
         return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-    };
+    }, []);
 
-    const getTruncatedPreview = (content?: string, max = isDesktop ? 70 : 35) => {
+    const getTruncatedPreview = useCallback((content?: string, max = isDesktop ? 70 : 35) => {
         if (!content) return '';
         const cleaned = content.replace(/!\[.*?\]\(.*?\)/g, '[Image]').trim();
         return cleaned.length > max ? cleaned.slice(0, max) + '...' : cleaned;
-    };
+    }, [isDesktop]);
 
     // Disabled tap-to-show (use long-press on mobile instead)
     const handleMessageTap = (_msgId: string) => {
         return; // intentionally no-op; long-press will reveal actions on mobile
     };
 
-    const handleTouchStart = (e: React.TouchEvent, msgId: string) => {
+    const handleTouchStart = useCallback((e: React.TouchEvent, msgId: string) => {
         e.stopPropagation();
         if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = window.setTimeout(() => {
             setTappedMessageId(msgId);
         }, 10) as unknown as number;
-    };
+    }, []);
 
-    const handleTouchEnd = (_e?: React.TouchEvent) => {
+    const handleTouchEnd = useCallback((_e?: React.TouchEvent) => {
         if (longPressTimerRef.current) {
             window.clearTimeout(longPressTimerRef.current);
             longPressTimerRef.current = null;
         }
-    };
+    }, []);
 
-    const handleDownload = (e: React.MouseEvent, url: string, name: string) => {
+    const handleDownload = useCallback((e: React.MouseEvent, url: string, name: string) => {
         e.stopPropagation();
         const link = document.createElement('a');
         link.href = url;
@@ -741,7 +873,245 @@ export function ChatLayout() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    };
+    }, []);
+
+    const renderedMessages = useMemo(() => messages.map((msg, i) => {
+        const showDateSep = i === 0 || formatDateLabel(msg.createdAt) !== formatDateLabel(messages[i - 1].createdAt);
+
+        if (msg.type === ChatMessageType.SYSTEM) {
+            return (
+                <div key={msg.id}>
+                    {showDateSep && <div className="chat-date-separator"><span>{formatDateLabel(msg.createdAt)}</span></div>}
+                    <div className="flex justify-center py-2">
+                        <div className="bg-card/80 backdrop-blur-sm text-muted-foreground px-4 py-1.5 rounded-full text-[13px] font-medium flex items-center border border-border shadow-sm">
+                            <Info size={12} className="mr-1.5 text-primary/80" />
+                            {msg.content}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const isMine = msg.senderId === user?.id;
+        const showAvatar = !isMine && (i === 0 || messages[i - 1].senderId !== msg.senderId || messages[i - 1].type === ChatMessageType.SYSTEM);
+        const isLastInGroup = i === messages.length - 1 || messages[i + 1].senderId !== msg.senderId || messages[i + 1].type === ChatMessageType.SYSTEM;
+        const isDeleted = !!msg.deletedAt;
+        const showActionsOnMobile = tappedMessageId === msg.id;
+        const isSendingMessage = msg.clientStatus === 'sending';
+        const isFailedMessage = msg.clientStatus === 'failed';
+
+        return (
+            <div key={msg.id}>
+                {showDateSep && <div className="chat-date-separator"><span>{formatDateLabel(msg.createdAt)}</span></div>}
+                <div
+                    id={`msg-${msg.id}`}
+                    onTouchStart={(e) => handleTouchStart(e, msg.id)}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchMove={handleTouchEnd}
+                    onTouchCancel={handleTouchEnd}
+                    className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-2.5' : 'mb-0.5'} transition-all duration-500 ${highlightedMessageId === msg.id ? 'animate-highlight-float z-40' : ''}`}
+                >
+                    {!isMine && (
+                        <div className="w-7 shrink-0 mr-2 flex flex-col justify-end mb-1">
+                            {isLastInGroup && <UserAvatar targetUser={msg.sender} className="w-7 h-7 rounded-full" />}
+                        </div>
+                    )}
+                    <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] min-w-0 ${isMine ? 'items-end' : 'items-start'}`}>
+                        {activeChat?.type === ChatType.GROUP && !isMine && showAvatar && (
+                            <span className="text-[13px] font-semibold text-primary/70 mb-0.5 ml-1 tracking-wide">
+                                {msg.sender?.name}
+                            </span>
+                        )}
+                        <div className={`flex items-end space-x-1.5 relative max-w-full min-w-0 group/content ${isMine ? 'flex-row-reverse space-x-reverse justify-start' : 'flex-row justify-end'}`}>
+                            <div className="flex flex-col items-inherit max-w-full min-w-0">
+                                {msg.replyTo && !isDeleted && (() => {
+                                    const isMineRepliedTo = msg.replyTo.senderId === user?.id;
+                                    return (
+                                        <div
+                                            onClick={(e) => { e.stopPropagation(); void scrollToMessage(msg.replyTo!.id); }}
+                                            className={`mb-0.5 px-3 py-1.5 rounded-lg border-l-5 text-[14px] bg-muted max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity text-foreground
+                                                                            ${isMineRepliedTo ? 'border-primary' : 'border-foreground/70'}`}
+                                        >
+                                            <p className="font-semibold mb-0.5 text-[14px] flex items-center">
+                                                <Reply size={13} className='mr-1 rotate-180' />
+                                                {msg.replyTo.sender?.name || 'Someone'}
+                                            </p>
+                                            <div className="truncate line-clamp-1 opacity-95">
+                                                <MarkdownRenderer content={getTruncatedPreview(msg.replyTo.content)} className='text-foreground!' />
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                                {isDeleted ? (
+                                    <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed bg-card text-muted-foreground border border-border ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
+                                        <div className="flex items-center space-x-1.5 italic">
+                                            <Trash2 size={13} className="opacity-50 text-red-500" />
+                                            <span>Message deleted {msg.deletedBy?.name ? `by ${msg.deletedBy.name} ` : ''} <span className='opacity-70'>{getTimestamp(msg.createdAt!)}</span></span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    (() => {
+                                        const imageRegex = /(!\[.*?\]\(.*?\))/g;
+                                        const segments = msg.content.split(imageRegex).filter(s => s.trim() !== '');
+
+                                        return (
+                                            <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} space-y-3`}>
+                                                {segments.map((segment, idx) => {
+                                                    const isImage = segment.match(/^!\[.*?\]\(.*?\)$/);
+                                                    if (isImage) {
+                                                        return (
+                                                            <div key={idx} className={`naked-image-container max-w-full transition-all duration-500 rounded-xl relative ${highlightedMessageId === msg.id ? 'ring-3 ring-primary/30' : ''}`}>
+                                                                <div className="relative">
+                                                                    <MarkdownRenderer content={segment} />
+                                                                    <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[11px] px-2 py-0.5 rounded-md flex items-center space-x-1">
+                                                                        <span className="font-medium">{getTimestamp(msg.createdAt)}</span>
+                                                                        {isMine && (
+                                                                            isSendingMessage ? (
+                                                                                <Loader2 className="w-3.5 h-3.5 animate-spin text-white" strokeWidth={2.5} />
+                                                                            ) : isFailedMessage ? (
+                                                                                <RotateCcw className="w-3.5 h-3.5 text-white/80" strokeWidth={2.5} />
+                                                                            ) : msg.readBy && msg.readBy.length > 0 ? (
+                                                                                <CheckCheck className="w-4 h-4 text-white" strokeWidth={2.5} />
+                                                                            ) : (
+                                                                                <Check className="w-4 h-4 text-white" strokeWidth={2.5} />
+                                                                            )
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={`message-bubble
+                                                                                            px-3.5 py-2 rounded-2xl leading-relaxed relative transition-all duration-300 shadow-lg
+                                                                                            ${isMine
+                                                                            ? 'bg-primary text-foreground rounded-br-sm shadow-primary/50'
+                                                                            : 'bg-card border border-border rounded-bl-sm shadow-black/10 text-foreground!'
+                                                                        }
+                                                                                            ${highlightedMessageId === msg.id ? 'ring-2 ring-primary/30 shadow-md' : ''}
+                                                                                            `}>
+
+                                                            <div className={`prose prose-sm max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground!'}`}>
+                                                                <MarkdownRenderer content={segment} className={`${isMine ? 'text-foreground!' : 'text-(--card-text)!'} whitespace-pre-wrap wrap-break-word text-foreground!`} />
+                                                            </div>
+                                                            <span className="text-[12px] text-foreground font-medium flex items-center justify-end space-x-1">
+                                                                {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
+                                                                    <span className="text-[10px] text-foreground font-medium italic opacity-85">Edited</span>
+                                                                )}
+                                                                <span className='text-foreground/80'>{getTimestamp(msg.createdAt)}</span>
+                                                                {isMine && (
+                                                                    isSendingMessage ? (
+                                                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-foreground/70" strokeWidth={2.5} />
+                                                                    ) : isFailedMessage ? (
+                                                                        <span className="ml-1 inline-flex items-center gap-1">
+                                                                            <span className="text-[10px] text-foreground/60">Failed</span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => { void handleSendMessage(msg); }}
+                                                                                disabled={sendLockRef.current || isSending || isUploading}
+                                                                                className="inline-flex items-center gap-1 rounded-full border border-foreground/15 px-1.5 py-0.5 text-[10px] text-foreground/75 hover:bg-foreground/8 disabled:opacity-50"
+                                                                                title="Retry send"
+                                                                            >
+                                                                                <RotateCcw className="w-3 h-3" strokeWidth={2.5} />
+                                                                            </button>
+                                                                        </span>
+                                                                    ) : msg.readBy && msg.readBy.length > 0 ? (
+                                                                        <CheckCheck className="w-4 h-4 text-foreground/70" strokeWidth={2.5} />
+                                                                    ) : (
+                                                                        <Check className="w-4 h-4 text-foreground/70" strokeWidth={2.5} />
+                                                                    )
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        );
+                                    })()
+                                )}
+                            </div>
+
+                            {!isDeleted && (
+                                <div className={`absolute top-1 ${isMine ? '-left-6' : '-right-6'} shrink-0 flex items-center justify-center transition-all mb-4.5
+                                                                        ${isDesktop
+                                        ? `${openDropdownId !== msg.id ? 'opacity-0 group-hover/content:opacity-100' : 'opacity-100'}`
+                                        : `${showActionsOnMobile || openDropdownId === msg.id ? 'opacity-100' : 'opacity-0'}`
+                                    }
+                                                                    `}>
+                                    <button
+                                        onClick={(e) => {
+                                            try { (e.nativeEvent).stopImmediatePropagation(); } catch (err) { }
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            suppressCloseRef.current = msg.id;
+                                            window.setTimeout(() => { if (suppressCloseRef.current === msg.id) suppressCloseRef.current = null; }, 300);
+                                            setOpenDropdownId(prev => prev === msg.id ? null : msg.id);
+                                        }}
+                                        className={`p-1.5 rounded-lg transition-all border shadow-sm ${openDropdownId === msg.id ? 'bg-foreground text-primary border-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-foreground/70 border-border bg-foreground/80 backdrop-blur-sm'} more-actions-btn`}
+                                        title="More actions"
+                                    >
+                                        <MoreVertical size={15} className="text-primary/80 hover:text-primary" />
+                                    </button>
+                                    {openDropdownId === msg.id && (
+                                        <div className={`absolute ${isMine ? 'right-0' : 'left-0'} ${isLastInGroup ? 'bottom-full' : 'top-full'} overflow-hidden mb-1 w-32 bg-card border border-border rounded-xl shadow-xl z-99 flex flex-col animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
+                                            {!isFailedMessage && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleReply(msg); }}
+                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
+                                                >
+                                                    <Reply size={12} className="mr-2 opacity-85 text-purple-700" /> Reply
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleCopyText(msg); }}
+                                                className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
+                                            >
+                                                <Copy size={12} className="mr-2 opacity-85 text-yellow-400" /> Copy Text
+                                            </button>
+                                            {isMine && !isFailedMessage && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleEditMessage(msg); }}
+                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
+                                                >
+                                                    <Pencil size={12} className="mr-2 opacity-85 text-green-400" /> Edit
+                                                </button>
+                                            )}
+                                            {Array.from(msg.content.matchAll(/\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g)).map((match, idx) => {
+                                                const label = (match[1] || '').trim();
+                                                return (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDownload(e, match[2], label || 'download'); }}
+                                                        className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
+                                                    >
+                                                        <Download size={12} className="mr-2 opacity-85 text-blue-400" />
+                                                        Download
+                                                    </button>
+                                                );
+                                            })}
+                                            {(isMine || user?.role === Role.ORG_ADMIN) && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDeleteMessage(msg.id); }}
+                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-700/30 flex items-center border-t border-border"
+                                                >
+                                                    <Trash2 size={12} className="mr-2 opacity-85 text-red-500" /> Delete
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }), [messages, formatDateLabel, user?.id, user?.role, tappedMessageId, openDropdownId, highlightedMessageId, isDesktop, activeChat?.type, handleTouchStart, handleTouchEnd, scrollToMessage, getTruncatedPreview, getTimestamp, isSending, isUploading, handleReply, handleCopyText, handleEditMessage, handleDownload, handleDeleteMessage, handleSendMessage]);
+
+    if (!user) return null;
 
     return (
         <div className="flex h-full bg-card lg:shadow-md lg:border border-border overflow-hidden relative">
@@ -971,226 +1341,7 @@ export function ChatLayout() {
                                                 </Button>
                                             </div>
                                         )}
-                                        {messages.map((msg, i) => {
-                                            // Date separator
-                                            const showDateSep = i === 0 || formatDateLabel(msg.createdAt) !== formatDateLabel(messages[i - 1].createdAt);
-
-                                            if (msg.type === ChatMessageType.SYSTEM) {
-                                                return (
-                                                    <div key={msg.id}>
-                                                        {showDateSep && <div className="chat-date-separator"><span>{formatDateLabel(msg.createdAt)}</span></div>}
-                                                        <div className="flex justify-center py-2">
-                                                            <div className="bg-card/80 backdrop-blur-sm text-muted-foreground px-4 py-1.5 rounded-full text-[13px] font-medium flex items-center border border-border shadow-sm">
-                                                                <Info size={12} className="mr-1.5 text-primary/80" />
-                                                                {msg.content}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-
-                                            const isMine = msg.senderId === user.id;
-                                            const showAvatar = !isMine && (i === 0 || messages[i - 1].senderId !== msg.senderId || messages[i - 1].type === ChatMessageType.SYSTEM);
-                                            const isLastInGroup = i === messages.length - 1 || messages[i + 1].senderId !== msg.senderId || messages[i + 1].type === ChatMessageType.SYSTEM;
-                                            const isDeleted = !!msg.deletedAt;
-                                            const showActionsOnMobile = tappedMessageId === msg.id;
-
-                                            return (
-                                                <div key={msg.id}>
-                                                    {showDateSep && <div className="chat-date-separator"><span>{formatDateLabel(msg.createdAt)}</span></div>}
-                                                    <div
-                                                        id={`msg-${msg.id}`}
-                                                        onTouchStart={(e) => handleTouchStart(e, msg.id)}
-                                                        onTouchEnd={handleTouchEnd}
-                                                        onTouchMove={handleTouchEnd}
-                                                        onTouchCancel={handleTouchEnd}
-                                                        className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-2.5' : 'mb-0.5'} transition-all duration-500 ${highlightedMessageId === msg.id ? 'animate-highlight-float z-40' : ''}`}
-                                                    >
-                                                        {!isMine && (
-                                                            <div className="w-7 shrink-0 mr-2 flex flex-col justify-end mb-1">
-                                                                {isLastInGroup && <UserAvatar targetUser={msg.sender} className="w-7 h-7 rounded-full" />}
-
-                                                            </div>
-                                                        )}
-                                                        <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] min-w-0 ${isMine ? 'items-end' : 'items-start'}`}>
-                                                            {activeChat.type === ChatType.GROUP && !isMine && showAvatar && (
-                                                                <span className="text-[13px] font-semibold text-primary/70 mb-0.5 ml-1 tracking-wide">
-                                                                    {msg.sender?.name}
-                                                                </span>
-                                                            )}
-                                                            <div className={`flex items-end space-x-1.5 relative max-w-full min-w-0 group/content ${isMine ? 'flex-row-reverse space-x-reverse justify-start' : 'flex-row justify-end'}`}>
-                                                                <div className="flex flex-col items-inherit max-w-full min-w-0">
-                                                                    {/* Reply Preview */}
-                                                                    {msg.replyTo && !isDeleted && (() => {
-                                                                        const isMineRepliedTo = msg.replyTo.senderId === user.id;
-                                                                        return (
-                                                                            <div
-                                                                                onClick={(e) => { e.stopPropagation(); scrollToMessage(msg.replyTo!.id); }}
-                                                                                className={`mb-0.5 px-3 py-1.5 rounded-lg border-l-5 text-[14px] bg-muted max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity text-foreground
-                                                                            ${isMineRepliedTo ? 'border-primary' : 'border-foreground/70'}`}
-                                                                            >
-                                                                                <p className="font-semibold mb-0.5 text-[14px] flex items-center">
-                                                                                    <Reply size={13} className='mr-1 rotate-180' />
-                                                                                    {msg.replyTo.sender?.name || 'Someone'}
-                                                                                </p>
-                                                                                        <div className="truncate line-clamp-1 opacity-95">
-                                                                                            <MarkdownRenderer content={getTruncatedPreview(msg.replyTo.content)} className='text-foreground!' />
-                                                                                        </div>
-                                                                            </div>
-                                                                        );
-                                                                    })()}
-                                                                    {isDeleted ? (
-                                                                        <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed bg-card text-muted-foreground border border-border ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
-                                                                            <div className="flex items-center space-x-1.5 italic">
-                                                                                <Trash2 size={13} className="opacity-50 text-red-500" />
-                                                                                <span>Message deleted {msg.deletedBy?.name ? `by ${msg.deletedBy.name} ` : ''} <span className='opacity-70'>{getTimestamp(msg.createdAt!)}</span></span>
-                                                                            </div>
-                                                                        </div>
-                                                                    ) : (
-                                                                        (() => {
-                                                                            const imageRegex = /(!\[.*?\]\(.*?\))/g;
-                                                                            const segments = msg.content.split(imageRegex).filter(s => s.trim() !== '');
-
-                                                                            return (
-                                                                                <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} space-y-3`}>
-                                                                                    {segments.map((segment, idx) => {
-                                                                                        const isImage = segment.match(/^!\[.*?\]\(.*?\)$/);
-                                                                                        if (isImage) {
-                                                                                            return (
-                                                                                                <div key={idx} className={`naked-image-container max-w-full transition-all duration-500 rounded-xl relative ${highlightedMessageId === msg.id ? 'ring-3 ring-primary/30' : ''}`}>
-                                                                                                    <div className="relative">
-                                                                                                        <MarkdownRenderer content={segment} />
-                                                                                                        <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[11px] px-2 py-0.5 rounded-md flex items-center space-x-1">
-                                                                                                        {/* Timestamps and read receipts overlay for images */}
-                                                                                                            <span className="font-medium">{getTimestamp(msg.createdAt)}</span>
-                                                                                                            {isMine && (
-                                                                                                                msg.readBy && msg.readBy.length > 0 ? (
-                                                                                                                    <CheckCheck className="w-4 h-4 text-white" strokeWidth={2.5} />
-                                                                                                                ) : (
-                                                                                                                    <Check className="w-4 h-4 text-white" strokeWidth={2.5} />
-                                                                                                                )
-                                                                                                            )}
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            );
-                                                                                        }
-
-                                                                                        return (
-                                                                                            <div
-                                                                                                key={idx}
-                                                                                                className={`message-bubble
-                                                                                            px-3.5 py-2 rounded-2xl leading-relaxed relative transition-all duration-300 shadow-lg
-                                                                                            ${isMine
-                                                                                                        ? 'bg-primary text-foreground rounded-br-sm shadow-primary/50'
-                                                                                                        : 'bg-card border border-border rounded-bl-sm shadow-black/10 text-foreground!'
-                                                                                                    }
-                                                                                            ${highlightedMessageId === msg.id ? 'ring-2 ring-primary/30 shadow-md' : ''}
-                                                                                            `}>
-
-                                                                                                <div className={`prose prose-sm max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground!'}`}>
-                                                                                                    <MarkdownRenderer content={segment} className={`${isMine ? 'text-foreground!' : 'text-(--card-text)!'} whitespace-pre-wrap wrap-break-word text-foreground!`} />
-                                                                                                </div>
-                                                                                                {/* Timestamps and read receipts */}
-                                                                                                <span className="text-[12px] text-foreground font-medium flex items-center justify-end space-x-1">
-                                                                                                    {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
-                                                                                                        <span className="text-[10px] text-foreground font-medium italic opacity-85">Edited</span>
-                                                                                                    )}
-                                                                                                    <span className='text-foreground/80'>{getTimestamp(msg.createdAt)}</span>
-                                                                                                    {isMine && (
-                                                                                                        msg.readBy && msg.readBy.length > 0 ? (
-                                                                                                            <CheckCheck className="w-4 h-4 text-foreground/70" strokeWidth={2.5} />
-                                                                                                        ) : (
-                                                                                                            <Check className="w-4 h-4 text-foreground/70" strokeWidth={2.5} />
-                                                                                                        )
-                                                                                                    )}
-                                                                                                </span>
-                                                                                            </div>
-                                                                                        );
-                                                                                    })}
-                                                                                </div>
-                                                                            );
-                                                                        })()
-                                                                    )}
-                                                                </div>
-
-                                                                {/* Actions */}
-                                                                {!isDeleted && (
-                                                                    <div className={`absolute top-1 ${isMine ? '-left-6' : '-right-6'} shrink-0 flex items-center justify-center transition-all mb-4.5
-                                                                        ${isDesktop
-                                                                            ? `${openDropdownId !== msg.id ? 'opacity-0 group-hover/content:opacity-100' : 'opacity-100'}`
-                                                                            : `${showActionsOnMobile || openDropdownId === msg.id ? 'opacity-100' : 'opacity-0'}`
-                                                                        }
-                                                                    `}>
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                // Ensure native handlers don't immediately close the dropdown
-                                                                                try { (e.nativeEvent).stopImmediatePropagation(); } catch (err) { }
-                                                                                e.preventDefault();
-                                                                                e.stopPropagation();
-                                                                                // Suppress global close briefly for this message id
-                                                                                suppressCloseRef.current = msg.id;
-                                                                                window.setTimeout(() => { if (suppressCloseRef.current === msg.id) suppressCloseRef.current = null; }, 300);
-                                                                                setOpenDropdownId(prev => prev === msg.id ? null : msg.id);
-                                                                            }}
-                                                                            className={`p-1.5 rounded-lg transition-all border shadow-sm ${openDropdownId === msg.id ? 'bg-foreground text-primary border-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-foreground/70 border-border bg-foreground/80 backdrop-blur-sm'} more-actions-btn`}
-                                                                            title="More actions"
-                                                                        >
-                                                                            <MoreVertical size={15} className="text-primary/80 hover:text-primary" />
-                                                                        </button>
-                                                                        {openDropdownId === msg.id && (
-                                                                            <div className={`absolute ${isMine ? 'right-0' : 'left-0'} ${isLastInGroup ? 'bottom-full' : 'top-full'} overflow-hidden mb-1 w-32 bg-card border border-border rounded-xl shadow-xl z-99 flex flex-col animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
-                                                                                <button
-                                                                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleReply(msg); }}
-                                                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
-                                                                                >
-                                                                                    <Reply size={12} className="mr-2 opacity-85 text-purple-700" /> Reply
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleCopyText(msg); }}
-                                                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
-                                                                                >
-                                                                                    <Copy size={12} className="mr-2 opacity-85 text-yellow-400" /> Copy Text
-                                                                                </button>
-                                                                                {isMine && (
-                                                                                    <button
-                                                                                        onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleEditMessage(msg); }}
-                                                                                        className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
-                                                                                    >
-                                                                                        <Pencil size={12} className="mr-2 opacity-85 text-green-400" /> Edit
-                                                                                    </button>
-                                                                                )}
-                                                                                {Array.from(msg.content.matchAll(/\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g)).map((match, idx) => {
-                                                                                    const label = (match[1] || '').trim();
-                                                                                    return (
-                                                                                        <button
-                                                                                            key={idx}
-                                                                                            onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDownload(e, match[2], label || 'download') }}
-                                                                                            className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
-                                                                                        >
-                                                                                            <Download size={12} className="mr-2 opacity-85 text-blue-400" />
-                                                                                            Download
-                                                                                        </button>
-                                                                                    );
-                                                                                })}
-                                                                                {(isMine || user.role === Role.ORG_ADMIN) && (
-                                                                                    <button
-                                                                                        onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDeleteMessage(msg.id); }}
-                                                                                        className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-700/30 flex items-center border-t border-border"
-                                                                                    >
-                                                                                        <Trash2 size={12} className="mr-2 opacity-85 text-red-500" /> Delete
-                                                                                    </button>
-                                                                                )}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                        {renderedMessages}
 
                                         <div ref={messagesEndRef} />
 
@@ -1228,7 +1379,7 @@ export function ChatLayout() {
                             )}
 
                             {/* Scroll to Bottom FAB */}
-                            {((!isAtBottom && !isLoadingMessages) || isViewingHistory) && (
+                            {((showScrollToBottom && !isLoadingMessages) || isViewingHistory) && (
                                 <button
                                     type="button"
                                     onClick={() => isViewingHistory ? (activeChatId && fetchInitialMessages(activeChatId)) : scrollToBottom()}
@@ -1304,14 +1455,16 @@ export function ChatLayout() {
                                             </div>
                                         </div>
                                             <button
-                                            onClick={() => {
-                                                setReplyToMessage(null);
-                                                if (editingMessage) {
-                                                    setEditingMessage(null);
-                                                    setMessageDraft('');
-                                                }
-                                            }}
-                                            className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/40 rounded-lg transition-colors"
+                                            title='Cancel'
+                                                type="button"
+                                                onClick={() => {
+                                                    setReplyToMessage(null);
+                                                    if (editingMessage) {
+                                                        setEditingMessage(null);
+                                                        setMessageDraft('');
+                                                    }
+                                                }}
+                                                className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/40 rounded-lg transition-colors"
                                         >
                                             <X size={14} className="text-primary/80 hover:text-primary" />
                                         </button>
@@ -1375,6 +1528,7 @@ export function ChatLayout() {
                                         <textarea
                                             ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
                                             value={messageDraft}
+                                            disabled={isSending || isUploading}
                                             onChange={(e) => {
                                                 const el = e.target;
                                                 setMessageDraft(el.value);
@@ -1409,10 +1563,10 @@ export function ChatLayout() {
                                             <Plus size={22} className="text-primary/80 hover:text-primary hover:scale-115 cursor-pointer" />
                                         </button>
                                         {/* Send Button */}
-                                        {messageDraft.trim() && (
+                                        {(messageDraft.trim() || stagedFiles.length > 0) && (
                                             <button
                                                 type="button"
-                                                onClick={handleSendMessage}
+                                                onClick={() => { void handleSendMessage(); }}
                                                 disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
                                                 className="absolute right-4 bottom-2.5 z-20 shrink-0 active:scale-95"
                                                 title="Send"

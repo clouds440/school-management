@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { GraduationCap, User as UserIcon } from 'lucide-react';
@@ -12,17 +13,30 @@ import { Role } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
 
 type BrandSize = 'sm' | 'md' | 'lg' | 'xl' | 'hero';
+type BrandIdentity = {
+  id?: string;
+  name?: string | null;
+  userName?: string;
+  orgName?: string;
+  orgLogoUrl?: string | null;
+  avatarUrl?: string | null;
+  avatarUpdatedAt?: string | null;
+  role?: Role;
+  orgSlug?: string;
+};
 
 interface BrandIconProps {
   variant?: 'brand' | 'user';
   size?: BrandSize;
   className?: string;
   forcePlatform?: boolean;
-  user?: Partial<JwtPayload> | any; // Supports both session user and external user data from APIs
+  user?: BrandIdentity;
   initialsFallback?: boolean;
 }
 
-export function BrandIcon({
+const failedBrandImageUrls = new Set<string>();
+
+export const BrandIcon = React.memo(function BrandIcon({
   variant = 'brand',
   size = 'md',
   className = "",
@@ -33,7 +47,7 @@ export function BrandIcon({
   const { user: sessionUser } = useAuth();
   const pathname = usePathname();
 
-  const user = externalUser || sessionUser;
+  const user: BrandIdentity | JwtPayload | null = externalUser || sessionUser;
 
   const segments = pathname?.split('/').filter(Boolean) || [];
   const isDashboardContext = segments.length >= 2 && DASHBOARD_MODULES.includes(segments[1]);
@@ -63,18 +77,16 @@ export function BrandIcon({
   };
 
   // Logic for Logo/Avatar
-  let displayLogo: string | null = null;
-  let FallbackIcon = variant === 'brand' ? (isOrgBrandingActive ? GraduationCap : BrandLogoIcon) : UserIcon;
-
-  if (variant === 'brand') {
-    displayLogo = isOrgBrandingActive ? (user?.orgLogoUrl ? getPublicUrl(user.orgLogoUrl, user.avatarUpdatedAt) : null) : null;
-  } else {
-    displayLogo = user?.avatarUrl || user?.orgLogoUrl ? getPublicUrl(user.avatarUrl || user.orgLogoUrl, user.avatarUpdatedAt) : null;
-  }
+  const FallbackIcon = variant === 'brand' ? (isOrgBrandingActive ? GraduationCap : BrandLogoIcon) : UserIcon;
+  const displayLogo = variant === 'brand'
+    ? (isOrgBrandingActive ? (user?.orgLogoUrl ? getPublicUrl(user.orgLogoUrl, user.avatarUpdatedAt) : null) : null)
+    : (user?.avatarUrl || user?.orgLogoUrl ? getPublicUrl(user.avatarUrl || user.orgLogoUrl, user.avatarUpdatedAt) : null);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const shouldShowImage = !!displayLogo && failedSrc !== displayLogo && !failedBrandImageUrls.has(displayLogo);
 
   return (
     <div className={`rounded-full ${sizeClasses[size]} flex items-center justify-center shrink-0 ${className}`}>
-      {displayLogo ? (
+      {shouldShowImage ? (
         <div className={`relative w-full h-full rounded-full overflow-hidden shadow-sm shadow-black/5 transition-transform group-hover:scale-110`}>
           <Image
             src={displayLogo}
@@ -82,6 +94,10 @@ export function BrandIcon({
             fill
             className="object-cover"
             unoptimized
+            onError={() => {
+              if (displayLogo) failedBrandImageUrls.add(displayLogo);
+              setFailedSrc(displayLogo);
+            }}
           />
         </div>
       ) : (
@@ -131,7 +147,7 @@ export function BrandIcon({
       )}
     </div>
   );
-}
+});
 
 interface BrandProps extends BrandIconProps {
   showName?: boolean;
@@ -141,7 +157,7 @@ interface BrandProps extends BrandIconProps {
   showNameOnly?: boolean;
 }
 
-export function Brand({
+export const Brand = React.memo(function Brand({
   variant = 'brand',
   showName = true,
   showLogo = true,
@@ -222,7 +238,7 @@ export function Brand({
       {content}
     </Link>
   );
-}
+});
 
 /**
  * Our new custom platform logo icon
