@@ -147,11 +147,11 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     <span className={`
                                         flex items-center justify-center shrink-0
                                         ${!effectiveExpanded
-                                            ? 'absolute -top-1 -right-1 min-w-4.5 h-4.5 px-1 rounded-full'
+                                            ? 'absolute -top-0.5 -right-1.5 min-w-4.5 h-4.5 px-1 rounded-full'
                                             : 'ml-auto px-2 py-0.5 rounded-full'
                                         } 
                                         text-[10px] font-black tracking-tighter animate-in zoom-in duration-300 
-                                        ${link.badge === 0 ? 'bg-muted text-muted-foreground' : `${link.label === 'Messages' ? 'bg-red-500' : 'bg-primary/20'} text-primary shadow-sm ring-2 ring-primary/60`}
+                                        ${link.badge === 0 ? 'bg-muted text-muted-foreground' : `${link.label === 'Messages' ? 'bg-red-500/40' : 'bg-primary/20'} text-primary shadow-sm ring-2 ring-primary/60`}
                                     `}>
                                         {link.badge}
                                     </span>

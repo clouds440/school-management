@@ -2,13 +2,14 @@
 
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { GraduationCap, Sparkles, User as UserIcon } from 'lucide-react';
+import { GraduationCap, User as UserIcon } from 'lucide-react';
 import { PLATFORM_NAME, DASHBOARD_MODULES } from '@/lib/constants';
 import { useAuth } from '@/context/AuthContext';
 import { getPublicUrl } from '@/lib/utils';
 import Link from 'next/link';
 import { JwtPayload } from '@/context/GlobalContext';
 import { Role } from '@/types';
+import { useTheme } from '@/context/ThemeContext';
 
 type BrandSize = 'sm' | 'md' | 'lg' | 'xl' | 'hero';
 
@@ -153,6 +154,7 @@ export function Brand({
 }: BrandProps) {
   const { user: sessionUser } = useAuth();
   const pathname = usePathname();
+  const { themeMode } = useTheme();
 
   const activeUser = user || sessionUser;
 
@@ -193,7 +195,21 @@ export function Brand({
             {displayName}
           </span>
         ) : (
-          <img src="/assets/eduverse.png" alt={PLATFORM_NAME} className={`object-contain transition-all duration-300 ${size === 'sm' ? 'h-5' : size === 'md' ? 'h-7' : size === 'lg' ? 'h-8' : size === 'xl' ? 'h-10' : 'h-16 md:h-28'}`} />
+          <img src="/assets/eduverse.png" alt={PLATFORM_NAME} 
+          className={`${
+            themeMode === 'DARK' ||
+            (themeMode === 'SYSTEM' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+              ? 'filter invert'
+              : ''
+            } object-contain transition-all duration-300 ${
+              size === 'sm' ? 'h-5'
+                : size === 'md' ? 'h-7'
+                : size === 'lg' ? 'h-8'
+                : size === 'xl' ? 'h-10'
+                : 'h-16 md:h-28'
+            }`}
+          />
         )
       )}
     </div>

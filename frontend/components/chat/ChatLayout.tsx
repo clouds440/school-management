@@ -891,7 +891,7 @@ export function ChatLayout() {
                 {activeChat ? (
                     <>
                         {/* Chat Header */}
-                        <div className="px-4 py-3 border-b border-border flex items-center justify-between z-20 bg-background/95 backdrop-blur-md relative">
+                        <div className="absolute w-full px-4 py-3 border-b border-border flex items-center justify-between z-20 bg-background/95 backdrop-blur-md">
                             <div className="flex items-center space-x-3 min-w-0">
                                 {!isDesktop && (
                                     <button
@@ -1116,7 +1116,7 @@ export function ChatLayout() {
 
                                                                 {/* Actions */}
                                                                 {!isDeleted && (
-                                                                    <div className={`absolute top-0 shrink-0 flex items-center justify-center transition-all mb-4.5
+                                                                    <div className={`absolute top-1 ${isMine ? '-left-6' : '-right-6'} shrink-0 flex items-center justify-center transition-all mb-4.5
                                                                         ${isDesktop
                                                                             ? `${openDropdownId !== msg.id ? 'opacity-0 group-hover/content:opacity-100' : 'opacity-100'}`
                                                                             : `${showActionsOnMobile || openDropdownId === msg.id ? 'opacity-100' : 'opacity-0'}`
@@ -1133,29 +1133,29 @@ export function ChatLayout() {
                                                                                 window.setTimeout(() => { if (suppressCloseRef.current === msg.id) suppressCloseRef.current = null; }, 300);
                                                                                 setOpenDropdownId(prev => prev === msg.id ? null : msg.id);
                                                                             }}
-                                                                            className={`p-1.5 rounded-lg transition-all border shadow-sm ${openDropdownId === msg.id ? 'bg-card/80 text-primary border-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-card border-border bg-card backdrop-blur-sm'} more-actions-btn`}
+                                                                            className={`p-1.5 rounded-lg transition-all border shadow-sm ${openDropdownId === msg.id ? 'bg-foreground text-primary border-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-foreground/70 border-border bg-foreground/80 backdrop-blur-sm'} more-actions-btn`}
                                                                             title="More actions"
                                                                         >
                                                                             <MoreVertical size={15} className="text-primary/80 hover:text-primary" />
                                                                         </button>
                                                                         {openDropdownId === msg.id && (
-                                                                            <div className={`absolute ${isMine ? 'right-0' : 'left-0'} bottom-full overflow-hidden mb-1 w-32 bg-card border border-border rounded-xl shadow-xl z-70 flex flex-col animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
+                                                                            <div className={`absolute ${isMine ? 'right-0' : 'left-0'} ${isLastInGroup ? 'bottom-full' : 'top-full'} overflow-hidden mb-1 w-32 bg-card border border-border rounded-xl shadow-xl z-99 flex flex-col animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
                                                                                 <button
                                                                                     onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleReply(msg); }}
-                                                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center mb-0.5"
+                                                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
                                                                                 >
                                                                                     <Reply size={12} className="mr-2 opacity-85 text-purple-700" /> Reply
                                                                                 </button>
                                                                                 <button
                                                                                     onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleCopyText(msg); }}
-                                                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center mb-0.5"
+                                                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
                                                                                 >
                                                                                     <Copy size={12} className="mr-2 opacity-85 text-yellow-400" /> Copy Text
                                                                                 </button>
                                                                                 {isMine && (
                                                                                     <button
                                                                                         onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleEditMessage(msg); }}
-                                                                                        className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center mb-0.5"
+                                                                                        className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
                                                                                     >
                                                                                         <Pencil size={12} className="mr-2 opacity-85 text-green-400" /> Edit
                                                                                     </button>
@@ -1166,7 +1166,7 @@ export function ChatLayout() {
                                                                                         <button
                                                                                             key={idx}
                                                                                             onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDownload(e, match[2], label || 'download') }}
-                                                                                            className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center mb-0.5"
+                                                                                            className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
                                                                                         >
                                                                                             <Download size={12} className="mr-2 opacity-85 text-blue-400" />
                                                                                             Download
@@ -1176,7 +1176,7 @@ export function ChatLayout() {
                                                                                 {(isMine || user.role === Role.ORG_ADMIN) && (
                                                                                     <button
                                                                                         onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDeleteMessage(msg.id); }}
-                                                                                        className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-700/30 flex items-center mt-1 border-t border-border pt-2"
+                                                                                        className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-700/30 flex items-center border-t border-border"
                                                                                     >
                                                                                         <Trash2 size={12} className="mr-2 opacity-85 text-red-500" /> Delete
                                                                                     </button>
@@ -1232,7 +1232,7 @@ export function ChatLayout() {
                                 <button
                                     type="button"
                                     onClick={() => isViewingHistory ? (activeChatId && fetchInitialMessages(activeChatId)) : scrollToBottom()}
-                                    className="absolute bottom-16 right-16 z-30 p-2.5 bg-card text-foreground/70 rounded-full shadow-lg border border-border hover:bg-card/80 hover:text-primary hover:border-primary transition-all active:scale-95 group"
+                                    className="absolute bottom-18 right-5 z-30 p-2.5 bg-card text-foreground/70 rounded-full shadow-lg border border-border hover:bg-card/80 hover:text-primary hover:border-primary transition-all active:scale-95 group"
                                     title={isViewingHistory ? "Jump to Present" : "Scroll to bottom"}
                                 >
                                     <ArrowDown size={18} className="group-hover:translate-y-0.5 transition-transform text-primary/80" />
@@ -1291,7 +1291,7 @@ export function ChatLayout() {
                             <div className="absolute bottom-0 w-full border-border px-1 md:px-1 py-1 z-20">
                                 {/* Reply / Edit Banner */}
                                 {(replyToMessage || editingMessage) && (
-                                    <div className="mb-2 px-3 py-2 bg-muted border-l-[3px] border-primary rounded-r-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                                    <div className="mb-1 px-3 py-2 mx-2 bg-muted border-l-[3px] border-primary rounded-r-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
                                         <div className="flex-1 min-w-0 pr-3">
                                             <p className="text-[13px] font-semibold text-primary mb-0.5">
                                                 {editingMessage ? 'Editing Message' : `Replying to ${replyToMessage?.sender?.name == user.name ? 'Yourself' : replyToMessage?.sender?.name || 'Message'}`}
@@ -1320,7 +1320,7 @@ export function ChatLayout() {
 
                                 {/* Staged Files */}
                                 {stagedFiles.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mb-2">
+                                    <div className="flex flex-wrap gap-2 mb-1 mx-2">
                                         {stagedFiles.map((file, i) => (
                                             <div key={i} className="group relative flex items-center bg-muted border border-border pl-2 pr-1 py-1 rounded-xl hover:border-primary/30 transition-all">
                                                 {file.type.startsWith('image/') ? (
@@ -1351,7 +1351,7 @@ export function ChatLayout() {
 
                                 {/* Preview Mode Render */}
                                 {isPreviewMode && messageDraft.trim() && (
-                                    <div className="my-3 px-4 py-3 bg-muted rounded-xl border border-border max-h-37.5 overflow-y-auto custom-scrollbar">
+                                    <div className="my-1 px-4 py-3 mx-2 bg-muted rounded-xl border border-border max-h-37.5 overflow-y-auto custom-scrollbar">
                                         <div className="prose prose-sm max-w-none prose-p:text-foreground/80">
                                             <MarkdownRenderer content={messageDraft} className='text-foreground!' />
                                         </div>
@@ -1370,7 +1370,7 @@ export function ChatLayout() {
                                     />
 
                                     <div className={`pr-5 ${messageDraft.includes('\n') ? 'py-3' : 'py-0'}
-                                            flex-1 relative flex items-center bg-muted border border-transparent mx-2 rounded-2xl focus-within:bg-card
+                                            flex-1 relative flex items-center bg-muted border border-transparent mx-2 mb-2 rounded-2xl focus-within:bg-card
                                             focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all`}>
                                         <textarea
                                             ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
@@ -1397,7 +1397,7 @@ export function ChatLayout() {
                                             className={`absolute left-3 bottom-3 text-primary/80 hover:text-primary hover:scale-110 cursor-pointer`}
                                             title={isPreviewMode ? "Write text" : "Preview markdown"}
                                         >
-                                            {isPreviewMode ? <Pencil size={24}/> : <Eye size={24} />}
+                                            {isPreviewMode ? <Pencil size={22}/> : <Eye size={24} />}
                                         </button>
                                         {/* File Upload Button */}
                                         <button
