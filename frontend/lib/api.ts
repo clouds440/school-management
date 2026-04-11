@@ -6,7 +6,7 @@ import {
     PaginatedResponse, OrgStatus, MailItem, MailDetail, CreateMailPayload, UpdateMailPayload,
     Assessment, Grade, Submission, CreateAssessmentRequest, UpdateAssessmentRequest,
     UpdateGradeRequest, CreateSubmissionRequest, FinalGradeResponse, MailTarget,
-    Chat, ChatMessage, Notification, Announcement, ChatType, TargetType, AnnouncementPriority, User,
+    Chat, ChatMessage, Notification, Announcement, TargetType, AnnouncementPriority, User,
     ThemeMode
 } from '@/types';
 

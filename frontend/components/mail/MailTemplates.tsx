@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FileText, CheckCircle, AlertTriangle, ShieldAlert, MessageSquare } from 'lucide-react';
+import { CheckCircle, AlertTriangle, ShieldAlert, MessageSquare } from 'lucide-react';
 
 export interface MailTemplate {
     id: string;

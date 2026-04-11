@@ -12,7 +12,7 @@ import { BrandIcon } from '../ui/Brand';
 import { Chat, ChatMessage, ChatType, ChatMessageType, PaginatedResponse, Role, User } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import {
-    Search, Plus, MessageSquarePlus, Send, MoreVertical, X, Loader2, Paperclip,
+    Search, Plus, MessageSquarePlus, Send, MoreVertical, X, Loader2,
     UserMinus, Trash2, Info, ChevronLeft, Check, CheckCheck, ArrowDown, Pencil, Reply, ArrowUp, Download, RotateCcw,
     Copy,
     Eye

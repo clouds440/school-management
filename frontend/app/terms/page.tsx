@@ -1,6 +1,6 @@
 'use client';
 import { Reveal } from '@/components/ui/Reveal';
-import { Shield, Clock, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Clock, ArrowLeft, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { PLATFORM_NAME } from '@/lib/constants';
 

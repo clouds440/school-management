@@ -28,8 +28,7 @@ interface TeacherFormProps {
 export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile }: TeacherFormProps) {
     const { token, user: currentUser, updateUser } = useAuth();
     const router = useRouter();
-    const { state, dispatch } = useGlobal();
-    const isProcessing = state.ui.isProcessing;
+    const { dispatch } = useGlobal();
     const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
 
     const [sections, setSections] = useState<Section[]>([]);

@@ -22,6 +22,8 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const { user, token } = useAuth();
+    const userOrgSlug = user?.orgSlug;
+    const userRole = user?.role;
     const [primaryColor, setPrimaryColorState] = useState(DEFAULT_PRIMARY);
     const [secondaryColor, setSecondaryColor] = useState(DEFAULT_SECONDARY);
     const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
@@ -139,7 +141,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }, [applyTheme, primaryColor]);
 
     const refreshTheme = useCallback(async () => {
-        if (!token || !user?.orgSlug || user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) {
+        if (!token || !userOrgSlug || userRole === Role.SUPER_ADMIN || userRole === Role.PLATFORM_ADMIN) {
             setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
             return;
         }
@@ -161,7 +163,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             console.error('Failed to fetch theme settings:', error);
             setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
         }
-    }, [applyTheme, setThemeColors, themeMode, token, user?.orgSlug, user?.role]);
+    }, [applyTheme, setThemeColors, themeMode, token, userOrgSlug, userRole]);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -215,16 +217,6 @@ function getBrightness(hex: string) {
 function getContrastColor(hex: string) {
     const yiq = getBrightness(hex);
     return (yiq >= 128) ? '#111827' : '#ffffff';
-}
-
-function isNeutral(hex: string) {
-    const rgb = hexToRgb(hex);
-    if (!rgb) return true;
-    const threshold = 15;
-    return Math.abs(rgb.r - rgb.g) < threshold &&
-        Math.abs(rgb.g - rgb.b) < threshold &&
-        Math.abs(rgb.r - rgb.b) < threshold &&
-        (rgb.r > 200 || rgb.r < 50); // very light or very dark grays
 }
 
 // Utility to darken/lighten hex colors

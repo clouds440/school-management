@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { DashboardLayout, SidebarLink } from '@/components/ui/DashboardLayout';
 import { Building, Mail, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -13,6 +13,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
     const { user, token } = useAuth();
     const { state, dispatch } = useGlobal();
     const stats = state.stats.admin;
+    const chatStats = state.stats.chat;
 
     const { subscribe } = useSocket({
         token: token,
@@ -39,7 +40,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         if (!token) return;
 
         // Debounce full fetches to avoid storms
-        let debounceTimer: any | null = null;
+        let debounceTimer: ReturnType<typeof setTimeout> | null = null;
         const debouncedFetch = () => {
             if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => fetchStats(), 800);
@@ -69,8 +70,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         };
     }, [subscribe, fetchStats, token, dispatch]);
 
-    // Memoize links to avoid re-calculation on every render
-    const links = useMemo((): SidebarLink[] => {
+    const links = (): SidebarLink[] => {
         const adminLinks: SidebarLink[] = [
             {
                 id: 'ORGANIZATIONS',
@@ -107,17 +107,17 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
             label: 'Messages',
             href: '/admin/chat',
             icon: MessageSquare,
-            badge: state.stats.chat && state.stats.chat.unread > 0 ? `${state.stats.chat.unread} New` : undefined
+            badge: chatStats && chatStats.unread > 0 ? `${chatStats.unread} New` : undefined
         });
 
         return adminLinks;
-    }, [stats, user?.role, state.stats.chat?.unread]);
+    };
 
     const bottomLinks: SidebarLink[] = [];
 
     return (
         <DashboardLayout
-            links={links}
+            links={links()}
             bottomLinks={bottomLinks}
         >
             {children}

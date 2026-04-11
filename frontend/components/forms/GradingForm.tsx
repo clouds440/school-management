@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Check, Edit3, MessageCircle, Star } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -32,8 +31,7 @@ export default function GradingForm({
     onSuccess,
     onCancel
 }: GradingFormProps) {
-    const { state, dispatch } = useGlobal();
-    const isProcessing = state.ui.isProcessing;
+    const { dispatch } = useGlobal();
 
     const { token } = useAuth();
 

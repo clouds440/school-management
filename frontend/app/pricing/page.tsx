@@ -1,6 +1,6 @@
 'use client';
 import { Reveal } from '@/components/ui/Reveal';
-import { Check, Zap, Shield, Globe, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { PLATFORM_NAME } from '@/lib/constants';
 
@@ -15,7 +15,7 @@ export default function PricingPage() {
           </Reveal>
           <Reveal delay={200}>
             <p className="text-xl text-muted-foreground font-medium leading-relaxed">
-              Choose the plan that fits your institution's size. No hidden fees, no complex contracts.
+              Choose the plan that fits your institution&apos;s size. No hidden fees, no complex contracts.
             </p>
           </Reveal>
         </div>

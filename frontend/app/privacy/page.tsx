@@ -33,7 +33,7 @@ export default function PrivacyPage() {
           <Reveal>
             <h2 className="text-3xl font-black text-foreground mb-8 border-b border-border pb-4">1. Data Storage & Multi-Tenancy</h2>
               <p className="text-muted-foreground font-medium leading-relaxed mb-12">
-              {PLATFORM_NAME} architecture is built upon a high-performance multi-tenant system. This means your institution's data is logically isolated in its own dedicated workspace. We use AES-256 encryption at rest and TLS 1.3 for data in transit, ensuring that student and administrative information remains private and secure at all times.
+              {PLATFORM_NAME} architecture is built upon a high-performance multi-tenant system. This means your institution&apos;s data is logically isolated in its own dedicated workspace. We use AES-256 encryption at rest and TLS 1.3 for data in transit, ensuring that student and administrative information remains private and secure at all times.
             </p>
           </Reveal>
 

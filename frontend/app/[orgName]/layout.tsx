@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect } from 'react';
 import { DashboardLayout, SidebarLink } from '@/components/ui/DashboardLayout';
 import {
     LayoutDashboard, Users, BookOpen, GraduationCap,
@@ -114,6 +114,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
 
     const stats = state.stats.org;
     const orgData = state.stats.orgData;
+    const userProfile = state.auth.userProfile;
+    const chatStats = state.stats.chat;
     const isApproved = orgData?.status === OrgStatus.APPROVED;
     const orgSlug = pathname.split('/')[1] || user?.orgSlug || 'organization';
 
@@ -149,7 +151,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
                     .catch(err => console.error('Failed to fetch chat stats:', err));
 
                 // Fetch User Profile (if Teacher or Student)
-                if ((user?.role === Role.TEACHER || user?.role === Role.STUDENT || user?.role === Role.ORG_MANAGER) && !state.auth.userProfile) {
+                if ((user?.role === Role.TEACHER || user?.role === Role.STUDENT || user?.role === Role.ORG_MANAGER) && !userProfile) {
                     api.org.getProfile(token)
                         .then(data => dispatch({ type: 'AUTH_SET_PROFILE', payload: data as Teacher | Student }))
                         .catch(err => console.error('Failed to fetch profile:', err));
@@ -184,10 +186,9 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             window.removeEventListener('stats-updated', refreshOnEvent);
             if (timerRef.current) window.clearTimeout(timerRef.current);
         };
-    }, [token, user?.role, user?.id, dispatch, subscribe]);
+    }, [token, user?.role, user?.id, dispatch, subscribe, userProfile]);
 
-    // Memoize links to avoid re-calculation on every render
-    const links = useMemo((): SidebarLink[] => {
+    const links = (): SidebarLink[] => {
         const orgLinks: SidebarLink[] = [];
 
         if (!isApproved) {
@@ -214,7 +215,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             label: 'Messages',
             icon: MessageSquare,
             href: `/${orgSlug}/chat`,
-            badge: state.stats.chat && state.stats.chat.unread > 0 ? `${state.stats.chat.unread} New` : undefined
+            badge: chatStats && chatStats.unread > 0 ? `${chatStats.unread} New` : undefined
         });
 
         if (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) {
@@ -244,7 +245,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
         }
 
         return orgLinks;
-    }, [isApproved, orgSlug, user, stats, state.stats.chat?.unread]);
+    };
 
     const bottomLinks: SidebarLink[] = [
         {
@@ -276,7 +277,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <DashboardLayout
-            links={links}
+            links={links()}
             bottomLinks={bottomLinks}
             showPadding={showPadding}
         >

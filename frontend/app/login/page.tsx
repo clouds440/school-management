@@ -62,7 +62,7 @@ export default function LoginPage() {
               of Modern Education.
             </h1>
             <p className="text-lg text-muted-foreground font-medium leading-relaxed max-w-md">
-              Streamline your school's operations with the ultimate all-in-one management platform. Efficient, secure, and ready for the future.
+              Streamline your school&apos;s operations with the ultimate all-in-one management platform. Efficient, secure, and ready for the future.
             </p>
           </div>
           <div className="relative w-full aspect-square max-w-md mx-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
@@ -128,7 +128,7 @@ export default function LoginPage() {
                   type="password"
                   required
                   icon={Lock}
-                  placeholder="••••••••"
+                  placeholder="********"
                   value={formData.password}
                   onChange={handleChange}
                   className="h-14 font-bold border-border focus:border-primary/50 transition-all bg-background"

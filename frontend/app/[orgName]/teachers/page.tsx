@@ -24,7 +24,7 @@ export default function TeachersPage() {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { state, dispatch } = useGlobal();
+    const { dispatch } = useGlobal();
 
     // We no longer need local paginatedData state as fetchedData is used directly
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

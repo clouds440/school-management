@@ -512,7 +512,7 @@ export interface Notification {
     body: string | null;
     actionUrl: string | null;
     type: string | null;
-    metadata: Record<string, any> | null;
+    metadata: Record<string, unknown> | null;
     isRead: boolean;
     createdAt: string;
 }

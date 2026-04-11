@@ -23,7 +23,7 @@ export default function CareersPage() {
           </Reveal>
           <Reveal delay={400}>
             <p className="text-xl text-muted-text font-medium leading-relaxed max-w-2xl mx-auto">
-              We're a distributed team of dreamers and doers building the tools 
+              We&apos;re a distributed team of dreamers and doers building the tools 
               that empower thousands of educational institutions.
             </p>
           </Reveal>
@@ -117,7 +117,7 @@ export default function CareersPage() {
 
           <div className="mt-20 text-center">
             <Reveal delay={500}>
-              <p className="text-muted-foreground font-medium mb-8">Don't see a role that fits? We're always looking for talent.</p>
+              <p className="text-muted-foreground font-medium mb-8">Don&apos;t see a role that fits? We&apos;re always looking for talent.</p>
               <Link href="/contact" className="inline-flex items-center text-primary font-black text-sm uppercase tracking-widest hover:translate-x-2 transition-transform">
                 Send an Open Application <ArrowRight className="ml-2 w-4 h-4" />
               </Link>

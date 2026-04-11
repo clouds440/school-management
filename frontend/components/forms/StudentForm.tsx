@@ -28,8 +28,7 @@ interface StudentFormProps {
 export default function StudentForm({ studentId, orgSlug, initialData, isProfile }: StudentFormProps) {
     const { token, user: currentUser, updateUser } = useAuth();
     const router = useRouter();
-    const { state, dispatch } = useGlobal();
-    const isProcessing = state.ui.isProcessing;
+    const { dispatch } = useGlobal();
 
     const [sections, setSections] = useState<Section[]>([]);
     const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);

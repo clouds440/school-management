@@ -1,15 +1,13 @@
 // app/docs/layout.tsx
 import Link from 'next/link';
 import {
-  ChevronRight,
   Search,
   Book,
   Settings,
   MessageSquare,
   GraduationCap,
   Users,
-  HelpCircle,
-  Menu
+  HelpCircle
 } from 'lucide-react';
 
 export default function DocsLayout({

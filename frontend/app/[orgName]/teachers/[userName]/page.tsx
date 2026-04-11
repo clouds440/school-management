@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import {
-    Users, BookOpen, CheckCircle, FileText, PlusCircle, ShieldCheck,
+    Users, BookOpen, FileText, PlusCircle, ShieldCheck,
     TrendingUp, Award, Clock, ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';

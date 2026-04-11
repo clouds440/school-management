@@ -15,8 +15,7 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function CreateSectionPage() {
     const { token, user } = useAuth();
-    const { state, dispatch } = useGlobal();
-    const isProcessing = state.ui.isProcessing;
+    const { dispatch } = useGlobal();
     const router = useRouter();
     const pathname = usePathname();
     const orgSlug = user?.orgSlug || pathname.split('/')[1];

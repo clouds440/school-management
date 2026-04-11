@@ -16,6 +16,7 @@ import { BrandIcon } from '@/components/ui/Brand';
 export default function AssessmentDetailPage() {
     const { token, user } = useAuth();
     const role = user?.role;
+    const userId = user?.id;
     const params = useParams();
     const router = useRouter();
     const { state, dispatch } = useGlobal();
@@ -28,7 +29,7 @@ export default function AssessmentDetailPage() {
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [showBulkGrading, setShowBulkGrading] = useState(false);
 
-    const isAssigned = section?.teachers?.some(t => t.user?.id === (user as any)?.id);
+    const isAssigned = section?.teachers?.some(t => t.user?.id === userId);
     const canGrade = (role === Role.TEACHER || role === Role.ORG_MANAGER) && isAssigned;
     const isTeacherOrAdmin = role === Role.TEACHER || role === Role.ORG_ADMIN || role === Role.ORG_MANAGER;
 

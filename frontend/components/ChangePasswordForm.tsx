@@ -20,8 +20,7 @@ export default function ChangePasswordForm({
     onSubmit,
     onSuccess
 }: ChangePasswordFormProps) {
-    const { state, dispatch } = useGlobal();
-    const isProcessing = state.ui.isProcessing;
+    const { dispatch } = useGlobal();
 
     const [formData, setFormData] = useState({
         oldPassword: '',

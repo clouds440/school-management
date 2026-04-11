@@ -25,8 +25,7 @@ interface SubmissionFormProps {
 
 export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: SubmissionFormProps) {
     const { token } = useAuth();
-    const { state, dispatch } = useGlobal();
-    const isProcessing = state.ui.isProcessing;
+    const { dispatch } = useGlobal();
 
     const { register, handleSubmit, formState: { errors } } = useForm<SubmissionFormValues>({
         resolver: zodResolver(submissionSchema),

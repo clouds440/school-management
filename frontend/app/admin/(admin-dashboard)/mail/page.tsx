@@ -32,7 +32,6 @@ export default function MailPage() {
 
     // Global UI states alias
     const fetching = state.ui.isLoading;
-    const isProcessing = state.ui.isProcessing;
 
     const [pageSize, setPageSize] = useState<number>(() => {
         if (typeof window !== 'undefined') {
@@ -89,7 +88,7 @@ export default function MailPage() {
         }
     }, [token, page, searchQuery, sortBy, sortOrder, statusFilter, pageSize, dispatch]);
 
-    const { subscribe, joinRoom, leaveRoom } = useSocket({
+    const { subscribe } = useSocket({
         token: token,
         userId: user?.id || undefined,
         userRole: user?.role || undefined,

@@ -20,6 +20,14 @@ import { Button } from '@/components/ui/Button';
 import { PLATFORM_NAME } from '@/lib/constants';
 import { MailCategory, Role } from '@/types';
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Failed to send message. Please try again.';
+}
+
 export default function ContactPage() {
   const { user, token } = useAuth();
   const [subject, setSubject] = useState('');
@@ -52,8 +60,8 @@ export default function ContactPage() {
       setIsSuccess(true);
       setSubject('');
       setMessage('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to send message. Please try again.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -202,7 +210,7 @@ export default function ContactPage() {
                   Send Message
                 </Button>
                 <p className="text-center text-xs text-muted-foreground font-medium">
-                  By submitting this form, you agree to our <a href="/terms" className="text-primary hover:underline">Terms of Service</a> and <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>.
+                  By submitting this form, you agree to our <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
                 </p>
               </form>
             )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Megaphone, Loader2, Plus, Globe, Building2, Shield, Layout } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useSocket } from '@/hooks/useSocket';
@@ -14,7 +14,7 @@ import { BrandIcon } from '@/components/ui/Brand';
 
 export function AnnouncementDropdown() {
     const { token, user } = useAuth();
-    const { socket, subscribe } = useSocket({ token, userId: user?.id, enabled: !!token });
+    const { subscribe } = useSocket({ token, userId: user?.id, enabled: !!token });
     const { dispatch } = useGlobal();
 
     const [isOpen, setIsOpen] = useState(false);
@@ -27,10 +27,20 @@ export function AnnouncementDropdown() {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const hasAutoOpened = useRef(false);
 
+    const markAllAsSeen = useCallback((currentAnnouncements: Announcement[]) => {
+        setUnreadCount(0);
+        const now = new Date().getTime();
+        setLastSeen(now);
+        if (currentAnnouncements.length > 0) {
+            localStorage.setItem(`announcements_heard_${user?.id}`, now.toString());
+        }
+    }, [user?.id]);
+
     // Fetch announcements initially
     useEffect(() => {
         if (!token) return;
         const fetchAnnouncements = async () => {
+            setIsLoading(true);
             try {
                 const res = await api.announcements.getAnnouncements(token, { limit: 10 });
                 setAnnouncements(res.data);
@@ -62,10 +72,12 @@ export function AnnouncementDropdown() {
                 }
             } catch (err) {
                 console.error('Failed to fetch announcements', err);
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchAnnouncements();
-    }, [token, user?.id]);
+    }, [token, user?.id, markAllAsSeen]);
 
     // Setup socket listeners
     useEffect(() => {
@@ -89,7 +101,7 @@ export function AnnouncementDropdown() {
         return () => {
             unsubNew();
         };
-    }, [subscribe, dispatch]);
+    }, [subscribe, dispatch, isOpen]);
 
     // Handle outside click to close dropdown
     useEffect(() => {
@@ -101,15 +113,6 @@ export function AnnouncementDropdown() {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
-    const markAllAsSeen = (currentAnnouncements: Announcement[]) => {
-        setUnreadCount(0);
-        const now = new Date().getTime();
-        setLastSeen(now);
-        if (currentAnnouncements.length > 0) {
-            localStorage.setItem(`announcements_heard_${user?.id}`, now.toString());
-        }
-    };
 
     const toggleOpen = () => {
         const nextState = !isOpen;

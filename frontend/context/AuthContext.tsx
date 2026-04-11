@@ -96,9 +96,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // 2. It has at least 2 segments and the second segment is a known dashboard module
             const isUserPath = isAdminPath || (segments.length >= 2 && DASHBOARD_MODULES.includes(segments[1]));
 
-            // All other root-level paths are treated as public by default
-            const isPublicSharedPath = !isUserPath && !isGuestPath && !isHomePage;
-
             if (user) {
                 if ((user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && user.isFirstLogin && pathname !== '/admin/change-password') {
                     router.replace('/admin/change-password');

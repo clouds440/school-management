@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { CustomMultiSelect, MultiSelectOption } from '@/components/ui/CustomMultiSelect';
-import { User, Send, Users, Search, Shield, User as UserIcon, ChevronLeft } from 'lucide-react';
+import { Send, Users, Shield, User as UserIcon, ChevronLeft } from 'lucide-react';
 import { useGlobal } from '@/context/GlobalContext';
 import { Role } from '@/types';
 

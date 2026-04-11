@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LogOut, X, Key, Mail, MessageCircleQuestionMark } from 'lucide-react';
+import { LogOut, Key, Mail, MessageCircleQuestionMark } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { useGlobal } from '@/context/GlobalContext';
@@ -30,7 +30,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, links, bottomLinks = [], showPadding = false }: DashboardLayoutProps) {
     const { logout, user } = useAuth();
     const { state } = useGlobal();
-    const { isExpanded, isMobileOpen, isDesktop, mounted, toggleSidebar, setIsMobileOpen, modalConfig, closeViewModal } = useUI();
+    const { isExpanded, isMobileOpen, isDesktop, mounted, setIsMobileOpen, modalConfig, closeViewModal } = useUI();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();

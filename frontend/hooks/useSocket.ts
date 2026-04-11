@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -29,8 +29,7 @@ let connected = false;
 
 export function useSocket(options: UseSocketOptions) {
     const { token, userId, userRole, orgId, enabled = true } = options;
-    const [socket, setSocket] = useState<Socket | null>(null);
-    const [isConnected, setIsConnected] = useState(false);
+    const [isConnected, setIsConnected] = useState(connected);
 
     useEffect(() => {
         if (!enabled || !token) return;
@@ -53,16 +52,25 @@ export function useSocket(options: UseSocketOptions) {
 
             socketSingleton.on('connect', () => {
                 connected = true;
+                setIsConnected(true);
             });
-            socketSingleton.on('disconnect', () => { connected = false; });
-            socketSingleton.on('connect_error', () => { connected = false; });
+            socketSingleton.on('disconnect', () => {
+                connected = false;
+                setIsConnected(false);
+            });
+            socketSingleton.on('connect_error', () => {
+                connected = false;
+                setIsConnected(false);
+            });
         } else {
             // If socket exists but token changed, update auth by reconnecting
             // (socket.io doesn't support changing auth token on the fly reliably)
-            if (socketSingleton && socketSingleton.io && (socketSingleton as any).auth?.token !== token) {
+            if (socketSingleton && socketSingleton.io && socketSingleton.auth?.token !== token) {
                 try {
                     socketSingleton.auth = { token };
-                } catch (e) { }
+                } catch {
+                    // Ignore auth update failures and keep the existing socket alive.
+                }
             }
         }
 
@@ -70,9 +78,6 @@ export function useSocket(options: UseSocketOptions) {
         listenersSingleton.forEach((callbacks, event) => {
             callbacks.forEach(cb => socketSingleton?.on(event, cb));
         });
-
-        setSocket(socketSingleton);
-        setIsConnected(connected);
 
         // Auto-join rooms for this caller
         if (socketSingleton) {
@@ -82,8 +87,7 @@ export function useSocket(options: UseSocketOptions) {
         }
 
         return () => {
-            // Do not disconnect singleton here; keep it alive. Remove any rooms joined by this hook if needed
-            setSocket(prev => prev);
+            // Do not disconnect singleton here; keep it alive for other consumers.
         };
     }, [token, userId, userRole, orgId, enabled]);
 
@@ -106,5 +110,5 @@ export function useSocket(options: UseSocketOptions) {
         socketSingleton?.emit('leaveRoom', { roomId: room });
     }, []);
 
-    return { socket, subscribe, joinRoom, leaveRoom, isConnected };
+    return { socket: socketSingleton, subscribe, joinRoom, leaveRoom, isConnected };
 }

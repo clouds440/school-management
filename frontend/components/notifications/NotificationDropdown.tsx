@@ -4,22 +4,19 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useSocket } from '@/hooks/useSocket';
-import { api } from '@/lib/api';
 import { Notification } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
-import { useGlobal } from '@/context/GlobalContext';
 import Link from 'next/link';
 import notificationsStore from '@/lib/notificationsStore';
 
 export function NotificationDropdown() {
     const { token, user } = useAuth();
-    const { socket, subscribe } = useSocket({ token, userId: user?.id, enabled: !!token });
-    const { dispatch } = useGlobal();
+    const { subscribe } = useSocket({ token, userId: user?.id, enabled: !!token });
 
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -31,7 +28,12 @@ export function NotificationDropdown() {
             if (!mounted) return;
             setNotifications(cache.items.slice(0, 10));
             setUnreadCount(cache.unreadCount || 0);
-        }).catch(err => console.error('Failed to load notifications from store', err));
+        }).catch(err => console.error('Failed to load notifications from store', err))
+            .finally(() => {
+                if (mounted) {
+                    setIsLoading(false);
+                }
+            });
 
         const unsub = notificationsStore.subscribe(() => {
             const c = notificationsStore.getAll();
@@ -64,7 +66,7 @@ export function NotificationDropdown() {
             unsubRead();
             unsubReadAll();
         };
-    }, [subscribe, dispatch]);
+    }, [subscribe]);
 
     // Handle outside click to close dropdown
     useEffect(() => {
@@ -172,7 +174,7 @@ export function NotificationDropdown() {
                             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                                 <Bell className="w-10 h-10 text-muted-foreground mb-3" />
                                 <p className="text-sm font-medium text-muted-foreground">No new notifications</p>
-                                <p className="text-xs text-muted-foreground mt-1">You're all caught up!</p>
+                                <p className="text-xs text-muted-foreground mt-1">You&apos;re all caught up!</p>
                             </div>
                         )}
                     </div>

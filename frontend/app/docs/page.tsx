@@ -160,7 +160,7 @@ export default function DocsPage() {
       <section id="branding" className="scroll-mt-24 space-y-6">
         <h3 className="text-2xl font-bold text-foreground">Branding & White-labeling</h3>
         <p className="text-muted-foreground leading-relaxed">
-          Make the platform yours. Organization Admins can customize the interface to match their institution's
+          Make the platform yours. Organization Admins can customize the interface to match their institution&apos;s
           visual identity. Upload high-resolution logos, set CSS color tokens for primary and secondary accents,
           and even customize the login background for a premium user experience.
         </p>

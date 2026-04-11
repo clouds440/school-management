@@ -1,6 +1,6 @@
 'use client';
 import { Reveal } from '@/components/ui/Reveal';
-import { Target, Eye, Heart, Shield, Award, Users } from 'lucide-react';
+import { Target, Eye, Heart, Shield, Users } from 'lucide-react';
 
 export default function AboutPage() {
   return (

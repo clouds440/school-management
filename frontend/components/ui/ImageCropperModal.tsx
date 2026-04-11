@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
-import { X, Check, ZoomIn, ZoomOut, RotateCw, Loader2 } from 'lucide-react';
+import { X, Check, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 
 interface ImageCropperModalProps {
   /** The raw data-url of the image to crop */

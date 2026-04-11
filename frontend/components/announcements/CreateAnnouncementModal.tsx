@@ -19,6 +19,21 @@ interface Props {
     onSuccess?: () => void;
 }
 
+function getErrorMessage(error: unknown) {
+    if (typeof error === 'object' && error !== null) {
+        const maybeResponse = error as { response?: { data?: { message?: string } } };
+        if (typeof maybeResponse.response?.data?.message === 'string') {
+            return maybeResponse.response.data.message;
+        }
+    }
+
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    return 'Failed to create announcement';
+}
+
 export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
     const { token, user } = useAuth();
     const { dispatch } = useGlobal();
@@ -29,8 +44,6 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
     const [targetId, setTargetId] = useState('');
     const [actionUrl, setActionUrl] = useState('');
     const [priority, setPriority] = useState<AnnouncementPriority>(AnnouncementPriority.NORMAL);
-    const [isLoading, setIsLoading] = useState(false);
-
     // Target Selection States
     const [targetOptions, setTargetOptions] = useState<DropdownOption[]>([]);
     const [isFetchingTargets, setIsFetchingTargets] = useState(false);
@@ -117,10 +130,9 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
 
             onSuccess?.();
             onClose();
-        } catch (error: any) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: error.response?.data?.message || 'Failed to create announcement', type: 'error' } });
+        } catch (error: unknown) {
+            dispatch({ type: 'TOAST_ADD', payload: { message: getErrorMessage(error), type: 'error' } });
         } finally {
-            setIsLoading(false);
             dispatch({ type: 'UI_SET_PROCESSING', payload: false });
         }
     };

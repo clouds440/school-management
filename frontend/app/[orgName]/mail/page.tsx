@@ -31,7 +31,6 @@ export default function OrgMailPage() {
 
     // Global symbols
     const fetching = state.ui.isLoading;
-    const isProcessing = state.ui.isProcessing;
 
     const [pageSize, setPageSize] = useState<number>(() => {
         if (typeof window !== 'undefined') {
@@ -68,7 +67,7 @@ export default function OrgMailPage() {
         }
     }, [token, page, searchQuery, statusFilter, pageSize, dispatch]);
 
-    const { subscribe, joinRoom, leaveRoom } = useSocket({
+    const { subscribe } = useSocket({
         token: token,
         userId: user?.id || undefined,
         userRole: user?.role || undefined,

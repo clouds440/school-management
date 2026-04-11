@@ -25,12 +25,24 @@ type BrandIdentity = {
   orgSlug?: string;
 };
 
+type FlexibleUser = {
+  id?: string;
+  name?: string | null;
+  userName?: string;
+  orgName?: string;
+  orgLogoUrl?: string | null;
+  avatarUrl?: string | null;
+  avatarUpdatedAt?: string | null;
+  role?: Role | string;
+  orgSlug?: string;
+};
+
 interface BrandIconProps {
   variant?: 'brand' | 'user';
   size?: BrandSize;
   className?: string;
   forcePlatform?: boolean;
-  user?: BrandIdentity;
+  user?: FlexibleUser | null;
   initialsFallback?: boolean;
 }
 
@@ -47,7 +59,7 @@ export const BrandIcon = React.memo(function BrandIcon({
   const { user: sessionUser } = useAuth();
   const pathname = usePathname();
 
-  const user: BrandIdentity | JwtPayload | null = externalUser || sessionUser;
+  const user: FlexibleUser | null = externalUser || sessionUser;
 
   const segments = pathname?.split('/').filter(Boolean) || [];
   const isDashboardContext = segments.length >= 2 && DASHBOARD_MODULES.includes(segments[1]);

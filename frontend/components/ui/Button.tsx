@@ -7,13 +7,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
     loadingId?: string
     variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'black'
     icon?: React.ElementType
-    iconPosition?: 'start' | 'end'
     px?: string
     py?: string
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, isLoading: localIsLoading, loadingId, loadingText, variant = 'primary', children, disabled, icon, iconPosition = 'start', px = 'px-6', py = 'py-3', ...props }, ref) => {
+    ({ className, isLoading: localIsLoading, loadingId, loadingText, variant = 'primary', children, disabled, icon, px = 'px-6', py = 'py-3', ...props }, ref) => {
         const { state } = useGlobal();
 
         // Determine effective loading/disabled state

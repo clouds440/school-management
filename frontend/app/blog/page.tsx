@@ -1,7 +1,6 @@
 'use client';
 import { Reveal } from '@/components/ui/Reveal';
-import { BookOpen, Clock, Tag, Search, ArrowRight } from 'lucide-react';
-import Link from 'next/link';
+import { BookOpen, Clock, ArrowRight } from 'lucide-react';
 
 export default function BlogPage() {
   return (

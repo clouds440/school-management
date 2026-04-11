@@ -21,7 +21,7 @@ interface BulkGradingModalProps {
 
 export function BulkGradingModal({ isOpen, onClose, assessment, section, existingGrades, onSuccess }: BulkGradingModalProps) {
     const { token } = useAuth();
-    const { state, dispatch } = useGlobal();
+    const { dispatch } = useGlobal();
 
     // State to hold bulk marks and status
     const [bulkData, setBulkData] = useState<Record<string, { marksObtained: string, status: GradeStatus }>>({});
