@@ -108,7 +108,6 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
         if (!token) return;
 
         try {
-            setIsLoading(true);
             await api.announcements.createAnnouncement({
                 title,
                 body,
