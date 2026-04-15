@@ -132,7 +132,6 @@ export function ChatLayout() {
     const pendingMessageIdRef = useRef<string | null>(null);
     const sendLockRef = useRef(false);
     const typingStateRef = useRef<{ chatId: string | null; isTyping: boolean }>({ chatId: null, isTyping: false });
-    const mobileTopInset = 'calc(env(safe-area-inset-top, 0px))';
     const mobileBottomInset = 'env(safe-area-inset-bottom, 0px)';
 
     const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
@@ -1379,8 +1378,7 @@ export function ChatLayout() {
                     <>
                         {/* Chat Header */}
                         <div
-                            className="absolute w-full px-4 py-3 border-b border-border flex items-center justify-between z-20 bg-background/95 backdrop-blur-md"
-                            style={!isDesktop ? { top: mobileTopInset } : undefined}
+                            className="relative w-full px-4 py-3 border-b border-border flex items-center justify-between z-20 bg-background/95 backdrop-blur-md"
                         >
                             <div className="flex items-center space-x-3 min-w-0">
                                 {!isDesktop && (
@@ -1451,7 +1449,6 @@ export function ChatLayout() {
                                 onScroll={handleScroll}
                                 className="flex-1 overflow-y-auto px-3 md:px-5 py-3 space-y-0.5 custom-scrollbar chat-bg-pattern"
                                 style={{
-                                    paddingTop: !isDesktop ? 'calc(4rem + env(safe-area-inset-top, 0px) + 4.5rem)' : undefined,
                                     paddingBottom: !isDesktop
                                         ? `calc(${composerHeight + 16}px + env(safe-area-inset-bottom, 0px))`
                                         : composerHeight + 16
