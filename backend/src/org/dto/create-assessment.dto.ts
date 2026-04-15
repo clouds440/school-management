@@ -1,45 +1,55 @@
-import { IsString, IsNotEmpty, IsEnum, IsNumber, IsOptional, IsDateString, Min, Max, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsDateString,
+  Min,
+  Max,
+  IsBoolean,
+} from 'class-validator';
 import { AssessmentType } from '@prisma/client';
 
 export class CreateAssessmentDto {
-    @IsString()
-    @IsNotEmpty()
-    sectionId: string;
+  @IsString()
+  @IsNotEmpty()
+  sectionId: string;
 
-    @IsString()
-    @IsNotEmpty()
-    courseId: string;
+  @IsString()
+  @IsNotEmpty()
+  courseId: string;
 
-    @IsString()
-    @IsNotEmpty()
-    title: string;
+  @IsString()
+  @IsNotEmpty()
+  title: string;
 
-    @IsEnum(AssessmentType)
-    @IsNotEmpty()
-    type: AssessmentType;
+  @IsEnum(AssessmentType)
+  @IsNotEmpty()
+  type: AssessmentType;
 
-    @IsNumber()
-    @Min(0)
-    totalMarks: number;
+  @IsNumber()
+  @Min(0)
+  totalMarks: number;
 
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    weightage: number;
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  weightage: number;
 
-    @IsDateString()
-    @IsOptional()
-    dueDate?: string;
+  @IsDateString()
+  @IsOptional()
+  dueDate?: string;
 
-    @IsBoolean()
-    @IsOptional()
-    allowSubmissions?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  allowSubmissions?: boolean;
 
-    @IsString()
-    @IsOptional()
-    externalLink?: string;
+  @IsString()
+  @IsOptional()
+  externalLink?: string;
 
-    @IsBoolean()
-    @IsOptional()
-    isVideoLink?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  isVideoLink?: boolean;
 }

@@ -260,13 +260,14 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
 
                     dispatch({ type: 'AUTH_SET_SESSION', payload: { user: decoded, token: storedToken } });
                 }
-            } catch (e) {
+            } catch {
                 localStorage.removeItem('token');
                 dispatch({ type: 'AUTH_SET_LOADING', payload: false });
             }
         } else {
             dispatch({ type: 'AUTH_SET_LOADING', payload: false });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (

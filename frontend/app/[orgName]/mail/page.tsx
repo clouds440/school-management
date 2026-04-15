@@ -60,7 +60,7 @@ export default function OrgMailPage() {
             setPaginatedData(data);
             // Sync with global state
             dispatch({ type: 'STATS_SET_MAIL', payload: stats });
-        } catch (error: unknown) {
+        } catch {
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to fetch mail', type: 'error' } });
         } finally {
             dispatch({ type: 'UI_SET_LOADING', payload: false });
@@ -119,9 +119,9 @@ export default function OrgMailPage() {
             const notif = items.find(n => n.metadata?.mailId === mail.id || (n.actionUrl && n.actionUrl.includes(mail.id)) || n.metadata?.entityId === mail.id);
             if (notif && token) {
                 // fire-and-forget optimistic mark-as-read
-                notificationsStore.markAsReadGuard(notif.id, token).catch(() => {});
+                notificationsStore.markAsReadGuard(notif.id, token).catch(() => { });
             }
-        } catch (e) {
+        } catch {
             // swallow to avoid UI interruption
         }
     };
@@ -145,8 +145,8 @@ export default function OrgMailPage() {
             header: 'Subject',
             accessor: (row: MailItem) => (
                 <div className="flex flex-col">
-                    <span className="font-black text-gray-900 group-hover:text-primary transition-colors">{row.subject}</span>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">#{row.id.slice(0, 8)}</span>
+                    <span className="font-black text-foreground group-hover:text-primary transition-colors">{row.subject}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">#{row.id.slice(0, 8)}</span>
                 </div>
             )
         },
@@ -162,8 +162,8 @@ export default function OrgMailPage() {
                             className="w-8 h-8 rounded-full shadow-sm"
                         />
                         <div className="min-w-0">
-                            <p className="text-xs font-black text-gray-700 truncate max-w-30">{row.creator?.name || row.creator?.email || 'Unknown'}</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase">{row.creatorRole?.replace('_', ' ') || 'N/A'}</p>
+                            <p className="text-xs font-black text-foreground truncate max-w-30">{row.creator?.name || row.creator?.email || 'Unknown'}</p>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase">{row.creatorRole?.replace('_', ' ') || 'N/A'}</p>
                         </div>
                     </div>
                 );
@@ -190,8 +190,8 @@ export default function OrgMailPage() {
             header: 'Messages',
             accessor: (row: MailItem) => (
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 min-w-7.5 justify-center">
-                        <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-muted-foreground min-w-7.5 justify-center">
+                        <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                         {row._count?.messages || 0}
                     </div>
                     {row.unreadCount > 0 && (
@@ -205,7 +205,7 @@ export default function OrgMailPage() {
         {
             header: 'Date',
             accessor: (row: MailItem) => (
-                <div className="flex items-center gap-2 text-gray-500">
+                <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="w-4 h-4 opacity-30" />
                     <span className="text-xs font-bold font-mono">{new Date(row.updatedAt).toLocaleString()}</span>
                 </div>
@@ -226,7 +226,7 @@ export default function OrgMailPage() {
                                     { value: MailStatus.IN_PROGRESS, label: 'In Progress', badge: state.stats.mail?.countsByStatus?.[MailStatus.IN_PROGRESS], icon: ArrowUpRight, iconClassName: 'text-amber-500' },
                                     { value: MailStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[MailStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-indigo-500' },
                                     { value: MailStatus.RESOLVED, label: 'Resolved', badge: state.stats.mail?.countsByStatus?.[MailStatus.RESOLVED], icon: CheckCircle2, iconClassName: 'text-green-500' },
-                                    { value: MailStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[MailStatus.CLOSED], icon: XCircle, iconClassName: 'text-gray-500' },
+                                    { value: MailStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[MailStatus.CLOSED], icon: XCircle, iconClassName: 'text-muted-foreground' },
                                 ]}
                                 value={statusFilter}
                                 onChange={(val: string) => updateFilters('status', val)}

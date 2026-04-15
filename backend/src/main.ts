@@ -15,9 +15,14 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const logger = new Logger('Bootstrap');
 
-  const frontendUrls = (process.env.FRONTEND_URL || '').split(',').map(url => url.trim()).filter(Boolean);
+  const frontendUrls = (process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((url) => url.trim())
+    .filter(Boolean);
   app.enableCors({ origin: frontendUrls.length > 0 ? frontendUrls : '*' });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+  );
 
   // Serve uploaded files as static assets
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
@@ -32,7 +37,7 @@ async function bootstrap() {
     const hashedPassword = await bcrypt.hash(adminPassword, bcryptRounds);
 
     const existingAdmin = await prisma.user.findFirst({
-      where: { role: Role.SUPER_ADMIN }
+      where: { role: Role.SUPER_ADMIN },
     });
 
     if (!existingAdmin) {
@@ -42,7 +47,7 @@ async function bootstrap() {
           password: hashedPassword,
           role: Role.SUPER_ADMIN,
           isFirstLogin: true,
-        }
+        },
       });
       logger.log('Initial Super Admin created successfully');
     }
@@ -53,4 +58,3 @@ async function bootstrap() {
   logger.log(`Application is running on: http://localhost:${port}`);
 }
 bootstrap();
-

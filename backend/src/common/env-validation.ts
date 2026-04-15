@@ -18,23 +18,24 @@ export function validateEnv() {
     'BCRYPT_ROUNDS',
   ];
 
-  const missing = requiredEnvs.filter(env => !process.env[env]);
+  const missing = requiredEnvs.filter((env) => !process.env[env]);
 
   if (missing.length > 0) {
     logger.error('CRITICAL: Missing required environment variables!');
-    missing.forEach(env => logger.error(` - ${env} IS MISSING`));
-    logger.error('The application cannot start without these variables. Please check your .env file.');
+    missing.forEach((env) => logger.error(` - ${env} IS MISSING`));
+    logger.error(
+      'The application cannot start without these variables. Please check your .env file.',
+    );
     process.exit(1);
   }
 
   // Log optional but recommended envs
-  const recommendedEnvs = [
-    'THROTTLE_TTL',
-    'THROTTLE_LIMIT',
-  ];
-  const missingRecommended = recommendedEnvs.filter(env => !process.env[env]);
+  const recommendedEnvs = ['THROTTLE_TTL', 'THROTTLE_LIMIT'];
+  const missingRecommended = recommendedEnvs.filter((env) => !process.env[env]);
   if (missingRecommended.length > 0) {
-    logger.warn('Recommended environment variables are missing (using defaults):');
-    missingRecommended.forEach(env => logger.warn(` - ${env}`));
+    logger.warn(
+      'Recommended environment variables are missing (using defaults):',
+    );
+    missingRecommended.forEach((env) => logger.warn(` - ${env}`));
   }
 }

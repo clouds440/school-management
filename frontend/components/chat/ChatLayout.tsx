@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { useUI } from '@/context/UIContext';
 import { useSocket } from '@/hooks/useSocket';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import { getUserChatsCached, insertOrUpdateChatFromMessage, markAsReadGuard, getCachedChats } from '@/lib/chatStore';
 import { BrandIcon } from '../ui/Brand';
@@ -111,19 +112,22 @@ export function ChatLayout() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<import('../ui/MarkdownEditor').MarkdownEditorHandle>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const observerRef = useRef<ResizeObserver | null>(null);
+
+    const [composerHeight, setComposerHeight] = useState(0);
     const longPressTimerRef = useRef<number | null>(null);
     const suppressCloseRef = useRef<string | null>(null);
     const pendingMessageIdRef = useRef<string | null>(null);
     const sendLockRef = useRef(false);
 
-    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
         messagesEndRef.current?.scrollIntoView({ behavior });
         setUnreadSinceScroll(0);
         setShowScrollToBottom(false);
         if (activeChatId && token) {
             markAsReadGuard(activeChatId, '', token);
         }
-    };
+    }, [activeChatId, token]);
 
     const handleScroll = () => {
         if (!messagesContainerRef.current) return;
@@ -157,6 +161,32 @@ export function ChatLayout() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [showParticipants]);
 
+    // Track input composer height to adjust FAB and scroll padding dynamically
+    const composerRef = useCallback((node: HTMLDivElement | null) => {
+        if (observerRef.current) {
+            observerRef.current.disconnect();
+            observerRef.current = null;
+        }
+
+        if (node) {
+            const observer = new ResizeObserver((entries) => {
+                for (const entry of entries) {
+                    setComposerHeight((entry.target as HTMLElement).offsetHeight);
+                }
+            });
+            observer.observe(node);
+            observerRef.current = observer;
+        }
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (observerRef.current) {
+                observerRef.current.disconnect();
+            }
+        };
+    }, []);
+
     // Helper: Get avatar with fallback — delegate to `BrandIcon` which now supports initials fallback
     const UserAvatar = ({ targetUser, className = "w-8 h-8", groupIcon = false }: { targetUser?: { id?: string; name?: string | null; avatarUrl?: string | null; role?: Role; orgName?: string; orgLogoUrl?: string | null; avatarUpdatedAt?: string | null; userName?: string }, className?: string, groupIcon?: boolean }) => {
         if (groupIcon) {
@@ -180,7 +210,7 @@ export function ChatLayout() {
     };
 
     // 1. Fetch Chat List
-    const fetchChats = async () => {
+    const fetchChats = useCallback(async () => {
         if (!token) return;
         try {
             const data = await getUserChatsCached(token);
@@ -194,14 +224,14 @@ export function ChatLayout() {
             setIsLoadingChats(false);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load chats', type: 'error' } });
         }
-    };
+    }, [token, activeChatId, dispatch]);
 
     useEffect(() => {
         fetchChats();
         if (token) {
             api.notifications.clearCategory('CHAT', token).catch(console.error);
         }
-    }, [token]);
+    }, [token, fetchChats]);
 
     // 2. Fetch Messages for Active Chat (Initial)
     const fetchInitialMessages = useCallback(async (chatId: string) => {
@@ -226,7 +256,7 @@ export function ChatLayout() {
         } finally {
             setIsLoadingMessages(false);
         }
-    }, [token, dispatch]);
+    }, [token, dispatch, scrollToBottom]);
 
     useEffect(() => {
         if (!activeChatId) return;
@@ -382,12 +412,12 @@ export function ChatLayout() {
                     const readMessage = prev.find(candidate => candidate.id === readData.messageId);
                     const readAt = readMessage ? new Date(readMessage.createdAt).getTime() : null;
                     return prev.map(m => {
-                    const messageAt = new Date(m.createdAt).getTime();
-                    if (m.senderId !== readData.userId && readAt !== null && readAt >= messageAt) {
-                        const readBy = Array.from(new Set([...(m.readBy || []), readData.userId]));
-                        return { ...m, readBy };
-                    }
-                    return m;
+                        const messageAt = new Date(m.createdAt).getTime();
+                        if (m.senderId !== readData.userId && readAt !== null && readAt >= messageAt) {
+                            const readBy = Array.from(new Set([...(m.readBy || []), readData.userId]));
+                            return { ...m, readBy };
+                        }
+                        return m;
                     });
                 });
             }
@@ -448,10 +478,11 @@ export function ChatLayout() {
             unsubMessage();
             unsubRead();
             unsubDelete();
+            unsubEdit();
             unsubUpdate();
             unsubRoomLeft();
         };
-    }, [subscribe, activeChatId, token, user, dispatch, setActiveChatId, isAtBottom, reconcileIncomingMessage]);
+    }, [subscribe, activeChatId, token, user, dispatch, setActiveChatId, isAtBottom, reconcileIncomingMessage, scrollToBottom]);
 
     // 4. Join/Leave rooms and Sync URL
     useEffect(() => {
@@ -618,7 +649,7 @@ export function ChatLayout() {
                 const ta = textareaRef.current as unknown as HTMLTextAreaElement | null;
                 if (ta) {
                     ta.style.height = 'auto';
-                    try { ta.setSelectionRange(0, 0); } catch (e) { /* ignore */ }
+                    try { ta.setSelectionRange(0, 0); } catch { /* ignore */ }
                     ta.rows = 1;
                 }
             }, 0);
@@ -629,8 +660,8 @@ export function ChatLayout() {
             }, 0);
             // sender's own message — no need to call markAsRead here (guarded elsewhere)
         } catch (err) {
+            console.error(err);
             const error = err as Error;
-            console.error(error);
             const failedMessageId = retryMessage?.id ?? pendingMessageIdRef.current;
             pendingMessageIdRef.current = null;
             if (!editingMessage && failedMessageId) {
@@ -650,7 +681,7 @@ export function ChatLayout() {
         } finally {
             sendLockRef.current = false;
         }
-    }, [messageDraft, stagedFiles, replyToMessage, token, user, activeChatId, isSending, isUploading, editingMessage, reconcileIncomingMessage, dispatch]);
+    }, [messageDraft, stagedFiles, replyToMessage, token, user, activeChatId, isSending, isUploading, editingMessage, reconcileIncomingMessage, dispatch, scrollToBottom]);
 
     const handleDeleteMessage = useCallback((messageId: string) => {
         if (!token || !activeChatId) return;
@@ -725,7 +756,7 @@ export function ChatLayout() {
         if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
             setHighlightedMessageId(messageId);
-            setTimeout(() => setHighlightedMessageId(null), 2000);
+            setTimeout(() => setHighlightedMessageId(null), 2500);
         } else {
             // Jump to history context
             if (!token || !activeChatId) return;
@@ -743,7 +774,7 @@ export function ChatLayout() {
                     if (el) {
                         el.scrollIntoView({ behavior: 'instant', block: 'center' });
                         setHighlightedMessageId(messageId);
-                        setTimeout(() => setHighlightedMessageId(null), 2000);
+                        setTimeout(() => setHighlightedMessageId(null), 2500);
                     }
                 }, 100);
             } catch (err) {
@@ -757,7 +788,7 @@ export function ChatLayout() {
 
     useEffect(() => {
         if (highlightedMessageId) {
-            const timer = setTimeout(() => setHighlightedMessageId(null), 2000);
+            const timer = setTimeout(() => setHighlightedMessageId(null), 2500);
             return () => clearTimeout(timer);
         }
     }, [highlightedMessageId]);
@@ -790,7 +821,7 @@ export function ChatLayout() {
             console.error('Failed to copy text', err);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to copy text', type: 'error' } });
         });
-    }, []);
+    }, [dispatch]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -816,7 +847,7 @@ export function ChatLayout() {
             ta.style.height = 'auto';
             ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
         } catch (err) {
-            // ignore
+            console.error(err);
         }
     }, [messageDraft]);
 
@@ -844,10 +875,7 @@ export function ChatLayout() {
         return cleaned.length > max ? cleaned.slice(0, max) + '...' : cleaned;
     }, [isDesktop]);
 
-    // Disabled tap-to-show (use long-press on mobile instead)
-    const handleMessageTap = (_msgId: string) => {
-        return; // intentionally no-op; long-press will reveal actions on mobile
-    };
+
 
     const handleTouchStart = useCallback((e: React.TouchEvent, msgId: string) => {
         e.stopPropagation();
@@ -857,7 +885,7 @@ export function ChatLayout() {
         }, 10) as unknown as number;
     }, []);
 
-    const handleTouchEnd = useCallback((_e?: React.TouchEvent) => {
+    const handleTouchEnd = useCallback(() => {
         if (longPressTimerRef.current) {
             window.clearTimeout(longPressTimerRef.current);
             longPressTimerRef.current = null;
@@ -909,7 +937,7 @@ export function ChatLayout() {
                     onTouchEnd={handleTouchEnd}
                     onTouchMove={handleTouchEnd}
                     onTouchCancel={handleTouchEnd}
-                    className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-2.5' : 'mb-0.5'} transition-all duration-500 ${highlightedMessageId === msg.id ? 'animate-highlight-float z-40' : ''}`}
+                    className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-2.5' : 'mb-0.5'} px-3 md:px-5 -mx-3 md:-mx-5 ${highlightedMessageId === msg.id ? 'bg-primary/30 rounded-sm' : ''}`}
                 >
                     {!isMine && (
                         <div className="w-7 shrink-0 mr-2 flex flex-col justify-end mb-1">
@@ -929,8 +957,8 @@ export function ChatLayout() {
                                     return (
                                         <div
                                             onClick={(e) => { e.stopPropagation(); void scrollToMessage(msg.replyTo!.id); }}
-                                            className={`mb-0.5 px-3 py-1.5 rounded-lg border-l-5 text-[14px] bg-muted max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity text-foreground
-                                                                            ${isMineRepliedTo ? 'border-primary' : 'border-foreground/70'}`}
+                                            className={`mb-0.5 mt-3 px-3 py-1.5 rounded-lg border-l-5 text-[14px] bg-muted max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity text-foreground
+                                                        ${isMineRepliedTo ? 'border-primary' : 'border-foreground/70'}`}
                                         >
                                             <p className="font-semibold mb-0.5 text-[14px] flex items-center">
                                                 <Reply size={13} className='mr-1 rotate-180' />
@@ -960,7 +988,7 @@ export function ChatLayout() {
                                                     const isImage = segment.match(/^!\[.*?\]\(.*?\)$/);
                                                     if (isImage) {
                                                         return (
-                                                            <div key={idx} className={`naked-image-container max-w-full transition-all duration-500 rounded-xl relative ${highlightedMessageId === msg.id ? 'ring-3 ring-primary/30' : ''}`}>
+                                                            <div key={idx} className="naked-image-container max-w-full rounded-xl relative">
                                                                 <div className="relative">
                                                                     <MarkdownRenderer content={segment} />
                                                                     <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[11px] px-2 py-0.5 rounded-md flex items-center space-x-1">
@@ -985,14 +1013,12 @@ export function ChatLayout() {
                                                     return (
                                                         <div
                                                             key={idx}
-                                                            className={`message-bubble
-                                                                                            px-3.5 py-2 rounded-2xl leading-relaxed relative transition-all duration-300 shadow-lg
-                                                                                            ${isMine
-                                                                            ? 'bg-primary text-foreground rounded-br-sm shadow-primary/50'
-                                                                            : 'bg-card border border-border rounded-bl-sm shadow-black/10 text-foreground!'
-                                                                        }
-                                                                                            ${highlightedMessageId === msg.id ? 'ring-2 ring-primary/30 shadow-md' : ''}
-                                                                                            `}>
+                                                            className={`message-bubble px-3.5 py-2 rounded-2xl leading-relaxed relative shadow-lg
+                                                                        ${isMine
+                                                                    ? 'bg-primary text-foreground rounded-br-sm shadow-primary/50'
+                                                                    : 'bg-card border border-border rounded-bl-sm shadow-black/10 text-foreground!'
+                                                                }
+                                                                        `}>
 
                                                             <div className={`prose prose-sm max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground!'}`}>
                                                                 <MarkdownRenderer content={segment} className={`${isMine ? 'text-foreground!' : 'text-(--card-text)!'} whitespace-pre-wrap wrap-break-word text-foreground!`} />
@@ -1001,7 +1027,7 @@ export function ChatLayout() {
                                                                 {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
                                                                     <span className="text-[10px] text-foreground font-medium italic opacity-85">Edited</span>
                                                                 )}
-                                                                <span className='text-foreground/80'>{getTimestamp(msg.createdAt)}</span>
+                                                                <span className='text-[11px] text-foreground/80'>{getTimestamp(msg.createdAt)}</span>
                                                                 {isMine && (
                                                                     isSendingMessage ? (
                                                                         <Loader2 className="w-3.5 h-3.5 animate-spin text-foreground/70" strokeWidth={2.5} />
@@ -1043,7 +1069,7 @@ export function ChatLayout() {
                                                                     `}>
                                     <button
                                         onClick={(e) => {
-                                            try { (e.nativeEvent).stopImmediatePropagation(); } catch (err) { }
+                                            try { (e.nativeEvent).stopImmediatePropagation(); } catch (err) { console.error(err); }
                                             e.preventDefault();
                                             e.stopPropagation();
                                             suppressCloseRef.current = msg.id;
@@ -1317,7 +1343,8 @@ export function ChatLayout() {
                             <div
                                 ref={messagesContainerRef}
                                 onScroll={handleScroll}
-                                className="flex-1 overflow-y-auto px-3 md:px-5 py-3 space-y-0.5 custom-scrollbar chat-bg-pattern pb-16"
+                                className="flex-1 overflow-y-auto px-3 md:px-5 py-3 space-y-0.5 custom-scrollbar chat-bg-pattern"
+                                style={{ paddingBottom: composerHeight + 16 }}
                             >
                                 {isLoadingMessages ? (
                                     <div className="flex flex-col items-center justify-center py-16 space-y-3">
@@ -1383,7 +1410,8 @@ export function ChatLayout() {
                                 <button
                                     type="button"
                                     onClick={() => isViewingHistory ? (activeChatId && fetchInitialMessages(activeChatId)) : scrollToBottom()}
-                                    className="absolute bottom-18 right-5 z-30 p-2.5 bg-card text-foreground/70 rounded-full shadow-lg border border-border hover:bg-card/80 hover:text-primary hover:border-primary transition-all active:scale-95 group"
+                                    className="absolute right-5 z-30 p-2.5 bg-card text-foreground/70 rounded-full shadow-lg border border-border hover:bg-card/95 hover:text-primary hover:border-primary transition-all active:scale-95 group"
+                                    style={{ bottom: composerHeight + 12 }}
                                     title={isViewingHistory ? "Jump to Present" : "Scroll to bottom"}
                                 >
                                     <ArrowDown size={18} className="group-hover:translate-y-0.5 transition-transform text-primary/80" />
@@ -1439,8 +1467,8 @@ export function ChatLayout() {
                                 </div>
                             )}
                             {/* Input Composer */}
-                            <div className="absolute bottom-0 w-full border-border px-1 md:px-1 py-1 z-20">
-                                {/* Reply / Edit Banner */}
+                            <div ref={composerRef} className="absolute bottom-0 w-full border-border px-1 md:px-1 py-1 z-20">
+                                {/* Reply / Edit Banner - unchanged */}
                                 {(replyToMessage || editingMessage) && (
                                     <div className="mb-1 px-3 py-2 mx-2 bg-muted border-l-[3px] border-primary rounded-r-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
                                         <div className="flex-1 min-w-0 pr-3">
@@ -1454,31 +1482,31 @@ export function ChatLayout() {
                                                 <MarkdownRenderer content={getTruncatedPreview(editingMessage?.content || replyToMessage?.content)} className='text-muted-foreground!' />
                                             </div>
                                         </div>
-                                            <button
+                                        <button
                                             title='Cancel'
-                                                type="button"
-                                                onClick={() => {
-                                                    setReplyToMessage(null);
-                                                    if (editingMessage) {
-                                                        setEditingMessage(null);
-                                                        setMessageDraft('');
-                                                    }
-                                                }}
-                                                className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/40 rounded-lg transition-colors"
+                                            type="button"
+                                            onClick={() => {
+                                                setReplyToMessage(null);
+                                                if (editingMessage) {
+                                                    setEditingMessage(null);
+                                                    setMessageDraft('');
+                                                }
+                                            }}
+                                            className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/40 rounded-lg transition-colors"
                                         >
                                             <X size={14} className="text-primary/80 hover:text-primary" />
                                         </button>
                                     </div>
                                 )}
 
-                                {/* Staged Files */}
+                                {/* Staged Files - unchanged */}
                                 {stagedFiles.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mb-1 mx-2">
                                         {stagedFiles.map((file, i) => (
                                             <div key={i} className="group relative flex items-center bg-muted border border-border pl-2 pr-1 py-1 rounded-xl hover:border-primary/30 transition-all">
                                                 {file.type.startsWith('image/') ? (
-                                                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-muted-foreground/10 mr-2">
-                                                        <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                                                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-muted-foreground/10 mr-2 relative">
+                                                        <Image src={URL.createObjectURL(file)} alt="" fill className="object-cover" unoptimized />
                                                     </div>
                                                 ) : (
                                                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary mr-2">
@@ -1502,7 +1530,7 @@ export function ChatLayout() {
                                     </div>
                                 )}
 
-                                {/* Preview Mode Render */}
+                                {/* Preview Mode Render - unchanged */}
                                 {isPreviewMode && messageDraft.trim() && (
                                     <div className="my-1 px-4 py-3 mx-2 bg-muted rounded-xl border border-border max-h-37.5 overflow-y-auto custom-scrollbar">
                                         <div className="prose prose-sm max-w-none prose-p:text-foreground/80">
@@ -1511,8 +1539,8 @@ export function ChatLayout() {
                                     </div>
                                 )}
 
-                                {/* Composer Row */}
-                                <div className="flex items-center space-x-2">
+                                {/* Composer Row – flex with items-end to keep buttons at bottom */}
+                                <div className={`flex items-end space-x-2 ${messageDraft.includes('\n') ? 'pb-3' : ''}`}>
                                     <input
                                         title='Upload File'
                                         type="file"
@@ -1522,9 +1550,29 @@ export function ChatLayout() {
                                         multiple
                                     />
 
-                                    <div className={`pr-5 ${messageDraft.includes('\n') ? 'py-3' : 'py-0'}
-                                            flex-1 relative flex items-center bg-muted border border-transparent mx-2 mb-2 rounded-2xl focus-within:bg-card
-                                            focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all`}>
+                                    {/* Main input container – unchanged structure, now buttons align to bottom */}
+                                    <div className="flex-1 relative flex items-end bg-muted border border-transparent mx-2 mb-2 rounded-2xl focus-within:bg-card focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                                        {/* Left buttons group */}
+                                        <div className="flex items-center gap-1 pl-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsPreviewMode(!isPreviewMode)}
+                                                className="text-primary/80 py-3 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
+                                                title={isPreviewMode ? "Write text" : "Preview markdown"}
+                                            >
+                                                {isPreviewMode ? <Pencil size={22} /> : <Eye size={24} />}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => document.getElementById('chat-file-upload')?.click()}
+                                                className="text-primary/80 py-3 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
+                                                title="Attach file"
+                                            >
+                                                <Plus size={22} className="cursor-pointer" />
+                                            </button>
+                                        </div>
+
+                                        {/* Textarea – grows upward, buttons stay at bottom */}
                                         <textarea
                                             ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
                                             value={messageDraft}
@@ -1532,7 +1580,6 @@ export function ChatLayout() {
                                             onChange={(e) => {
                                                 const el = e.target;
                                                 setMessageDraft(el.value);
-
                                                 el.style.height = 'auto';
                                                 el.style.height = el.scrollHeight + 'px';
                                                 el.style.height = Math.min(el.scrollHeight, 200) + 'px';
@@ -1541,42 +1588,22 @@ export function ChatLayout() {
                                             onFocus={handleEditorFocus}
                                             placeholder={stagedFiles.length > 0 ? "Add a caption..." : `Message... ${isDesktop ? '(Shift + Enter for new line)' : ''}`}
                                             rows={1}
-                                            className="w-full pl-20 pr-10 py-3 bg-transparent border-none text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-30 leading-relaxed"
+                                            className="flex-1 py-3 px-2 bg-transparent border-none text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-30 leading-relaxed"
                                         />
 
-                                        {/* Preview Toggle Button */}
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                            className={`absolute left-3 bottom-3 text-primary/80 hover:text-primary hover:scale-110 cursor-pointer`}
-                                            title={isPreviewMode ? "Write text" : "Preview markdown"}
-                                        >
-                                            {isPreviewMode ? <Pencil size={22}/> : <Eye size={24} />}
-                                        </button>
-                                        {/* File Upload Button */}
-                                        <button
-                                            type="button"
-                                            onClick={() => document.getElementById('chat-file-upload')?.click()}
-                                            className="absolute z-20 left-12 bottom-3 shrink-0 active:scale-95 transition-all rounded-xl"
-                                            title="Attach file"
-                                        >
-                                            <Plus size={22} className="text-primary/80 hover:text-primary hover:scale-115 cursor-pointer" />
-                                        </button>
-                                        {/* Send Button */}
+                                        {/* Send button – also bottom-aligned */}
                                         {(messageDraft.trim() || stagedFiles.length > 0) && (
                                             <button
                                                 type="button"
                                                 onClick={() => { void handleSendMessage(); }}
                                                 disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
-                                                className="absolute right-4 bottom-2.5 z-20 shrink-0 active:scale-95"
+                                                className="shrink-0 mr-2 py-3 px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
                                                 title="Send"
                                             >
-                                                <Send size={26} className="text-primary/80 hover:text-primary cursor-pointer" />
+                                                <Send size={26} className="cursor-pointer" />
                                             </button>
-                                        )
-                                        }
+                                        )}
                                     </div>
-                                    
                                 </div>
                             </div>
                         </div>
@@ -1599,11 +1626,13 @@ export function ChatLayout() {
                     className="fixed inset-0 z-50 flex items-center justify-center bg-accent backdrop-blur-sm"
                     onClick={() => setPreviewImageUrl(null)}
                 >
-                    <div className="relative max-w-4xl max-h-screen p-4">
-                        <img
+                    <div className="relative max-w-4xl max-h-screen p-4 min-w-[300px] min-h-[300px]">
+                        <Image
                             src={previewImageUrl}
                             alt="Preview"
-                            className="max-w-full max-h-[90vh] object-contain rounded-sm shadow-2xl"
+                            fill
+                            className="object-contain rounded-sm shadow-2xl"
+                            unoptimized
                         />
                         <button
                             title='Close'

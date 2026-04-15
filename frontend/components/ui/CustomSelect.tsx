@@ -126,7 +126,7 @@ export function CustomSelect<T extends string = string>({
                 className={cn(
                     "flex items-center w-full px-4 py-3 rounded-sm border transition-all duration-200 outline-none",
                     isOpen
-                        ? 'border-primary ring-4 ring-primary/10 bg-card'
+                        ? 'border-primary ring-4 ring-primary/10 bg-background'
                         : error
                             ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/50'
                             : 'border-border bg-primary/5 hover:border-border',
@@ -170,7 +170,7 @@ export function CustomSelect<T extends string = string>({
                         width: coords.width,
                         zIndex: 9999
                     }}
-                    className="py-2 bg-card border border-border rounded-sm shadow-2xl max-h-80 flex flex-col animate-in fade-in zoom-in duration-100"
+                    className="py-2 bg-background border border-border rounded-sm shadow-2xl max-h-80 flex flex-col animate-in fade-in zoom-in duration-100"
                 >
                     {searchable && (
                         <div className="px-3 pb-2 border-b border-border">

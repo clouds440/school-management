@@ -41,21 +41,17 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
     // For Teachers: Quick add from Section
     const [sections, setSections] = useState<{ value: string; label: string }[]>([]);
     const [selectedSectionId, setSelectedSectionId] = useState('');
-    const [isFetchingSections, setIsFetchingSections] = useState(false);
     const [isApplyingPreset, setIsApplyingPreset] = useState(false);
 
     useEffect(() => {
         if (!isOpen || !token || user?.role !== Role.TEACHER) return;
 
         const fetchSections = async () => {
-            setIsFetchingSections(true);
             try {
                 const res = await api.org.getSections(token, { my: true });
                 setSections(res.data.map(s => ({ value: s.id, label: s.name })));
             } catch (err) {
                 console.error('Failed to fetch sections', err);
-            } finally {
-                setIsFetchingSections(false);
             }
         };
         fetchSections();

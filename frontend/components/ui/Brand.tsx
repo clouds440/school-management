@@ -8,22 +8,11 @@ import { PLATFORM_NAME, DASHBOARD_MODULES } from '@/lib/constants';
 import { useAuth } from '@/context/AuthContext';
 import { getPublicUrl } from '@/lib/utils';
 import Link from 'next/link';
-import { JwtPayload } from '@/context/GlobalContext';
 import { Role } from '@/types';
 import { useTheme } from '@/context/ThemeContext';
 
 type BrandSize = 'sm' | 'md' | 'lg' | 'xl' | 'hero';
-type BrandIdentity = {
-  id?: string;
-  name?: string | null;
-  userName?: string;
-  orgName?: string;
-  orgLogoUrl?: string | null;
-  avatarUrl?: string | null;
-  avatarUpdatedAt?: string | null;
-  role?: Role;
-  orgSlug?: string;
-};
+
 
 type FlexibleUser = {
   id?: string;
@@ -223,21 +212,25 @@ export const Brand = React.memo(function Brand({
             {displayName}
           </span>
         ) : (
-          <img src="/assets/eduverse.png" alt={PLATFORM_NAME} 
-          className={`${
-            themeMode === 'DARK' ||
-            (themeMode === 'SYSTEM' &&
-              window.matchMedia('(prefers-color-scheme: dark)').matches)
-              ? 'filter invert'
-              : ''
-            } object-contain transition-all duration-300 ${
-              size === 'sm' ? 'h-5'
-                : size === 'md' ? 'h-7'
-                : size === 'lg' ? 'h-8'
-                : size === 'xl' ? 'h-10'
-                : 'h-16 md:h-28'
-            }`}
-          />
+          <div className={`relative ${size === 'sm' ? 'w-24 h-5'
+              : size === 'md' ? 'w-32 h-8'
+                : size === 'lg' ? 'w-36 h-9'
+                  : size === 'xl' ? 'w-44 h-11'
+                    : 'w-64 h-28 md:w-80 md:h-32'
+            }`}>
+            <Image
+              src="/assets/eduverse.png"
+              alt={PLATFORM_NAME}
+              fill
+              className={`${themeMode === 'DARK' ||
+                (themeMode === 'SYSTEM' &&
+                  window.matchMedia('(prefers-color-scheme: dark)').matches)
+                ? 'filter invert'
+                : ''
+                } object-contain transition-all duration-300`}
+              priority={size === 'hero' || size === 'xl'}
+            />
+          </div>
         )
       )}
     </div>
@@ -257,8 +250,8 @@ export const Brand = React.memo(function Brand({
  */
 export function BrandLogoIcon() {
   return (
-    <div className={`relative flex items-center justify-center`}>
-      <img src="/assets/eduverse-icon.png" alt="Eduverse" className="w-full h-full object-contain" />
+    <div className={`relative flex items-center justify-center w-full h-full`}>
+      <Image src="/assets/eduverse-icon.png" alt="Eduverse" fill className="object-contain" />
     </div>
   )
 }

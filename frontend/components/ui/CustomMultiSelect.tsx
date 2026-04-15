@@ -52,10 +52,10 @@ export function CustomMultiSelect({
             const rect = containerRef.current.getBoundingClientRect();
             const windowHeight = window.innerHeight;
             const dropdownHeight = 350; // Estimated max height including search and 5 options
-            
+
             const isMobile = window.innerWidth <= 640;
             const shouldFlip = !isMobile && (rect.bottom + dropdownHeight > windowHeight) && (rect.top > dropdownHeight);
-            
+
             if (isMobile) {
                 const margin = 16;
                 setCoords({
@@ -126,8 +126,8 @@ export function CustomMultiSelect({
                 className={`
                     flex items-center w-full min-h-[52px] px-4 py-2 rounded-sm border transition-all duration-200 outline-none
                     ${isOpen
-                        ? 'border-primary ring-4 ring-primary/10 bg-white shadow-md'
-                        : 'border-white/10 bg-primary/5 hover:border-white/20'
+                        ? 'border-border ring-4 ring-primary/10 bg-background shadow-md'
+                        : 'border-border bg-background/5 hover:border-border/20'
                     }
                     ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                     text-card-text
@@ -156,7 +156,7 @@ export function CustomMultiSelect({
                             </span>
                         ))
                     ) : (
-                        <span className="text-gray-400 font-medium">{placeholder}</span>
+                        <span className="text-muted-foreground font-medium">{placeholder}</span>
                     )}
                 </div>
 
@@ -165,18 +165,18 @@ export function CustomMultiSelect({
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onChange([]); }}
-                            className="mr-2 text-gray-300 hover:text-red-500 transition-colors p-1"
+                            className="mr-2 text-muted-foreground hover:text-red-500 transition-colors p-1"
                             title="Clear all"
                         >
                             <X className="h-4 w-4" />
                         </button>
                     )}
-                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 text-gray-400 ${isOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 text-muted-foreground ${isOpen ? 'rotate-180' : ''}`} />
                 </div>
             </div>
 
             {isOpen && coords && createPortal(
-                <div 
+                <div
                     ref={dropdownRef}
                     style={{
                         position: 'fixed',
@@ -185,9 +185,9 @@ export function CustomMultiSelect({
                         width: coords.width,
                         zIndex: 9999
                     }}
-                    className={`py-2 bg-white border border-gray-100 rounded-md shadow-xl max-h-[60vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-100 ${coords.isMobile ? 'left-4 right-4 rounded-lg' : ''}`}
+                    className={`py-2 bg-background border border-border rounded-md shadow-xl max-h-[60vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-100 ${coords.isMobile ? 'left-4 right-4 rounded-lg' : ''}`}
                 >
-                    <div className="px-3 pb-2 border-b border-gray-100">
+                    <div className="px-3 pb-2 border-b border-border">
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <svg className="h-4 w-4 text-card-text/40" viewBox="0 0 20 20" fill="currentColor">
@@ -196,7 +196,7 @@ export function CustomMultiSelect({
                             </div>
                             <input
                                 type="text"
-                                className="block w-full pl-9 pr-3 py-2 border border-gray-100 rounded-md text-sm bg-gray-50 text-card-text placeholder-card-text/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                className="block w-full pl-9 pr-3 py-2 border border-border rounded-md text-sm bg-background text-card-text placeholder-card-text/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
                                 placeholder="Search..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}

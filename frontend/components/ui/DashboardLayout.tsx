@@ -220,6 +220,9 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                             {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Contact Us</span>}
                         </Link>
 
+                        {/* log out button separater */}
+                        <div className="border-t-2 border-border"></div>
+
                         <button
                             onClick={handleLogout}
                             className={`flex items-center cursor-pointer ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} w-full rounded-sm text-red-500 bg-red-500/10 hover:bg-red-500/30 transition-all py-3 border border-transparent shadow-sm`}

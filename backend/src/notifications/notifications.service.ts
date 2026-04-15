@@ -4,107 +4,112 @@ import { EventsGateway } from '../events/events.gateway';
 import { Prisma } from '@prisma/client';
 
 export interface CreateNotificationDto {
-    userId: string;
-    title: string;
-    body?: string;
-    actionUrl?: string;
-    type?: string;
-    metadata?: Prisma.JsonValue;
+  userId: string;
+  title: string;
+  body?: string;
+  actionUrl?: string;
+  type?: string;
+  metadata?: Prisma.JsonValue;
 }
 
 @Injectable()
 export class NotificationsService {
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly events: EventsGateway,
-    ) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventsGateway,
+  ) {}
 
-    async createNotification(dto: CreateNotificationDto) {
-        const notification = await this.prisma.notification.create({
-            data: {
-                userId: dto.userId,
-                title: dto.title,
-                body: dto.body,
-                actionUrl: dto.actionUrl,
-                type: dto.type,
-                metadata: dto.metadata as Prisma.InputJsonValue ?? null
-            }
-        });
+  async createNotification(dto: CreateNotificationDto) {
+    const notification = await this.prisma.notification.create({
+      data: {
+        userId: dto.userId,
+        title: dto.title,
+        body: dto.body,
+        actionUrl: dto.actionUrl,
+        type: dto.type,
+        metadata: (dto.metadata as Prisma.InputJsonValue) ?? null,
+      },
+    });
 
-        // Broadcast to user room
-        this.events.emitToUser(dto.userId, 'notification:new', notification);
+    // Broadcast to user room
+    this.events.emitToUser(dto.userId, 'notification:new', notification);
 
-        return notification;
-    }
+    return notification;
+  }
 
-    async getUserNotifications(userId: string, page: number = 1, limit: number = 20) {
-        const skip = (page - 1) * limit;
+  async getUserNotifications(
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
+    const skip = (page - 1) * limit;
 
-        const [data, total] = await Promise.all([
-            this.prisma.notification.findMany({
-                where: { userId },
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take: limit,
-            }),
-            this.prisma.notification.count({ where: { userId } })
-        ]);
+    const [data, total] = await Promise.all([
+      this.prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.notification.count({ where: { userId } }),
+    ]);
 
-        const unreadCount = await this.prisma.notification.count({
-            where: { userId, isRead: false }
-        });
+    const unreadCount = await this.prisma.notification.count({
+      where: { userId, isRead: false },
+    });
 
-        return {
-            data,
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            unreadCount
-        };
-    }
+    return {
+      data,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      unreadCount,
+    };
+  }
 
-    async markAsRead(notificationId: string, userId: string) {
-        const notification = await this.prisma.notification.findUnique({
-            where: { id: notificationId }
-        });
+  async markAsRead(notificationId: string, userId: string) {
+    const notification = await this.prisma.notification.findUnique({
+      where: { id: notificationId },
+    });
 
-        if (!notification) throw new NotFoundException('Notification not found');
-        if (notification.userId !== userId) throw new NotFoundException('Notification not found');
+    if (!notification) throw new NotFoundException('Notification not found');
+    if (notification.userId !== userId)
+      throw new NotFoundException('Notification not found');
 
-        const updated = await this.prisma.notification.update({
-            where: { id: notificationId },
-            data: { isRead: true }
-        });
+    const updated = await this.prisma.notification.update({
+      where: { id: notificationId },
+      data: { isRead: true },
+    });
 
-        this.events.emitToUser(userId, 'notification:read', { notificationId });
+    this.events.emitToUser(userId, 'notification:read', { notificationId });
 
-        return updated;
-    }
+    return updated;
+  }
 
-    async markAllAsRead(userId: string) {
-        const result = await this.prisma.notification.updateMany({
-            where: { userId, isRead: false },
-            data: { isRead: true }
-        });
+  async markAllAsRead(userId: string) {
+    const result = await this.prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true },
+    });
 
-        this.events.emitToUser(userId, 'notification:read_all', {});
+    this.events.emitToUser(userId, 'notification:read_all', {});
 
-        return result;
-    }
+    return result;
+  }
 
-    async markCategoryAsRead(userId: string, category: 'CHAT' | 'MAIL') {
-        const typePrefix = category === 'CHAT' ? 'CHAT_' : 'MAIL_';
-        const result = await this.prisma.notification.updateMany({
-            where: {
-                userId,
-                isRead: false,
-                type: { startsWith: typePrefix }
-            },
-            data: { isRead: true }
-        });
+  async markCategoryAsRead(userId: string, category: 'CHAT' | 'MAIL') {
+    const typePrefix = category === 'CHAT' ? 'CHAT_' : 'MAIL_';
+    const result = await this.prisma.notification.updateMany({
+      where: {
+        userId,
+        isRead: false,
+        type: { startsWith: typePrefix },
+      },
+      data: { isRead: true },
+    });
 
-        this.events.emitToUser(userId, 'notification:read_all', { category });
+    this.events.emitToUser(userId, 'notification:read_all', { category });
 
-        return result;
-    }
+    return result;
+  }
 }

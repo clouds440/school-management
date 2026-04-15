@@ -70,11 +70,11 @@ function MessageBubble({ message, isOwn }: { message: MailMessageType; isOwn: bo
                         <span className="text-[8px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">You</span>
                     )}
                 </div>
-                <div className={`inline-block p-4 rounded-sm shadow-sm ${isOwn ? 'bg-primary/10 border border-border/50' : 'bg-card border border-border'} text-left w-full`}>
-                    <MarkdownRenderer content={message.content} className="text-sm text-foreground" />
+                <div className={`inline-block text-foreground! p-4 rounded-sm shadow-sm ${isOwn ? 'bg-primary/10 border border-border/50' : 'bg-card border border-border'} text-left w-full`}>
+                    <MarkdownRenderer content={message.content} className="text-sm text-foreground!" />
 
                     {message.files && message.files.length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-border flex flex-col gap-2">
+                        <div className="mt-3 pt-3 border-t border-border flex flex-col gap-2">
                             {message.files.map(file => (
                                 <AttachmentPreview key={file.id} file={file} />
                             ))}
@@ -300,7 +300,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                                 onClick={handleSend}
                                 isLoading={sending}
                                 loadingId="reply-submit"
-                                className="flex items-center gap-2 px-8 py-2.5 bg-primary text-white rounded-sm font-black text-xs uppercase tracking-widest hover:bg-primary/80 transition-all border-none shadow-lg shadow-primary/20"
+                                className="flex items-center gap-2 px-8 py-2.5 bg-primary text-foreground rounded-sm font-black text-xs uppercase tracking-widest hover:bg-primary/80 transition-all border-none shadow-lg shadow-primary/20"
                                 icon={Send}
                             >
                                 SEND REPLY

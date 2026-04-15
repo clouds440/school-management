@@ -94,7 +94,7 @@ export async function markAsReadGuard(chatId: string, messageId: string | number
             const numLast = typeof last === 'number' ? last : Number(last);
             const numMsg = typeof messageId === 'number' ? messageId : Number(messageId);
             if (!Number.isNaN(numLast) && !Number.isNaN(numMsg) && numMsg <= numLast) return;
-        } catch (e) { }
+        } catch { }
         if (String(last) === String(messageId)) return;
     }
 

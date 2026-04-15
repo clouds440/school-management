@@ -30,7 +30,7 @@ export const notificationsStore = {
             cache.items = items;
             cache.unreadCount = inFlightMarkAll ? 0 : (res.unreadCount || cache.items.filter((n: Notification) => !n.isRead).length);
             // Debug: surface fetch results for investigation
-            try { console.debug('[notificationsStore] fetchAll -> items:', cache.items.length, 'unread:', cache.unreadCount); } catch (e) {}
+            try { console.debug('[notificationsStore] fetchAll -> items:', cache.items.length, 'unread:', cache.unreadCount); } catch { }
             notify();
             return cache;
         } catch (err) {
@@ -59,7 +59,7 @@ export const notificationsStore = {
             arr.splice(idx, 1);
             arr.unshift(updated);
             cache.items = arr.slice(0, 50);
-            try { console.debug('[notificationsStore] applyNew (existing) id=', notif.id); } catch (e) {}
+            try { console.debug('[notificationsStore] applyNew (existing) id=', notif.id); } catch { }
             notify();
             return;
         }
@@ -69,7 +69,7 @@ export const notificationsStore = {
         if (!notif.isRead && !alreadyMarked && !inFlightMarkAll) {
             cache.unreadCount = (cache.unreadCount || 0) + 1;
         }
-        try { console.debug('[notificationsStore] applyNew id=', notif.id, 'isRead=', !!notif.isRead, 'alreadyMarked=', alreadyMarked); } catch (e) {}
+        try { console.debug('[notificationsStore] applyNew id=', notif.id, 'isRead=', !!notif.isRead, 'alreadyMarked=', alreadyMarked); } catch { }
         notify();
     },
 
@@ -77,7 +77,7 @@ export const notificationsStore = {
         const idx = cache.items.findIndex(n => n.id === notificationId);
         if (idx === -1) {
             // Unknown item; nothing to adjust locally
-            try { console.debug('[notificationsStore] applyRead unknown id=', notificationId); } catch (e) {}
+            try { console.debug('[notificationsStore] applyRead unknown id=', notificationId); } catch { }
             notify();
             return;
         }
@@ -85,7 +85,7 @@ export const notificationsStore = {
         if (!existing.isRead) {
             cache.items = cache.items.map(n => n.id === notificationId ? { ...n, isRead: true } : n);
             cache.unreadCount = Math.max(0, (cache.unreadCount || 0) - 1);
-            try { console.debug('[notificationsStore] applyRead id=', notificationId, 'newUnread=', cache.unreadCount); } catch (e) {}
+            try { console.debug('[notificationsStore] applyRead id=', notificationId, 'newUnread=', cache.unreadCount); } catch { }
             notify();
         }
     },
@@ -111,7 +111,7 @@ export const notificationsStore = {
         } catch (err) {
             console.error('markAsReadGuard error', err);
             // Resync from server to ensure accurate state
-            try { await this.fetchAll(token); } catch (e) { /* swallow */ }
+            try { await this.fetchAll(token); } catch { /* swallow */ }
         } finally {
             inFlightMark.delete(id);
         }
@@ -129,7 +129,7 @@ export const notificationsStore = {
         } catch (err) {
             console.error('markAllAsReadGuard error', err);
             // Resync from server
-            try { await this.fetchAll(token); } catch (e) { /* swallow */ }
+            try { await this.fetchAll(token); } catch { /* swallow */ }
         } finally {
             inFlightMarkAll = false;
         }

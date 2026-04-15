@@ -81,8 +81,6 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
     const { user } = useAuth();
     const isAssigned = section.teachers?.some(t => t.user?.id === user?.id);
     const canCreate = (role === Role.TEACHER || role === Role.ORG_MANAGER) && isAssigned;
-    const canEdit = role === Role.TEACHER && isAssigned;
-    const canDelete = role === Role.TEACHER && isAssigned;
     const canView = role === Role.ORG_ADMIN || role === Role.ORG_MANAGER || role === Role.TEACHER;
 
     if (isLoading) {

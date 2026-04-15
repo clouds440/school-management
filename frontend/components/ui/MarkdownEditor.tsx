@@ -150,7 +150,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                                     ]}
                                     value=""
                                     onChange={(val: string) => {
-                                        const [type, ...rest] = val.split('-');
+                                        const rest = val.split('-').slice(1);
                                         const key = rest.join('-');
                                         if (orgData[key]) insertText(orgData[key]);
                                     }}

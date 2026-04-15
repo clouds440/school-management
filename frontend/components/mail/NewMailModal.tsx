@@ -166,6 +166,7 @@ export function NewMailModal({
                 .catch(console.error)
                 .finally(() => setSearching(false));
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, token, initialTargetId, initialSubject]);
 
     React.useEffect(() => {
@@ -185,7 +186,7 @@ export function NewMailModal({
     );
 
     // When recipients change, auto-reset category to first valid option if needed
-    const handleTargetChange = (newTargetIds: string | string[], overrideTargets?: MailTarget[]) => {
+    const handleTargetChange = React.useCallback((newTargetIds: string | string[], overrideTargets?: MailTarget[]) => {
         const currentTargets = overrideTargets || targets;
         const incomingIds = typeof newTargetIds === 'string' ? [newTargetIds] : newTargetIds;
         const addedIds = incomingIds.filter(id => !targetIds.includes(id));
@@ -198,8 +199,10 @@ export function NewMailModal({
             const addedTarget = currentTargets.find(t => t.id === addedId);
             if (!addedTarget) continue;
 
+            const activeTargetsList = currentTargets.filter(t => finalIds.includes(t.id));
+
             // 1. Mega Group Exclusivity (All Staff / Platform Team)
-            if (activeTargets(finalIds, currentTargets).length > 1 && MEGA_GROUPS.includes(addedId)) {
+            if (activeTargetsList.length > 1 && MEGA_GROUPS.includes(addedId)) {
                 finalIds = [addedId];
                 feedback = `Targeting ${addedTarget.label} cancels all other selections.`;
                 break;
@@ -249,10 +252,9 @@ export function NewMailModal({
         if (!newCategories.some(c => c.value === category)) {
             setCategory(newCategories[0]?.value || MailCategory.GENERAL_INQUIRY);
         }
-    };
+    }, [targets, targetIds, user?.role, category]);
 
-    // Helper for handleTargetChange
-    const activeTargets = (ids: string[], currentTargets: MailTarget[]) => currentTargets.filter(t => ids.includes(t.id));
+
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {

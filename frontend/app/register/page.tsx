@@ -16,6 +16,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, RegisterFormData } from '@/lib/schemas';
 import { PLATFORM_NAME } from '@/lib/constants';
+import Image from 'next/image';
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -119,10 +120,11 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="relative w-full aspect-square drop-shadow-2xl">
-                        <img
+                        <Image
                             src="/assets/eduverse-logo.png"
                             alt="Growth Illustration"
-                            className="w-full h-auto object-contain animate-float"
+                            className="object-contain animate-float"
+                            unoptimized
                         />
                     </div>
                 </div>

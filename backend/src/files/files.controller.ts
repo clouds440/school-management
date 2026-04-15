@@ -17,7 +17,10 @@ import { Role } from '../common/enums';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { FilesService } from './files.service';
 import { FileUploadDto } from './files.dto';
-import type { UploadedFileInfo, DeleteFileResult } from './interfaces/files.interfaces';
+import type {
+  UploadedFileInfo,
+  DeleteFileResult,
+} from './interfaces/files.interfaces';
 
 /** MIME types that are permitted for upload */
 const ALLOWED_MIME_TYPES = new Set<string>([
@@ -30,14 +33,14 @@ const ALLOWED_MIME_TYPES = new Set<string>([
   // Documents
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',       // .xlsx
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
   'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
   'application/zip',
   'text/plain',
 ]);
 
 const IMAGE_MIME_PREFIX = 'image/';
-const IMAGE_MAX_SIZE_BYTES = 5 * 1024 * 1024;   // 5 MB
+const IMAGE_MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const DEFAULT_MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
 
 @Controller('files')
@@ -69,7 +72,9 @@ export class FilesController {
     }
 
     // Validate file size per type
-    const isImageOrText = file.mimetype.startsWith(IMAGE_MIME_PREFIX) || file.mimetype === 'text/plain';
+    const isImageOrText =
+      file.mimetype.startsWith(IMAGE_MIME_PREFIX) ||
+      file.mimetype === 'text/plain';
     const sizeLimit = isImageOrText
       ? IMAGE_MAX_SIZE_BYTES
       : DEFAULT_MAX_SIZE_BYTES;
@@ -83,7 +88,8 @@ export class FilesController {
 
     // Org-ownership enforcement: skip for global admins
     const isGlobalAdmin =
-      req.user.role === Role.SUPER_ADMIN || req.user.role === Role.PLATFORM_ADMIN;
+      req.user.role === Role.SUPER_ADMIN ||
+      req.user.role === Role.PLATFORM_ADMIN;
 
     if (!isGlobalAdmin && req.user.organizationId !== dto.orgId) {
       throw new ForbiddenException(

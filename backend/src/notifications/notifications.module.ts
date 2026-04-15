@@ -5,9 +5,9 @@ import { AuthModule } from '../auth/auth.module';
 
 @Global()
 @Module({
-    imports: [AuthModule],
-    controllers: [NotificationsController],
-    providers: [NotificationsService],
-    exports: [NotificationsService], // Export so Mail/Assessments can trigger notifications
+  imports: [AuthModule],
+  controllers: [NotificationsController],
+  providers: [NotificationsService],
+  exports: [NotificationsService], // Export so Mail/Assessments can trigger notifications
 })
 export class NotificationsModule {}

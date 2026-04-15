@@ -5,8 +5,8 @@ import { AuthenticatedRequest } from '../../auth/interfaces/authenticated-reques
  * Parameter decorator to extract the full user object from the authenticated request.
  */
 export const User = createParamDecorator(
-    (data: unknown, ctx: ExecutionContext) => {
-        const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
-        return request.user;
-    },
+  (data: unknown, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
+    return request.user;
+  },
 );

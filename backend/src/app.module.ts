@@ -27,10 +27,12 @@ import { ActiveOrgGuard } from './common/guards/active-org.guard';
     PrismaModule,
     EventsModule,
     MailModule,
-    ThrottlerModule.forRoot([{
-      ttl: parseInt(process.env.THROTTLE_TTL!, 10),
-      limit: parseInt(process.env.THROTTLE_LIMIT!, 10),
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: parseInt(process.env.THROTTLE_TTL!, 10),
+        limit: parseInt(process.env.THROTTLE_LIMIT!, 10),
+      },
+    ]),
     ChatModule,
     NotificationsModule,
     AnnouncementsModule,
@@ -46,4 +48,4 @@ import { ActiveOrgGuard } from './common/guards/active-org.guard';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

@@ -29,7 +29,7 @@ export default function StudentsPage() {
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const orgSlug = user?.orgSlug || pathname.split('/')[1];
-    const { state, dispatch } = useGlobal();
+    const { dispatch } = useGlobal();
 
     // Redundant paginatedData state removed
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);

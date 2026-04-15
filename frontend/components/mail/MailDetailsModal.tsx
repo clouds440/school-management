@@ -40,6 +40,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
             const detail = await api.mail.getMail(mailId, token);
             setMail(detail);
         } catch (error: unknown) {
+            console.error(error);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load mail details', type: 'error' } });
         } finally {
             setLoading(false);
@@ -99,6 +100,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
             onUpdate?.();
             dispatch({ type: 'TOAST_ADD', payload: { message: `Status updated to ${newStatus.replace('_', ' ')}`, type: 'success' } });
         } catch (error: unknown) {
+            console.error(error);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to update status', type: 'error' } });
         } finally {
             dispatch({ type: 'UI_SET_PROCESSING', payload: false });
@@ -114,6 +116,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
             setMail(updated);
             onUpdate?.();
         } catch (error: unknown) {
+            console.error(error);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to send reply', type: 'error' } });
         } finally {
             dispatch({ type: 'UI_SET_PROCESSING', payload: false });

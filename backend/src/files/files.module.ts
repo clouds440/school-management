@@ -18,7 +18,11 @@ import { FilesService } from './files.service';
             const safeEntityId = entityId ?? 'unknown';
 
             // Extract filename without extension for public_id
-            const fileName = _file.originalname.replace(/\s+/g, '-').split('.').slice(0, -1).join('.');
+            const fileName = _file.originalname
+              .replace(/\s+/g, '-')
+              .split('.')
+              .slice(0, -1)
+              .join('.');
             const uniquePublicId = `${Date.now()}-${fileName}`;
 
             return {

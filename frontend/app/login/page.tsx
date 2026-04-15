@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { PLATFORM_NAME } from '@/lib/constants';
 import { Brand, BrandLogoIcon } from '@/components/ui/Brand';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -66,10 +67,11 @@ export default function LoginPage() {
             </p>
           </div>
           <div className="relative w-full aspect-square max-w-md mx-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-            <img
+            <Image
               src="/assets/eduverse-logo.png"
               alt="Eduverse Logo"
-              className="w-full h-auto object-contain animate-float"
+              className="object-contain animate-float"
+              unoptimized
             />
           </div>
         </div>

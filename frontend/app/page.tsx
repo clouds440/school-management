@@ -21,6 +21,7 @@ import {
 import { Reveal } from '@/components/ui/Reveal';
 import { Brand } from '@/components/ui/Brand';
 import { PLATFORM_NAME } from '@/lib/constants';
+import Image from 'next/image';
 
 export default function HomePage() {
   return (
@@ -43,7 +44,7 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-8">
             <Reveal delay={100}>
               <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight text-foreground leading-[1.1] md:leading-tight">
-                Empower Your Institution with <img src={"/assets/eduverse-logo.png"} alt="Eduverse" className="w-full h-full mt-6 animate-float" />
+                Empower Your Institution with <Image src={"/assets/eduverse-logo.png"} alt="Eduverse" className="mt-6 animate-float" unoptimized objectFit='cover' />
               </h1>
             </Reveal>
 
@@ -137,10 +138,12 @@ export default function HomePage() {
                 <div className="absolute -inset-4 md:-inset-10 bg-primary/5 rounded-[40px] rotate-3 scale-105 blur-2xl" />
                 <div className="relative group p-2 md:p-4 bg-muted/50 backdrop-blur-sm rounded-2xl md:rounded-4xl border border-border shadow-2xl hover:shadow-primary/20 transition-all duration-500 overflow-hidden">
                   <div className="aspect-video relative rounded-lg md:rounded-xl overflow-hidden bg-muted">
-                    <img
+                    <Image
                       src="/assets/dashboard-preview.png"
                       alt="EduVerse Modern Dashboard Dashboard"
-                      className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
+                      objectFit='cover'
+                      className="transform transition-transform duration-700 group-hover:scale-105"
+                      unoptimized
                     />
                   </div>
                 </div>

@@ -6,8 +6,8 @@ import { AuthModule } from '../auth/auth.module';
 import { MailModule } from '../mail/mail.module';
 
 @Module({
-    imports: [AuthModule, MailModule],
-    controllers: [AdminController, AdminAuthController],
-    providers: [AdminService]
+  imports: [AuthModule, MailModule],
+  controllers: [AdminController, AdminAuthController],
+  providers: [AdminService],
 })
-export class AdminModule { }
+export class AdminModule {}

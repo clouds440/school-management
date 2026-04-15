@@ -7,11 +7,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { v2 as cloudinary } from 'cloudinary';
 import { FileUploadDto } from './files.dto';
 import { Role } from '../common/enums';
-import { UploadedFileInfo, DeleteFileResult } from './interfaces/files.interfaces';
+import {
+  UploadedFileInfo,
+  DeleteFileResult,
+} from './interfaces/files.interfaces';
 
 @Injectable()
 export class FilesService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
   /**
    * Creates a database record for a file that was uploaded to Cloudinary.
    * Returns structured file metadata.
@@ -81,11 +84,14 @@ export class FilesService {
     // Remove from Cloudinary (best-effort)
     const publicId = record.publicId;
     if (publicId) {
-       try {
-         await cloudinary.uploader.destroy(publicId);
-       } catch (err) {
-         console.error(`Failed to delete file from Cloudinary: ${publicId}`, err);
-       }
+      try {
+        await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        console.error(
+          `Failed to delete file from Cloudinary: ${publicId}`,
+          err,
+        );
+      }
     }
 
     await this.prisma.file.delete({ where: { id: fileId } });
@@ -113,7 +119,10 @@ export class FilesService {
           try {
             await cloudinary.uploader.destroy(publicId);
           } catch (err) {
-            console.error(`Failed to delete old file from Cloudinary: ${publicId}`, err);
+            console.error(
+              `Failed to delete old file from Cloudinary: ${publicId}`,
+              err,
+            );
           }
         }
       }

@@ -5,8 +5,8 @@ import * as jwt from 'jsonwebtoken';
 import { Socket } from 'socket.io';
 
 interface WsJwtPayload {
-    sub: string;
-    tokenVersion?: number;
+  sub: string;
+  tokenVersion?: number;
 }
 
 /**
@@ -15,57 +15,57 @@ interface WsJwtPayload {
  */
 @Injectable()
 export class WsJwtGuard implements CanActivate {
-    constructor(
-        private readonly configService: ConfigService,
-        private readonly prisma: PrismaService,
-    ) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-    async canActivate(context: ExecutionContext): Promise<boolean> {
-        const client = context.switchToWs().getClient<Socket>();
-        return this.validateClient(client);
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const client = context.switchToWs().getClient<Socket>();
+    return this.validateClient(client);
+  }
+
+  /**
+   * Validates a socket client's JWT token.
+   * Can be called directly from the gateway's handleConnection.
+   */
+  async validateClient(client: Socket): Promise<boolean> {
+    try {
+      const token =
+        (client.handshake.auth as Record<string, string>)?.token ||
+        client.handshake.headers?.authorization?.replace('Bearer ', '');
+
+      if (!token) return false;
+
+      const secret = this.configService.get<string>('JWT_SECRET');
+      if (!secret) return false;
+
+      const payload = jwt.verify(token, secret) as WsJwtPayload;
+      if (!payload?.sub) return false;
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: {
+          id: true,
+          role: true,
+          name: true,
+          email: true,
+          organizationId: true,
+          tokenVersion: true,
+        },
+      });
+
+      if (!user) return false;
+
+      // Token version check
+      if (user.tokenVersion !== payload.tokenVersion) return false;
+
+      // Attach user data to socket for downstream use
+      client.data.user = user;
+
+      return true;
+    } catch {
+      return false;
     }
-
-    /**
-     * Validates a socket client's JWT token.
-     * Can be called directly from the gateway's handleConnection.
-     */
-    async validateClient(client: Socket): Promise<boolean> {
-        try {
-            const token =
-                (client.handshake.auth as Record<string, string>)?.token ||
-                client.handshake.headers?.authorization?.replace('Bearer ', '');
-
-            if (!token) return false;
-
-            const secret = this.configService.get<string>('JWT_SECRET');
-            if (!secret) return false;
-
-            const payload = jwt.verify(token, secret) as WsJwtPayload;
-            if (!payload?.sub) return false;
-
-            const user = await this.prisma.user.findUnique({
-                where: { id: payload.sub },
-                select: {
-                    id: true,
-                    role: true,
-                    name: true,
-                    email: true,
-                    organizationId: true,
-                    tokenVersion: true,
-                },
-            });
-
-            if (!user) return false;
-
-            // Token version check
-            if (user.tokenVersion !== payload.tokenVersion) return false;
-
-            // Attach user data to socket for downstream use
-            client.data.user = user;
-
-            return true;
-        } catch {
-            return false;
-        }
-    }
+  }
 }

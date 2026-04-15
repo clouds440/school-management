@@ -6,8 +6,8 @@ import { FilesModule } from '../files/files.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-    imports: [FilesModule, NotificationsModule],
-    controllers: [OrgController],
-    providers: [OrgService, RemindersService],
+  imports: [FilesModule, NotificationsModule],
+  controllers: [OrgController],
+  providers: [OrgService, RemindersService],
 })
-export class OrgModule { }
+export class OrgModule {}

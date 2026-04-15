@@ -5,8 +5,8 @@ import { PrismaModule } from '../prisma/prisma.module';
 
 @Global()
 @Module({
-    imports: [PrismaModule],
-    providers: [EventsGateway, WsJwtGuard],
-    exports: [EventsGateway],
+  imports: [PrismaModule],
+  providers: [EventsGateway, WsJwtGuard],
+  exports: [EventsGateway],
 })
 export class EventsModule {}

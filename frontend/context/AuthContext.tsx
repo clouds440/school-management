@@ -89,8 +89,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             const isAdminPath = segments[0] === 'admin';
             const isGuestPath = segments.length === 1 && (segments[0] === 'login' || segments[0] === 'register');
-            const isHomePage = segments.length === 0;
-
             // A path is considered a "User/Dashboard" path if:
             // 1. It starts with /admin (Platform Admin)
             // 2. It has at least 2 segments and the second segment is a known dashboard module

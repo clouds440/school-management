@@ -141,7 +141,7 @@ export default function MailPage() {
             if (notif && token) {
                 notificationsStore.markAsReadGuard(notif.id, token).catch(() => {});
             }
-        } catch (e) {}
+        } catch {}
     };
 
     const handlePageSizeChange = (newSize: number) => {
