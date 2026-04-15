@@ -1705,7 +1705,7 @@ export function ChatLayout() {
                                         <textarea
                                             ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
                                             value={messageDraft}
-                                            disabled={isSending || isUploading}
+                                            disabled={isUploading}
                                             onChange={(e) => {
                                                 const el = e.target;
                                                 updateActiveComposerState({ messageDraft: el.value });
