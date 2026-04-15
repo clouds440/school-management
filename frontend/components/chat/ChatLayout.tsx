@@ -216,15 +216,12 @@ export function ChatLayout() {
             const data = await getUserChatsCached(token);
             setChats(data);
             setIsLoadingChats(false);
-            if (data.length > 0 && !activeChatId) {
-                setActiveChatId(data[0].id);
-            }
         } catch (err) {
             console.error(err);
             setIsLoadingChats(false);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load chats', type: 'error' } });
         }
-    }, [token, activeChatId, dispatch]);
+    }, [token, dispatch]);
 
     useEffect(() => {
         fetchChats();
@@ -493,7 +490,11 @@ export function ChatLayout() {
             joinRoom(`chat:${activeChatId}`);
             // Update URL without full page reload
             const url = new URL(window.location.href);
-            url.searchParams.set('id', activeChatId);
+            if (activeChatId) {
+                url.searchParams.set('id', activeChatId);
+            } else {
+                url.searchParams.delete('id');
+            }
             window.history.pushState({}, '', url.toString());
 
             return () => leaveRoom(`chat:${activeChatId}`);
@@ -1477,7 +1478,7 @@ export function ChatLayout() {
                             <div ref={composerRef} className="absolute bottom-0 w-full border-border px-1 md:px-1 py-1 z-20">
                                 {/* Reply / Edit Banner - unchanged */}
                                 {(replyToMessage || editingMessage) && (
-                                    <div className="mb-1 px-3 py-2 mx-2 bg-muted border-l-[3px] border-primary rounded-r-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                                    <div className="mb-1 px-3 py-2 mx-2 bg-muted border-l-4 border-primary rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
                                         <div className="flex-1 min-w-0 pr-3">
                                             <p className="text-[13px] font-semibold text-primary mb-0.5">
                                                 {editingMessage ? 'Editing Message' : `Replying to ${replyToMessage?.sender?.name == user.name ? 'Yourself' : replyToMessage?.sender?.name || 'Message'}`}
