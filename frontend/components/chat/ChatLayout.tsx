@@ -808,9 +808,16 @@ export function ChatLayout() {
         setReplyToMessage(null);
         setMessageDraft(msg.content);
         setIsPreviewMode(false);
-        setTimeout(() => {
-            textareaRef.current?.focus();
-        }, 50);
+        requestAnimationFrame(() => {
+            const el = document.querySelector('textarea');
+            if (el) {
+                el.focus();
+                const length = el.value.length;
+                el.scrollTop = el.scrollHeight;
+                el.setSelectionRange(length, length);
+            }
+        });
+
     }, []);
 
 

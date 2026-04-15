@@ -65,7 +65,11 @@ export function useSocket(options: UseSocketOptions) {
         } else {
             // If socket exists but token changed, update auth by reconnecting
             // (socket.io doesn't support changing auth token on the fly reliably)
-            if (socketSingleton && socketSingleton.io && socketSingleton.auth?.token !== token) {
+            const currentAuth = socketSingleton.auth;
+            const isAuthObject = typeof currentAuth === 'object' && currentAuth !== null;
+            const needsUpdate = isAuthObject && (currentAuth as { token?: string }).token !== token;
+            
+            if (needsUpdate) {
                 try {
                     socketSingleton.auth = { token };
                 } catch {
