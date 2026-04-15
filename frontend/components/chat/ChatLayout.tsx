@@ -750,7 +750,6 @@ export function ChatLayout() {
                     ta.rows = 1;
                 }
             }, 0);
-            setIsSending(false);
             setTimeout(() => {
                 const ta = textareaRef.current as unknown as HTMLTextAreaElement | null;
                 ta?.focus();
@@ -772,11 +771,11 @@ export function ChatLayout() {
                     }
                 } : msg));
             }
-            setIsSending(false);
             setIsUploading(false);
             dispatch({ type: 'TOAST_ADD', payload: { message: error.message || 'Failed to send message', type: 'error' } });
         } finally {
             sendLockRef.current = false;
+            setIsSending(false);
         }
     }, [messageDraft, stagedFiles, replyToMessage, token, user, activeChatId, isSending, isUploading, editingMessage, dispatch, scrollToBottom, updateComposerStateForChat]);
 
@@ -1055,13 +1054,13 @@ export function ChatLayout() {
                                                 {msg.replyTo.sender?.name || 'Someone'}
                                             </p>
                                             <div className="truncate line-clamp-1 opacity-95">
-                                                <MarkdownRenderer content={getTruncatedMessagePreview(msg.replyTo.content, isDesktop ? 70 : 35)} className='text-foreground!' />
+                                                <MarkdownRenderer content={getTruncatedMessagePreview(msg.replyTo.deletedAt ? 'Message deleted' : msg.replyTo.content, isDesktop ? 70 : 35)} className={`${msg.replyTo.deletedAt ? 'italic text-muted-foreground!' : 'text-foreground!'}`} />
                                             </div>
                                         </div>
                                     );
                                 })()}
                                 {isDeleted ? (
-                                    <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed bg-card text-muted-foreground border border-border ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
+                                    <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed my-1 bg-card text-muted-foreground border border-border ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
                                         <div className="flex items-center space-x-1.5 italic">
                                             <Trash2 size={13} className="opacity-50 text-red-500" />
                                             <span>Message deleted {msg.deletedBy?.name ? `by ${msg.deletedBy.name} ` : ''} <span className='opacity-70'>{formatChatTimestamp(msg.createdAt!)}</span></span>
