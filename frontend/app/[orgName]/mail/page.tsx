@@ -190,7 +190,7 @@ export default function OrgMailPage() {
             header: 'Messages',
             accessor: (row: MailItem) => (
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-muted-foreground min-w-7.5 justify-center">
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-muted rounded-full text-[10px] font-black text-muted-foreground min-w-7.5 justify-center">
                         <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                         {row._count?.messages || 0}
                     </div>
@@ -215,7 +215,7 @@ export default function OrgMailPage() {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="bg-card/80 backdrop-blur-2xl p-1 md:p-2 rounded-sm border border-white/20 shadow-xl flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="bg-card/80 backdrop-blur-2xl p-1 md:p-2 rounded-sm border border-border shadow-xl flex flex-col flex-1 min-h-0 overflow-hidden">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-2 shrink-0">
                     <div className="flex flex-1 items-center gap-4 w-full">
                         <div className="w-full md:w-64">
@@ -238,7 +238,7 @@ export default function OrgMailPage() {
                             placeholder="Search mail by subject or content..."
                             value={searchQuery}
                             onChange={(val: string) => updateFilters('search', val)}
-                            className="bg-white/50 border-white/20"
+                            className="bg-card/60 border-border"
                         />
                     </div>
                     <Button

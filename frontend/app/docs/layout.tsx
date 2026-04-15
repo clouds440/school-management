@@ -1,7 +1,6 @@
 // app/docs/layout.tsx
 import Link from 'next/link';
 import {
-  Search,
   Book,
   Settings,
   MessageSquare,
@@ -71,18 +70,9 @@ export default function DocsLayout({
   ];
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-full bg-background">
       {/* Docs Sidebar */}
-      <aside className="w-72 hidden lg:block border-r border-border sticky top-16 h-full overflow-y-auto scrollbar-none py-8 px-6">
-        <div className="mb-8 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search docs..."
-            className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
-        </div>
-
+      <aside className="w-72 hidden lg:block border-r border-border sticky top-16 h-full overflow-y-auto py-8 px-6">
         <nav className="space-y-8">
           {sections.map((section) => (
             <div key={section.title} className="space-y-3">

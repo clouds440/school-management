@@ -179,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return (
         <AuthContext.Provider value={{ token, user, loading, login, logout, updateUser }}>
             {loading ? (
-                <div className="fixed inset-0 bg-linear-to-br from-primary/5 via-white to-primary/10 flex flex-col items-center justify-center z-9999">
+                <div className="fixed inset-0 bg-linear-to-br from-primary/5 via-background to-primary/10 flex flex-col items-center justify-center z-9999">
                     <div className="flex flex-col items-center gap-6">
                         <div className="relative w-16 h-16">
                             <div className="absolute inset-0 rounded-2xl bg-primary animate-pulse opacity-20" />
@@ -194,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             <div className="w-8 h-8 rounded-full border-[3px] border-primary/10" />
                             <div className="w-8 h-8 rounded-full border-[3px] border-transparent border-t-primary animate-spin absolute inset-0" />
                         </div>
-                        <p className="text-sm font-semibold text-gray-400 tracking-widest uppercase animate-pulse">Loading…</p>
+                        <p className="text-sm font-semibold text-muted-foreground tracking-widest uppercase animate-pulse">Loading…</p>
                     </div>
                 </div>
             ) : children}

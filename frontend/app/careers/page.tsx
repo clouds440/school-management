@@ -63,7 +63,7 @@ export default function CareersPage() {
       </section>
 
       {/* Jobs */}
-      <section className="py-24 md:py-32 bg-gray-50/50">
+      <section className="py-24 md:py-32 bg-muted/30">
         <div className="container mx-auto px-6 max-w-5xl">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
                 <div className="space-y-4 max-w-xl">
@@ -71,7 +71,7 @@ export default function CareersPage() {
                 <h2 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter uppercase">Open Roles</h2>
               </Reveal>
               <Reveal delay={200}>
-                <p className="text-gray-500 text-lg font-medium">Join us in our mission to revolutionize academic management.</p>
+                <p className="text-muted-foreground text-lg font-medium">Join us in our mission to revolutionize academic management.</p>
               </Reveal>
             </div>
             <Reveal delay={400}>
@@ -107,7 +107,7 @@ export default function CareersPage() {
                       <span>{job.location}</span>
                     </div>
                   </div>
-                  <Link href="/contact" className="w-full md:w-auto px-8 py-4 bg-gray-900 text-foreground rounded-xl font-bold hover:bg-primary transition-all text-center">
+                  <Link href="/contact" className="w-full md:w-auto px-8 py-4 bg-card text-foreground rounded-xl font-bold hover:bg-primary hover:text-white transition-all text-center border border-border">
                     Apply Now
                   </Link>
                 </div>

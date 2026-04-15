@@ -53,6 +53,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
+  private readonly onlineConnectionCounts = new Map<string, number>();
+
   constructor(
     private readonly wsGuard: WsJwtGuard,
     private readonly configService: ConfigService,
@@ -80,6 +82,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       await client.join(`org:${user.organizationId}`);
     }
 
+    this.setUserOnlineState(user, true);
+
     client.emit('connected', {
       userId: user.id,
       rooms: [
@@ -90,7 +94,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  handleDisconnect(): void {
+  handleDisconnect(client: Socket): void {
+    const user = client.data.user as SocketUser | undefined;
+    if (user) {
+      this.setUserOnlineState(user, false);
+    }
+
     // Socket.IO automatically cleans up room memberships on disconnect
   }
 
@@ -139,6 +148,63 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('roomLeft', { roomId: data.roomId });
   }
 
+  @SubscribeMessage('presence:request')
+  async handlePresenceRequest(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { chatId: string },
+  ): Promise<void> {
+    if (!client.data.user || !data?.chatId) return;
+
+    const user = client.data.user as SocketUser;
+    const participant = await this.prisma.chatParticipant.findUnique({
+      where: { chatId_userId: { chatId: data.chatId, userId: user.id } },
+    });
+
+    if (!participant || !participant.isActive) {
+      client.emit('error', { message: 'Presence request unauthorized' });
+      return;
+    }
+
+    const participants = await this.prisma.chatParticipant.findMany({
+      where: { chatId: data.chatId, isActive: true },
+      select: { userId: true },
+    });
+
+    const onlineUserIds = participants
+      .map((chatParticipant) => chatParticipant.userId)
+      .filter((userId) => this.onlineConnectionCounts.get(userId));
+
+    client.emit('presence:state', {
+      chatId: data.chatId,
+      userIds: onlineUserIds,
+    });
+  }
+
+  @SubscribeMessage('chat:typing')
+  async handleChatTyping(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { chatId: string; isTyping: boolean },
+  ): Promise<void> {
+    if (!client.data.user || !data?.chatId) return;
+
+    const user = client.data.user as SocketUser;
+    const participant = await this.prisma.chatParticipant.findUnique({
+      where: { chatId_userId: { chatId: data.chatId, userId: user.id } },
+    });
+
+    if (!participant || !participant.isActive) {
+      client.emit('error', { message: 'Typing event unauthorized' });
+      return;
+    }
+
+    this.emitToRoom(`chat:${data.chatId}`, 'chat:typing', {
+      chatId: data.chatId,
+      userId: user.id,
+      name: user.name,
+      isTyping: data.isTyping,
+    });
+  }
+
   /**
    * Force a specific user to leave a room (e.g., when they are removed from a chat).
    */
@@ -180,5 +246,36 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
    */
   emitToOrg(orgId: string, event: string, data: unknown): void {
     this.server.to(`org:${orgId}`).emit(event, data);
+  }
+
+  private setUserOnlineState(user: SocketUser, isConnecting: boolean): void {
+    const previousCount = this.onlineConnectionCounts.get(user.id) || 0;
+    const nextCount = isConnecting
+      ? previousCount + 1
+      : Math.max(0, previousCount - 1);
+
+    if (nextCount === 0) {
+      this.onlineConnectionCounts.delete(user.id);
+    } else {
+      this.onlineConnectionCounts.set(user.id, nextCount);
+    }
+
+    const becameOnline = isConnecting && previousCount === 0;
+    const becameOffline = !isConnecting && nextCount === 0;
+
+    if (!becameOnline && !becameOffline) return;
+
+    const payload = {
+      userId: user.id,
+      isOnline: becameOnline,
+    };
+
+    if (user.organizationId) {
+      this.emitToOrg(user.organizationId, 'presence:update', payload);
+    } else {
+      this.emitToRole(user.role, 'presence:update', payload);
+    }
+
+    this.emitToUser(user.id, 'presence:update', payload);
   }
 }

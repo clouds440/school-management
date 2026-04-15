@@ -52,7 +52,7 @@ export default function SectionDetailPage() {
     return (
         <div className="flex flex-col w-full space-y-8">
             {/* Header Card - Premium Design */}
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-white/20 p-2 md:p-4 relative overflow-hidden group">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-border p-2 md:p-4 relative overflow-hidden group">
                 {/* Decorative background element */}
                 <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-700"></div>
 
@@ -98,8 +98,8 @@ export default function SectionDetailPage() {
             {/* Main Content Area */}
             <div className="grid grid-cols-1 gap-8">
                 {/* Assessments Panel */}
-                <div className="bg-card text-card-text rounded-sm shadow-2xl border border-white/10 overflow-hidden transform transition-all hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)]">
-                    <div className="p-8 border-b border-white/5 bg-linear-to-r from-primary/10 to-transparent flex items-center justify-between">
+                <div className="bg-card text-card-text rounded-sm shadow-2xl border border-border overflow-hidden transform transition-all hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)]">
+                    <div className="p-8 border-b border-border bg-linear-to-r from-primary/10 to-transparent flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="p-2.5 bg-primary/20 rounded-sm">
                                 <Trophy className="w-6 h-6 text-primary" />

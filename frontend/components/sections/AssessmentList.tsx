@@ -93,7 +93,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-card/30 p-4 rounded-sm border border-white/5 shadow-inner">
+            <div className="flex justify-between items-center bg-card/30 p-4 rounded-sm border border-border shadow-inner">
                 {canCreate && (
                     <Button onClick={() => setIsCreateModalOpen(true)} icon={Plus}>
                         Add Assessment
@@ -102,7 +102,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
             </div>
 
             {assessments.length === 0 ? (
-                <div className="bg-primary/5 border border-dashed border-white/10 rounded-sm p-12 text-center">
+                <div className="bg-primary/5 border border-dashed border-border rounded-sm p-12 text-center">
                     <FileText className="w-12 h-12 text-card-text/20 mx-auto mb-4" />
                     <p className="text-card-text/40 font-bold italic uppercase tracking-widest text-xs">No assessments created for this section yet.</p>
                 </div>
@@ -295,5 +295,4 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
         </div>
     );
 }
-
 

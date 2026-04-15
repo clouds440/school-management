@@ -101,7 +101,7 @@ export default function RegisterPage() {
     }, []);
 
     return (
-        <div className="flex min-h-full h-screen bg-white overflow-hidden font-sans">
+        <div className="flex min-h-full h-screen bg-background overflow-hidden font-sans">
             {/* Left Column: Vision & Branding (Hidden on mobile) */}
             <div className="hidden lg:flex lg:w-[40%] xl:w-[35%] relative flex-col items-center justify-center p-12 overflow-hidden bg-primary/5">
                 {/* Decorative background elements */}
@@ -110,11 +110,11 @@ export default function RegisterPage() {
 
                 <div className="relative z-10 w-full max-w-sm space-y-16 animate-in fade-in slide-in-from-left duration-1000">
                     <div className="space-y-4">
-                        <h1 className="text-4xl xl:text-5xl font-black text-gray-900 leading-[1.1] tracking-tighter italic">
+                        <h1 className="text-4xl xl:text-5xl font-black text-foreground leading-[1.1] tracking-tighter italic">
                             Grow your <br />
                             <span className="text-primary not-italic">Community.</span>
                         </h1>
-                        <p className="text-base text-gray-500 font-medium leading-relaxed">
+                        <p className="text-base text-muted-foreground font-medium leading-relaxed">
                             Join hundreds of modern educational institutions managing their future with {PLATFORM_NAME}.
                         </p>
                     </div>
@@ -123,7 +123,9 @@ export default function RegisterPage() {
                         <Image
                             src="/assets/eduverse-logo.png"
                             alt="Growth Illustration"
+                            fill
                             className="object-contain animate-float"
+                            sizes="(max-width: 1024px) 0px, 24rem"
                             unoptimized
                         />
                     </div>
@@ -131,13 +133,13 @@ export default function RegisterPage() {
             </div>
 
             {/* Right Column: Registration Form */}
-            <div className="w-full lg:w-[60%] xl:w-[65%] flex items-center justify-center p-6 sm:p-12 md:p-16 bg-white relative overflow-y-auto custom-scrollbar animate-in fade-in duration-700">
+            <div className="w-full lg:w-[60%] xl:w-[65%] flex items-center justify-center p-6 sm:p-12 md:p-16 bg-background relative overflow-y-auto custom-scrollbar animate-in fade-in duration-700">
                 <div className="w-full max-w-2xl mt-auto">
                     <div className="flex flex-col space-y-2 mb-10">
-                        <h2 className="text-4xl font-black text-gray-900 tracking-tighter leading-tight italic">
+                        <h2 className="text-4xl font-black text-foreground tracking-tighter leading-tight italic">
                             Register Organization
                         </h2>
-                        <p className="text-sm text-gray-500 font-medium tracking-tight">
+                        <p className="text-sm text-muted-foreground font-medium tracking-tight">
                             Start your digital transformation journey today with {PLATFORM_NAME}. Already have an account?{' '}
                             <Link href="/login" className="text-primary font-black hover:underline underline-offset-4 decoration-2 italic">
                                 Sign in
@@ -147,9 +149,9 @@ export default function RegisterPage() {
 
                     <form className="space-y-10" onSubmit={handleSubmit(onSubmit)} noValidate>
                         {/* Logo & Core Info Section */}
-                        <div className="bg-gray-50/50 p-8 rounded-sm border border-gray-100 flex flex-col md:flex-row items-center md:items-start gap-10">
+                        <div className="bg-muted/40 p-8 rounded-sm border border-border flex flex-col md:flex-row items-center md:items-start gap-10">
                             <div className="flex flex-col items-center shrink-0">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 block">Organization Logo</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4 block">Organization Logo</Label>
                                 <PhotoUploadPicker
                                     onFileReady={handleLogoReady}
                                     type="org"
@@ -159,27 +161,27 @@ export default function RegisterPage() {
 
                             <div className="flex-1 w-full space-y-6">
                                 <div>
-                                    <Label htmlFor="name" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Official School Name</Label>
+                                    <Label htmlFor="name" className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1">Official School Name</Label>
                                     <Input
                                         id="name"
                                         {...register('name')}
                                         error={!!errors.name}
                                         icon={School}
                                         placeholder="EduPulse Academy"
-                                        className="h-14 font-bold border-gray-100 bg-white"
+                                        className="h-14 font-bold border-border bg-background"
                                     />
                                     {errors.name && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.name.message}</p>}
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="adminName" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Administrator Full Name</Label>
+                                    <Label htmlFor="adminName" className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1">Administrator Full Name</Label>
                                     <Input
                                         id="adminName"
                                         {...register('adminName')}
                                         error={!!errors.adminName}
                                         icon={BookOpen}
                                         placeholder="John Doe"
-                                        className="h-14 font-bold border-gray-100 bg-white"
+                                        className="h-14 font-bold border-border bg-background"
                                     />
                                     {errors.adminName && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.adminName.message}</p>}
                                 </div>
@@ -188,11 +190,11 @@ export default function RegisterPage() {
 
                         {/* Metadata Grid */}
                         <div className="space-y-8 px-4">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 italic border-l-4 border-gray-200 pl-4 mb-8">Metadata & Location</h3>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground italic border-l-4 border-border pl-4 mb-8">Metadata & Location</h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
-                                    <Label htmlFor="type" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Category</Label>
+                                    <Label htmlFor="type" className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1">Category</Label>
                                     <CustomSelect
                                         options={[
                                             { value: OrganizationType.KINDERGARTEN, label: 'Kindergarten', icon: Pencil },
@@ -216,19 +218,19 @@ export default function RegisterPage() {
                                         }}
                                         error={!!errors.type}
                                         placeholder="Select Type"
-                                        className="h-14 font-bold border-gray-100"
+                                        className="h-14 font-bold border-border"
                                     />
                                     {errors.type && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.type.message}</p>}
                                 </div>
                                 <div>
-                                    <Label htmlFor="location" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Location</Label>
+                                    <Label htmlFor="location" className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1">Location</Label>
                                     <Input
                                         id="location"
                                         {...register('location')}
                                         error={!!errors.location}
                                         icon={MapPin}
                                         placeholder="New York, USA"
-                                        className="h-14 font-bold border-gray-100"
+                                        className="h-14 font-bold border-border"
                                     />
                                     {errors.location && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.location.message}</p>}
                                 </div>
@@ -237,11 +239,11 @@ export default function RegisterPage() {
 
                         {/* Security & Access Section */}
                         <div className="space-y-8 px-4">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 italic border-l-4 border-gray-200 pl-4 mb-8">Security & Access</h3>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground italic border-l-4 border-border pl-4 mb-8">Security & Access</h3>
 
                             <div className="space-y-8">
                                 <div>
-                                    <Label htmlFor="email" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Admin Login Email</Label>
+                                    <Label htmlFor="email" className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1">Admin Login Email</Label>
                                     <Input
                                         id="email"
                                         type="email"
@@ -249,17 +251,17 @@ export default function RegisterPage() {
                                         error={!!errors.email}
                                         icon={Mail}
                                         placeholder="admin@school.com"
-                                        className="h-14 font-bold border-gray-100"
+                                        className="h-14 font-bold border-border"
                                     />
                                     {errors.email && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.email.message}</p>}
-                                    <p className="mt-3 text-[10px] text-gray-400 font-bold uppercase tracking-wider ml-1 italic opacity-60">
+                                    <p className="mt-3 text-[10px] text-muted-foreground font-bold uppercase tracking-wider ml-1 italic opacity-60">
                                         Primary credentials used for administrator console access.
                                     </p>
                                 </div>
 
                                 <div>
                                     <div className="flex items-center justify-between mb-2 ml-1">
-                                        <Label htmlFor="contactEmail" className="text-[11px] font-black uppercase tracking-widest text-gray-400">Public Contact Email</Label>
+                                        <Label htmlFor="contactEmail" className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Public Contact Email</Label>
                                         <button
                                             type="button"
                                             onClick={() => {
@@ -283,7 +285,7 @@ export default function RegisterPage() {
                                         disabled={sameAsLoginEmail}
                                         icon={Mail}
                                         placeholder="info@school.com"
-                                        className={`h-14 font-bold border-gray-100 transition-all ${sameAsLoginEmail ? 'bg-gray-50 opacity-40 grayscale pointer-events-none' : ''}`}
+                                        className={`h-14 font-bold border-border transition-all ${sameAsLoginEmail ? 'bg-muted opacity-40 grayscale pointer-events-none' : ''}`}
                                     />
                                     {errors.contactEmail && !sameAsLoginEmail && (
                                         <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.contactEmail.message}</p>
@@ -292,19 +294,19 @@ export default function RegisterPage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div>
-                                        <Label htmlFor="phone" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Phone Number</Label>
+                                        <Label htmlFor="phone" className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1">Phone Number</Label>
                                         <Input
                                             id="phone"
                                             {...register('phone')}
                                             error={!!errors.phone}
                                             icon={Phone}
                                             placeholder="+1 (555) 000-0000"
-                                            className="h-14 font-bold border-gray-100"
+                                            className="h-14 font-bold border-border"
                                         />
                                         {errors.phone && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.phone.message}</p>}
                                     </div>
                                     <div>
-                                        <Label htmlFor="password" className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Login Password</Label>
+                                        <Label htmlFor="password" className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1">Login Password</Label>
                                         <Input
                                             id="password"
                                             type="password"
@@ -312,7 +314,7 @@ export default function RegisterPage() {
                                             error={!!errors.password}
                                             icon={Lock}
                                             placeholder="••••••••"
-                                            className="h-14 font-bold border-gray-100"
+                                            className="h-14 font-bold border-border"
                                         />
                                         {errors.password && <p className="mt-1 text-xs text-red-500 font-bold ml-1">{errors.password.message}</p>}
                                     </div>
@@ -328,8 +330,8 @@ export default function RegisterPage() {
                             >
                                 <span className="font-black uppercase text-sm">Create Organization Account</span>
                             </Button>
-                            <p className="mt-6 text-center text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] leading-relaxed max-w-sm mx-auto">
-                                By registering, you agree to our <Link href="/terms" className="text-gray-500 hover:text-primary underline italic">Terms of Service</Link> and <Link href="/privacy" className="text-gray-500 hover:text-primary underline italic">Privacy Policy</Link>.
+                            <p className="mt-6 text-center text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] leading-relaxed max-w-sm mx-auto">
+                                By registering, you agree to our <Link href="/terms" className="text-muted-foreground hover:text-primary underline italic">Terms of Service</Link> and <Link href="/privacy" className="text-muted-foreground hover:text-primary underline italic">Privacy Policy</Link>.
                             </p>
                         </div>
                     </form>

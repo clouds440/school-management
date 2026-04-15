@@ -8,12 +8,12 @@ const STATUS_CONFIG: Record<MailStatus, { label: string; bg: string; text: strin
     [MailStatus.IN_PROGRESS]: { label: 'In Progress', bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20' },
     [MailStatus.AWAITING_RESPONSE]: { label: 'Awaiting', bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/20' },
     [MailStatus.RESOLVED]: { label: 'Resolved', bg: 'bg-green-500/10', text: 'text-green-600', border: 'border-green-500/20' },
-    [MailStatus.CLOSED]: { label: 'Closed', bg: 'bg-gray-500/10', text: 'text-gray-500', border: 'border-gray-500/20' },
+    [MailStatus.CLOSED]: { label: 'Closed', bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-border' },
     [MailStatus.NO_REPLY]: { label: 'Notice (No Reply)', bg: 'bg-neutral-500/10', text: 'text-neutral-600', border: 'border-neutral-500/20' },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; bg: string; text: string; border: string }> = {
-    LOW: { label: 'Low', bg: 'bg-gray-100', text: 'text-gray-500', border: 'border-gray-200' },
+    LOW: { label: 'Low', bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-border' },
     NORMAL: { label: 'Normal', bg: 'bg-blue-50', text: 'text-blue-500', border: 'border-blue-100' },
     HIGH: { label: 'High', bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' },
     URGENT: { label: 'Urgent', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200' },
@@ -60,6 +60,6 @@ export function getMailRowClassName(status: MailStatus) {
         case MailStatus.CLOSED:
             return '!bg-slate-50/40 border-l-4 border-l-slate-400 opacity-80 transition-colors';
         default:
-            return 'transition-colors hover:bg-gray-50/50';
+            return 'transition-colors hover:bg-muted/40';
     }
 }

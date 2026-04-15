@@ -191,7 +191,7 @@ export default function PlatformAdminsPage() {
             sortable: true,
             sortKey: 'createdAt',
             accessor: (row) => (
-                <div className="flex items-center text-xs font-medium text-gray-500 gap-1.5 opacity-80">
+                <div className="flex items-center text-xs font-medium text-muted-foreground gap-1.5 opacity-80">
                     <Calendar className="w-3 h-3" />
                     {new Date(row.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>
@@ -201,7 +201,7 @@ export default function PlatformAdminsPage() {
             header: 'Actions',
             width: 150,
             accessor: (row) => {
-                if (row.id === user?.id) return <span className="text-xs text-gray-400 italic">Current User</span>;
+                if (row.id === user?.id) return <span className="text-xs text-muted-foreground italic">Current User</span>;
                 return (
                     <TableActions
                         onEdit={() => handleOpenAdminModal('EDIT', row)}
@@ -224,7 +224,7 @@ export default function PlatformAdminsPage() {
     }
 
     if (user?.role !== Role.SUPER_ADMIN) {
-        return <div className="p-8 text-center text-gray-500">Access Restricted</div>;
+        return <div className="p-8 text-center text-muted-foreground">Access Restricted</div>;
     }
 
     return (
@@ -279,7 +279,7 @@ export default function PlatformAdminsPage() {
             >
                 <div className="space-y-4 py-2">
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block ml-1">Full Name</label>
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block ml-1">Full Name</label>
                         <input
                             type="text"
                             required
@@ -291,7 +291,7 @@ export default function PlatformAdminsPage() {
                     </div>
                     {adminModalMode === 'CREATE' && (
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block ml-1">Email Address</label>
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block ml-1">Email Address</label>
                             <input
                                 type="email"
                                 required
@@ -303,7 +303,7 @@ export default function PlatformAdminsPage() {
                         </div>
                     )}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block ml-1">Phone (Optional)</label>
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block ml-1">Phone (Optional)</label>
                         <input
                             type="tel"
                             autoComplete='off'
@@ -314,7 +314,7 @@ export default function PlatformAdminsPage() {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block ml-1">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block ml-1">
                             {adminModalMode === 'CREATE' ? 'Password' : 'New Password (Optional)'}
                         </label>
                         <input
@@ -339,7 +339,7 @@ export default function PlatformAdminsPage() {
                 isSubmitting={actionLoading}
             >
                 <div>
-                    <p className="text-sm font-medium text-gray-700">
+                    <p className="text-sm font-medium text-foreground">
                         Are you sure you want to remove <strong>{operatingAdmin?.name}</strong> from Platform Admins?
                     </p>
                     <p className="text-xs text-red-500 mt-2">This action cannot be undone.</p>

@@ -60,7 +60,7 @@ export default function DocsPage() {
             Every journey on {PLATFORM_NAME} starts with a Platform Admin account. From this central hub, you can launch
             multiple school branches, manage global staff, and oversee institution-wide analytics.
           </p>
-          <div className="bg-card border-l-4 border-primary p-8 rounded-r-2xl space-y-4">
+          <div className="bg-card border-l-4 border-primary p-8 rounded-2xl space-y-4">
             <h4 className="font-bold text-foreground text-lg flex items-center">
               <Info className="w-5 h-5 mr-3 text-primary" />
               Multi-Tenant Architecture
@@ -230,13 +230,13 @@ export default function DocsPage() {
 
       {/* User Portals */}
       <section id="teachers" className="scroll-mt-24 space-y-8">
-        <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
+        <div className="flex items-center gap-4 border-b border-border pb-6">
           <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center">
             <Users className="w-6 h-6 text-emerald-600" />
           </div>
           <h2 className="text-3xl font-bold text-foreground">Teacher Portal</h2>
         </div>
-        <p className="text-gray-600 leading-relaxed">
+        <p className="text-muted-foreground leading-relaxed">
           Teachers have a dedicated environment for classroom management. View schedules, manage attendance,
           and interact with students without the administrative complexity of the full platform dashboard.
         </p>

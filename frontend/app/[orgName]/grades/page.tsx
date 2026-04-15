@@ -56,7 +56,7 @@ export default function GradesPage() {
     return (
         <div className="flex flex-col h-full w-full space-y-8">
             <div className="space-y-6">
-                <div className="flex items-center justify-between bg-card/50 p-6 rounded-sm border border-white/5 shadow-inner">
+                <div className="flex items-center justify-between bg-card/50 p-6 rounded-sm border border-border shadow-inner">
                     <div className="flex-1 max-w-md">
                         <Input
                             placeholder="Search sections or courses..."
@@ -73,7 +73,7 @@ export default function GradesPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredSections.length === 0 ? (
-                        <div className="col-span-full bg-primary/5 border border-dashed border-white/10 rounded-sm p-20 text-center">
+                        <div className="col-span-full bg-primary/5 border border-dashed border-border rounded-sm p-20 text-center">
                             <BookOpen className="w-16 h-16 text-card-text/20 mx-auto mb-4" />
                             <p className="text-card-text/40 font-bold italic uppercase tracking-widest">No matching sections found.</p>
                         </div>
@@ -82,7 +82,7 @@ export default function GradesPage() {
                             <Link
                                 key={section.id}
                                 href={`/${orgSlug}/sections/${section.id}`}
-                                className="bg-card border border-white/5 rounded-sm p-8 space-y-4 hover:border-primary/50 transition-all group shadow-sm flex flex-col justify-between"
+                                className="bg-card border border-border rounded-sm p-8 space-y-4 hover:border-primary/50 transition-all group shadow-sm flex flex-col justify-between"
                             >
                                 <div>
                                     <div className="flex justify-between items-start mb-4">
@@ -94,7 +94,7 @@ export default function GradesPage() {
                                     <h3 className="text-xl font-black italic uppercase tracking-tighter text-card-text leading-tight group-hover:text-primary transition-colors">{section.name}</h3>
                                     <p className="text-[10px] font-black text-card-text/40 uppercase tracking-widest mt-2">{section.course?.name || 'GENERIC COURSE'}</p>
                                 </div>
-                                <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-card-text/30">
+                                <div className="mt-8 pt-6 border-t border-border flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-card-text/30">
                                     <span>{section.semester} {section.year}</span>
                                     <span className="bg-primary/5 px-2 py-1 rounded-sm text-primary group-hover:bg-primary group-hover:text-white transition-all">MANAGE GRADES</span>
                                 </div>

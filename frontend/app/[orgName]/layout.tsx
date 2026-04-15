@@ -95,7 +95,7 @@ const StatusOverlay = ({ orgData, user, orgSlug }: { orgData: Organization, user
                 </div>
                 <Link
                     href="/contact"
-                    className="inline-flex items-center gap-4 bg-gray-900 hover:bg-black text-white px-12 py-6 rounded-sm font-black text-xl shadow-2xl transition-all hover:-translate-y-1 group uppercase italic tracking-tighter"
+                    className="inline-flex items-center gap-4 bg-card hover:bg-muted text-foreground px-12 py-6 rounded-sm font-black text-xl shadow-2xl transition-all hover:-translate-y-1 group uppercase italic tracking-tighter border border-border"
                 >
                     <Mail className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                     Contact Platform Support

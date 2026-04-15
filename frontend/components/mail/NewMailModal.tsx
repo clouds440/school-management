@@ -496,7 +496,7 @@ export function NewMailModal({
                         </div>
 
                         <div className="flex-1">
-                            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Detailed Message</label>
+                            <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">Detailed Message</label>
                             <MarkdownEditor
                                 value={message}
                                 onChange={setMessage}

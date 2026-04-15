@@ -166,7 +166,7 @@ export default function MailPage() {
                         <h4 className="text-sm font-black text-foreground leading-tight truncate">{row.subject}</h4>
                         <div className="flex items-center gap-2 mt-1">
                             <span className="text-[10px] uppercase font-bold text-muted-foreground bg-card/5 px-1.5 py-0.5 rounded-sm">{row.category.replace('_', ' ')}</span>
-                            <span className="text-[10px] items-center gap-1 text-gray-400 font-bold hidden sm:flex">
+                            <span className="text-[10px] items-center gap-1 text-muted-foreground font-bold hidden sm:flex">
                                 <Hash className="w-2.5 h-2.5" />
                                 {row.id.slice(0, 8)}
                             </span>
@@ -188,7 +188,7 @@ export default function MailPage() {
                                     user={{ ...row.creator, orgLogoUrl: row.organization.logoUrl, orgName: row.organization.name }}
                                     className="w-8 h-8 border border-border/10"
                                 />
-                                    <div className="absolute bottom-0 -right-1 w-4 h-4 rounded-full bg-white border border-border/10 flex items-center justify-center overflow-hidden">
+                                    <div className="absolute bottom-0 -right-1 w-4 h-4 rounded-full bg-card border border-border/10 flex items-center justify-center overflow-hidden">
                                     <BrandIcon
                                         variant="user"
                                         size="sm"
@@ -243,7 +243,7 @@ export default function MailPage() {
                                 <span className="scale-75">GRP</span>
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-gray-700 truncate max-w-30">
+                                <p className="text-xs font-bold text-foreground truncate max-w-30">
                                     {row.targetRole ? row.targetRole.replace('_', ' ') : 'Platform Support'}
                                 </p>
                                 <p className="text-[10px] font-bold text-orange-400 uppercase">Team</p>
@@ -310,7 +310,7 @@ export default function MailPage() {
                                     { value: MailStatus.IN_PROGRESS, label: 'In Progress', badge: state.stats.mail?.countsByStatus?.[MailStatus.IN_PROGRESS], icon: ArrowUpRight, iconClassName: 'text-amber-500' },
                                     { value: MailStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[MailStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-primary/80' },
                                     { value: MailStatus.RESOLVED, label: 'Resolved', badge: state.stats.mail?.countsByStatus?.[MailStatus.RESOLVED], icon: CheckCircle2, iconClassName: 'text-green-500' },
-                                    { value: MailStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[MailStatus.CLOSED], icon: XCircle, iconClassName: 'text-gray-500' },
+                                    { value: MailStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[MailStatus.CLOSED], icon: XCircle, iconClassName: 'text-muted-foreground' },
                                 ]}
                                 className="w-full sm:w-60"
                                 placeholder="Status"

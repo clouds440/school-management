@@ -105,7 +105,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                 `}
             >
                 {/* Sidebar Header - Branded */}
-                <div className={`h-16 mt-14 lg:mt-0 flex items-center px-4 border-b border-white/5 shrink-0 ${!effectiveExpanded ? 'justify-center' : 'justify-between'} gap-2 overflow-hidden relative group`}>
+                <div className={`h-16 mt-14 lg:mt-0 flex items-center px-4 border-b border-border shrink-0 ${!effectiveExpanded ? 'justify-center' : 'justify-between'} gap-2 overflow-hidden relative group`}>
                     <div className="flex items-center gap-2 min-w-0">
                         <div className="ml-auto opacity-40 hover:opacity-100 transition-opacity">
                             <BackButton
@@ -162,7 +162,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                 </div>
 
                 {/* Branded Sidebar Footer */}
-                <div className="p-4 border-t border-white/5 shrink-0">
+                <div className="p-4 border-t border-border shrink-0">
                     {user && (
                         <div className={`flex items-center ${!effectiveExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
                             <div className={`w-9 h-9 flex items-center justify-center shrink-0 shadow-inner relative`}>

@@ -114,5 +114,9 @@ export function useSocket(options: UseSocketOptions) {
         socketSingleton?.emit('leaveRoom', { roomId: room });
     }, []);
 
-    return { socket: socketSingleton, subscribe, joinRoom, leaveRoom, isConnected };
+    const emit = useCallback((event: string, payload: unknown) => {
+        socketSingleton?.emit(event, payload);
+    }, []);
+
+    return { socket: socketSingleton, subscribe, joinRoom, leaveRoom, emit, isConnected };
 }

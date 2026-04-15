@@ -56,7 +56,7 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            <div className="bg-primary/5 border border-white/10 rounded-sm p-8 text-center border-dashed relative group overflow-hidden">
+            <div className="bg-primary/5 border border-border rounded-sm p-8 text-center border-dashed relative group overflow-hidden">
                 <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
                 <Upload className="w-12 h-12 text-primary/40 mx-auto mb-4 group-hover:scale-110 transition-transform duration-500" />
@@ -76,7 +76,7 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
                 />
             </div>
 
-            <div className="flex justify-end gap-4 pt-4 border-t border-white/5">
+            <div className="flex justify-end gap-4 pt-4 border-t border-border">
                 <Button type="button" variant="secondary" onClick={onCancel} className="px-8 h-12 font-black italic uppercase tracking-widest text-xs">
                     Cancel
                 </Button>

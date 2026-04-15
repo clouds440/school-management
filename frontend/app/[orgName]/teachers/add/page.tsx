@@ -29,7 +29,7 @@ export default function AddTeacherPage() {
                     </div>
                     <div>
                         <h1 className="text-3xl md:text-5xl font-black text-primary tracking-tight drop-shadow-lg text-left">Add Teacher</h1>
-                        <p className="text-gray-600 font-bold opacity-80 mt-1 text-sm md:text-base text-left uppercase tracking-widest text-[10px]">CREATE NEW FACULTY ACCOUNT</p>
+                        <p className="text-muted-foreground font-bold opacity-80 mt-1 text-sm md:text-base text-left uppercase tracking-widest text-[10px]">CREATE NEW FACULTY ACCOUNT</p>
                     </div>
                 </div>
             </div>

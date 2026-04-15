@@ -184,7 +184,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                                 disabled={isProfile}
                                 icon={User}
                                 placeholder="Dr. Sarah Wilson"
-                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                             />
                             {errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{errors.name.message}</p>}
                         </div>
@@ -225,7 +225,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                                 disabled={!!teacherId || isProfile}
                                 icon={Mail}
                                 placeholder="sarah.wilson@school.com"
-                                className={teacherId || isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={teacherId || isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                             />
                             {errors.email && <p className="mt-1 text-xs text-red-500 font-bold">{errors.email.message}</p>}
                         </div>
@@ -257,7 +257,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                             disabled={isProfile}
                             icon={BookOpen}
                             placeholder="Ph.D. in Computer Science"
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                         />
                         {errors.education && <p className="mt-1 text-xs text-red-500 font-bold">{errors.education.message}</p>}
                     </div>
@@ -273,7 +273,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                             disabled={isProfile}
                             icon={User}
                             placeholder="Senior Faculty / HOD"
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                         />
                         {errors.designation && <p className="mt-1 text-xs text-red-500 font-bold">{errors.designation.message}</p>}
                     </div>
@@ -289,7 +289,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                             disabled={isProfile}
                             icon={BookOpen}
                             placeholder="Mathematics / AI / Physics"
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                         />
                         {errors.subject && <p className="mt-1 text-xs text-red-500 font-bold">{errors.subject.message}</p>}
                     </div>
@@ -318,7 +318,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                             disabled={isProfile}
                             icon={DollarSign}
                             placeholder="5000"
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                         />
                         {errors.salary && <p className="mt-1 text-xs text-red-500 font-bold">{errors.salary.message}</p>}
                     </div>
@@ -343,7 +343,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                             value={watch('joiningDate') || ''}
                             error={!!errors.joiningDate}
                             disabled={isProfile}
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                         />
                         {errors.joiningDate && <p className="mt-1 text-xs text-red-500 font-bold">{errors.joiningDate.message}</p>}
                     </div>
@@ -357,7 +357,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
                                 setValue('isManager', !formData.isManager);
                                 trigger('isManager');
                             }}>
-                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${formData.isManager ? 'left-7' : 'left-1'}`} />
+                            <div className={`absolute top-1 w-4 h-4 bg-card rounded-full transition-all duration-300 ${formData.isManager ? 'left-7' : 'left-1'}`} />
                         </div>
                         <div>
                             <p className="text-xs font-black uppercase tracking-widest text-card-text">Administrative Privileges</p>

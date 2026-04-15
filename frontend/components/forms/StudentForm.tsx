@@ -169,7 +169,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-12" noValidate>
             {/* Enrollment Details */}
-            <div className="bg-card p-6 rounded-sm border border-black/10 text-card-text">
+            <div className="bg-card p-6 rounded-sm border border-border text-card-text">
                 <div className="flex flex-col md:flex-row gap-8 items-start mb-10">
                     <div className="shrink-0 group relative">
                         <PhotoUploadPicker
@@ -198,7 +198,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                                 disabled={isProfile || isWatchMode}
                                 icon={User}
                                 placeholder="Alex Johnson"
-                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                             />
                             {errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{errors.name.message}</p>}
                         </div>
@@ -215,7 +215,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                                 disabled={!!studentId || isProfile || isWatchMode}
                                 icon={Mail}
                                 placeholder="alex.j@example.com"
-                                className={studentId || isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={studentId || isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                             />
                             {errors.email && <p className="mt-1 text-xs text-red-500 font-bold">{errors.email.message}</p>}
                         </div>
@@ -245,7 +245,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                                 disabled={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
                                 icon={Hash}
                                 placeholder="ST-2026-001"
-                                className={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                             />
                             {errors.registrationNumber && <p className="mt-1 text-xs text-red-500 font-bold">{errors.registrationNumber.message}</p>}
                         </div>
@@ -262,7 +262,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                                 disabled={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
                                 icon={Hash}
                                 placeholder="2026-001"
-                                className={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                             />
                             {errors.rollNumber && <p className="mt-1 text-xs text-red-500 font-bold">{errors.rollNumber.message}</p>}
                         </div>
@@ -277,7 +277,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                                 value={watch('admissionDate') || ''}
                                 error={!!errors.admissionDate}
                                 disabled={isProfile || isWatchMode}
-                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                             />
                             {errors.admissionDate && <p className="mt-1 text-xs text-red-500 font-bold">{errors.admissionDate.message}</p>}
                         </div>
@@ -321,7 +321,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             disabled={isProfile || isWatchMode}
                             icon={GraduationCap}
                             placeholder="Computer Science"
-                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                         />
                         {errors.major && <p className="mt-1 text-xs text-red-500 font-bold">{errors.major.message}</p>}
                     </div>
@@ -337,7 +337,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             disabled={isProfile || isWatchMode}
                             icon={BookOpen}
                             placeholder="Engineering & Tech"
-                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                         />
                         {errors.department && <p className="mt-1 text-xs text-red-500 font-bold">{errors.department.message}</p>}
                     </div>
@@ -345,7 +345,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
             </div>
 
             {/* Academic Placement */}
-            <div className="bg-card p-8 rounded-sm border border-white/5 shadow-sm">
+            <div className="bg-card p-8 rounded-sm border border-border shadow-sm">
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
                     <div className="p-2 bg-primary/10 rounded-sm">
                         <Plus className="w-5 h-5 text-primary" />
@@ -375,7 +375,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
             </div>
 
             {/* Billing & Progress */}
-            <div className="bg-card p-8 rounded-sm border border-white/5 shadow-sm">
+            <div className="bg-card p-8 rounded-sm border border-border shadow-sm">
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
                     <div className="p-2 bg-primary/10 rounded-sm">
                         <DollarSign className="w-5 h-5 text-primary" />
@@ -396,7 +396,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             disabled={isProfile || isWatchMode}
                             icon={DollarSign}
                             placeholder="12000"
-                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                         />
                         {errors.fee && <p className="mt-1 text-xs text-red-500 font-bold">{errors.fee.message}</p>}
                     </div>
@@ -412,7 +412,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             disabled={isProfile || isWatchMode}
                             icon={BookOpen}
                             placeholder="Standard / Installments"
-                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                         />
                         {errors.feePlan && <p className="mt-1 text-xs text-red-500 font-bold">{errors.feePlan.message}</p>}
                     </div>
@@ -426,7 +426,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
                             value={watch('graduationDate') || ''}
                             error={!!errors.graduationDate}
                             disabled={isProfile || isWatchMode}
-                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-white/5' : ''}
+                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
                         />
                         {errors.graduationDate && <p className="mt-1 text-xs text-red-500 font-bold">{errors.graduationDate.message}</p>}
                     </div>
@@ -434,7 +434,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
             </div>
 
             {/* Profile & Contact */}
-            <div className="bg-card p-8 rounded-sm border border-white/5 shadow-sm">
+            <div className="bg-card p-8 rounded-sm border border-border shadow-sm">
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
                     <div className="p-2 bg-primary/10 rounded-sm">
                         <User className="w-5 h-5 text-primary" />

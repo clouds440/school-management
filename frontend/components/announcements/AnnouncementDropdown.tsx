@@ -164,8 +164,8 @@ export function AnnouncementDropdown() {
                                     <div className="divide-y divide-border">
                                 {announcements.map((announcement) => {
                                     const priorityColors = {
-                                        LOW: 'bg-gray-50/50 hover:bg-gray-100/80 border-l-gray-300',
-                                        NORMAL: 'bg-white hover:bg-gray-50/80 border-l-blue-400',
+                                        LOW: 'bg-muted/40 hover:bg-muted border-l-border',
+                                        NORMAL: 'bg-card hover:bg-muted/40 border-l-blue-400',
                                         HIGH: 'bg-orange-50/50 hover:bg-orange-100/80 border-l-orange-500',
                                         URGENT: 'bg-red-50/50 hover:bg-red-100/80 border-l-red-600',
                                     };
@@ -213,7 +213,7 @@ export function AnnouncementDropdown() {
                                                     {(lastSeen === 0 || new Date(announcement.createdAt).getTime() > lastSeen + 1000) && (
                                                         <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
                                                     )}
-                                                    <h4 className="text-sm font-black text-gray-900 leading-tight">
+                                                    <h4 className="text-sm font-black text-foreground leading-tight">
                                                         {announcement.title}
                                                     </h4>
                                                 </div>
@@ -228,7 +228,7 @@ export function AnnouncementDropdown() {
                                             </p>
 
                                             {announcement.actionUrl && (
-                                                <div className="mt-4 pt-3 border-t border-gray-50 flex justify-end">
+                                                <div className="mt-4 pt-3 border-t border-border flex justify-end">
                                                     <Link
                                                         href={announcement.actionUrl}
                                                         className="text-[10px] font-black text-blue-600 hover:text-blue-800 uppercase tracking-widest flex items-center gap-1 group/link"

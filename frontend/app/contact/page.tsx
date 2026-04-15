@@ -99,7 +99,7 @@ export default function ContactPage() {
             />
           </div>
 
-          <div className="pt-8 border-t border-gray-200">
+          <div className="pt-8 border-t border-border">
             <Link
               href="/docs"
               className="group flex items-center p-6 bg-card rounded-sm shadow-sm border border-border hover:border-primary/20 hover:shadow-md transition-all"

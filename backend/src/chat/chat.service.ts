@@ -1156,6 +1156,13 @@ export class ChatService {
       this.events.emitToRoom(`user:${p.userId}`, 'chat:message', newMessage);
     }
 
+    this.events.emitToRoom(`chat:${chatId}`, 'chat:typing', {
+      chatId,
+      userId: user.id,
+      name: newMessage.sender?.name || null,
+      isTyping: false,
+    });
+
     return newMessage;
   }
 

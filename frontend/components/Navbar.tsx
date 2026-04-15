@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { LogIn, UserPlus, Menu, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
+import { useGlobal } from '@/context/GlobalContext';
 import { Brand } from './ui/Brand';
 import { NotificationDropdown } from './notifications/NotificationDropdown';
 import { AnnouncementDropdown } from './announcements/AnnouncementDropdown';
@@ -16,8 +17,10 @@ import { ThemeMode } from '@/types';
 export default function Navbar() {
     const { token, user } = useAuth();
     const { toggleMobileSidebar, toggleSidebar, isMobileOpen, isExpanded, isDesktop, mounted } = useUI();
+    const { state } = useGlobal();
     const pathname = usePathname();
     const { themeMode, setThemeMode } = useTheme();
+    const chatUnread = state.stats.chat?.unread || 0;
 
     const isDashboard = pathname?.startsWith('/admin/') ||
         pathname?.split('/').length > 2; // Matches /[orgSlug]/something OR /admin/something
@@ -34,10 +37,15 @@ export default function Navbar() {
                                 toggleMobileSidebar();
                             }
                         }}
-                        className="p-2 hover:bg-accent rounded-sm transition-colors text-muted-foreground outline-none focus-visible:ring-2 ring-primary"
+                        className="relative p-2 hover:bg-accent rounded-sm transition-colors text-muted-foreground outline-none focus-visible:ring-2 ring-primary"
                         title={mounted ? (isDesktop ? (isExpanded ? "Collapse Sidebar" : "Expand Sidebar") : (isMobileOpen ? "Close Menu" : "Open Menu")) : "Menu"}
                     >
                         {isDesktop ? (<Menu className="w-6 h-6" />) : (isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />)}
+                        {!isDesktop && !isMobileOpen && chatUnread > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-black shadow-sm">
+                                {chatUnread > 99 ? '99+' : chatUnread}
+                            </span>
+                        )}
                     </button>
                 )}
                 <Brand size="md" showName={isDesktop} />

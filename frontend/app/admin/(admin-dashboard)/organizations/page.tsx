@@ -180,7 +180,7 @@ export default function OrganizationsPage() {
         { id: OrgStatus.PENDING, label: 'Pending', icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-600/10', count: dynamicCounts?.PENDING },
         { id: OrgStatus.APPROVED, label: 'Approved', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-600/10', count: dynamicCounts?.APPROVED },
         { id: OrgStatus.REJECTED, label: 'Rejected', icon: ShieldOff, color: 'text-red-600', bg: 'bg-red-600/10', count: dynamicCounts?.REJECTED },
-        { id: OrgStatus.SUSPENDED, label: 'Suspended', icon: ShieldAlert, color: 'text-gray-600', bg: 'bg-gray-600/10', count: dynamicCounts?.SUSPENDED },
+        { id: OrgStatus.SUSPENDED, label: 'Suspended', icon: ShieldAlert, color: 'text-muted-foreground', bg: 'bg-muted', count: dynamicCounts?.SUSPENDED },
     ];
 
     const columns: Column<Organization>[] = [
@@ -226,7 +226,7 @@ export default function OrganizationsPage() {
             sortable: true,
             sortKey: 'createdAt',
             accessor: (row) => (
-                <div className="flex items-center text-xs font-medium text-gray-500 gap-1.5 opacity-80">
+                <div className="flex items-center text-xs font-medium text-muted-foreground gap-1.5 opacity-80">
                     <Calendar className="w-3 h-3" />
                     {new Date(row.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>
@@ -399,7 +399,7 @@ export default function OrganizationsPage() {
                                 <tab.icon className={`w-4 h-4 ${activeStatusTab === tab.id ? tab.color : 'opacity-40'}`} />
                                 <span>{tab.label}</span>
                                 {tab.count !== undefined && (
-                                    <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter transition-all ${activeStatusTab === tab.id ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 text-gray-400'
+                                    <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter transition-all ${activeStatusTab === tab.id ? 'bg-primary text-white shadow-sm' : 'bg-muted text-muted-foreground'
                                         }`}>
                                         {tab.count}
                                     </span>
@@ -475,7 +475,7 @@ export default function OrganizationsPage() {
                 maxWidth="max-w-3xl"
             >
                 <div className="space-y-4 pt-2">
-                    <p className="text-sm text-gray-500 font-medium">
+                    <p className="text-sm text-muted-foreground font-medium">
                         {modalMode === 'EDIT_MESSAGE'
                             ? 'Update the administrative notice for this organization. They will see this message on their dashboard.'
                             : `Please provide a detailed reason for ${modalMode === 'REJECT' ? 'rejecting' : 'suspending'} this organization. This will be shown to the organization administrators.`

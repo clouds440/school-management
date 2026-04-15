@@ -78,7 +78,7 @@ export default function AssessmentDetailPage() {
     return (
         <div className="flex flex-col w-full space-y-8">
             {/* Assessment Header */}
-            <div className="bg-card border border-white/20 rounded-sm p-8 md:p-10 shadow-2xl relative overflow-hidden">
+            <div className="bg-card border border-border rounded-sm p-8 md:p-10 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none text-primary">
                     <Trophy className="w-40 h-40" />
                 </div>
@@ -116,13 +116,13 @@ export default function AssessmentDetailPage() {
 
                 {/* Resources Section */}
                 {(assessment.externalLink || (assessment.files && assessment.files.length > 0)) && (
-                    <div className="relative z-10 mt-8 pt-6 border-t border-white/10 flex flex-wrap gap-4">
+                    <div className="relative z-10 mt-8 pt-6 border-t border-border flex flex-wrap gap-4">
                         {assessment.externalLink && (
                             <a
                                 href={assessment.externalLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-sm text-xs font-bold transition-colors text-blue-400 hover:text-blue-300 shadow-sm"
+                                className="flex items-center gap-2 px-4 py-2 bg-card/40 hover:bg-card border border-border rounded-sm text-xs font-bold transition-colors text-blue-400 hover:text-blue-300 shadow-sm"
                             >
                                 <LinkIcon className="w-4 h-4" />
                                 External Resource
@@ -149,11 +149,11 @@ export default function AssessmentDetailPage() {
 
             {/* Grading Table (Teachers & Admins) */}
             {isTeacherOrAdmin && (
-                <div className="bg-card border border-white/10 rounded-sm shadow-xl overflow-hidden">
-                    <div className="p-6 border-b border-white/5 bg-primary/5 flex items-center justify-between">
+                <div className="bg-card border border-border rounded-sm shadow-xl overflow-hidden">
+                    <div className="p-6 border-b border-border bg-primary/5 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Users className="w-5 h-5 text-primary" />
-                            <h2 className="text-xl font-black text-black uppercase italic tracking-wider">Student Performance & Grading</h2>
+                            <h2 className="text-xl font-black text-foreground uppercase italic tracking-wider">Student Performance & Grading</h2>
                         </div>
                         {canGrade && (
                             <button
@@ -168,7 +168,7 @@ export default function AssessmentDetailPage() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-white/2px border-b border-white/5">
+                                <tr className="bg-muted/20 border-b border-border">
                                     <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-card-text/40">Student Name</th>
                                     <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-card-text/40">Reg #</th>
                                     <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-card-text/40">Status</th>
@@ -177,14 +177,14 @@ export default function AssessmentDetailPage() {
                                     <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-card-text/40 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/5">
+                            <tbody className="divide-y divide-border">
                                 {section.students?.map((student) => {
                                     const grade = grades.find(g => g.studentId === student.id);
                                     const submission = submissions.find(s => s.studentId === student.id);
                                     return (
                                         <tr
                                             key={student.id}
-                                            className={`hover:bg-white/5 transition-colors group ${submission?.fileUrl ? 'cursor-pointer' : ''}`}
+                                            className={`hover:bg-muted/40 transition-colors group ${submission?.fileUrl ? 'cursor-pointer' : ''}`}
                                             onClick={() => {
                                                 if (submission?.fileUrl) {
                                                     window.open(submission.fileUrl, '_blank', 'noopener,noreferrer');
@@ -275,7 +275,7 @@ export default function AssessmentDetailPage() {
 
             {/* Student View: My Performance */}
             {!isTeacherOrAdmin && (
-                <div className="bg-card border border-white/10 rounded-sm shadow-xl p-8 mt-4">
+                <div className="bg-card border border-border rounded-sm shadow-xl p-8 mt-4">
                     <h2 className="text-xl font-black uppercase italic tracking-wider mb-6 flex items-center gap-3">
                         <Trophy className="w-5 h-5 text-primary" /> My Performance
                     </h2>
@@ -288,18 +288,18 @@ export default function AssessmentDetailPage() {
 
                         return (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="bg-white/5 border border-white/10 p-6 rounded-sm">
+                                <div className="bg-card/40 border border-border p-6 rounded-sm">
                                     <p className="text-[10px] font-black text-card-text/40 uppercase tracking-widest mb-2">Grade</p>
                                     <p className="text-3xl font-black italic text-primary">
                                         {myGrade ? `${myGrade.marksObtained} / ${assessment.totalMarks}` : 'Pending'}
                                     </p>
                                     {myGrade && myGrade.feedback && (
-                                        <p className="text-sm text-card-text/60 mt-4 font-medium border-t border-white/10 pt-4 italic">
+                                        <p className="text-sm text-card-text/60 mt-4 font-medium border-t border-border pt-4 italic">
                                             &quot;{myGrade.feedback}&quot;
                                         </p>
                                     )}
                                 </div>
-                                <div className="bg-white/5 border border-white/10 p-6 rounded-sm">
+                                <div className="bg-card/40 border border-border p-6 rounded-sm">
                                     <p className="text-[10px] font-black text-card-text/40 uppercase tracking-widest mb-3">Submission Status</p>
                                     {mySubmission ? (
                                         <div>

@@ -195,11 +195,11 @@ export default function AssessmentForm({
                     <div className="space-y-2">
                         <div className="flex justify-between items-center mb-1">
                             <Label htmlFor="externalLink">External Link (Optional)</Label>
-                            <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-gray-400 font-bold uppercase hover:text-gray-400 transition-colors">
-                                <span className={watch('isVideoLink') ? 'text-primary' : 'text-gray-400'}>Embed as Video</span>
+                            <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-muted-foreground font-bold uppercase hover:text-foreground transition-colors">
+                                <span className={watch('isVideoLink') ? 'text-primary' : 'text-muted-foreground'}>Embed as Video</span>
                                 <div className="relative inline-flex items-center">
                                     <input type="checkbox" className="sr-only peer" {...register('isVideoLink')} />
-                                    <div className="w-7 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-600 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary"></div>
+                                    <div className="w-7 h-4 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-card after:border-border after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary"></div>
                                 </div>
                             </label>
                         </div>
@@ -226,7 +226,7 @@ export default function AssessmentForm({
                                         const fileInput = document.getElementById('file-upload') as HTMLInputElement;
                                         if (fileInput) fileInput.value = '';
                                     }}
-                                    className="px-1 shrink-0 border border-red-500/60 hover:border-red-500/50 bg-white/5 hover:bg-red-500/10 text-card-text/40 hover:text-red-500 rounded-sm transition-colors shadow-sm"
+                                    className="px-1 shrink-0 border border-red-500/60 hover:border-red-500/50 bg-card/40 hover:bg-red-500/10 text-card-text/40 hover:text-red-500 rounded-sm transition-colors shadow-sm"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
@@ -246,7 +246,7 @@ export default function AssessmentForm({
                             />
                             <Label
                                 htmlFor="file-upload"
-                                className={`flex items-center gap-2 px-3 py-2 border rounded-sm cursor-pointer transition-colors flex-1 ${selectedFile ? 'border-primary/50 bg-primary/5 text-primary' : 'border-white/10 hover:border-white/20 text-gray-400 bg-white/5'}`}
+                                className={`flex items-center gap-2 px-3 py-2 border rounded-sm cursor-pointer transition-colors flex-1 ${selectedFile ? 'border-primary/50 bg-primary/5 text-primary' : 'border-border hover:border-primary/30 text-muted-foreground bg-card/40'}`}
                             >
                                 <UploadCloud className="w-4 h-4" />
                                 <span className="truncate text-sm font-bold flex-1">
@@ -258,19 +258,19 @@ export default function AssessmentForm({
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-sm">
+                <div className="flex items-center justify-between p-3 bg-card/40 border border-border rounded-sm">
                     <div className="space-y-0.5">
-                        <Label className="text-sm font-bold text-gray-300">Allow Submissions</Label>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Enable students to upload work for this assessment</p>
+                        <Label className="text-sm font-bold text-foreground">Allow Submissions</Label>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Enable students to upload work for this assessment</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" className="sr-only peer" {...register('allowSubmissions')} />
-                        <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                        <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-card after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                     </label>
                 </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
                 <Button type="button" variant="secondary" onClick={onCancel}>
                     Cancel
                 </Button>

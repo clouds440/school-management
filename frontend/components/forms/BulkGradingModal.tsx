@@ -117,7 +117,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                         <span className="text-primary italic">Enter marks and status for each student. Blank marks will be skipped.</span>
                         <span className="text-card-text/60 mt-1">Total Marks: {assessment.totalMarks}</span>
                     </div>
-                    <div className="flex items-center gap-3 bg-card p-2 rounded-sm border border-white/10 shadow-sm w-full md:w-auto">
+                    <div className="flex items-center gap-3 bg-card p-2 rounded-sm border border-border shadow-sm w-full md:w-auto">
                         <span className="text-xs uppercase tracking-widest text-card-text/60 whitespace-nowrap">Apply to all:</span>
                         <div className="w-40">
                             <CustomSelect<GradeStatus>
@@ -136,16 +136,16 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                 <div className="overflow-x-auto max-h-[50vh]">
                     <table className="w-full text-left border-collapse">
                         <thead className="sticky top-0 bg-card z-10 shadow-sm">
-                            <tr className="bg-white/5 border-y border-white/10">
+                            <tr className="bg-muted/40 border-y border-border">
                                 <th className="px-4 py-3 text-[11px] font-black uppercase tracking-widest text-card-text/40">Student Name</th>
                                 <th className="px-4 py-3 text-[11px] font-black uppercase tracking-widest text-card-text/40">Reg #</th>
                                 <th className="px-4 py-3 text-[11px] font-black uppercase tracking-widest text-card-text/40">Marks Obtained</th>
                                 <th className="px-4 py-3 text-[11px] font-black uppercase tracking-widest text-card-text/40">Grade Status</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-border">
                             {section.students?.map((student) => (
-                                <tr key={student.id} className="hover:bg-white/5 transition-colors">
+                                <tr key={student.id} className="hover:bg-muted/40 transition-colors">
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
                                             <BrandIcon variant="user" size="sm" user={student.user} className="w-8 h-8 shadow-sm" />
@@ -160,7 +160,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                                             max={assessment.totalMarks}
                                             value={bulkData[student.id]?.marksObtained || ''}
                                             onChange={(e) => handleInputChange(student.id, 'marksObtained', e.target.value)}
-                                            className="w-24 bg-card border border-white/20 rounded-sm px-3 py-1.5 text-sm font-bold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                                            className="w-24 bg-card border border-border rounded-sm px-3 py-1.5 text-sm font-bold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                                             placeholder={`/${assessment.totalMarks}`}
                                         />
                                     </td>
@@ -181,7 +181,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                     </table>
                 </div>
 
-                <div className="flex gap-4 justify-end pt-4 border-t border-white/10 mt-6">
+                <div className="flex gap-4 justify-end pt-4 border-t border-border mt-6">
                     <Button type="button" variant="secondary" onClick={onClose}>
                         Cancel
                     </Button>

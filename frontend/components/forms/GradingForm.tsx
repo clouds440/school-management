@@ -84,7 +84,7 @@ export default function GradingForm({
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="flex items-center gap-4 p-4 bg-card/30 rounded-sm border border-white/10 mb-6 font-bold italic text-card-text">
+            <div className="flex items-center gap-4 p-4 bg-card/30 rounded-sm border border-border mb-6 font-bold italic text-card-text">
                 <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-black uppercase tracking-tighter italic">
                     {student.user.name.charAt(0)}
                 </div>
@@ -138,7 +138,7 @@ export default function GradingForm({
                 </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/5">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
                 <Button type="button" variant="secondary" onClick={onCancel}>
                     Cancel
                 </Button>

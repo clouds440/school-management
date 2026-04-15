@@ -60,17 +60,17 @@ export default function CreateCoursePage() {
         <div className="flex flex-col w-full">
             <div className="mb-6 p-2">
                 <div className="flex items-center gap-5">
-                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-sm border border-black/30 shadow-xl">
+                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-sm border border-border shadow-xl">
                         <LibraryBig className="w-10 h-10 text-primary" />
                     </div>
                     <div>
                         <h1 className="text-4xl font-black text-primary tracking-tight drop-shadow-lg">Create Course</h1>
-                        <p className="text-gray-600 font-bold opacity-80 mt-1 uppercase tracking-widest text-[10px]">ADD A NEW SUBJECT TO CATALOG</p>
+                        <p className="text-muted-foreground font-bold opacity-80 mt-1 uppercase tracking-widest text-[10px]">ADD A NEW SUBJECT TO CATALOG</p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-black/20 p-8 md:p-12 mb-10 text-card-text">
+            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-border p-8 md:p-12 mb-10 text-card-text">
                 <form onSubmit={handleSubmit} className="space-y-8">
                     <div className="space-y-8">
                         <div>

@@ -23,22 +23,35 @@ import { Button } from '../ui/Button';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { NewChatModal } from './NewChatModal';
 import { ChatSettingsModal } from './ChatSettingsModal';
+import {
+    type ChatTypingEvent,
+    type ChatTypingStateMap,
+    formatChatDateLabel,
+    formatChatTimestamp,
+    getDirectChatTarget,
+    getChatComposerState,
+    getTypingIndicatorLabel,
+    getTypingUsersForChat,
+    getTruncatedMessagePreview,
+    mergeUniqueMessages,
+    removeTypingUserFromAllChats,
+    reconcileIncomingMessage,
+    type PresenceStateEvent,
+    type PresenceUpdateEvent,
+    type OnlineUserState,
+    updateChatTypingState,
+    updateChatComposerState,
+    updateOnlineUsersFromPresenceEvent,
+    updateOnlineUsersFromPresenceState,
+    type ChatComposerStateMap,
+    type ChatMessageWithMeta
+} from './chatLayoutHelpers';
 
 export function ChatLayout() {
-    type ChatMessageWithMeta = ChatMessage & {
-        readBy?: string[];
-        clientStatus?: 'sending' | 'failed' | 'sent';
-        retryPayload?: {
-            draftText: string;
-            stagedFiles: File[];
-            replyToMessage: ChatMessage | null;
-        };
-    };
-
     const { token, user } = useAuth();
     const { dispatch } = useGlobal();
     const { isDesktop } = useUI();
-    const { subscribe, joinRoom, leaveRoom } = useSocket({ token, userId: user?.id, enabled: !!token });
+    const { subscribe, joinRoom, leaveRoom, emit } = useSocket({ token, userId: user?.id, enabled: !!token });
     const searchParams = useSearchParams();
     const initialChatId = searchParams.get('id');
 
@@ -48,9 +61,8 @@ export function ChatLayout() {
     const [messages, setMessages] = useState<ChatMessageWithMeta[]>([]);
     const [isLoadingChats, setIsLoadingChats] = useState(true);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-    const [messageDraft, setMessageDraft] = useState('');
     const [isSending, setIsSending] = useState(false);
-    const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+    const [chatComposerStates, setChatComposerStates] = useState<ChatComposerStateMap>({});
     const [isUploading, setIsUploading] = useState(false);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
@@ -58,8 +70,8 @@ export function ChatLayout() {
     const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [showParticipants, setShowParticipants] = useState(false);
-    const [replyToMessage, setReplyToMessage] = useState<ChatMessage | null>(null);
-    const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
+    const [onlineUsers, setOnlineUsers] = useState<OnlineUserState>({});
+    const [typingByChatId, setTypingByChatId] = useState<ChatTypingStateMap>({});
 
     // Modal state for image preview
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -119,6 +131,9 @@ export function ChatLayout() {
     const suppressCloseRef = useRef<string | null>(null);
     const pendingMessageIdRef = useRef<string | null>(null);
     const sendLockRef = useRef(false);
+    const typingStateRef = useRef<{ chatId: string | null; isTyping: boolean }>({ chatId: null, isTyping: false });
+    const mobileTopInset = 'calc(env(safe-area-inset-top, 0px))';
+    const mobileBottomInset = 'env(safe-area-inset-bottom, 0px)';
 
     const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
         messagesEndRef.current?.scrollIntoView({ behavior });
@@ -188,7 +203,7 @@ export function ChatLayout() {
     }, []);
 
     // Helper: Get avatar with fallback — delegate to `BrandIcon` which now supports initials fallback
-    const UserAvatar = ({ targetUser, className = "w-8 h-8", groupIcon = false }: { targetUser?: { id?: string; name?: string | null; avatarUrl?: string | null; role?: Role; orgName?: string; orgLogoUrl?: string | null; avatarUpdatedAt?: string | null; userName?: string }, className?: string, groupIcon?: boolean }) => {
+    const UserAvatar = ({ targetUser, className = "w-8 h-8", groupIcon = false, isOnline = false }: { targetUser?: { id?: string; name?: string | null; avatarUrl?: string | null; role?: Role; orgName?: string; orgLogoUrl?: string | null; avatarUpdatedAt?: string | null; userName?: string }, className?: string, groupIcon?: boolean, isOnline?: boolean }) => {
         if (groupIcon) {
             return (
                 <div className={`${className} rounded-full bg-primary/60 flex items-center justify-center text-primary font-bold border border-primary shadow-sm shrink-0`}>
@@ -199,13 +214,18 @@ export function ChatLayout() {
 
         // Always use BrandIcon; ask it to render initials when no avatar is present
         return (
-            <BrandIcon
-                variant="user"
-                size="sm"
-                user={targetUser}
-                className={className}
-                initialsFallback
-            />
+            <div className="relative shrink-0">
+                <BrandIcon
+                    variant="user"
+                    size="sm"
+                    user={targetUser}
+                    className={className}
+                    initialsFallback
+                />
+                {isOnline && (
+                    <span className="absolute right-0 bottom-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background shadow-sm" />
+                )}
+            </div>
         );
     };
 
@@ -247,6 +267,7 @@ export function ChatLayout() {
             setHasMoreAfter(res.hasMoreAfter ?? false);
             setTimeout(() => scrollToBottom('instant'), 100);
             markAsReadGuard(chatId, '', token);
+            setChats(prev => prev.map(chat => chat.id === chatId ? { ...chat, unreadCount: 0 } : chat));
         } catch (err) {
             console.error(err);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load messages', type: 'error' } });
@@ -259,6 +280,53 @@ export function ChatLayout() {
         if (!activeChatId) return;
         fetchInitialMessages(activeChatId);
     }, [activeChatId, fetchInitialMessages]);
+
+    useEffect(() => {
+        const unread = chats.reduce((total, chat) => total + (chat.unreadCount || 0), 0);
+        dispatch({ type: 'STATS_SET_CHAT', payload: { unread } });
+    }, [chats, dispatch]);
+
+    useEffect(() => {
+        if (!subscribe) return;
+
+        const unsubscribePresenceState = subscribe('presence:state', (payload: unknown) => {
+            const event = payload as PresenceStateEvent;
+            if (!activeChatId || event.chatId !== activeChatId) return;
+            setOnlineUsers(prev => updateOnlineUsersFromPresenceState(prev, event));
+        });
+
+        const unsubscribePresenceUpdate = subscribe('presence:update', (payload: unknown) => {
+            const event = payload as PresenceUpdateEvent;
+            setOnlineUsers(prev => updateOnlineUsersFromPresenceEvent(prev, event));
+            if (!event.isOnline) {
+                setTypingByChatId(prev => removeTypingUserFromAllChats(prev, event.userId));
+            }
+        });
+
+        const unsubscribeTyping = subscribe('chat:typing', (payload: unknown) => {
+            const event = payload as ChatTypingEvent;
+            setTypingByChatId(prev => updateChatTypingState(prev, event));
+        });
+
+        return () => {
+            unsubscribePresenceState();
+            unsubscribePresenceUpdate();
+            unsubscribeTyping();
+        };
+    }, [subscribe, activeChatId]);
+
+    useEffect(() => {
+        if (!activeChatId || !emit) return;
+        emit('presence:request', { chatId: activeChatId });
+    }, [activeChatId, emit]);
+
+    useEffect(() => {
+        return () => {
+            if (typingStateRef.current.chatId && typingStateRef.current.isTyping) {
+                emit('chat:typing', { chatId: typingStateRef.current.chatId, isTyping: false });
+            }
+        };
+    }, [emit]);
 
     const loadEarlierMessages = async () => {
         if (!token || !activeChatId || isLoadingMore || !hasMoreMessages) return;
@@ -276,8 +344,7 @@ export function ChatLayout() {
                     limit: 35,
                     aroundId: messages[0].id
                 });
-                const newItems = res.data.filter(m => !messages.some(ex => ex.id === m.id));
-                setMessages(prev => [...newItems, ...prev]);
+                setMessages(prev => mergeUniqueMessages(prev, res.data, 'prepend'));
                 setHasMoreMessages(res.hasMoreBefore ?? false);
             } else {
                 const nextPage = messagesPage + 1;
@@ -309,8 +376,7 @@ export function ChatLayout() {
                 limit: 35,
                 aroundId: messages[messages.length - 1].id
             });
-            const newItems = res.data.filter(m => !messages.some(ex => ex.id === m.id));
-            setMessages(prev => [...prev, ...newItems]);
+            setMessages(prev => mergeUniqueMessages(prev, res.data, 'append'));
             setHasMoreAfter(res.hasMoreAfter ?? false);
         } catch (err) {
             console.error('Failed to load newer messages', err);
@@ -318,35 +384,6 @@ export function ChatLayout() {
             setIsLoadingNewer(false);
         }
     };
-
-    const reconcileIncomingMessage = useCallback((
-        prev: ChatMessageWithMeta[],
-        incoming: ChatMessage,
-        pendingId: string | null = null
-    ) => {
-        const normalizedIncoming: ChatMessageWithMeta =
-            incoming.senderId === user?.id ? { ...incoming, clientStatus: 'sent' } : incoming;
-        let next = prev;
-
-        if (pendingId) {
-            const pendingIndex = next.findIndex(message => message.id === pendingId);
-            if (pendingIndex > -1) {
-                next = [...next];
-                next[pendingIndex] = normalizedIncoming;
-            }
-        }
-
-        if (!next.some(message => message.id === incoming.id)) {
-            next = [...next, normalizedIncoming];
-        }
-
-        const seen = new Set<string>();
-        return next.filter(message => {
-            if (seen.has(message.id)) return false;
-            seen.add(message.id);
-            return true;
-        });
-    }, [user?.id]);
 
     // 3. Setup socket listen
     useEffect(() => {
@@ -358,7 +395,7 @@ export function ChatLayout() {
             if (message.chatId === activeChatId) {
                 setMessages(prev => {
                     const pendingId = message.senderId === user.id ? pendingMessageIdRef.current : null;
-                    const next = reconcileIncomingMessage(prev, message, pendingId);
+                    const next = reconcileIncomingMessage(prev, message, user.id, pendingId);
                     if (pendingId && next !== prev) {
                         pendingMessageIdRef.current = null;
                     }
@@ -479,7 +516,7 @@ export function ChatLayout() {
             unsubUpdate();
             unsubRoomLeft();
         };
-    }, [subscribe, activeChatId, token, user, dispatch, setActiveChatId, isAtBottom, reconcileIncomingMessage, scrollToBottom]);
+    }, [subscribe, activeChatId, token, user, dispatch, setActiveChatId, isAtBottom, scrollToBottom]);
 
     // 4. Join/Leave rooms and Sync URL
     useEffect(() => {
@@ -524,6 +561,54 @@ export function ChatLayout() {
     }, []);
 
     const activeChat = useMemo(() => chats.find(c => c.id === activeChatId), [chats, activeChatId]);
+    const activeChatComposerState = useMemo(
+        () => getChatComposerState(chatComposerStates, activeChatId),
+        [chatComposerStates, activeChatId]
+    );
+    const directChatTarget = useMemo(
+        () => getDirectChatTarget(activeChat, user?.id),
+        [activeChat, user?.id]
+    );
+    const typingUsers = useMemo(
+        () => getTypingUsersForChat(typingByChatId, activeChatId, user?.id),
+        [typingByChatId, activeChatId, user?.id]
+    );
+    const typingIndicatorLabel = useMemo(
+        () => getTypingIndicatorLabel(activeChat, typingUsers),
+        [activeChat, typingUsers]
+    );
+    const { messageDraft, stagedFiles, replyToMessage, editingMessage } = activeChatComposerState;
+
+    useEffect(() => {
+        if (!emit) return;
+
+        const hasDraftText = messageDraft.trim().length > 0;
+        const previousTypingState = typingStateRef.current;
+
+        if (
+            previousTypingState.chatId &&
+            previousTypingState.chatId !== activeChatId &&
+            previousTypingState.isTyping
+        ) {
+            emit('chat:typing', { chatId: previousTypingState.chatId, isTyping: false });
+            typingStateRef.current = { chatId: previousTypingState.chatId, isTyping: false };
+        }
+
+        if (!activeChatId) {
+            typingStateRef.current = { chatId: null, isTyping: false };
+            return;
+        }
+
+        if (
+            previousTypingState.chatId === activeChatId &&
+            previousTypingState.isTyping === hasDraftText
+        ) {
+            return;
+        }
+
+        emit('chat:typing', { chatId: activeChatId, isTyping: hasDraftText });
+        typingStateRef.current = { chatId: activeChatId, isTyping: hasDraftText };
+    }, [activeChatId, emit, messageDraft]);
 
     const filteredChats = useMemo(() => {
         if (!searchQuery.trim()) return chats;
@@ -540,12 +625,21 @@ export function ChatLayout() {
 
     const activeChatParticipantIds = useMemo(() => activeChat?.participants?.filter(p => p.isActive).map(p => p.userId) || [], [activeChat]);
 
+    const updateComposerStateForChat = useCallback((chatId: string | null, patch: Parameters<typeof updateChatComposerState>[2]) => {
+        setChatComposerStates(prev => updateChatComposerState(prev, chatId, patch));
+    }, []);
+
+    const updateActiveComposerState = useCallback((patch: Parameters<typeof updateChatComposerState>[2]) => {
+        updateComposerStateForChat(activeChatId, patch);
+    }, [activeChatId, updateComposerStateForChat]);
+
     const handleSendMessage = useCallback(async (retryMessage?: ChatMessageWithMeta) => {
+        const chatId = activeChatId;
         const draftText = retryMessage?.retryPayload?.draftText ?? messageDraft.trim();
         const filesToSend = retryMessage?.retryPayload?.stagedFiles ?? stagedFiles;
         const replyTarget = retryMessage?.retryPayload?.replyToMessage ?? replyToMessage;
 
-        if (!token || !user || !activeChatId || (!draftText && filesToSend.length === 0)) return;
+        if (!token || !user || !chatId || (!draftText && filesToSend.length === 0)) return;
         if (sendLockRef.current || isSending || isUploading) return;
         sendLockRef.current = true;
         try {
@@ -559,7 +653,7 @@ export function ChatLayout() {
                     tempMessageId = `temp-${Date.now()}`;
                     const optimisticMessage: ChatMessageWithMeta = {
                         id: tempMessageId,
-                        chatId: activeChatId,
+                        chatId,
                         senderId: user.id,
                         organizationId,
                         content: draftText || 'Sent an attachment',
@@ -592,9 +686,11 @@ export function ChatLayout() {
             }
 
             if (!isRetry) {
-                setMessageDraft('');
-                setReplyToMessage(null);
-                setStagedFiles([]);
+                updateComposerStateForChat(chatId, {
+                    messageDraft: '',
+                    replyToMessage: null,
+                    stagedFiles: [],
+                });
             }
 
             let finalContent = draftText;
@@ -605,7 +701,7 @@ export function ChatLayout() {
                 if (!orgId) throw new Error('Organization ID missing');
 
                 const uploadResults = await Promise.all(
-                    filesToSend.map(file => api.files.uploadFile(orgId, 'chat', activeChatId, file, token))
+                    filesToSend.map(file => api.files.uploadFile(orgId, 'chat', chatId, file, token))
                 );
 
                 const attachmentLinks = uploadResults.map((res, i) => {
@@ -630,15 +726,15 @@ export function ChatLayout() {
             }
 
             if (editingMessage) {
-                await api.chat.editMessage(activeChatId, editingMessage.id, finalContent, token);
-                setEditingMessage(null);
+                await api.chat.editMessage(chatId, editingMessage.id, finalContent, token);
+                updateComposerStateForChat(chatId, { editingMessage: null });
             } else {
-                const sentMessage = await api.chat.sendMessage(activeChatId, finalContent || 'Sent an attachment', token, replyTarget?.id || undefined);
+                const sentMessage = await api.chat.sendMessage(chatId, finalContent || 'Sent an attachment', token, replyTarget?.id || undefined);
                 if (tempMessageId) {
-                    setMessages(prev => reconcileIncomingMessage(prev, sentMessage, tempMessageId));
+                    setMessages(prev => reconcileIncomingMessage(prev, sentMessage, user.id, tempMessageId));
                 }
                 pendingMessageIdRef.current = null;
-                setChats(prev => prev.map(chat => chat.id === activeChatId ? {
+                setChats(prev => prev.map(chat => chat.id === chatId ? {
                     ...chat,
                     updatedAt: sentMessage.createdAt,
                     messages: [sentMessage]
@@ -682,7 +778,7 @@ export function ChatLayout() {
         } finally {
             sendLockRef.current = false;
         }
-    }, [messageDraft, stagedFiles, replyToMessage, token, user, activeChatId, isSending, isUploading, editingMessage, reconcileIncomingMessage, dispatch, scrollToBottom]);
+    }, [messageDraft, stagedFiles, replyToMessage, token, user, activeChatId, isSending, isUploading, editingMessage, dispatch, scrollToBottom, updateComposerStateForChat]);
 
     const handleDeleteMessage = useCallback((messageId: string) => {
         if (!token || !activeChatId) return;
@@ -727,30 +823,32 @@ export function ChatLayout() {
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const chatId = activeChatId;
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
+        if (!chatId) return;
 
         if (stagedFiles.length + files.length > 5) {
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Maximum 5 attachments allowed', type: 'info' } });
             return;
         }
 
-        setStagedFiles(prev => [...prev, ...files]);
+        updateComposerStateForChat(chatId, {
+            stagedFiles: [...stagedFiles, ...files]
+        });
         e.target.value = '';
     };
 
     const removeStagedFile = (index: number) => {
-        setStagedFiles(prev => prev.filter((_, i) => i !== index));
+        updateActiveComposerState({
+            stagedFiles: stagedFiles.filter((_, i) => i !== index)
+        });
     };
 
     const handleChatCreated = (newChatId: string) => {
         setActiveChatId(newChatId);
         fetchChats();
     };
-
-    const getTimestamp = useCallback((timestamp: string) => {
-        return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }, []);
 
     const scrollToMessage = useCallback(async (messageId: string) => {
         const element = document.getElementById(`msg-${messageId}`);
@@ -796,18 +894,22 @@ export function ChatLayout() {
 
     const handleReply = useCallback((msg: ChatMessageWithMeta) => {
         if (msg.clientStatus === 'failed') return;
-        setReplyToMessage(msg);
-        setEditingMessage(null);
+        updateActiveComposerState({
+            replyToMessage: msg,
+            editingMessage: null
+        });
         setTimeout(() => {
             textareaRef.current?.focus();
         }, 50);
-    }, []);
+    }, [updateActiveComposerState]);
 
     const handleEditMessage = useCallback((msg: ChatMessageWithMeta) => {
         if (msg.clientStatus === 'failed') return;
-        setEditingMessage(msg);
-        setReplyToMessage(null);
-        setMessageDraft(msg.content);
+        updateActiveComposerState({
+            editingMessage: msg,
+            replyToMessage: null,
+            messageDraft: msg.content
+        });
         setIsPreviewMode(false);
         requestAnimationFrame(() => {
             const el = document.querySelector('textarea');
@@ -819,7 +921,7 @@ export function ChatLayout() {
             }
         });
 
-    }, []);
+    }, [updateActiveComposerState]);
 
 
     const handleCopyText = useCallback((msg: ChatMessage) => {
@@ -865,26 +967,6 @@ export function ChatLayout() {
         return activeChat.creatorId === user.id;
     }, [activeChat, user]);
 
-    // Date separator helper
-    const formatDateLabel = useCallback((dateStr: string) => {
-        const d = new Date(dateStr);
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const yesterday = new Date(today.getTime() - 86400000);
-        const msgDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        if (msgDate.getTime() === today.getTime()) return 'Today';
-        if (msgDate.getTime() === yesterday.getTime()) return 'Yesterday';
-        return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-    }, []);
-
-    const getTruncatedPreview = useCallback((content?: string, max = isDesktop ? 70 : 35) => {
-        if (!content) return '';
-        const cleaned = content.replace(/!\[.*?\]\(.*?\)/g, '[Image]').trim();
-        return cleaned.length > max ? cleaned.slice(0, max) + '...' : cleaned;
-    }, [isDesktop]);
-
-
-
     const handleTouchStart = useCallback((e: React.TouchEvent, msgId: string) => {
         e.stopPropagation();
         if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
@@ -912,12 +994,12 @@ export function ChatLayout() {
     }, []);
 
     const renderedMessages = useMemo(() => messages.map((msg, i) => {
-        const showDateSep = i === 0 || formatDateLabel(msg.createdAt) !== formatDateLabel(messages[i - 1].createdAt);
+        const showDateSep = i === 0 || formatChatDateLabel(msg.createdAt) !== formatChatDateLabel(messages[i - 1].createdAt);
 
         if (msg.type === ChatMessageType.SYSTEM) {
             return (
                 <div key={msg.id}>
-                    {showDateSep && <div className="chat-date-separator"><span>{formatDateLabel(msg.createdAt)}</span></div>}
+                    {showDateSep && <div className="chat-date-separator"><span>{formatChatDateLabel(msg.createdAt)}</span></div>}
                     <div className="flex justify-center py-2">
                         <div className="bg-card/80 backdrop-blur-sm text-muted-foreground px-4 py-1.5 rounded-full text-[13px] font-medium flex items-center border border-border shadow-sm">
                             <Info size={12} className="mr-1.5 text-primary/80" />
@@ -938,7 +1020,7 @@ export function ChatLayout() {
 
         return (
             <div key={msg.id}>
-                {showDateSep && <div className="chat-date-separator"><span>{formatDateLabel(msg.createdAt)}</span></div>}
+                {showDateSep && <div className="chat-date-separator"><span>{formatChatDateLabel(msg.createdAt)}</span></div>}
                 <div
                     id={`msg-${msg.id}`}
                     onTouchStart={(e) => handleTouchStart(e, msg.id)}
@@ -949,7 +1031,7 @@ export function ChatLayout() {
                 >
                     {!isMine && (
                         <div className="w-7 shrink-0 mr-2 flex flex-col justify-end mb-1">
-                            {isLastInGroup && <UserAvatar targetUser={msg.sender} className="w-7 h-7 rounded-full" />}
+                            {isLastInGroup && <UserAvatar targetUser={msg.sender} className="w-7 h-7 rounded-full" isOnline={!!(msg.sender?.id && onlineUsers[msg.sender.id])} />}
                         </div>
                     )}
                     <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] min-w-0 ${isMine ? 'items-end' : 'items-start'}`}>
@@ -973,7 +1055,7 @@ export function ChatLayout() {
                                                 {msg.replyTo.sender?.name || 'Someone'}
                                             </p>
                                             <div className="truncate line-clamp-1 opacity-95">
-                                                <MarkdownRenderer content={getTruncatedPreview(msg.replyTo.content)} className='text-foreground!' />
+                                                <MarkdownRenderer content={getTruncatedMessagePreview(msg.replyTo.content, isDesktop ? 70 : 35)} className='text-foreground!' />
                                             </div>
                                         </div>
                                     );
@@ -982,7 +1064,7 @@ export function ChatLayout() {
                                     <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed bg-card text-muted-foreground border border-border ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
                                         <div className="flex items-center space-x-1.5 italic">
                                             <Trash2 size={13} className="opacity-50 text-red-500" />
-                                            <span>Message deleted {msg.deletedBy?.name ? `by ${msg.deletedBy.name} ` : ''} <span className='opacity-70'>{getTimestamp(msg.createdAt!)}</span></span>
+                                            <span>Message deleted {msg.deletedBy?.name ? `by ${msg.deletedBy.name} ` : ''} <span className='opacity-70'>{formatChatTimestamp(msg.createdAt!)}</span></span>
                                         </div>
                                     </div>
                                 ) : (
@@ -996,11 +1078,11 @@ export function ChatLayout() {
                                                     const isImage = segment.match(/^!\[.*?\]\(.*?\)$/);
                                                     if (isImage) {
                                                         return (
-                                                            <div key={idx} className="naked-image-container max-w-full rounded-xl relative">
+                                                            <div key={idx} className={`naked-image-container max-w-full rounded-xl relative ${isSendingMessage && isMine ? 'animate-in fade-in slide-in-from-bottom-1 duration-200' : ''}`}>
                                                                 <div className="relative">
                                                                     <MarkdownRenderer content={segment} />
                                                                     <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[11px] px-2 py-0.5 rounded-md flex items-center space-x-1">
-                                                                        <span className="font-medium">{getTimestamp(msg.createdAt)}</span>
+                                                                        <span className="font-medium">{formatChatTimestamp(msg.createdAt)}</span>
                                                                         {isMine && (
                                                                             isSendingMessage ? (
                                                                                 <Loader2 className="w-3.5 h-3.5 animate-spin text-white" strokeWidth={2.5} />
@@ -1026,6 +1108,7 @@ export function ChatLayout() {
                                                                     ? 'bg-primary text-foreground rounded-br-sm shadow-primary/50'
                                                                     : 'bg-card border border-border rounded-bl-sm shadow-black/10 text-foreground!'
                                                                 }
+                                                                        ${isSendingMessage && isMine ? 'animate-in fade-in slide-in-from-bottom-1 duration-200' : ''}
                                                                         `}>
 
                                                             <div className={`prose prose-sm max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground!'}`}>
@@ -1035,7 +1118,7 @@ export function ChatLayout() {
                                                                 {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
                                                                     <span className="text-[10px] text-foreground font-medium italic opacity-85">Edited</span>
                                                                 )}
-                                                                <span className='text-[11px] text-foreground/80'>{getTimestamp(msg.createdAt)}</span>
+                                                                <span className='text-[11px] text-foreground/80'>{formatChatTimestamp(msg.createdAt)}</span>
                                                                 {isMine && (
                                                                     isSendingMessage ? (
                                                                         <Loader2 className="w-3.5 h-3.5 animate-spin text-foreground/70" strokeWidth={2.5} />
@@ -1143,7 +1226,7 @@ export function ChatLayout() {
                 </div>
             </div>
         );
-    }), [messages, formatDateLabel, user?.id, user?.role, tappedMessageId, openDropdownId, highlightedMessageId, isDesktop, activeChat?.type, handleTouchStart, handleTouchEnd, scrollToMessage, getTruncatedPreview, getTimestamp, isSending, isUploading, handleReply, handleCopyText, handleEditMessage, handleDownload, handleDeleteMessage, handleSendMessage]);
+    }), [messages, user?.id, user?.role, tappedMessageId, openDropdownId, highlightedMessageId, isDesktop, activeChat?.type, handleTouchStart, handleTouchEnd, scrollToMessage, isSending, isUploading, handleReply, handleCopyText, handleEditMessage, handleDownload, handleDeleteMessage, handleSendMessage, onlineUsers]);
 
     if (!user) return null;
 
@@ -1235,6 +1318,7 @@ export function ChatLayout() {
                                                 : otherUsers[0]?.user
                                             }
                                             className="w-12 h-12"
+                                            isOnline={!!(chat.type === ChatType.DIRECT && otherUsers[0]?.user?.id && onlineUsers[otherUsers[0].user.id])}
                                         />
                                         {hasUnread && (
                                             <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-background" />
@@ -1295,7 +1379,10 @@ export function ChatLayout() {
                 {activeChat ? (
                     <>
                         {/* Chat Header */}
-                        <div className="absolute w-full px-4 py-3 border-b border-border flex items-center justify-between z-20 bg-background/95 backdrop-blur-md">
+                        <div
+                            className="absolute w-full px-4 py-3 border-b border-border flex items-center justify-between z-20 bg-background/95 backdrop-blur-md"
+                            style={!isDesktop ? { top: mobileTopInset } : undefined}
+                        >
                             <div className="flex items-center space-x-3 min-w-0">
                                 {!isDesktop && (
                                     <button
@@ -1313,6 +1400,7 @@ export function ChatLayout() {
                                         : activeChat.participants?.find(p => p.userId !== user.id)?.user
                                     }
                                     className="w-10 h-10"
+                                    isOnline={!!(directChatTarget?.id && onlineUsers[directChatTarget.id])}
                                 />
                                 <div className="min-w-0">
                                     <h3 className="font-bold text-[15px] text-foreground leading-tight truncate">
@@ -1322,11 +1410,22 @@ export function ChatLayout() {
                                         type='button'
                                         id="participants-toggle"
                                         onClick={() => setShowParticipants(!showParticipants)}
-                                        className={`text-[13px] font-semibold rounded-md transition-all flex items-center ${showParticipants ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                                        className={`text-[13px] font-semibold rounded-md transition-all flex items-center gap-1.5 ${showParticipants ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
                                     >
-                                        {activeChat.type === ChatType.GROUP
+                                        {typingIndicatorLabel ? (
+                                            <span className="inline-flex items-center gap-1.5">
+                                                <span>{typingIndicatorLabel}</span>
+                                                <span className="inline-flex items-center gap-0.5">
+                                                    <span className="h-1.5 w-1.5 rounded-full bg-primary/80 animate-bounce [animation-delay:-0.2s]" />
+                                                    <span className="h-1.5 w-1.5 rounded-full bg-primary/70 animate-bounce [animation-delay:-0.1s]" />
+                                                    <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce" />
+                                                </span>
+                                            </span>
+                                        ) : activeChat.type === ChatType.GROUP
                                             ? `${activeChat.participants?.filter(p => p.isActive).length || 0} members`
-                                            : activeChat.participants?.find(p => p.userId !== user.id)?.user?.role?.replace('_', ' ').toLowerCase() || 'member'}
+                                            : onlineUsers[directChatTarget?.id || '']
+                                                ? 'Online'
+                                                : activeChat.participants?.find(p => p.userId !== user.id)?.user?.role?.replace('_', ' ').toLowerCase() || 'member'}
                                     </button>
                                 </div>
                             </div>
@@ -1352,7 +1451,12 @@ export function ChatLayout() {
                                 ref={messagesContainerRef}
                                 onScroll={handleScroll}
                                 className="flex-1 overflow-y-auto px-3 md:px-5 py-3 space-y-0.5 custom-scrollbar chat-bg-pattern"
-                                style={{ paddingBottom: composerHeight + 16 }}
+                                style={{
+                                    paddingTop: !isDesktop ? 'calc(4rem + env(safe-area-inset-top, 0px) + 4.5rem)' : undefined,
+                                    paddingBottom: !isDesktop
+                                        ? `calc(${composerHeight + 16}px + env(safe-area-inset-bottom, 0px))`
+                                        : composerHeight + 16
+                                }}
                             >
                                 {isLoadingMessages ? (
                                     <div className="flex flex-col items-center justify-center py-16 space-y-3">
@@ -1361,6 +1465,14 @@ export function ChatLayout() {
                                     </div>
                                 ) : (
                                     <>
+                                        {!hasMoreMessages && (
+                                            <div className="flex justify-center py-3">
+                                                <div className="bg-card/80 backdrop-blur-sm text-muted-foreground px-4 py-1.5 rounded-full text-[13px] font-medium flex items-center border border-border shadow-sm">
+                                                    <Info size={12} className="mr-1.5 text-primary/80" />
+                                                    This is the beginning of this chat
+                                                </div>
+                                            </div>
+                                        )}
                                         {hasMoreMessages && (
                                             <div className="flex justify-center py-3">
                                                 <Button
@@ -1419,7 +1531,11 @@ export function ChatLayout() {
                                     type="button"
                                     onClick={() => isViewingHistory ? (activeChatId && fetchInitialMessages(activeChatId)) : scrollToBottom()}
                                     className="absolute right-5 z-30 p-2.5 bg-card text-foreground/70 rounded-full shadow-lg border border-border hover:bg-card/95 hover:text-primary hover:border-primary transition-all active:scale-95 group"
-                                    style={{ bottom: composerHeight + 12 }}
+                                    style={{
+                                        bottom: !isDesktop
+                                            ? `calc(${composerHeight + 12}px + env(safe-area-inset-bottom, 0px))`
+                                            : composerHeight + 12
+                                    }}
                                     title={isViewingHistory ? "Jump to Present" : "Scroll to bottom"}
                                 >
                                     <ArrowDown size={18} className="group-hover:translate-y-0.5 transition-transform text-primary/80" />
@@ -1452,7 +1568,7 @@ export function ChatLayout() {
                                         {activeChat.participants?.filter(p => p.isActive).map(p => (
                                             <div key={p.id} className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted transition-colors group/item">
                                                 <div className="flex items-center space-x-2.5 min-w-0">
-                                                    <UserAvatar targetUser={p.user} className="w-8 h-8" />
+                                                    <UserAvatar targetUser={p.user} className="w-8 h-8" isOnline={!!onlineUsers[p.userId]} />
                                                     <div className="min-w-0">
                                                         <p className="text-[13px] font-semibold text-foreground truncate">{p.user?.name} {p.userId === user.id && <span className="text-muted-foreground font-normal">(You)</span>}</p>
                                                         <p className="text-[13px] text-muted-foreground font-medium capitalize truncate">{p.user?.role?.toLowerCase().replace('_', ' ')}</p>
@@ -1475,7 +1591,11 @@ export function ChatLayout() {
                                 </div>
                             )}
                             {/* Input Composer */}
-                            <div ref={composerRef} className="absolute bottom-0 w-full border-border px-1 md:px-1 py-1 z-20">
+                            <div
+                                ref={composerRef}
+                                className="absolute bottom-0 w-full border-border px-1 md:px-1 py-1 z-20"
+                                style={!isDesktop ? { paddingBottom: mobileBottomInset } : undefined}
+                            >
                                 {/* Reply / Edit Banner - unchanged */}
                                 {(replyToMessage || editingMessage) && (
                                     <div className="mb-1 px-3 py-2 mx-2 bg-muted border-l-4 border-primary rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
@@ -1487,17 +1607,19 @@ export function ChatLayout() {
                                                 onClick={() => { if (replyToMessage) scrollToMessage(replyToMessage.id); }}
                                                 className="text-[13px] text-muted-foreground! truncate cursor-pointer"
                                             >
-                                                <MarkdownRenderer content={getTruncatedPreview(editingMessage?.content || replyToMessage?.content)} className='text-muted-foreground!' />
+                                                <MarkdownRenderer content={getTruncatedMessagePreview(editingMessage?.content || replyToMessage?.content, isDesktop ? 70 : 35)} className='text-muted-foreground!' />
                                             </div>
                                         </div>
                                         <button
                                             title='Cancel'
                                             type="button"
                                             onClick={() => {
-                                                setReplyToMessage(null);
+                                                updateActiveComposerState({ replyToMessage: null });
                                                 if (editingMessage) {
-                                                    setEditingMessage(null);
-                                                    setMessageDraft('');
+                                                    updateActiveComposerState({
+                                                        editingMessage: null,
+                                                        messageDraft: ''
+                                                    });
                                                 }
                                             }}
                                             className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/40 rounded-lg transition-colors"
@@ -1548,7 +1670,7 @@ export function ChatLayout() {
                                 )}
 
                                 {/* Composer Row – flex with items-end to keep buttons at bottom */}
-                                <div className={`flex items-end space-x-2 ${messageDraft.includes('\n') ? 'pb-3' : ''}`}>
+                                <div className={`flex items-end space-x-2 ${messageDraft.includes('\n') ? 'pb-3.5 pt-0.5' : ''}`}>
                                     <input
                                         title='Upload File'
                                         type="file"
@@ -1587,7 +1709,7 @@ export function ChatLayout() {
                                             disabled={isSending || isUploading}
                                             onChange={(e) => {
                                                 const el = e.target;
-                                                setMessageDraft(el.value);
+                                                updateActiveComposerState({ messageDraft: el.value });
                                                 el.style.height = 'auto';
                                                 el.style.height = el.scrollHeight + 'px';
                                                 el.style.height = Math.min(el.scrollHeight, 200) + 'px';
@@ -1634,7 +1756,7 @@ export function ChatLayout() {
                     className="fixed inset-0 z-50 flex items-center justify-center bg-accent backdrop-blur-sm"
                     onClick={() => setPreviewImageUrl(null)}
                 >
-                    <div className="relative max-w-4xl max-h-screen p-4 min-w-[300px] min-h-[300px]">
+                    <div className="relative max-w-4xl max-h-screen p-4 min-w-75 min-h-75">
                         <Image
                             src={previewImageUrl}
                             alt="Preview"

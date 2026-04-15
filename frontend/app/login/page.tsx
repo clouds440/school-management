@@ -70,7 +70,9 @@ export default function LoginPage() {
             <Image
               src="/assets/eduverse-logo.png"
               alt="Eduverse Logo"
+              fill
               className="object-contain animate-float"
+              sizes="(max-width: 1024px) 0px, 28rem"
               unoptimized
             />
           </div>
