@@ -53,10 +53,18 @@ export function ChatLayout() {
     const { subscribe, joinRoom, leaveRoom, emit } = useSocket({ token, userId: user?.id, enabled: !!token });
     const searchParams = useSearchParams();
     const initialChatId = searchParams.get('id');
+    const msgIdParam = searchParams.get('msgId');
 
     const [chats, setChats] = useState<Chat[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeChatId, setActiveChatId] = useState<string | null>(initialChatId);
+    const [targetMessageId, setTargetMessageId] = useState<string | null>(msgIdParam);
+
+    useEffect(() => {
+        if (msgIdParam) {
+            setTargetMessageId(msgIdParam);
+        }
+    }, [msgIdParam]);
     const [messages, setMessages] = useState<ChatMessageWithMeta[]>([]);
     const [isLoadingChats, setIsLoadingChats] = useState(true);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
@@ -146,6 +154,41 @@ export function ChatLayout() {
             markAsReadGuard(activeChatId, '', token);
         }
     }, [activeChatId, token]);
+
+    const scrollToMessage = useCallback(async (messageId: string) => {
+        const element = document.getElementById(`msg-${messageId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setHighlightedMessageId(messageId);
+            setTimeout(() => setHighlightedMessageId(null), 2500);
+        } else {
+            // Jump to history context
+            if (!token || !activeChatId) return;
+            setIsLoadingMessages(true);
+            try {
+                const res = await api.chat.getChatMessages(activeChatId, token, { aroundId: messageId, limit: 30 });
+                setMessages(res.data);
+                setIsViewingHistory(true);
+                setHasMoreMessages(res.hasMoreBefore ?? false);
+                setHasMoreAfter(res.hasMoreAfter ?? false);
+
+                // Wait for render, then scroll to the specific item
+                setTimeout(() => {
+                    const el = document.getElementById(`msg-${messageId}`);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'instant', block: 'center' });
+                        setHighlightedMessageId(messageId);
+                        setTimeout(() => setHighlightedMessageId(null), 2500);
+                    }
+                }, 100);
+            } catch (err) {
+                console.error(err);
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'Message not found in history', type: 'error' } });
+            } finally {
+                setIsLoadingMessages(false);
+            }
+        }
+    }, [token, activeChatId, dispatch]);
 
     const handleScroll = () => {
         if (!messagesContainerRef.current) return;
@@ -254,21 +297,40 @@ export function ChatLayout() {
     }, [token, fetchChats]);
 
     // 2. Fetch Messages for Active Chat (Initial)
-    const fetchInitialMessages = useCallback(async (chatId: string) => {
+    const fetchInitialMessages = useCallback(async (chatId: string, targetMsgId?: string | null) => {
         if (!token) return;
         setIsLoadingMessages(true);
         setMessagesPage(1);
         setHasMoreMessages(true);
         setHasMoreAfter(false);
         setUnreadSinceScroll(0);
-        setIsViewingHistory(false);
+        setIsViewingHistory(!!targetMsgId);
 
         try {
-            const res = await api.chat.getChatMessages(chatId, token, { limit: 35, page: 1 });
+            let res: PaginatedResponse<ChatMessage>;
+            if (targetMsgId) {
+                res = await api.chat.getChatMessages(chatId, token, { limit: 35, aroundId: targetMsgId });
+            } else {
+                res = await api.chat.getChatMessages(chatId, token, { limit: 35, page: 1 });
+            }
+
             setMessages(res.data);
             setHasMoreMessages(res.hasMoreBefore ?? (res.currentPage < res.totalPages));
             setHasMoreAfter(res.hasMoreAfter ?? false);
-            setTimeout(() => scrollToBottom('instant'), 100);
+
+            if (targetMsgId) {
+                // When deep-linking, scroll to message and highlight
+                setTimeout(() => {
+                    scrollToMessage(targetMsgId);
+                    setHighlightedMessageId(targetMsgId);
+                    setTimeout(() => setHighlightedMessageId(null), 3000);
+                    // Clear the target so subsequent loads of this chat don't jump
+                    setTargetMessageId(null);
+                }, 200);
+            } else {
+                setTimeout(() => scrollToBottom('instant'), 100);
+            }
+
             markAsReadGuard(chatId, '', token);
             setChats(prev => prev.map(chat => chat.id === chatId ? { ...chat, unreadCount: 0 } : chat));
         } catch (err) {
@@ -277,12 +339,12 @@ export function ChatLayout() {
         } finally {
             setIsLoadingMessages(false);
         }
-    }, [token, dispatch, scrollToBottom]);
+    }, [token, dispatch, scrollToBottom, scrollToMessage]);
 
     useEffect(() => {
         if (!activeChatId) return;
-        fetchInitialMessages(activeChatId);
-    }, [activeChatId, fetchInitialMessages]);
+        fetchInitialMessages(activeChatId, targetMessageId);
+    }, [activeChatId, fetchInitialMessages, targetMessageId]);
 
     useEffect(() => {
         const unread = chats.reduce((total, chat) => total + (chat.unreadCount || 0), 0);
@@ -904,40 +966,6 @@ export function ChatLayout() {
         fetchChats();
     };
 
-    const scrollToMessage = useCallback(async (messageId: string) => {
-        const element = document.getElementById(`msg-${messageId}`);
-        if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setHighlightedMessageId(messageId);
-            setTimeout(() => setHighlightedMessageId(null), 2500);
-        } else {
-            // Jump to history context
-            if (!token || !activeChatId) return;
-            setIsLoadingMessages(true);
-            try {
-                const res = await api.chat.getChatMessages(activeChatId, token, { aroundId: messageId, limit: 30 });
-                setMessages(res.data);
-                setIsViewingHistory(true);
-                setHasMoreMessages(res.hasMoreBefore ?? false);
-                setHasMoreAfter(res.hasMoreAfter ?? false);
-
-                // Wait for render, then scroll to the specific item
-                setTimeout(() => {
-                    const el = document.getElementById(`msg-${messageId}`);
-                    if (el) {
-                        el.scrollIntoView({ behavior: 'instant', block: 'center' });
-                        setHighlightedMessageId(messageId);
-                        setTimeout(() => setHighlightedMessageId(null), 2500);
-                    }
-                }, 100);
-            } catch (err) {
-                console.error(err);
-                dispatch({ type: 'TOAST_ADD', payload: { message: 'Message not found in history', type: 'error' } });
-            } finally {
-                setIsLoadingMessages(false);
-            }
-        }
-    }, [token, activeChatId, dispatch]);
 
     useEffect(() => {
         if (highlightedMessageId) {
@@ -1285,7 +1313,7 @@ export function ChatLayout() {
     if (!user) return null;
 
     const isComposerExpanded =
-        messageDraft.length > 30 ||
+        messageDraft.length > (isDesktop ? 150 : 30) ||
         messageDraft.includes('\n');
 
     return (

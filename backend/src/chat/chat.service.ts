@@ -1176,7 +1176,7 @@ export class ChatService {
             title: `${senderName} mentioned you in ${chatName}.`,
             body,
             type: 'CHAT_MENTION',
-            actionUrl: `/${orgSlug}/chat?id=${chatId}`
+            actionUrl: `/${orgSlug}/chat?id=${chatId}&msgId=${newMessage.id}`
           });
         }
       }
