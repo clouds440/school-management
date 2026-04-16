@@ -31,7 +31,7 @@ export class ChatService {
     private readonly prisma: PrismaService,
     private readonly events: EventsGateway,
     private readonly notifications: NotificationsService,
-  ) {}
+  ) { }
 
   async searchUsers(query: string, user: CurrentUser) {
     if (user.role === Role.STUDENT) {
@@ -634,11 +634,11 @@ export class ChatService {
       }),
       ...(lastHistory
         ? [
-            this.prisma.chatMembershipHistory.update({
-              where: { id: lastHistory.id },
-              data: { deactivatedAt: new Date() },
-            }),
-          ]
+          this.prisma.chatMembershipHistory.update({
+            where: { id: lastHistory.id },
+            data: { deactivatedAt: new Date() },
+          }),
+        ]
         : []),
     ]);
 
@@ -1154,6 +1154,32 @@ export class ChatService {
     // Notify all participants via WebSocket for real-time UI/badge updates
     for (const p of activeParticipants) {
       this.events.emitToRoom(`user:${p.userId}`, 'chat:message', newMessage);
+    }
+
+    if (dto.mentionedUserIds && dto.mentionedUserIds.length > 0 && newMessage.chat?.type === ChatType.GROUP) {
+      const senderName = newMessage.sender?.name || 'Someone';
+      const chatName = newMessage.chat?.name || 'a group';
+
+      let orgSlug = 'org';
+      if (newMessage.organizationId) {
+        const org = await this.prisma.organization.findUnique({ where: { id: newMessage.organizationId } });
+        if (org && org.name) orgSlug = org.name.replace(/\s+/g, '-').toLowerCase();
+      }
+
+      for (const userId of dto.mentionedUserIds) {
+        if (userId === user.id) continue;
+        const isParticipant = activeParticipants.find(p => p.userId === userId);
+        if (isParticipant) {
+          const body = dto.content.length > 30 ? dto.content.substring(0, 30) + '...' : dto.content;
+          await this.notifications.createNotification({
+            userId,
+            title: `${senderName} mentioned you in ${chatName}.`,
+            body,
+            type: 'CHAT_MENTION',
+            actionUrl: `/${orgSlug}/chat?id=${chatId}`
+          });
+        }
+      }
     }
 
     this.events.emitToRoom(`chat:${chatId}`, 'chat:typing', {

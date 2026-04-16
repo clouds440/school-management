@@ -10,13 +10,12 @@ import Image from 'next/image';
 import { api } from '@/lib/api';
 import { getUserChatsCached, insertOrUpdateChatFromMessage, markAsReadGuard, getCachedChats } from '@/lib/chatStore';
 import { BrandIcon } from '../ui/Brand';
-import { Chat, ChatMessage, ChatType, ChatMessageType, PaginatedResponse, Role, User } from '@/types';
+import { Chat, ChatMessage, ChatParticipant, ChatType, ChatMessageType, PaginatedResponse, Role, User } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import {
-    Search, Plus, MessageSquarePlus, Send, MoreVertical, X, Loader2,
+    Search, Plus, Paperclip, MessageSquarePlus, SendHorizonal as Send, MoreVertical, X, Loader2,
     UserMinus, Trash2, Info, ChevronLeft, Check, CheckCheck, ArrowDown, Pencil, Reply, ArrowUp, Download, RotateCcw,
-    Copy,
-    Eye
+    Copy, View
 } from 'lucide-react';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 import { Button } from '../ui/Button';
@@ -72,6 +71,10 @@ export function ChatLayout() {
     const [showParticipants, setShowParticipants] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState<OnlineUserState>({});
     const [typingByChatId, setTypingByChatId] = useState<ChatTypingStateMap>({});
+    const [mentionSearchQuery, setMentionSearchQuery] = useState('');
+    const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+    const [mentionCursorIndex, setMentionCursorIndex] = useState(0);
+    const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
 
     // Modal state for image preview
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -122,8 +125,9 @@ export function ChatLayout() {
     // Refs
     const participantsRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const textareaRef = useRef<import('../ui/MarkdownEditor').MarkdownEditorHandle>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const mentionDropdownRef = useRef<HTMLDivElement>(null);
     const observerRef = useRef<ResizeObserver | null>(null);
 
     const [composerHeight, setComposerHeight] = useState(0);
@@ -576,7 +580,7 @@ export function ChatLayout() {
         () => getTypingIndicatorLabel(activeChat, typingUsers),
         [activeChat, typingUsers]
     );
-    const { messageDraft, stagedFiles, replyToMessage, editingMessage } = activeChatComposerState;
+    const { messageDraft, stagedFiles, replyToMessage, editingMessage, mentionedUsers } = activeChatComposerState;
 
     useEffect(() => {
         if (!emit) return;
@@ -632,6 +636,53 @@ export function ChatLayout() {
         updateComposerStateForChat(activeChatId, patch);
     }, [activeChatId, updateComposerStateForChat]);
 
+    const filteredMembers = useMemo(() => {
+        if (!activeChat || activeChat.type !== ChatType.GROUP) return [];
+        const members = activeChat.participants?.filter(p => p.isActive && p.userId !== user?.id) || [];
+        if (!mentionSearchQuery) return members;
+        return members.filter(m =>
+            m.user?.name?.toLowerCase().includes(mentionSearchQuery.toLowerCase())
+        );
+    }, [activeChat, mentionSearchQuery, user?.id]);
+
+    const handleSelectMember = useCallback((member: ChatParticipant) => {
+        if (!member.user || !member.user.name) return;
+        const textBefore = messageDraft.slice(0, mentionCursorIndex);
+        const textAfter = messageDraft.slice(textareaRef.current?.selectionStart || mentionCursorIndex + 1 + mentionSearchQuery.length);
+
+        // Ensure exactly one trailing space
+        const spaceSuffix = ' ';
+        const newText = `${textBefore}\`@${member.user.name}\`${spaceSuffix}${textAfter.trimStart()}`;
+
+        updateActiveComposerState({
+            messageDraft: newText,
+            mentionedUsers: [...mentionedUsers.filter(u => u.id !== (member.user?.id || member.userId)), member.user]
+        });
+        setShowMentionDropdown(false);
+        setMentionSearchQuery('');
+
+        // Focus back
+        setTimeout(() => {
+            const el = textareaRef.current;
+            if (el) {
+                el.focus();
+                const newPos = textBefore.length + member.user!.name!.length + 3; // +2 for backticks, +1 for @
+                el.setSelectionRange(newPos + 1, newPos + 1); // +1 to put cursor AFTER the added space
+            }
+        }, 10);
+    }, [messageDraft, mentionCursorIndex, mentionSearchQuery, mentionedUsers, updateActiveComposerState]);
+
+    useEffect(() => {
+        if (showMentionDropdown && mentionDropdownRef.current && mentionSelectedIndex >= 0) {
+            const container = mentionDropdownRef.current;
+            const children = container.querySelectorAll('.mention-item');
+            const activeItem = children[mentionSelectedIndex] as HTMLElement | null;
+            if (activeItem) {
+                activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+    }, [mentionSelectedIndex, showMentionDropdown]);
+
     const handleSendMessage = useCallback(async (retryMessage?: ChatMessageWithMeta) => {
         const chatId = activeChatId;
         const draftText = retryMessage?.retryPayload?.draftText ?? messageDraft.trim();
@@ -665,7 +716,8 @@ export function ChatLayout() {
                         retryPayload: {
                             draftText,
                             stagedFiles: [...filesToSend],
-                            replyToMessage: replyTarget || null
+                            replyToMessage: replyTarget || null,
+                            mentionedUsers: [...mentionedUsers]
                         }
                     };
                     setMessages(prev => [...prev, optimisticMessage]);
@@ -677,7 +729,8 @@ export function ChatLayout() {
                         retryPayload: {
                             draftText,
                             stagedFiles: [...filesToSend],
-                            replyToMessage: replyTarget || null
+                            replyToMessage: replyTarget || null,
+                            mentionedUsers: [...mentionedUsers]
                         }
                     } : msg));
                 }
@@ -728,7 +781,9 @@ export function ChatLayout() {
                 await api.chat.editMessage(chatId, editingMessage.id, finalContent, token);
                 updateComposerStateForChat(chatId, { editingMessage: null });
             } else {
-                const sentMessage = await api.chat.sendMessage(chatId, finalContent || 'Sent an attachment', token, replyTarget?.id || undefined);
+                const mentionedUserIds = mentionedUsers.map(u => u.id);
+                const sentMessage = await api.chat.sendMessage(chatId, finalContent || 'Sent an attachment', token, replyTarget?.id || undefined, mentionedUserIds);
+                updateComposerStateForChat(chatId, { mentionedUsers: [] });
                 if (tempMessageId) {
                     setMessages(prev => reconcileIncomingMessage(prev, sentMessage, user.id, tempMessageId));
                 }
@@ -766,7 +821,8 @@ export function ChatLayout() {
                     retryPayload: {
                         draftText,
                         stagedFiles: [...filesToSend],
-                        replyToMessage: replyTarget || null
+                        replyToMessage: replyTarget || null,
+                        mentionedUsers: [...mentionedUsers]
                     }
                 } : msg));
             }
@@ -932,7 +988,7 @@ export function ChatLayout() {
     }, [dispatch]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (isDesktop && e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             if (sendLockRef.current || isSending || isUploading) return;
             void handleSendMessage();
@@ -953,7 +1009,7 @@ export function ChatLayout() {
         if (!ta) return;
         try {
             ta.style.height = 'auto';
-            ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+            ta.style.height = Math.min(ta.scrollHeight, 250) + 'px';
         } catch (err) {
             console.error(err);
         }
@@ -1025,7 +1081,7 @@ export function ChatLayout() {
                     onTouchEnd={handleTouchEnd}
                     onTouchMove={handleTouchEnd}
                     onTouchCancel={handleTouchEnd}
-                    className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-2.5' : 'mb-0.5'} px-3 md:px-5 -mx-3 md:-mx-5 ${highlightedMessageId === msg.id ? 'bg-primary/30 rounded-sm' : ''}`}
+                    className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-3.5' : 'mb-0.5'} px-3 md:px-5 -mx-3 md:-mx-5 ${highlightedMessageId === msg.id ? 'bg-primary/30 rounded-sm' : ''}`}
                 >
                     {!isMine && (
                         <div className="w-7 shrink-0 mr-2 flex flex-col justify-end mb-1">
@@ -1171,7 +1227,7 @@ export function ChatLayout() {
                                         <MoreVertical size={15} className="text-primary/80 hover:text-primary" />
                                     </button>
                                     {openDropdownId === msg.id && (
-                                        <div className={`absolute ${isMine ? 'right-0' : 'left-0'} ${isLastInGroup ? 'bottom-full' : 'top-full'} overflow-hidden mb-1 w-32 bg-card border border-border rounded-xl shadow-xl z-99 flex flex-col animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
+                                        <div className={`absolute ${isMine ? 'left-0' : 'right-0'} ${i === messages.length - 1 ? 'bottom-full' : 'top-full'} overflow-hidden mb-1 w-32 bg-card border border-border rounded-xl shadow-xl z-99 flex flex-col animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
                                             {!isFailedMessage && (
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleReply(msg); }}
@@ -1227,6 +1283,10 @@ export function ChatLayout() {
     }), [messages, user?.id, user?.role, tappedMessageId, openDropdownId, highlightedMessageId, isDesktop, activeChat?.type, handleTouchStart, handleTouchEnd, scrollToMessage, isSending, isUploading, handleReply, handleCopyText, handleEditMessage, handleDownload, handleDeleteMessage, handleSendMessage, onlineUsers]);
 
     if (!user) return null;
+
+    const isComposerExpanded =
+        messageDraft.length > 30 ||
+        messageDraft.includes('\n');
 
     return (
         <div className="flex h-full bg-card lg:shadow-md lg:border border-border overflow-hidden relative">
@@ -1625,6 +1685,32 @@ export function ChatLayout() {
                                     </div>
                                 )}
 
+                                {/* Mention Banner */}
+                                {mentionedUsers.length > 0 && !editingMessage && (
+                                    <div className="mb-1 px-3 py-2 mx-2 bg-muted border-l-4 border-indigo-500 rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                                        <div className="flex-1 min-w-0 pr-3">
+                                            <p className="text-[13px] font-semibold text-indigo-500 mb-0.5">
+                                                Mentioning
+                                            </p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {mentionedUsers.map(u => (
+                                                    <span key={u.id} className="text-[12px] bg-indigo-500/10 text-indigo-600 px-1.5 py-0.5 rounded-md font-medium">
+                                                        @{u.name}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <button
+                                            title='Clear Mentions'
+                                            type="button"
+                                            onClick={() => updateActiveComposerState({ mentionedUsers: [] })}
+                                            className="p-1 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                                        >
+                                            <X size={14} className="text-indigo-500/80 hover:text-indigo-500" />
+                                        </button>
+                                    </div>
+                                )}
+
                                 {/* Staged Files - unchanged */}
                                 {stagedFiles.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mb-1 mx-2">
@@ -1665,10 +1751,10 @@ export function ChatLayout() {
                                     </div>
                                 )}
 
-                                {/* Composer Row – flex with items-end to keep buttons at bottom */}
-                                <div className={`flex items-end space-x-2 ${messageDraft.includes('\n') ? 'pb-3.5 pt-0.5' : ''}`}>
+                                {/* Composer Row */}
+                                <div className={`flex mr-2 flex-col space-y-2`}>
                                     <input
-                                        title='Upload File'
+                                        title="Upload File"
                                         type="file"
                                         id="chat-file-upload"
                                         className="hidden"
@@ -1676,61 +1762,191 @@ export function ChatLayout() {
                                         multiple
                                     />
 
-                                    {/* Main input container – unchanged structure, now buttons align to bottom */}
-                                    <div className="flex-1 relative flex items-end bg-muted border border-transparent mx-2 mb-2 rounded-2xl focus-within:bg-card focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-                                        {/* Left buttons group */}
-                                        <div className="flex items-center gap-1 pl-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                                className="text-primary/80 py-3 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
-                                                title={isPreviewMode ? "Write text" : "Preview markdown"}
-                                            >
-                                                {isPreviewMode ? <Pencil size={22} /> : <Eye size={24} />}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => document.getElementById('chat-file-upload')?.click()}
-                                                className="text-primary/80 py-3 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
-                                                title="Attach file"
-                                            >
-                                                <Plus size={22} className="cursor-pointer" />
-                                            </button>
+                                    {/* Main composer container */}
+                                    <div className="w-full bg-muted border border-transparent mb-2 rounded-2xl focus-within:bg-card focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                                        {/* Top row */}
+                                        <div className={`flex items-end ${isComposerExpanded ? 'px-2 pt-1' : 'px-2'}`}>
+                                            {/* Left buttons only in compact mode */}
+                                            {!isComposerExpanded && (
+                                                <div className="flex items-center gap-1 pb-4">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsPreviewMode(!isPreviewMode)}
+                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
+                                                        title={isPreviewMode ? "Write text" : "Preview markdown"}
+                                                    >
+                                                        {isPreviewMode ? <Pencil size={24} /> : <View size={24} />}
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => document.getElementById('chat-file-upload')?.click()}
+                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
+                                                        title="Attach file"
+                                                    >
+                                                        <Paperclip size={22} className="cursor-pointer -rotate-45" />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* Textarea */}
+                                            <div className="relative flex-1">
+                                                <textarea
+                                                    ref={textareaRef}
+                                                    value={messageDraft}
+                                                    disabled={isUploading}
+                                                    onChange={(e) => {
+                                                        const el = e.target;
+                                                        const newVal = el.value;
+                                                        const cursorIdx = el.selectionStart || 0;
+
+                                                        // Auto-deselect mentions if they are erased from text (check specifically for `@name`)
+                                                        const remainingMentions = mentionedUsers.filter(u => newVal.includes(`@${u.name}`));
+                                                        const wasMentionRemoved = remainingMentions.length !== mentionedUsers.length;
+
+                                                        updateActiveComposerState({
+                                                            messageDraft: newVal,
+                                                            ...(wasMentionRemoved ? { mentionedUsers: remainingMentions } : {})
+                                                        });
+
+                                                        el.style.height = 'auto';
+                                                        el.style.height = el.scrollHeight + 'px';
+                                                        el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+
+                                                        // @Mention Detection
+                                                        const textBeforeCursor = newVal.slice(0, cursorIdx);
+                                                        const lastAtIdx = textBeforeCursor.lastIndexOf('@');
+                                                        if (lastAtIdx !== -1 && (lastAtIdx === 0 || textBeforeCursor[lastAtIdx - 1] === ' ')) {
+                                                            const query = textBeforeCursor.slice(lastAtIdx + 1);
+                                                            if (!query.includes(' ')) {
+                                                                setMentionSearchQuery(query);
+                                                                setShowMentionDropdown(true);
+                                                                setMentionCursorIndex(lastAtIdx);
+                                                                setMentionSelectedIndex(0); // Reset index
+                                                            } else {
+                                                                setShowMentionDropdown(false);
+                                                            }
+                                                        } else {
+                                                            setShowMentionDropdown(false);
+                                                        }
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (showMentionDropdown && filteredMembers.length > 0) {
+                                                            if (e.key === 'ArrowDown') {
+                                                                e.preventDefault();
+                                                                setMentionSelectedIndex(prev => (prev + 1) % filteredMembers.length);
+                                                                return;
+                                                            }
+                                                            if (e.key === 'ArrowUp') {
+                                                                e.preventDefault();
+                                                                setMentionSelectedIndex(prev => (prev - 1 + filteredMembers.length) % filteredMembers.length);
+                                                                return;
+                                                            }
+                                                            if (e.key === 'Enter' || e.key === 'Tab') {
+                                                                e.preventDefault();
+                                                                handleSelectMember(filteredMembers[mentionSelectedIndex]);
+                                                                return;
+                                                            }
+                                                            if (e.key === 'Escape') {
+                                                                setShowMentionDropdown(false);
+                                                                return;
+                                                            }
+                                                        }
+                                                        handleKeyDown(e);
+                                                    }}
+                                                    onFocus={handleEditorFocus}
+                                                    onBlur={() => setTimeout(() => setShowMentionDropdown(false), 200)}
+                                                    placeholder={stagedFiles.length > 0 ? "Add a caption..." : `Message... ${isDesktop ? '(Shift + Enter for new line)' : ''}`}
+                                                    rows={1}
+                                                    className={`w-full bg-transparent border-none text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-60 leading-relaxed
+                                                        ${isComposerExpanded ? 'px-2 py-3' : 'py-3 px-2'}`}
+                                                />
+
+                                                {/* Mention Dropdown */}
+                                                {showMentionDropdown && filteredMembers.length > 0 && (
+                                                    <div className="absolute bottom-full left-0 mb-2 w-64 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                                        <div className="p-2 border-b border-border">
+                                                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-2">Group Members</p>
+                                                        </div>
+                                                        <div
+                                                            ref={mentionDropdownRef}
+                                                            className="max-h-60 overflow-y-auto py-1 custom-scrollbar"
+                                                        >
+                                                            {filteredMembers.map((member, idx) => (
+                                                                <button
+                                                                    key={member.userId}
+                                                                    type="button"
+                                                                    onMouseDown={(e) => {
+                                                                        e.preventDefault(); // Prevents textarea from losing focus
+                                                                        handleSelectMember(member);
+                                                                    }}
+                                                                    className={`mention-item w-full flex items-center space-x-3 px-3 py-2 transition-colors ${idx === mentionSelectedIndex ? 'bg-primary/10' : 'hover:bg-muted'}`}
+                                                                >
+                                                                    <UserAvatar targetUser={member.user} className="w-7 h-7" isOnline={!!onlineUsers[member.userId]} />
+                                                                    <div className="text-left min-w-0">
+                                                                        <p className="text-[13px] font-semibold text-foreground truncate">{member.user?.name}</p>
+                                                                        <p className="text-[11px] text-muted-foreground capitalize">{member.user?.role?.toLowerCase().replace('_', ' ')}</p>
+                                                                    </div>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Send button only in compact mode */}
+                                            {!isComposerExpanded && (messageDraft.trim() || stagedFiles.length > 0) && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { void handleSendMessage(); }}
+                                                    disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
+                                                    className="shrink-0 mr-2 pb-4 px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
+                                                    title="Send"
+                                                >
+                                                    <Send size={24} className="cursor-pointer" />
+                                                </button>
+                                            )}
                                         </div>
 
-                                        {/* Textarea – grows upward, buttons stay at bottom */}
-                                        <textarea
-                                            ref={textareaRef as React.RefObject<HTMLTextAreaElement>}
-                                            value={messageDraft}
-                                            disabled={isUploading}
-                                            onChange={(e) => {
-                                                const el = e.target;
-                                                updateActiveComposerState({ messageDraft: el.value });
-                                                el.style.height = 'auto';
-                                                el.style.height = el.scrollHeight + 'px';
-                                                el.style.height = Math.min(el.scrollHeight, 200) + 'px';
-                                            }}
-                                            onKeyDown={handleKeyDown}
-                                            onFocus={handleEditorFocus}
-                                            placeholder={stagedFiles.length > 0 ? "Add a caption..." : `Message... ${isDesktop ? '(Shift + Enter for new line)' : ''}`}
-                                            rows={1}
-                                            className="flex-1 py-3 px-2 bg-transparent border-none text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-30 leading-relaxed"
-                                        />
+                                        {/* Bottom row actions in expanded mode */}
+                                        {isComposerExpanded && (
+                                            <div className="flex items-center justify-between px-2 pb-2 pt-1">
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsPreviewMode(!isPreviewMode)}
+                                                        className="text-primary/80 py-2 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
+                                                        title={isPreviewMode ? "Write text" : "Preview markdown"}
+                                                    >
+                                                        {isPreviewMode ? <Pencil size={22} /> : <View size={22} />}
+                                                    </button>
 
-                                        {/* Send button – also bottom-aligned */}
-                                        {(messageDraft.trim() || stagedFiles.length > 0) && (
-                                            <button
-                                                type="button"
-                                                onClick={() => { void handleSendMessage(); }}
-                                                disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
-                                                className="shrink-0 mr-2 py-3 px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
-                                                title="Send"
-                                            >
-                                                <Send size={26} className="cursor-pointer" />
-                                            </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => document.getElementById('chat-file-upload')?.click()}
+                                                        className="text-primary/80 py-2 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
+                                                        title="Attach file"
+                                                    >
+                                                        <Paperclip size={22} className="cursor-pointer -rotate-45" />
+                                                    </button>
+                                                </div>
+
+                                                {(messageDraft.trim() || stagedFiles.length > 0) && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { void handleSendMessage(); }}
+                                                        disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
+                                                        className="shrink-0 pb-4 px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
+                                                        title="Send"
+                                                    >
+                                                        <Send size={24} className="cursor-pointer" />
+                                                    </button>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     </>
@@ -1749,10 +1965,10 @@ export function ChatLayout() {
             {/* Image Preview Modal */}
             {previewImageUrl && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-accent backdrop-blur-sm"
+                    className="absolute w-full h-full z-50 flex items-center justify-center bg-accent backdrop-blur-sm"
                     onClick={() => setPreviewImageUrl(null)}
                 >
-                    <div className="relative max-w-4xl max-h-screen p-4 min-w-75 min-h-75">
+                    <div className="max-w-4xl max-h-screen p-4 min-w-75 min-h-75">
                         <Image
                             src={previewImageUrl}
                             alt="Preview"

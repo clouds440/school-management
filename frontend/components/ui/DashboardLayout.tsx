@@ -130,7 +130,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     router.push(link.href);
                                 }}
                                 className={`
-                                    flex items-center rounded-sm transition-all group relative
+                                    flex items-center rounded-sm transition-all group relative hover:bg-primary/10
                                     ${isActive
                                         ? 'bg-primary/30 text-primary shadow-[0_8px_16px_var(--shadow-color)]'
                                         : 'text-sidebar-text/70 hover:text-foreground/70 hover:text-sidebar-text'
@@ -183,7 +183,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     e.preventDefault();
                                     router.push(`/${user.orgSlug}/mail`);
                                 }}
-                                className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'} transition-all py-3 border border-transparent shadow-sm relative`}
+                                className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'} transition-all py-3 border border-transparent shadow-sm relative`}
                                 title="Mail"
                             >
                                 <Mail className="w-4 h-4 shrink-0 text-primary/80" />
@@ -200,7 +200,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                 e.preventDefault();
                                 router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : `/${user?.orgSlug}/change-password`);
                             }}
-                            className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
+                            className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
                             title="Change Password"
                         >
                             <Key className="w-4 h-4 shrink-0 text-primary/80" />
@@ -213,7 +213,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                 e.preventDefault();
                                 router.push('/contact');
                             }}
-                            className={`flex items-center ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname === '/contact' ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
+                            className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname === '/contact' ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
                             title="Contact Us"
                         >
                             <MessageCircleQuestionMark className="w-4 h-4 shrink-0 text-primary/80" />

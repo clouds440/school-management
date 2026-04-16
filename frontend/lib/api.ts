@@ -298,8 +298,8 @@ export const api = {
             request<Chat[]>('/chat', { token }),
         getChatMessages: (chatId: string, token: string, params: { page?: number, limit?: number, aroundId?: string } = {}) =>
             request<PaginatedResponse<ChatMessage>>(`/chat/${chatId}/messages${buildQueryString(params)}`, { token }),
-        sendMessage: (chatId: string, content: string, token: string, replyToId?: string) =>
-            request<ChatMessage>(`/chat/${chatId}/messages`, { method: 'POST', body: JSON.stringify({ content, replyToId }), token }),
+        sendMessage: (chatId: string, content: string, token: string, replyToId?: string, mentionedUserIds?: string[]) =>
+            request<ChatMessage>(`/chat/${chatId}/messages`, { method: 'POST', body: JSON.stringify({ content, replyToId, mentionedUserIds }), token }),
         editMessage: (chatId: string, messageId: string, content: string, token: string) =>
             request<ChatMessage>(`/chat/${chatId}/messages/${messageId}`, { method: 'PATCH', body: JSON.stringify({ content }), token }),
         getUnreadCount: (token: string) =>

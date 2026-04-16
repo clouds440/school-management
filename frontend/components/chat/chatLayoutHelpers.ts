@@ -1,4 +1,4 @@
-import { Chat, ChatMessage, ChatType } from '@/types';
+import { Chat, ChatMessage, ChatType, User } from '@/types';
 
 export type ChatMessageWithMeta = ChatMessage & {
     readBy?: string[];
@@ -7,6 +7,7 @@ export type ChatMessageWithMeta = ChatMessage & {
         draftText: string;
         stagedFiles: File[];
         replyToMessage: ChatMessage | null;
+        mentionedUsers: User[];
     };
 };
 
@@ -15,6 +16,7 @@ export type ChatComposerState = {
     stagedFiles: File[];
     replyToMessage: ChatMessage | null;
     editingMessage: ChatMessage | null;
+    mentionedUsers: User[];
 };
 
 export type ChatComposerStateMap = Record<string, ChatComposerState>;
@@ -45,6 +47,7 @@ export function createEmptyChatComposerState(): ChatComposerState {
         stagedFiles: [],
         replyToMessage: null,
         editingMessage: null,
+        mentionedUsers: [],
     };
 }
 
