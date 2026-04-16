@@ -1682,7 +1682,7 @@ export function ChatLayout() {
                             >
                                 {/* Reply / Edit Banner - unchanged */}
                                 {(replyToMessage || editingMessage) && (
-                                    <div className="mb-1 px-3 py-2 mx-2 bg-muted border-l-4 border-primary rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                                    <div className="mb-1 px-3 py-2 mr-2 bg-muted border-l-4 border-primary rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
                                         <div className="flex-1 min-w-0 pr-3">
                                             <p className="text-[13px] font-semibold text-primary mb-0.5">
                                                 {editingMessage ? 'Editing Message' : `Replying to ${replyToMessage?.sender?.name == user.name ? 'Yourself' : replyToMessage?.sender?.name || 'Message'}`}
@@ -1715,7 +1715,7 @@ export function ChatLayout() {
 
                                 {/* Mention Banner */}
                                 {mentionedUsers.length > 0 && !editingMessage && (
-                                    <div className="mb-1 px-3 py-2 mx-2 bg-muted border-l-4 border-indigo-500 rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                                    <div className="mb-1 px-3 py-2 mr-2 bg-muted border-l-4 border-indigo-500 rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
                                         <div className="flex-1 min-w-0 pr-3">
                                             <p className="text-[13px] font-semibold text-indigo-500 mb-0.5">
                                                 Mentioning
@@ -1741,7 +1741,7 @@ export function ChatLayout() {
 
                                 {/* Staged Files - unchanged */}
                                 {stagedFiles.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mb-1 mx-2">
+                                    <div className="flex flex-wrap gap-2 mb-1 mr-2">
                                         {stagedFiles.map((file, i) => (
                                             <div key={i} className="group relative flex items-center bg-muted border border-border pl-2 pr-1 py-1 rounded-xl hover:border-primary/30 transition-all">
                                                 {file.type.startsWith('image/') ? (
