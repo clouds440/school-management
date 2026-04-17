@@ -451,7 +451,7 @@ export function ChatLayout() {
             } else {
                 const nextPage = messagesPage + 1;
                 res = await api.chat.getChatMessages(activeChatId, token, { limit: 35, page: nextPage });
-                setMessages(prev => [...res.data, ...prev]);
+                setMessages(prev => mergeUniqueMessages(prev, res.data, 'prepend'));
                 setMessagesPage(nextPage);
                 setHasMoreMessages(res.hasMoreBefore ?? (res.currentPage < res.totalPages));
             }

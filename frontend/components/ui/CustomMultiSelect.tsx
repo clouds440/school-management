@@ -124,7 +124,7 @@ export function CustomMultiSelect({
             <div
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={`
-                    flex items-center w-full min-h-[52px] px-4 py-2 rounded-sm border transition-all duration-200 outline-none
+                    flex items-center w-full min-h-13 px-4 py-2 rounded-sm border transition-all duration-200 outline-none
                     ${isOpen
                         ? 'border-border ring-4 ring-primary/10 bg-background shadow-md'
                         : 'border-border bg-background/5 hover:border-border/20'
@@ -206,7 +206,7 @@ export function CustomMultiSelect({
                         </div>
                     </div>
 
-                    <div className="max-h-[225px] overflow-y-auto custom-scrollbar">
+                    <div className="max-h-56.25 overflow-y-auto custom-scrollbar">
                         {filteredOptions.length === 0 ? (
                             <div className="px-4 py-3 text-sm text-card-text/40 italic text-center">No options found</div>
                         ) : (

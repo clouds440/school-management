@@ -22,7 +22,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import AssessmentForm from '@/components/forms/AssessmentForm';
 import SubmissionForm from '@/components/forms/SubmissionForm';
 import { formatDate } from '@/lib/utils';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 
 interface AssessmentListProps {
@@ -33,9 +33,7 @@ interface AssessmentListProps {
 export default function AssessmentList({ section, role }: AssessmentListProps) {
     const { token } = useAuth();
     const { state, dispatch } = useGlobal();
-    const params = useParams();
     const router = useRouter();
-    const orgSlug = params.orgName as string;
 
     const [assessments, setAssessments] = useState<Assessment[]>([]);
     const isLoading = state.ui.isLoading;
@@ -109,7 +107,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                     {assessments.map(assessment => {
-                        const targetUrl = `/${orgSlug}/sections/${section.id}/assessments/${assessment.id}`;
+                        const targetUrl = `/sections/${section.id}/assessments/${assessment.id}`;
 
                         return (
                             <Card

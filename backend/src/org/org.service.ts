@@ -39,7 +39,6 @@ interface JwtPayload {
   id: string;
   role?: Role | string;
   email?: string;
-  orgSlug?: string | null;
   organizationId?: string | null;
 }
 
@@ -1364,7 +1363,6 @@ export class OrgService {
     orgId: string,
     data: CreateAssessmentDto,
     user: JwtPayload,
-    orgSlug?: string,
   ) {
     // Org Admins cannot create assessments (only view)
     if (user.role === Role.ORG_ADMIN) {
@@ -1421,7 +1419,7 @@ export class OrgService {
         userId: e.student.userId,
         title: 'New Assessment Created',
         body: `A new assessment "${assessment.title}" has been added.`,
-        actionUrl: `/${orgSlug || user.orgSlug || orgId}/sections/${data.sectionId}/assessments/${assessment.id}`,
+        actionUrl: `/sections/${data.sectionId}/assessments/${assessment.id}`,
         type: 'ASSESSMENT_CREATED',
       });
     }
@@ -1621,7 +1619,6 @@ export class OrgService {
     data: UpdateGradeDto,
     userId: string,
     userRole: Role,
-    orgSlug?: string,
   ) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id: assessmentId },
@@ -1688,7 +1685,7 @@ export class OrgService {
           userId: student.userId,
           title: 'Assessment Graded',
           body: `Your grade for "${assessment.title}" has been ${data.status.toLowerCase()}.`,
-          actionUrl: `/${orgSlug || orgId}/sections/${assessment.sectionId}/assessments/${assessment.id}`,
+          actionUrl: `/sections/${assessment.sectionId}/assessments/${assessment.id}`,
           type: 'ASSESSMENT_GRADED',
         });
       }
@@ -1734,7 +1731,6 @@ export class OrgService {
     orgId: string,
     studentId: string,
     data: CreateSubmissionDto & { assessmentId: string },
-    orgSlug?: string,
   ) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id: data.assessmentId },
@@ -1775,7 +1771,7 @@ export class OrgService {
           title: 'New Submission',
           body: `${studentData.user.name} has submitted their work for "${assessment.title}".`,
           type: 'SUBMISSION_CREATED',
-          actionUrl: `/${orgSlug || orgId}/sections/${assessment.sectionId}/assessments/${assessment.id}`,
+          actionUrl: `/sections/${assessment.sectionId}/assessments/${assessment.id}`,
         });
       }
 
@@ -1791,7 +1787,7 @@ export class OrgService {
             title: 'Assessment Complete',
             body: `All students in "${section.name}" have submitted their work for "${assessment.title}".`,
             type: 'ASSESSMENT_COMPLETED_ALL',
-            actionUrl: `/${orgSlug || orgId}/sections/${assessment.sectionId}/assessments/${assessment.id}`,
+            actionUrl: `/sections/${assessment.sectionId}/assessments/${assessment.id}`,
           });
         }
       }

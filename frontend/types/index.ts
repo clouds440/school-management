@@ -18,7 +18,6 @@ export interface User {
     userName: string;
     role: Role;
     phone?: string;
-    orgSlug?: string;
     avatarUrl?: string | null;
     avatarUpdatedAt?: string | null;
     organizationId?: string | null;

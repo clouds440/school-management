@@ -1,0 +1,43 @@
+'use client';
+
+import { Student } from '@/types';
+import StudentForm from '@/components/forms/StudentForm';
+import SessionManagement from '@/components/SessionManagement';
+import { Settings } from 'lucide-react';
+
+export default function Profile({ profile }: { profile: Student | null }) {
+    return (
+        <div className="flex flex-col w-full gap-8">
+            <div className="bg-card rounded-sm border border-border shadow-sm overflow-hidden">
+                <div className="p-8 border-b border-border bg-muted/30 flex items-center gap-4">
+                    <div className="p-3 bg-primary/10 rounded-sm">
+                        <Settings className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-black uppercase tracking-tight text-foreground">Account Settings</h2>
+                        <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest mt-1">
+                            Update your personal information and student record details
+                        </p>
+                    </div>
+                </div>
+
+                <div className="p-8">
+                    {profile ? (
+                        <StudentForm
+                            initialData={profile}
+                            isProfile={true}
+                        />
+                    ) : (
+                        <div className="py-20 text-center text-muted-foreground/60 font-bold uppercase tracking-widest">
+                            Failed to load profile data
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {profile && (
+                <SessionManagement userId={profile.id} />
+            )}
+        </div>
+    );
+}

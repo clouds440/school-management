@@ -23,7 +23,7 @@ export default function Navbar() {
     const chatUnread = state.stats.chat?.unread || 0;
 
     const isDashboard = pathname?.startsWith('/admin/') ||
-        pathname?.split('/').length > 2; // Matches /[orgSlug]/something OR /admin/something
+        pathname?.split('/').length > 2; // Matches /something/deep OR /admin/something
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-100 flex items-center justify-between pl-2 pr-4 py-3 md:pr-10 backdrop-blur-xl bg-navbar border-b border-border shadow-sm h-16 transition-all duration-300 text-navbar-foreground">

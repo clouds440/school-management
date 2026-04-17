@@ -23,7 +23,6 @@ type FlexibleUser = {
   avatarUrl?: string | null;
   avatarUpdatedAt?: string | null;
   role?: Role | string;
-  orgSlug?: string;
 };
 
 interface BrandIconProps {
@@ -191,12 +190,12 @@ export const Brand = React.memo(function Brand({
   };
 
   const defaultHref = isDashboardContext ?
-    activeUser?.orgSlug
+    activeUser?.orgName
       ? activeUser.role === Role.ORG_ADMIN
-        ? `/${activeUser.orgSlug}/admin`
+        ? '/admin'
         : activeUser.role === Role.TEACHER || activeUser.role === Role.ORG_MANAGER
-          ? `/${activeUser.orgSlug}/teachers/${activeUser.userName}`
-          : `/${activeUser.orgSlug}/students/${activeUser.userName}`
+          ? `/teachers/${activeUser.userName}`
+          : `/students/${activeUser.userName}`
       : '/'
     : '/';
 

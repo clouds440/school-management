@@ -87,6 +87,9 @@ export const api = {
             }),
         updateProfile: (data: Partial<{ themeMode?: ThemeMode; name?: string }>, token: string) =>
             request('/auth/profile', { method: 'PATCH', body: JSON.stringify(data), token }),
+        getSessions: (token: string) => request<any[]>('/auth/sessions', { token }),
+        revokeSession: (sessionId: string, token: string) => request<{ message: string }>(`/auth/sessions/${sessionId}`, { method: 'DELETE', token }),
+        revokeAllSessions: (token: string) => request<{ message: string }>('/auth/sessions', { method: 'DELETE', token }),
     },
 
     admin: {

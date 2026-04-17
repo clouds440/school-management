@@ -13,7 +13,6 @@ export interface JwtPayload {
     orgId?: string | null;
     organizationId?: string | null;
     name?: string;
-    orgSlug?: string;
     orgName?: string;
     orgLogoUrl?: string | null;
     avatarUrl?: string | null;

@@ -97,8 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isGuestPath = segments.length === 1 && (segments[0] === 'login' || segments[0] === 'register');
             // A path is considered a "User/Dashboard" path if:
             // 1. It starts with /admin (Platform Admin)
-            // 2. It has at least 2 segments and the second segment is a known dashboard module
-            const isUserPath = isAdminPath || (segments.length >= 2 && DASHBOARD_MODULES.includes(segments[1]));
+            // 2. It has at least 1 segment and the first segment is a known dashboard module
+            const isUserPath = isAdminPath || (segments.length >= 1 && DASHBOARD_MODULES.includes(segments[0]));
 
             if (user) {
                 if ((user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && user.isFirstLogin && pathname !== '/admin/change-password') {
@@ -109,16 +109,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (isGuestPath) {
                     if (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) {
                         router.replace('/admin');
-                    } else if (user.orgSlug) {
-                        if (user.role === Role.STUDENT) router.replace(`/${user.orgSlug}/students/${user.userName}`);
-                        else if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) router.replace(`/${user.orgSlug}/teachers/${user.userName}`);
-                        else router.replace(`/${user.orgSlug}/admin`);
+                    } else {
+                        if (user.role === Role.STUDENT) router.replace(`/students/${user.userName}`);
+                        else if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) router.replace(`/teachers/${user.userName}`);
+                        else if (user.role === Role.ORG_ADMIN) router.replace('/overview');
+                        else router.replace('/');
                     }
                     return;
                 }
 
                 if (isAdminPath && user.role !== Role.SUPER_ADMIN && user.role !== Role.PLATFORM_ADMIN) {
-                    router.replace(user.orgSlug ? `/${user.orgSlug}/admin` : '/');
+                    router.replace('/');
                     return;
                 }
 
@@ -130,30 +131,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     }
                 }
 
-                if (isUserPath && user.orgSlug) {
+                if (isUserPath) {
                     const pathSegments = pathname.split('/');
-                    const firstSegment = pathSegments[1];
-
-                    if (firstSegment !== user.orgSlug) {
-                        const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
-                        router.replace(`/${user.orgSlug}/${user.role === Role.STUDENT ? `students/${nameSlug}` : (user.role === Role.ORG_ADMIN ? 'admin' : `teachers/${nameSlug}`)}`);
-                        return;
-                    }
 
                     if (user.role === Role.STUDENT) {
-                        const isStudentPortal = pathSegments[2] === 'students' && pathSegments[3] === user.userName;
-                        const isSupportInOrg = pathSegments[2] === 'mail';
+                        const isStudentPortal = pathSegments[1] === 'students' && pathSegments[2] === user.userName;
+                        const isSupportInOrg = pathSegments[1] === 'mail';
                         if (!isStudentPortal && !isSupportInOrg) {
                             dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied.', type: 'error' } });
-                            router.replace(`/${user.orgSlug}/students/${user.userName}`);
+                            router.replace(`/students/${user.userName}`);
                             return;
                         }
-                    } else if (user.role === Role.TEACHER) {
-                        const isTeacherList = pathSegments[2] === 'teachers' && !pathSegments[3];
-                        if (pathSegments.includes('settings') || isTeacherList) {
+                    } else if (user.role === Role.ORG_MANAGER || user.role === Role.TEACHER) {
+                        const isTeacherList = pathSegments[1] === 'teachers' && !pathSegments[2];
+                        const isSettingsPage = pathSegments.includes('settings');
+                        if (isSettingsPage) {
+                            // Settings page handles its own redirect, no toast needed
+                            router.replace(`/teachers/${user.userName}/profile`);
+                            return;
+                        }
+                        if (isTeacherList) {
                             dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied.', type: 'error' } });
-                            const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
-                            router.replace(`/${user.orgSlug}/teachers/${nameSlug}`);
+                            router.replace(`/teachers/${user.userName}`);
                             return;
                         }
                     }

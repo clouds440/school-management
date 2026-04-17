@@ -443,11 +443,7 @@ export class OrgController {
     @Body() dto: CreateAssessmentDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    const orgSlug = req.user.organization?.name
-      ?.toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-    return this.orgService.createAssessment(orgId, dto, req.user, orgSlug);
+    return this.orgService.createAssessment(orgId, dto, req.user);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
@@ -510,18 +506,14 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
-  @Patch('grades/:assessmentId/:studentId')
+  @Patch('assessments/:id/grades/:studentId')
   updateGrade(
     @OrgId() orgId: string,
-    @Param('assessmentId') assessmentId: string,
+    @Param('id') assessmentId: string,
     @Param('studentId') studentId: string,
     @Body() dto: UpdateGradeDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    const orgSlug = req.user.organization?.name
-      ?.toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
     return this.orgService.updateGrade(
       orgId,
       assessmentId,
@@ -529,7 +521,6 @@ export class OrgController {
       dto,
       req.user.id,
       req.user.role.toString() as Role,
-      orgSlug,
     );
   }
 
@@ -554,10 +545,6 @@ export class OrgController {
     @Body() dto: CreateSubmissionDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    const orgSlug = req.user.organization?.name
-      ?.toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
     // Find student profile for the current user
     return this.orgService.getStudentByUserId(req.user.id).then((student) => {
       if (!student) throw new NotFoundException('Student profile not found');
@@ -565,7 +552,6 @@ export class OrgController {
         orgId,
         student.id,
         { ...dto, assessmentId },
-        orgSlug,
       );
     });
   }

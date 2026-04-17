@@ -176,29 +176,27 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                     )}
 
                     <div className="space-y-2">
-                        {user?.orgSlug && (
-                            <Link
-                                href={`/${user.orgSlug}/mail`}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    router.push(`/${user.orgSlug}/mail`);
-                                }}
-                                className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'} transition-all py-3 border border-transparent shadow-sm relative`}
-                                title="Mail"
-                            >
-                                <Mail className="w-4 h-4 shrink-0 text-primary/80" />
-                                {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Mail</span>}
-                                {/* Always show a mail count; gray when zero */}
-                                <span className={`ml-auto ${mailCount.unread > 0 ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground'} ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
-                                    {mailCount.unread > 99 ? '99+' : mailCount.unread}
-                                </span>
-                            </Link>
-                        )}
                         <Link
-                            href={user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : `/${user?.orgSlug}/change-password`}
+                            href="/mail"
                             onClick={(e) => {
                                 e.preventDefault();
-                                router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : `/${user?.orgSlug}/change-password`);
+                                router.push('/mail');
+                            }}
+                            className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'} transition-all py-3 border border-transparent shadow-sm relative`}
+                            title="Mail"
+                        >
+                            <Mail className="w-4 h-4 shrink-0 text-primary/80" />
+                            {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Mail</span>}
+                            {/* Always show a mail count; gray when zero */}
+                            <span className={`ml-auto ${mailCount.unread > 0 ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground'} ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
+                                {mailCount.unread > 99 ? '99+' : mailCount.unread}
+                            </span>
+                        </Link>
+                        <Link
+                            href={user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : '/change-password'}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : '/change-password');
                             }}
                             className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-sm text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
                             title="Change Password"

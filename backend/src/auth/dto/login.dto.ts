@@ -18,4 +18,24 @@ export class LoginDto {
   @IsBoolean()
   @IsOptional()
   rememberMe?: boolean;
+
+  @IsString()
+  @IsOptional()
+  deviceId?: string;
+
+  @IsString()
+  @IsOptional()
+  deviceName?: string;
+
+  @IsString()
+  @IsOptional()
+  deviceType?: string;
+
+  @IsString()
+  @IsOptional()
+  browser?: string;
+
+  @IsString()
+  @IsOptional()
+  os?: string;
 }

@@ -19,10 +19,10 @@ export function HeroButtons() {
                         user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN
                             ? '/admin'
                             : user.role === Role.ORG_ADMIN
-                                ? `/${user.orgSlug}/admin`
+                                ? '/admin'
                                 : user.role === Role.TEACHER || user.role === Role.ORG_MANAGER
-                                    ? `/${user.orgSlug}/teachers/${user.userName}`
-                                    : `/${user.orgSlug}/students/${user.userName}`
+                                    ? `/teachers/${user.userName}`
+                                    : `/students/${user.userName}`
                     }
                     className="bg-primary text-white px-8 py-3 rounded-sm font-semibold hover:bg-primary/90 transition-colors shadow-lg"
                 >

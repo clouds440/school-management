@@ -13,7 +13,6 @@ export type TokenUser = User & {
   teacherProfile?: Teacher | null;
   avatarUrl?: string | null;
   avatarUpdatedAt?: Date | null;
-  tokenVersion?: number;
   themeMode?: ThemeMode | null;
 };
 
@@ -56,7 +55,6 @@ export class AuthService {
           role: Role.ORG_ADMIN,
           organizationId: org.id,
           name: registerDto.adminName, // Set name to Admin Name for ORG_ADMIN
-          tokenVersion: 0,
         },
       });
 
@@ -86,22 +84,16 @@ export class AuthService {
     }
 
     const rememberMe = loginDto.rememberMe === true;
-    return this.generateToken(user, rememberMe);
+    return this.generateToken(user, rememberMe, loginDto);
   }
 
-  async generateToken(user: TokenUser, rememberMe: boolean = false) {
-    const slug =
-      user.organization?.name
-        ?.toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '') || null;
+  async generateToken(user: TokenUser, rememberMe: boolean = false, loginDto?: LoginDto) {
     const payload = {
       sub: user.id,
       email: user.email,
       name: user.name, // Include name in JWT payload
       role: user.role,
       designation: user.teacherProfile?.designation || null, // Added for teacher personalization
-      orgSlug: slug,
       orgName: user.organization?.name || null,
       orgId: user.organizationId,
       orgLogoUrl: user.organization?.logoUrl || null,
@@ -110,13 +102,84 @@ export class AuthService {
       themeMode: user.themeMode ?? ThemeMode.SYSTEM,
       status: user.organization ? user.organization.status : OrgStatus.APPROVED, // Keep SUPER_ADMIN as APPROVED
       isFirstLogin: user.isFirstLogin,
-      tokenVersion: user.tokenVersion,
     };
 
+    const token = await this.jwtService.signAsync(payload, {
+      expiresIn: rememberMe ? '30d' : '1d',
+    });
+
+    // Create session if deviceId is provided
+    if (loginDto?.deviceId) {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + (rememberMe ? 30 : 1));
+
+      // Check if this device already has an active session
+      const existingSession = await this.prisma.session.findFirst({
+        where: {
+          userId: user.id,
+          deviceId: loginDto.deviceId,
+          isActive: true,
+        },
+      });
+
+      if (existingSession) {
+        // Update existing session
+        await this.prisma.session.update({
+          where: { id: existingSession.id },
+          data: {
+            token,
+            lastSeenAt: new Date(),
+            expiresAt,
+            deviceName: loginDto.deviceName,
+            deviceType: loginDto.deviceType,
+            browser: loginDto.browser,
+            os: loginDto.os,
+          },
+        });
+      } else {
+        // Check if this is a new device (first time seeing this deviceId)
+        const deviceSessions = await this.prisma.session.findMany({
+          where: { userId: user.id },
+          select: { deviceId: true },
+        });
+        const isNewDevice = !deviceSessions.some(s => s.deviceId === loginDto.deviceId);
+
+        // Create new session
+        await this.prisma.session.create({
+          data: {
+            userId: user.id,
+            deviceId: loginDto.deviceId,
+            deviceName: loginDto.deviceName,
+            deviceType: loginDto.deviceType,
+            browser: loginDto.browser,
+            os: loginDto.os,
+            token,
+            expiresAt,
+          },
+        });
+
+        // Send notification if this is a new device
+        if (isNewDevice) {
+          await this.prisma.notification.create({
+            data: {
+              userId: user.id,
+              title: 'New Device Login',
+              body: `A new device (${loginDto.deviceName || 'Unknown Device'}) has logged into your account. If this wasn't you, please revoke this session in your settings.`,
+              type: 'SECURITY',
+              actionUrl: '/settings',
+              metadata: {
+                deviceId: loginDto.deviceId,
+                deviceName: loginDto.deviceName,
+                loginTime: new Date().toISOString(),
+              },
+            },
+          });
+        }
+      }
+    }
+
     return {
-      access_token: await this.jwtService.signAsync(payload, {
-        expiresIn: rememberMe ? '30d' : '1d',
-      }),
+      access_token: token,
       role: user.role,
     };
   }
@@ -164,21 +227,75 @@ export class AuthService {
       data: {
         password: hashedNew,
         isFirstLogin: false,
-        tokenVersion: { increment: 1 }, // Invalidate all existing sessions
       },
       include: { organization: true, teacherProfile: true },
+    });
+
+    // Revoke all sessions when password changes
+    await this.prisma.session.updateMany({
+      where: { userId },
+      data: { isActive: false },
     });
 
     return this.generateToken(updatedUser);
   }
 
   async logout(userId: string) {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        tokenVersion: { increment: 1 },
-      },
+    // Revoke all sessions for this user
+    await this.prisma.session.updateMany({
+      where: { userId },
+      data: { isActive: false },
     });
     return { message: 'Logged out successfully' };
+  }
+
+  async getSessions(userId: string) {
+    const sessions = await this.prisma.session.findMany({
+      where: {
+        userId,
+        isActive: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return sessions;
+  }
+
+  async revokeSession(userId: string, sessionId: string, currentToken?: string) {
+    const session = await this.prisma.session.findFirst({
+      where: { id: sessionId, userId },
+    });
+
+    if (!session) {
+      throw new UnauthorizedException('Session not found');
+    }
+
+    // Check if trying to revoke current session
+    if (currentToken && session.token === currentToken) {
+      // Instead of revoking, return instruction to logout
+      return { message: 'Cannot revoke current session. Please log out instead.', shouldLogout: true };
+    }
+
+    await this.prisma.session.update({
+      where: { id: sessionId },
+      data: { isActive: false },
+    });
+
+    return { message: 'Session revoked successfully' };
+  }
+
+  async revokeAllSessions(userId: string, excludeToken?: string) {
+    await this.prisma.session.updateMany({
+      where: {
+        userId,
+        isActive: true,
+        ...(excludeToken && { token: { not: excludeToken } }),
+      },
+      data: { isActive: false },
+    });
+
+    return { message: 'All sessions revoked successfully' };
   }
 }

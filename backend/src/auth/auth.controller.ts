@@ -6,6 +6,8 @@ import {
   UseGuards,
   Request,
   Patch,
+  Delete,
+  Param,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -65,5 +67,30 @@ export class AuthController {
   @Post('logout')
   async logout(@Request() req: { user: { id: string } }) {
     return this.authService.logout(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('sessions')
+  async getSessions(@Request() req: { user: { id: string } }) {
+    return this.authService.getSessions(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('sessions/:sessionId')
+  async revokeSession(
+    @Request() req: { user: { id: string }; headers: { authorization?: string } },
+    @Param('sessionId') sessionId: string,
+  ) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.replace('Bearer ', '');
+    return this.authService.revokeSession(req.user.id, sessionId, token);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('sessions')
+  async revokeAllSessions(@Request() req: { user: { id: string }; headers: { authorization?: string } }) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.replace('Bearer ', '');
+    return this.authService.revokeAllSessions(req.user.id, token);
   }
 }

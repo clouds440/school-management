@@ -46,12 +46,12 @@ model User {
   name                  String?
   phone                 String?
   themeMode             ThemeMode          @default(SYSTEM)
-  tokenVersion          Int                @default(0)
   avatarUrl             String?
   avatarUpdatedAt       DateTime?
   studentProfile        Student?
   teacherProfile        Teacher?
   organization          Organization?      @relation(fields: [organizationId], references: [id])
+  sessions             Session[]
   createdMails         Mail[]         @relation("CreatedMails")
   assignedMails        Mail[]         @relation("AssignedMails")
   participatingMails   Mail[]         @relation("MailParticipants")
@@ -65,6 +65,29 @@ model User {
   deletedChatMessages   ChatMessage[]      @relation("DeletedChatMessages")
   userNotifications     Notification[]     @relation("UserNotifications")
   createdAnnouncements  Announcement[]     @relation("CreatedAnnouncements")
+}
+
+model Session {
+  id          String   @id @default(uuid())
+  userId      String
+  deviceId    String
+  deviceName  String?  // e.g., "Chrome on Windows", "Safari on iPhone"
+  deviceType  String?  // e.g., "desktop", "mobile", "tablet"
+  browser     String?  // e.g., "Chrome", "Safari"
+  os          String?  // e.g., "Windows", "iOS"
+  location    String?  // e.g., "New York, USA"
+  ip          String?  // IP address
+  token       String   // JWT token for this session
+  isActive    Boolean  @default(true)
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([isActive])
 }
 
 model Teacher {

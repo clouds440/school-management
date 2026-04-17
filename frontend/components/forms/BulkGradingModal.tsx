@@ -149,7 +149,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
                                             <BrandIcon variant="user" size="sm" user={student.user} className="w-8 h-8 shadow-sm" />
-                                            <span className="font-bold text-sm text-card-text truncate max-w-[150px]">{student.user.name}</span>
+                                            <span className="font-bold text-sm text-card-text truncate max-w-37.5">{student.user.name}</span>
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 text-xs text-card-text/50 uppercase">{student.registrationNumber || 'N/A'}</td>
@@ -164,7 +164,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                                             placeholder={`/${assessment.totalMarks}`}
                                         />
                                     </td>
-                                    <td className="px-4 py-3 min-w-[160px]">
+                                    <td className="px-4 py-3 min-w-40">
                                         <CustomSelect<GradeStatus>
                                             value={bulkData[student.id]?.status || GradeStatus.DRAFT}
                                             onChange={(val) => handleInputChange(student.id, 'status', val)}
@@ -185,7 +185,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                     <Button type="button" variant="secondary" onClick={onClose}>
                         Cancel
                     </Button>
-                    <Button type="button" onClick={handleBulkSubmit} loadingId="bulk-grading-submit" loadingText="SAVING ALL..." className="min-w-[120px]">
+                    <Button type="button" onClick={handleBulkSubmit} loadingId="bulk-grading-submit" loadingText="SAVING ALL..." className="min-w-30">
                         Save All Grades
                     </Button>
                 </div>

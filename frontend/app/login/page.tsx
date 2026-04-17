@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { PLATFORM_NAME } from '@/lib/constants';
 import { Brand, BrandLogoIcon } from '@/components/ui/Brand';
 import Image from 'next/image';
+import { getDeviceId, getDeviceInfo } from '@/lib/deviceUtils';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -28,7 +29,17 @@ export default function LoginPage() {
     dispatch({ type: 'UI_SET_PROCESSING', payload: true });
 
     try {
-      const res = await api.auth.login(formData);
+      const deviceId = getDeviceId();
+      const deviceInfo = getDeviceInfo();
+      const loginPayload = {
+        ...formData,
+        deviceId,
+        deviceName: deviceInfo?.deviceName,
+        deviceType: deviceInfo?.deviceType,
+        browser: deviceInfo?.browser,
+        os: deviceInfo?.os,
+      };
+      const res = await api.auth.login(loginPayload);
       login(res.access_token || '');
       dispatch({ type: 'TOAST_ADD', payload: { message: 'Welcome back!', type: 'success' } });
     } catch (err: unknown) {

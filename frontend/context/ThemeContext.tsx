@@ -22,7 +22,6 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const { user, token } = useAuth();
-    const userOrgSlug = user?.orgSlug;
     const userRole = user?.role;
     const [primaryColor, setPrimaryColorState] = useState(DEFAULT_PRIMARY);
     const [secondaryColor, setSecondaryColor] = useState(DEFAULT_SECONDARY);
@@ -141,7 +140,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }, [applyTheme, primaryColor]);
 
     const refreshTheme = useCallback(async () => {
-        if (!token || !userOrgSlug || userRole === Role.SUPER_ADMIN || userRole === Role.PLATFORM_ADMIN) {
+        if (!token || userRole === Role.SUPER_ADMIN || userRole === Role.PLATFORM_ADMIN) {
             setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
             return;
         }
@@ -163,7 +162,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             console.error('Failed to fetch theme settings:', error);
             setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
         }
-    }, [applyTheme, setThemeColors, themeMode, token, userOrgSlug, userRole]);
+    }, [applyTheme, setThemeColors, themeMode, token, userRole]);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect

@@ -20,12 +20,11 @@ import { teacherCreateSchema, teacherUpdateSchema, teacherProfileSchema, Teacher
 
 interface TeacherFormProps {
     teacherId?: string;
-    orgSlug: string;
     initialData?: Teacher;
     isProfile?: boolean;
 }
 
-export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile }: TeacherFormProps) {
+export default function TeacherForm({ teacherId, initialData, isProfile }: TeacherFormProps) {
     const { token, user: currentUser, updateUser } = useAuth();
     const router = useRouter();
     const { dispatch } = useGlobal();
@@ -129,7 +128,7 @@ export default function TeacherForm({ teacherId, orgSlug, initialData, isProfile
             if (isProfile) {
                 router.back();
             } else {
-                router.push(`/${orgSlug}/teachers`);
+                router.push('/teachers');
             }
         } catch (error: unknown) {
             const apiError = error as ApiError;

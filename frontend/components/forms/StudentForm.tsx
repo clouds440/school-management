@@ -20,12 +20,11 @@ import { studentCreateSchema, studentUpdateSchema, studentProfileSchema, Student
 
 interface StudentFormProps {
     studentId?: string;
-    orgSlug: string;
     initialData?: Student;
     isProfile?: boolean;
 }
 
-export default function StudentForm({ studentId, orgSlug, initialData, isProfile }: StudentFormProps) {
+export default function StudentForm({ studentId, initialData, isProfile }: StudentFormProps) {
     const { token, user: currentUser, updateUser } = useAuth();
     const router = useRouter();
     const { dispatch } = useGlobal();
@@ -138,7 +137,7 @@ export default function StudentForm({ studentId, orgSlug, initialData, isProfile
             if (isProfile) {
                 router.refresh();
             } else {
-                router.push(`/${orgSlug}/students`);
+                router.push('/students');
             }
         } catch (error: unknown) {
             const apiError = error as ApiError;

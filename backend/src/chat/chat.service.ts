@@ -1160,12 +1160,6 @@ export class ChatService {
       const senderName = newMessage.sender?.name || 'Someone';
       const chatName = newMessage.chat?.name || 'a group';
 
-      let orgSlug = 'org';
-      if (newMessage.organizationId) {
-        const org = await this.prisma.organization.findUnique({ where: { id: newMessage.organizationId } });
-        if (org && org.name) orgSlug = org.name.replace(/\s+/g, '-').toLowerCase();
-      }
-
       for (const userId of dto.mentionedUserIds) {
         if (userId === user.id) continue;
         const isParticipant = activeParticipants.find(p => p.userId === userId);
@@ -1176,7 +1170,7 @@ export class ChatService {
             title: `${senderName} mentioned you in ${chatName}.`,
             body,
             type: 'CHAT_MENTION',
-            actionUrl: `/${orgSlug}/chat?id=${chatId}&msgId=${newMessage.id}`
+            actionUrl: `/chat?id=${chatId}&msgId=${newMessage.id}`
           });
         }
       }
