@@ -26,7 +26,7 @@ export function BackButton({
     };
 
     return (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
             <Button
                 onClick={handleBack}
                 className={className}

@@ -124,40 +124,40 @@ export function CustomSelect<T extends string = string>({
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 disabled={disabled}
                 className={cn(
-                    "flex items-center w-full px-4 py-3 rounded-sm border transition-all duration-200 outline-none",
+                    "flex items-center w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border transition-all duration-200 outline-none",
                     isOpen
                         ? 'border-primary ring-4 ring-primary/10 bg-background'
                         : error
-                            ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/50'
-                            : 'border-border bg-primary/5 hover:border-border',
+                            ? 'border-destructive ring-2 ring-destructive/20 bg-destructive/5'
+                            : 'border-border/50 bg-primary/5 hover:border-primary/50',
                     disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
-                    "text-card-text font-bold text-left",
+                    "text-foreground font-semibold text-left text-sm sm:text-base",
                     className
                 )}
             >
                 {/* Prefix Icon (Prop) or Selected Option Icon */}
                 {(selectedOption?.icon || Icon) && (
-                    <div className="mr-3 shrink-0">
+                    <div className="mr-2 sm:mr-3 shrink-0">
                         {selectedOption?.icon ? (
-                            <selectedOption.icon className={cn("h-5 w-5", selectedOption.iconClassName || (isOpen ? 'text-primary' : 'text-card-text/40'))} />
+                            <selectedOption.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", selectedOption.iconClassName || (isOpen ? 'text-primary' : 'text-muted-foreground'))} />
                         ) : (
-                            Icon && <Icon className={cn("h-5 w-5 transition-colors", isOpen ? 'text-primary' : error ? 'text-red-500' : 'text-card-text/40 group-focus-within:text-primary')} />
+                            Icon && <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5 transition-colors", isOpen ? 'text-primary' : error ? 'text-destructive' : 'text-muted-foreground group-focus-within:text-primary')} />
                         )}
                     </div>
                 )}
 
-                <span className={`flex-1 truncate ${!selectedOption ? 'text-card-text/40' : ''}`}>
+                <span className={`flex-1 truncate ${!selectedOption ? 'text-muted-foreground' : ''}`}>
                     {selectedOption ? selectedOption.label : placeholder}
                 </span>
 
                 {/* Selected Option Badge (Visible when closed too) */}
                 {selectedOption?.badge !== undefined && (
-                    <span className="mx-2 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-primary/10 text-primary shrink-0">
+                    <span className="mx-1.5 sm:mx-2 px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-primary/10 text-primary shrink-0">
                         {selectedOption.badge}
                     </span>
                 )}
 
-                <ChevronDown className={cn("h-4 w-4 ml-2.5 transition-transform duration-200 text-card-text/40", isOpen && "rotate-180")} />
+                <ChevronDown className={cn("h-4 w-4 sm:h-4 sm:w-4 ml-2 sm:ml-2.5 transition-transform duration-200 text-muted-foreground", isOpen && "rotate-180")} />
             </button>
 
             {isOpen && coords && createPortal(
@@ -170,19 +170,19 @@ export function CustomSelect<T extends string = string>({
                         width: coords.width,
                         zIndex: 9999
                     }}
-                    className="py-2 bg-background border border-border rounded-sm shadow-2xl max-h-80 flex flex-col animate-in fade-in zoom-in duration-100"
+                    className="py-2 bg-linear-to-br from-background to-background/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl max-h-80 sm:max-h-96 flex flex-col animate-in fade-in zoom-in duration-100"
                 >
                     {searchable && (
-                        <div className="px-3 pb-2 border-b border-border">
+                        <div className="px-3 sm:px-4 pb-2 sm:pb-3 border-b border-border/50">
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg className="h-4 w-4 text-card-text/40" viewBox="0 0 20 20" fill="currentColor">
+                                    <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 20 20" fill="currentColor">
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                     </svg>
                                 </div>
                                 <input
                                     type="text"
-                                    className="block w-full pl-9 pr-3 py-2 border border-border rounded-sm text-xs bg-primary/5 text-card-text placeholder-card-text/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                    className="block w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-border/50 rounded-lg text-xs sm:text-sm bg-primary/5 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                                     placeholder="Search..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -195,7 +195,7 @@ export function CustomSelect<T extends string = string>({
 
                     <div className="overflow-y-auto flex-1 custom-scrollbar">
                         {filteredOptions.length === 0 ? (
-                            <div className="px-4 py-3 text-sm text-card-text/40 italic text-center text-balance">{searchable ? `No results found for "${searchTerm}"` : 'No options available'}</div>
+                            <div className="px-4 py-3 sm:py-4 text-sm sm:text-base text-muted-foreground italic text-center text-balance">{searchable ? `No results found for "${searchTerm}"` : 'No options available'}</div>
                         ) : (
                             filteredOptions.map((option) => (
                                 <button
@@ -203,18 +203,18 @@ export function CustomSelect<T extends string = string>({
                                     type="button"
                                     onClick={() => handleSelect(option.value)}
                                     className={`
-                                    flex items-center w-full px-4 py-3 text-sm font-bold transition-all
+                                    flex items-center w-full px-3 sm:px-4 rounded-lg py-2.5 sm:py-3 text-sm sm:text-base font-semibold transition-all
                                     ${option.value === value
-                                            ? 'bg-primary text-white'
-                                            : 'text-card-text hover:bg-primary/10'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'text-foreground hover:bg-primary/10'
                                         }
                                     text-left
                                 `}
                                 >
-                                    {option.icon && <option.icon className={cn("h-4 w-4 mr-2", option.iconClassName)} />}
+                                    {option.icon && <option.icon className={cn("h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3", option.iconClassName)} />}
                                     <span className="flex-1">{option.label}</span>
                                     {option.badge !== undefined && (
-                                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${option.value === value ? 'bg-card/20 text-card-text' : 'bg-primary/10 text-primary'
+                                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold ${option.value === value ? 'bg-card/20 text-card-text' : 'bg-primary/10 text-primary'
                                             }`}>
                                             {option.badge}
                                         </span>

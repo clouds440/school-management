@@ -26,24 +26,24 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
         let variantClasses = "";
         if (variant === 'primary') {
-            variantClasses = "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/20 hover:-translate-y-0.5 focus:ring-primary/20";
+            variantClasses = "bg-linear-to-r from-primary to-primary/90 text-primary-foreground hover:from-primary/90 hover:to-primary hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-primary/30";
         } else if (variant === 'secondary') {
-            variantClasses = "bg-accent text-foreground border-border hover:bg-accent/80 hover:shadow-md hover:-translate-y-0.5 focus:ring-secondary/20 disabled:bg-secondary/50 disabled:text-muted-foreground";
+            variantClasses = "bg-linear-to-r from-accent to-accent/80 text-foreground border-border/50 hover:from-accent/90 hover:to-accent/70 hover:shadow-lg hover:shadow-secondary/20 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-secondary/20 disabled:from-secondary/50 disabled:to-secondary/40 disabled:text-muted-foreground";
         } else if (variant === 'danger') {
-            variantClasses = "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-destructive/20 hover:-translate-y-0.5 focus:ring-destructive/20 disabled:bg-destructive/30";
+            variantClasses = "bg-linear-to-r from-destructive to-destructive/90 text-destructive-foreground hover:from-destructive/90 hover:to-destructive hover:shadow-xl hover:shadow-destructive/30 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-destructive/30 disabled:from-destructive/30";
         } else if (variant === 'success') {
-            variantClasses = "bg-emerald-600 text-foreground hover:bg-emerald-700 hover:shadow-emerald-500/20 hover:-translate-y-0.5 focus:ring-emerald-500/20 disabled:bg-emerald-300";
+            variantClasses = "bg-linear-to-r from-emerald-600 to-emerald-500 text-foreground hover:from-emerald-700 hover:to-emerald-600 hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-emerald-500/30 disabled:from-emerald-300";
         } else if (variant === 'warning') {
-            variantClasses = "bg-amber-600 text-foreground hover:bg-amber-700 hover:shadow-amber-500/20 hover:-translate-y-0.5 focus:ring-amber-500/20 disabled:bg-amber-300";
+            variantClasses = "bg-linear-to-r from-amber-600 to-amber-500 text-foreground hover:from-amber-700 hover:to-amber-600 hover:shadow-xl hover:shadow-amber-500/30 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-amber-500/30 disabled:from-amber-300";
         } else if (variant === 'black') {
-            variantClasses = "bg-black/60 text-background hover:text-foreground hover:bg-background/80 border-border hover:shadow-foreground/10 hover:-translate-y-0.5 focus:ring-foreground/20 disabled:opacity-50";
+            variantClasses = "bg-linear-to-r from-black/70 to-black/60 text-background hover:text-foreground hover:from-black/80 hover:to-black/70 border-border/50 hover:shadow-lg hover:shadow-foreground/10 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-foreground/20 disabled:opacity-50";
         }
 
         return (
             <button
                 className={`
           group relative flex justify-center items-center space-x-3 cursor-pointer
-          rounded-sm border border-transparent ${px} ${py} text-base font-bold
+          rounded-xl border border-transparent ${px} ${py} text-base font-bold
           focus:outline-none focus:ring-4
           transition-all duration-300 shadow-lg
           ${variantClasses}

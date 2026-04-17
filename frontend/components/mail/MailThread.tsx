@@ -70,7 +70,7 @@ function MessageBubble({ message, isOwn }: { message: MailMessageType; isOwn: bo
                         <span className="text-[8px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">You</span>
                     )}
                 </div>
-                <div className={`inline-block text-foreground! p-4 rounded-sm shadow-sm ${isOwn ? 'bg-primary/10 border border-border/50' : 'bg-card border border-border'} text-left w-full`}>
+                <div className={`inline-block text-foreground! p-4 rounded-lg shadow-sm ${isOwn ? 'bg-primary/10 border border-border/50' : 'bg-card border border-border'} text-left w-full`}>
                     <MarkdownRenderer content={message.content} className="text-sm text-foreground!" />
 
                     {message.files && message.files.length > 0 && (
@@ -109,7 +109,7 @@ function ActionLogItem({ log }: { log: MailActionLog }) {
     };
 
     return (
-        <div className="flex items-center gap-2 py-2 px-4 bg-card/50 rounded-sm border border-border/50 mx-8">
+        <div className="flex items-center gap-2 py-2 px-4 bg-card/50 rounded-lg border border-border/50 mx-8">
             <div className="w-1.5 h-1.5 rounded-full bg-border shrink-0" />
             <span className="text-[10px] text-muted-foreground font-medium">
                 <span className="font-black uppercase text-foreground">{log.performer?.name || 'System'}</span>
@@ -274,7 +274,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                         {selectedFiles.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in slide-in-from-top-1">
                                 {selectedFiles.map((file, i) => (
-                                    <div key={i} className="flex items-center gap-2 bg-card/5 border border-border px-3 py-1.5 rounded-sm">
+                                    <div key={i} className="flex items-center gap-2 bg-card/5 border border-border px-3 py-1.5 rounded-lg">
                                         {file.type.startsWith('image/') ? <ImageIcon className="w-3 h-3 text-primary/80" /> : <FileText className="w-3 h-3 text-primary/80" />}
                                         <span className="text-[10px] font-bold text-foreground truncate max-w-37.5">{file.name}</span>
                                         <button onClick={() => removeFile(i)} className="p-0.5 hover:bg-card/10 rounded-full text-primary/80 transition-colors">
@@ -300,7 +300,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                                 onClick={handleSend}
                                 isLoading={sending}
                                 loadingId="reply-submit"
-                                className="flex items-center gap-2 px-8 py-2.5 bg-primary text-foreground rounded-sm font-black text-xs uppercase tracking-widest hover:bg-primary/80 transition-all border-none shadow-lg shadow-primary/20"
+                                className="flex items-center gap-2 px-8 py-2.5 bg-primary text-foreground rounded-lg font-black text-xs uppercase tracking-widest hover:bg-primary/80 transition-all border-none shadow-lg shadow-primary/20"
                                 icon={Send}
                             >
                                 SEND REPLY
@@ -309,7 +309,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                     </div>}
 
                     {isClosed && (
-                        <div className="border-t border-border py-6 text-center bg-card/5 rounded-b-sm font-black text-muted-foreground uppercase text-[10px] tracking-widest">
+                        <div className="border-t border-border py-6 text-center bg-card/5 rounded-b-lg font-black text-muted-foreground uppercase text-[10px] tracking-widest">
                             This mail is closed — no further replies
                         </div>
                     )}

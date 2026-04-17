@@ -85,9 +85,9 @@ export function MailTemplates({ onSelect, className = '' }: MailTemplatesProps) 
                         <button
                             key={template.id}
                             onClick={() => onSelect(template.content)}
-                            className="flex items-center gap-3 p-3 bg-card border border-border rounded-sm hover:border-indigo-300 hover:shadow-md transition-all text-left group"
+                            className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg hover:border-indigo-300 hover:shadow-md transition-all text-left group"
                         >
-                            <div className={`p-2 rounded-sm shrink-0 ${
+                            <div className={`p-2 rounded-lg shrink-0 ${
                                 template.variant === 'success' ? 'bg-emerald-50 text-emerald-600' :
                                 template.variant === 'danger' ? 'bg-red-50 text-red-600' :
                                 template.variant === 'warning' ? 'bg-orange-50 text-orange-600' :

@@ -124,51 +124,51 @@ export function CustomMultiSelect({
             <div
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={`
-                    flex items-center w-full min-h-13 px-4 py-2 rounded-sm border transition-all duration-200 outline-none
+                    flex items-center w-full min-h-12 sm:min-h-13 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border transition-all duration-200 outline-none
                     ${isOpen
-                        ? 'border-border ring-4 ring-primary/10 bg-background shadow-md'
-                        : 'border-border bg-background/5 hover:border-border/20'
+                        ? 'border-primary/60 ring-4 ring-primary/10 bg-background shadow-lg'
+                        : 'border-border/50 bg-background/5 hover:border-primary/50'
                     }
                     ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                    text-card-text
+                    text-foreground
                 `}
             >
                 {Icon && (
-                    <Icon className={`h-5 w-5 mr-3 shrink-0 transition-colors ${isOpen ? 'text-primary' : 'text-card-text/40'}`} />
+                    <Icon className={`h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 shrink-0 transition-colors ${isOpen ? 'text-primary' : 'text-muted-foreground'}`} />
                 )}
 
-                <div className="flex flex-wrap gap-2 flex-1 items-center overflow-hidden py-1">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 flex-1 items-center overflow-hidden py-1">
                     {selectedOptions.length > 0 ? (
                         selectedOptions.map(opt => (
                             <span
                                 key={opt.value}
-                                className="inline-flex items-center bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-sm text-xs font-black animate-in zoom-in-95 duration-100"
+                                className="inline-flex items-center bg-primary/10 text-primary border border-primary/20 px-1.5 sm:px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-semibold animate-in zoom-in-95 duration-100"
                             >
                                 {opt.label}
                                 <button
                                     type="button"
                                     onClick={(e) => removeOption(opt.value, e)}
-                                    className="ml-1.5 hover:bg-primary/20 p-0.5 rounded-sm transition-colors"
+                                    className="ml-1 sm:ml-1.5 hover:bg-primary/20 p-0.5 rounded-lg transition-colors"
                                     title="Remove option"
                                 >
-                                    <X className="h-3 w-3" />
+                                    <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                                 </button>
                             </span>
                         ))
                     ) : (
-                        <span className="text-muted-foreground font-medium">{placeholder}</span>
+                        <span className="text-muted-foreground text-sm sm:text-base font-medium">{placeholder}</span>
                     )}
                 </div>
 
-                <div className="flex items-center shrink-0 ml-2">
+                <div className="flex items-center shrink-0 ml-1 sm:ml-2">
                     {values.length > 0 && (
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onChange([]); }}
-                            className="mr-2 text-muted-foreground hover:text-red-500 transition-colors p-1"
+                            className="mr-1.5 sm:mr-2 text-muted-foreground hover:text-destructive transition-colors p-1"
                             title="Clear all"
                         >
-                            <X className="h-4 w-4" />
+                            <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </button>
                     )}
                     <ChevronDown className={`h-4 w-4 transition-transform duration-200 text-muted-foreground ${isOpen ? 'rotate-180' : ''}`} />
@@ -185,18 +185,18 @@ export function CustomMultiSelect({
                         width: coords.width,
                         zIndex: 9999
                     }}
-                    className={`py-2 bg-background border border-border rounded-md shadow-xl max-h-[60vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-100 ${coords.isMobile ? 'left-4 right-4 rounded-lg' : ''}`}
+                    className={`py-2 bg-linear-to-br from-background to-background/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl max-h-[60vh] sm:max-h-[70vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-100 ${coords.isMobile ? 'left-4 right-4 rounded-xl' : ''}`}
                 >
-                    <div className="px-3 pb-2 border-b border-border">
+                    <div className="px-3 sm:px-4 pb-2 sm:pb-3 border-b border-border/50">
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg className="h-4 w-4 text-card-text/40" viewBox="0 0 20 20" fill="currentColor">
+                                <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                 </svg>
                             </div>
                             <input
                                 type="text"
-                                className="block w-full pl-9 pr-3 py-2 border border-border rounded-md text-sm bg-background text-card-text placeholder-card-text/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                className="block w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-border/50 rounded-lg text-sm sm:text-base bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                                 placeholder="Search..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -206,9 +206,9 @@ export function CustomMultiSelect({
                         </div>
                     </div>
 
-                    <div className="max-h-56.25 overflow-y-auto custom-scrollbar">
+                    <div className="max-h-56 sm:max-h-64 overflow-y-auto custom-scrollbar">
                         {filteredOptions.length === 0 ? (
-                            <div className="px-4 py-3 text-sm text-card-text/40 italic text-center">No options found</div>
+                            <div className="px-4 py-3 sm:py-4 text-sm sm:text-base text-muted-foreground italic text-center">No options found</div>
                         ) : (
                             filteredOptions.map((option) => {
                                 const isSelected = values.includes(option.value);
@@ -218,19 +218,19 @@ export function CustomMultiSelect({
                                         type="button"
                                         onClick={() => toggleOption(option.value)}
                                         className={`
-                                            flex items-center justify-between w-full px-4 py-3 text-sm font-bold transition-all
+                                            flex items-center justify-between rounded-lg w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold transition-all
                                             ${isSelected
-                                                ? 'bg-primary/5 text-primary'
-                                                : 'text-card-text hover:bg-primary/5'
+                                                ? 'bg-primary/10 text-primary'
+                                                : 'text-foreground hover:bg-primary/5'
                                             }
                                             text-left
                                         `}
                                     >
                                         <div className="flex items-center truncate">
-                                            {option.icon && <option.icon className="h-4 w-4 mr-2 text-card-text/60" />}
+                                            {option.icon && <option.icon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-muted-foreground/60" />}
                                             <span className="truncate">{option.label}</span>
                                         </div>
-                                        {isSelected && <Check className="h-4 w-4 text-primary shrink-0 ml-2" />}
+                                        {isSelected && <Check className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0 ml-2 sm:ml-3" />}
                                     </button>
                                 );
                             })

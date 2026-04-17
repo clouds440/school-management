@@ -140,7 +140,7 @@ export default function Attendance() {
                         <div className="relative z-10 text-left">
                             <div className="flex items-center gap-4 mb-6">
                                 <CalendarIcon className="w-6 h-6 text-primary/60" />
-                                <h4 className="text-xl font-black tracking-tight text-white uppercase italic">Compliance</h4>
+                                <h4 className="text-xl font-black tracking-tight text-primary-foreground uppercase italic">Compliance</h4>
                             </div>
                             <p className="text-muted-foreground/60 text-sm leading-relaxed font-medium mb-10">
                                 A rigid minimum of 85% attendance is required per subject for exam qualification and academic progression.

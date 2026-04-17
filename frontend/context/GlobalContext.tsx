@@ -272,7 +272,7 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     return (
         <GlobalContext.Provider value={{ state, dispatch }}>
             {children}
-            <div className="fixed bottom-4 right-4 z-100 flex flex-col items-end pointer-events-none">
+            <div className="fixed bottom-4 right-4 z-500 flex flex-col items-end pointer-events-none">
                 {state.toasts.map((toast) => (
                     <Toast
                         key={toast.id}

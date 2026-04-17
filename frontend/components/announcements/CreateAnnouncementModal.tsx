@@ -203,7 +203,7 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                         <Label>Select {targetType.toLowerCase().replace('_', ' ')} <span className="text-red-500">*</span></Label>
                             {targetType === TargetType.ORG && !isPlatformAdmin ? (
-                            <div className="px-4 py-3 bg-card/80 border border-border/10 rounded-sm text-sm font-bold text-card-text/60 flex items-center gap-2">
+                            <div className="px-4 py-3 bg-card/80 border border-border/10 rounded-lg text-sm font-bold text-card-text/60 flex items-center gap-2">
                                 <Building2 className="w-4 h-4" />
                                 Current Organization
                             </div>

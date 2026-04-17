@@ -80,12 +80,12 @@ export function PhotoUploadPicker({
 
   return (
     <>
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-3 sm:gap-4">
         {/* Avatar */}
         <button
           type="button"
           onClick={() => !disabled && fileInputRef.current?.click()}
-          className={`group relative ${sizeClassName} rounded-full border-2 border-dashed ${disabled ? 'border-border bg-muted/10 cursor-not-allowed opacity-60' : 'border-primary/20 hover:border-primary/50 bg-primary/5 hover:bg-primary/10 cursor-pointer'} transition-all duration-200 flex items-center justify-center overflow-hidden shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
+          className={`group relative ${sizeClassName} rounded-full border-2 border-dashed ${disabled ? 'border-border bg-muted/10 cursor-not-allowed opacity-60' : 'border-primary/30 hover:border-primary/60 bg-primary/5 hover:bg-primary/10 cursor-pointer'} transition-all duration-200 flex items-center justify-center overflow-hidden shadow-lg focus:outline-none focus:ring-4 focus:ring-primary/20 focus:ring-offset-2`}
           aria-label={`Upload ${type === 'user' ? 'profile picture' : 'organisation logo'}`}
           disabled={disabled}
         >
@@ -96,7 +96,7 @@ export function PhotoUploadPicker({
                 alt="Preview"
                 fill
                 className="object-cover"
-                sizes="96px"
+                sizes="(max-width: 640px) 96px, 96px"
                 unoptimized
               />
             ) : (
@@ -118,13 +118,13 @@ export function PhotoUploadPicker({
 
           {/* Hover overlay */}
           {!disabled && (
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
-              <Camera className="w-6 h-6 text-white" />
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
+              <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
           )}
         </button>
 
-        {hint && <p className="text-[10px] text-muted-foreground text-center max-w-[180px] leading-tight">{hint}</p>}
+        {hint && <p className="text-[10px] sm:text-xs text-muted-foreground text-center max-w-45 sm:max-w-60 leading-tight">{hint}</p>}
 
         <input
           ref={fileInputRef}

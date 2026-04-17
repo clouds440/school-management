@@ -24,7 +24,7 @@ export function HeroButtons() {
                                     ? `/teachers/${user.userName}`
                                     : `/students/${user.userName}`
                     }
-                    className="bg-primary text-white px-8 py-3 rounded-sm font-semibold hover:bg-primary/90 transition-colors shadow-lg"
+                    className="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-lg"
                 >
                     Go to Your Dashboard
                 </Link>
@@ -36,13 +36,13 @@ export function HeroButtons() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
                 href="/register"
-                className="bg-primary text-white px-8 py-3 rounded-sm font-semibold hover:bg-primary/90 transition-colors shadow-lg"
+                className="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-lg"
             >
                 Start Free Trial
             </Link>
             <Link
                 href="#features"
-                className="bg-card/80 backdrop-blur-sm text-foreground px-8 py-3 rounded-sm font-semibold border border-border hover:bg-card transition-colors shadow-lg"
+                className="bg-card/80 backdrop-blur-sm text-foreground px-8 py-3 rounded-lg font-semibold border border-border hover:bg-card transition-colors shadow-lg"
             >
                 Learn More
             </Link>

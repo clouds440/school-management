@@ -198,7 +198,7 @@ export function AnnouncementDropdown() {
                                                         )}
                                                     </div>
                                                     <div className="flex items-center justify-between mt-0.5">
-                                                        <span className="text-[9px] font-black text-blue-600/70 uppercase tracking-widest bg-blue-50/50 border border-blue-100/30 px-1.5 py-0.5 rounded-sm">
+                                                        <span className="text-[9px] font-black text-blue-600/70 uppercase tracking-widest bg-blue-50/50 border border-blue-100/30 px-1.5 py-0.5 rounded-lg">
                                                             {creator?.role?.replace('_', ' ') || 'SYSTEM'}
                                                         </span>
                                                         <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">
@@ -217,7 +217,7 @@ export function AnnouncementDropdown() {
                                                         {announcement.title}
                                                     </h4>
                                                 </div>
-                                                <div className="shrink-0 flex items-center gap-1.5 text-[9px] font-black text-muted-foreground uppercase tracking-widest bg-card border border-border px-2 py-1 rounded-sm shadow-sm group-hover:border-blue-100 group-hover:text-blue-500 transition-colors">
+                                                <div className="shrink-0 flex items-center gap-1.5 text-[9px] font-black text-muted-foreground uppercase tracking-widest bg-card border border-border px-2 py-1 rounded-lg shadow-sm group-hover:border-blue-100 group-hover:text-blue-500 transition-colors">
                                                     {targetIcons[announcement.targetType] || <Megaphone className="w-3 h-3" />}
                                                     <span>{announcement.targetType}</span>
                                                 </div>

@@ -500,4 +500,13 @@ body {
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
   }
+
+  /* Force input icon colors to use theme colors */
+  .input-icon-container svg {
+    color: hsl(var(--primary)) !important;
+  }
+
+  .input-icon-error svg {
+    color: hsl(var(--destructive)) !important;
+  }
 }

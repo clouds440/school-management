@@ -36,13 +36,13 @@ export function ModalForm({
     feedback
 }: ModalFormProps) {
     const footer = (showCancel || showSubmit) ? (
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-3 sm:gap-4 flex-col-reverse sm:flex-row">
             {showCancel && (
                 <Button
                     type="button"
                     variant="secondary"
                     onClick={onClose}
-                    className="px-8 py-3.5 text-xs font-black uppercase tracking-widest"
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold uppercase tracking-wider"
                 >
                     Cancel
                 </Button>
@@ -53,8 +53,8 @@ export function ModalForm({
                     form="modal-form"
                     isLoading={isSubmitting}
                     loadingId={loadingId}
-                    className={`px-10 py-3.5 text-xs font-black uppercase tracking-widest text-white border-none shadow-lg hover:scale-105 active:scale-95 ${
-                        variant === 'danger' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' :
+                    className={`w-full sm:w-auto px-6 sm:px-10 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold uppercase tracking-wider text-primary-foreground border-none shadow-lg hover:scale-105 active:scale-95 ${
+                        variant === 'danger' ? 'bg-destructive hover:bg-destructive/90 shadow-destructive/20' :
                         variant === 'warning' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' :
                         variant === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20' :
                         'bg-primary hover:bg-primary/90 shadow-primary/20'
@@ -77,7 +77,7 @@ export function ModalForm({
         >
             <div className="flex flex-col h-full">
                 {feedback && (
-                    <div className="mb-4 shrink-0">
+                    <div className="mb-3 sm:mb-4 shrink-0">
                         {feedback}
                     </div>
                 )}

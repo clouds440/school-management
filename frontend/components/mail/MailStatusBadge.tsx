@@ -4,12 +4,12 @@ import React from 'react';
 import { MailStatus } from '@/types';
 
 const STATUS_CONFIG: Record<MailStatus, { label: string; bg: string; text: string; border: string }> = {
-    [MailStatus.OPEN]: { label: 'Open', bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/20' },
-    [MailStatus.IN_PROGRESS]: { label: 'In Progress', bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20' },
-    [MailStatus.AWAITING_RESPONSE]: { label: 'Awaiting', bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/20' },
-    [MailStatus.RESOLVED]: { label: 'Resolved', bg: 'bg-green-500/10', text: 'text-green-600', border: 'border-green-500/20' },
+    [MailStatus.OPEN]: { label: 'Open', bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/50' },
+    [MailStatus.IN_PROGRESS]: { label: 'In Progress', bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/50' },
+    [MailStatus.AWAITING_RESPONSE]: { label: 'Awaiting', bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/50' },
+    [MailStatus.RESOLVED]: { label: 'Resolved', bg: 'bg-green-500/10', text: 'text-green-600', border: 'border-green-500/50' },
     [MailStatus.CLOSED]: { label: 'Closed', bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-border' },
-    [MailStatus.NO_REPLY]: { label: 'Notice (No Reply)', bg: 'bg-neutral-500/10', text: 'text-neutral-600', border: 'border-neutral-500/20' },
+    [MailStatus.NO_REPLY]: { label: 'Notice (No Reply)', bg: 'bg-neutral-500/10', text: 'text-neutral-600', border: 'border-neutral-500/50' },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; bg: string; text: string; border: string }> = {
@@ -50,15 +50,15 @@ export function MailPriorityBadge({ priority, className = '' }: PriorityBadgePro
 export function getMailRowClassName(status: MailStatus) {
     switch (status) {
         case MailStatus.OPEN:
-            return '!bg-blue-50/40 border-l-4 border-l-blue-500 shadow-sm transition-colors';
+            return '!bg-blue-200/50 border-l-4 border-l-blue-500 shadow-sm transition-colors';
         case MailStatus.IN_PROGRESS:
-            return '!bg-amber-50/40 border-l-4 border-l-amber-400 transition-colors';
+            return '!bg-amber-200/50 border-l-4 border-l-amber-400 transition-colors';
         case MailStatus.AWAITING_RESPONSE:
-            return '!bg-indigo-50/40 border-l-4 border-l-indigo-400 transition-colors';
+            return '!bg-indigo-200/50 border-l-4 border-l-indigo-400 transition-colors';
         case MailStatus.RESOLVED:
-            return '!bg-emerald-50/40 border-l-4 border-l-emerald-500 transition-colors';
+            return '!bg-emerald-200/50 border-l-4 border-l-emerald-500 transition-colors';
         case MailStatus.CLOSED:
-            return '!bg-slate-50/40 border-l-4 border-l-slate-400 opacity-80 transition-colors';
+            return '!bg-slate-200/50 border-l-4 border-l-slate-400 opacity-80 transition-colors';
         default:
             return 'transition-colors hover:bg-muted/40';
     }

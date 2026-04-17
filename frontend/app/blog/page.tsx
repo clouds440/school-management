@@ -69,7 +69,7 @@ export default function BlogPage() {
                 placeholder="Enter your work email"
                 className="flex-1 px-6 py-4 rounded-xl text-foreground border-none focus:outline-none focus:ring-0 font-medium"
               />
-              <button className="px-8 py-4 bg-primary text-white rounded-xl font-black hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all">
+              <button className="px-8 py-4 bg-primary text-primary-foreground rounded-xl font-black hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all">
                 Subscribe
               </button>
             </div>
@@ -85,7 +85,7 @@ function BlogCard({ title, excerpt, author, date, category, delay }: { title: st
     <Reveal delay={delay}>
       <div className="group cursor-pointer space-y-6 h-full flex flex-col">
         <div className="aspect-video bg-accent rounded-3xl overflow-hidden relative border border-border shadow-sm transition-all duration-500 group-hover:shadow-xl group-hover:scale-[1.02]">
-          <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-black text-primary uppercase tracking-widest border border-border shadow-sm">
+          <div className="absolute top-4 left-4 bg-card/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-black text-primary uppercase tracking-widest border border-border shadow-sm">
             {category}
           </div>
           <div className="w-full h-full bg-linear-to-br from-primary/5 to-secondary/10 flex items-center justify-center">

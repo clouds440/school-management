@@ -23,7 +23,7 @@ const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayl
 
     if (orgData.status === OrgStatus.PENDING) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 bg-card/50 backdrop-blur-md rounded-sm shadow-xl border border-border text-center max-w-2xl mx-5 lg:mx-auto my-10">
+            <div className="flex flex-col items-center justify-center p-12 bg-card/50 backdrop-blur-md rounded-lg shadow-xl border border-border text-center max-w-2xl mx-5 lg:mx-auto my-10">
                 <div className="p-6 bg-yellow-50 rounded-full mb-6 relative">
                     <Clock className="w-20 h-20 text-yellow-500 animate-pulse" />
                     <div className="absolute inset-0 bg-yellow-400 rounded-full animate-ping opacity-20"></div>
@@ -33,7 +33,7 @@ const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayl
                     Your organization registration is currently being verified.
                     You&apos;ll have full access once EduVerse confirms your details.
                 </p>
-                <div className="bg-yellow-500 text-white px-10 py-5 rounded-sm font-black text-xl border border-yellow-300 w-full shadow-2xl flex items-center justify-center gap-3">
+                <div className="bg-yellow-500 text-yellow-50 px-10 py-5 rounded-lg font-black text-xl border border-yellow-300 w-full shadow-2xl flex items-center justify-center gap-3">
                     Status: Pending Verification
                 </div>
             </div>
@@ -42,13 +42,13 @@ const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayl
 
     if (orgData.status === OrgStatus.REJECTED) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 bg-card/70 backdrop-blur-md rounded-sm shadow-xl border border-border text-center max-w-2xl mx-auto my-10">
+            <div className="flex flex-col items-center justify-center p-12 bg-card/70 backdrop-blur-md rounded-lg shadow-xl border border-border text-center max-w-2xl mx-auto my-10">
                 <div className="p-6 bg-red-50 rounded-full mb-6 relative">
                     <ShieldOff className="w-20 h-20 text-red-500" />
                     <div className="absolute inset-0 bg-red-400 rounded-full animate-ping opacity-10"></div>
                 </div>
                 <h2 className="text-4xl font-black text-card-foreground mb-4 tracking-tight uppercase italic">Application Denied</h2>
-                <div className="bg-red-50 border border-red-100 p-8 rounded-sm mb-8 text-left w-full shadow-inner">
+                <div className="bg-red-50 border border-red-100 p-8 rounded-lg mb-8 text-left w-full shadow-inner">
                     <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.3em] mb-4">Official Rejection Reason</p>
                     <MarkdownRenderer
                         content={orgData.statusHistory && orgData.statusHistory.length > 0
@@ -63,7 +63,7 @@ const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayl
                 {user?.role === Role.ORG_ADMIN && (
                     <Link
                         href="/settings"
-                        className="inline-flex items-center gap-4 bg-red-600 hover:bg-red-700 text-white px-12 py-6 rounded-sm font-black text-xl shadow-[0_20px_50px_rgba(220,38,38,0.3)] transition-all hover:-translate-y-1 active:scale-95 group uppercase italic tracking-tighter"
+                        className="inline-flex items-center gap-4 bg-red-600 hover:bg-red-700 text-red-50 px-12 py-6 rounded-lg font-black text-xl shadow-[0_20px_50px_rgba(220,38,38,0.3)] transition-all hover:-translate-y-1 active:scale-95 group uppercase italic tracking-tighter"
                     >
                         <RefreshCw className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
                         Status: RE-APPLY NOW
@@ -75,7 +75,7 @@ const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayl
 
     if (orgData.status === OrgStatus.SUSPENDED) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 bg-card/70 backdrop-blur-md rounded-sm shadow-xl border border-border text-center max-w-2xl mx-auto my-10">
+            <div className="flex flex-col items-center justify-center p-12 bg-card/70 backdrop-blur-md rounded-lg shadow-xl border border-border text-center max-w-2xl mx-auto my-10">
                 <div className="p-6 bg-orange-50 rounded-full mb-6 relative">
                     <ShieldOff className="w-20 h-20 text-orange-500" />
                     <div className="absolute inset-0 bg-orange-400 rounded-full animate-ping opacity-10"></div>
@@ -84,7 +84,7 @@ const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayl
                 <p className="text-muted-foreground text-lg mb-8 font-medium">
                     Your institutional access has been temporarily restricted by the platform administrators.
                 </p>
-                <div className="bg-orange-50 text-orange-800 p-8 rounded-sm border border-orange-100 w-full mb-10 text-left shadow-inner">
+                <div className="bg-orange-50 text-orange-800 p-8 rounded-lg border border-orange-100 w-full mb-10 text-left shadow-inner">
                     <h3 className="font-black mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-orange-900/60"><ShieldOff className="w-4 h-4" /> Official Suspension Reason</h3>
                     <MarkdownRenderer
                         content={orgData.statusHistory && orgData.statusHistory.length > 0
@@ -95,7 +95,7 @@ const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayl
                 </div>
                 <Link
                     href="/contact"
-                    className="inline-flex items-center gap-4 bg-card hover:bg-muted text-foreground px-12 py-6 rounded-sm font-black text-xl shadow-2xl transition-all hover:-translate-y-1 group uppercase italic tracking-tighter border border-border"
+                    className="inline-flex items-center gap-4 bg-card hover:bg-muted text-foreground px-12 py-6 rounded-lg font-black text-xl shadow-2xl transition-all hover:-translate-y-1 group uppercase italic tracking-tighter border border-border"
                 >
                     <Mail className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                     Contact Platform Support

@@ -83,20 +83,28 @@ export default function GradingForm({
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="flex items-center gap-4 p-4 bg-card/30 rounded-sm border border-border mb-6 font-bold italic text-card-text">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-black uppercase tracking-tighter italic">
-                    {student.user.name.charAt(0)}
-                </div>
-                <div>
-                    <h4 className="text-sm font-black uppercase tracking-widest text-card-text">{student.user.name}</h4>
-                    <p className="text-xs text-card-text/40">{student.rollNumber || 'No Roll Number'}</p>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 md:space-y-8">
+            {/* Student Info Card */}
+            <div className="bg-linear-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4 md:p-6 relative overflow-hidden">
+                <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-transparent opacity-50" />
+                <div className="relative flex items-center gap-4">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                        <div className="relative w-14 h-14 rounded-full bg-linear-to-br from-primary/20 to-primary/5 border border-primary/30 shadow-lg flex items-center justify-center text-primary font-black text-xl uppercase tracking-tighter">
+                            {student.user.name.charAt(0)}
+                        </div>
+                    </div>
+                    <div>
+                        <h4 className="text-base md:text-lg font-black text-foreground">{student.user.name}</h4>
+                        <p className="text-xs md:text-sm text-muted-foreground font-medium">{student.rollNumber || 'No Roll Number'}</p>
+                    </div>
                 </div>
             </div>
 
-            <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+            {/* Form Fields */}
+            <div className="space-y-4 md:space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div className="space-y-2 md:space-y-3">
                         <Label htmlFor="marksObtained">Marks Obtained (out of {totalMarks})</Label>
                         <Input
                             id="marksObtained"
@@ -104,12 +112,13 @@ export default function GradingForm({
                             {...register('marksObtained')}
                             error={!!errors.marksObtained}
                             icon={Star}
-                            placeholder={`e.g. ${totalMarks / 100 * 85}`}
+                            placeholder={`e.g. ${Math.round(totalMarks * 0.85)}`}
+                            className="font-medium"
                         />
-                        {errors.marksObtained && <p className="text-xs text-red-500 font-bold">{errors.marksObtained.message}</p>}
+                        {errors.marksObtained && <p className="text-xs text-red-500 font-semibold">{errors.marksObtained.message}</p>}
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 md:space-y-3">
                         <Label>Grade Status</Label>
                         <CustomSelect
                             options={[
@@ -122,28 +131,29 @@ export default function GradingForm({
                             error={!!errors.status}
                             icon={Edit3}
                         />
-                        {errors.status && <p className="text-xs text-red-500 font-bold">{errors.status.message}</p>}
+                        {errors.status && <p className="text-xs text-red-500 font-semibold">{errors.status.message}</p>}
                     </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 md:space-y-3">
                     <Label htmlFor="feedback">Feedback (Optional)</Label>
                     <Textarea
                         id="feedback"
                         {...register('feedback')}
                         icon={MessageCircle}
                         placeholder="Great job! Keep it up."
-                        className="min-h-[120px]"
+                        className="min-h-30 font-medium"
                     />
                 </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-                <Button type="button" variant="secondary" onClick={onCancel}>
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-6 border-t border-border/50">
+                <Button type="button" variant="secondary" onClick={onCancel} className="w-full sm:w-auto h-12 font-semibold">
                     Cancel
                 </Button>
-                <Button type="submit" loadingId="grading-submit" loadingText="SAVING...">
-                    <Check className="w-4 h-4 mr-2" />
+                <Button type="submit" loadingId="grading-submit" loadingText="Saving..." className="w-full sm:w-auto h-12 font-semibold flex items-center justify-center gap-2">
+                    <Check className="w-4 h-4" />
                     Save Grade
                 </Button>
             </div>

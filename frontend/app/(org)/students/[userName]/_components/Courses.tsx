@@ -81,7 +81,7 @@ export default function Courses({ sections }: { sections: Section[] }) {
                         </CardContent>
 
                         <CardFooter className="pt-8">
-                            <button className="w-full py-4 bg-primary text-white font-black text-[11px] uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all duration-500 flex items-center justify-center gap-3 active:scale-95">
+                            <button className="w-full py-4 bg-primary text-primary-foreground font-black text-[11px] uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all duration-500 flex items-center justify-center gap-3 active:scale-95">
                                 <LayoutDashboard className="w-5 h-5" />
                                 Enter Classroom
                             </button>

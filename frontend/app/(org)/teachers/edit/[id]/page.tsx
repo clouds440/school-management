@@ -61,7 +61,7 @@ export default function EditTeacherPage() {
     if (authLoading || dataLoading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="flex flex-col items-center gap-4 text-white/60">
+                <div className="flex flex-col items-center gap-4 text-primary-foreground/60">
                     <Loader2 className="w-10 h-10 animate-spin text-primary" />
                     <p className="font-bold text-sm uppercase tracking-widest">Loading Teacher Data...</p>
                 </div>
@@ -75,7 +75,7 @@ export default function EditTeacherPage() {
         <div className="flex flex-col">
             <div className="mb-6 shrink-0">
                 <div className="flex items-center gap-5">
-                    <div className="p-4 bg-primary/10 backdrop-blur-md ml-2 rounded-sm md:rounded-sm border border-border shadow-xl shrink-0">
+                    <div className="p-4 bg-primary/10 backdrop-blur-md ml-2 rounded-lg md:rounded-lg border border-border shadow-xl shrink-0">
                         <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                     </div>
                     <div>
@@ -85,7 +85,7 @@ export default function EditTeacherPage() {
                 </div>
             </div>
 
-            <div className="bg-card text-card-text rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-border p-6 md:p-12 mb-10">
+            <div className="bg-card text-card-text rounded-lg shadow-[0_8px_30px_var(--shadow-color)] border border-border p-6 md:p-12 mb-10">
                 <TeacherForm teacherId={teacherId} initialData={teacherData} />
             </div>
         </div>

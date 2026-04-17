@@ -155,325 +155,351 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
     }, []);
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-12" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 md:space-y-12" noValidate>
             {/* Mandatory Information */}
-            <div className="bg-card p-6 rounded-sm border border-border">
-                <div className="flex flex-col md:flex-row gap-8 items-start mb-10">
-                    <div className="shrink-0 group relative">
-                        <PhotoUploadPicker
-                            onFileReady={handlePhotoReady}
-                            type="user"
-                            currentImageUrl={initialData?.user?.avatarUrl}
-                        />
-                        <p className="mt-3 text-[10px] text-center font-black uppercase tracking-widest text-card-text/40 group-hover:text-primary transition-colors">
-                            {teacherId ? 'Update Photo' : 'Upload Photo'}
-                        </p>
+            <div className="bg-linear-to-br from-card via-card/95 to-card/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
+                <div className="p-6 md:p-8">
+                    <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start mb-8 md:mb-10">
+                        <div className="shrink-0 group relative mx-auto md:mx-0">
+                            <PhotoUploadPicker
+                                onFileReady={handlePhotoReady}
+                                type="user"
+                                currentImageUrl={initialData?.user?.avatarUrl}
+                            />
+                            <p className="mt-3 text-xs text-center font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-primary transition-colors">
+                                {teacherId ? 'Update Photo' : 'Upload Photo'}
+                            </p>
+                        </div>
+
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Full Name</Label>
+                                <Input
+                                    type="text"
+                                    {...register('name')}
+                                    onChange={isProfile ? undefined : register('name').onChange}
+                                    readOnly={isProfile}
+                                    value={watch('name') || ''}
+                                    error={!!errors.name}
+                                    disabled={isProfile}
+                                    icon={User}
+                                    placeholder="Dr. Sarah Wilson"
+                                    className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                                />
+                                {errors.name && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.name.message}</p>}
+                            </div>
+
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Status</Label>
+                                <CustomSelect
+                                    options={[
+                                        { value: TeacherStatus.ACTIVE, label: 'Active', icon: ShieldCheck },
+                                        { value: TeacherStatus.SUSPENDED, label: 'Suspended', icon: UserX },
+                                        { value: TeacherStatus.ON_LEAVE, label: 'On Leave', icon: CalendarClock }
+                                    ]}
+                                    value={formData.status}
+                                    onChange={(val) => {
+                                        if (isProfile) return;
+                                        setValue('status', val as TeacherStatus);
+                                        trigger('status');
+                                    }}
+                                    error={!!errors.status}
+                                    disabled={isProfile}
+                                    icon={
+                                        formData.status === TeacherStatus.ACTIVE ? ShieldCheck :
+                                            formData.status === TeacherStatus.SUSPENDED ? UserX : CalendarClock
+                                    }
+                                />
+                                {errors.status && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.status.message}</p>}
+                            </div>
+
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Email Address</Label>
+                                <Input
+                                    type="email"
+                                    {...register('email')}
+                                    onChange={(!!teacherId || isProfile) ? undefined : register('email').onChange}
+                                    readOnly={!!teacherId || isProfile}
+                                    value={watch('email') || ''}
+                                    error={!!errors.email}
+                                    disabled={!!teacherId || isProfile}
+                                    icon={Mail}
+                                    placeholder="sarah.wilson@school.com"
+                                    className={teacherId || isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                                />
+                                {errors.email && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.email.message}</p>}
+                            </div>
+
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Account Password</Label>
+                                <Input
+                                    type="password"
+                                    {...register('password')}
+                                    error={!!errors.password}
+                                    icon={Lock}
+                                    placeholder={teacherId ? "Leave blank to keep current" : "Min 8 chars, 1 upper, 1 lower, 1 num"}
+                                    className="font-medium"
+                                />
+                                {errors.password && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.password.message}</p>}
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                        <div className="space-y-2">
-                            <Label>Full Name</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Education / Degree <span className="text-red-500">*</span></Label>
                             <Input
                                 type="text"
-                                {...register('name')}
-                                onChange={isProfile ? undefined : register('name').onChange}
+                                {...register('education')}
+                                onChange={isProfile ? undefined : register('education').onChange}
                                 readOnly={isProfile}
-                                value={watch('name') || ''}
-                                error={!!errors.name}
+                                value={watch('education') || ''}
+                                error={!!errors.education}
+                                disabled={isProfile}
+                                icon={BookOpen}
+                                placeholder="Ph.D. in Computer Science"
+                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                            />
+                            {errors.education && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.education.message}</p>}
+                        </div>
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Designation <span className="text-red-500">*</span></Label>
+                            <Input
+                                type="text"
+                                {...register('designation')}
+                                onChange={isProfile ? undefined : register('designation').onChange}
+                                readOnly={isProfile}
+                                value={watch('designation') || ''}
+                                error={!!errors.designation}
                                 disabled={isProfile}
                                 icon={User}
-                                placeholder="Dr. Sarah Wilson"
-                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
+                                placeholder="Senior Faculty / HOD"
+                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
                             />
-                            {errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{errors.name.message}</p>}
+                            {errors.designation && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.designation.message}</p>}
                         </div>
-
-                        <div className="space-y-2">
-                            <Label>Status</Label>
-                            <CustomSelect
-                                options={[
-                                    { value: TeacherStatus.ACTIVE, label: 'Active', icon: ShieldCheck },
-                                    { value: TeacherStatus.SUSPENDED, label: 'Suspended', icon: UserX },
-                                    { value: TeacherStatus.ON_LEAVE, label: 'On Leave', icon: CalendarClock }
-                                ]}
-                                value={formData.status}
-                                onChange={(val) => {
-                                    if (isProfile) return;
-                                    setValue('status', val as TeacherStatus);
-                                    trigger('status');
-                                }}
-                                error={!!errors.status}
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Subject Expertise <span className="text-red-500">*</span></Label>
+                            <Input
+                                type="text"
+                                {...register('subject')}
+                                onChange={isProfile ? undefined : register('subject').onChange}
+                                readOnly={isProfile}
+                                value={watch('subject') || ''}
+                                error={!!errors.subject}
                                 disabled={isProfile}
-                                icon={
-                                    formData.status === TeacherStatus.ACTIVE ? ShieldCheck :
-                                        formData.status === TeacherStatus.SUSPENDED ? UserX : CalendarClock
-                                }
+                                icon={BookOpen}
+                                placeholder="Mathematics / AI / Physics"
+                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
                             />
-                            {errors.status && <p className="mt-1 text-xs text-red-500 font-bold">{errors.status.message}</p>}
+                            {errors.subject && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.subject.message}</p>}
                         </div>
-
-                        <div className="space-y-2">
-                            <Label>Email Address</Label>
-                            <Input
-                                type="email"
-                                {...register('email')}
-                                onChange={(!!teacherId || isProfile) ? undefined : register('email').onChange}
-                                readOnly={!!teacherId || isProfile}
-                                value={watch('email') || ''}
-                                error={!!errors.email}
-                                disabled={!!teacherId || isProfile}
-                                icon={Mail}
-                                placeholder="sarah.wilson@school.com"
-                                className={teacherId || isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                            />
-                            {errors.email && <p className="mt-1 text-xs text-red-500 font-bold">{errors.email.message}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Account Password</Label>
-                            <Input
-                                type="password"
-                                {...register('password')}
-                                error={!!errors.password}
-                                icon={Lock}
-                                placeholder={teacherId ? "Leave blank to keep current" : "Min 8 chars, 1 upper, 1 lower, 1 num"}
-                            />
-                            {errors.password && <p className="mt-1 text-xs text-red-500 font-bold">{errors.password.message}</p>}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                        <Label>Education / Degree <span className="text-red-500">*</span></Label>
-                        <Input
-                            type="text"
-                            {...register('education')}
-                            onChange={isProfile ? undefined : register('education').onChange}
-                            readOnly={isProfile}
-                            value={watch('education') || ''}
-                            error={!!errors.education}
-                            disabled={isProfile}
-                            icon={BookOpen}
-                            placeholder="Ph.D. in Computer Science"
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                        />
-                        {errors.education && <p className="mt-1 text-xs text-red-500 font-bold">{errors.education.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Designation <span className="text-red-500">*</span></Label>
-                        <Input
-                            type="text"
-                            {...register('designation')}
-                            onChange={isProfile ? undefined : register('designation').onChange}
-                            readOnly={isProfile}
-                            value={watch('designation') || ''}
-                            error={!!errors.designation}
-                            disabled={isProfile}
-                            icon={User}
-                            placeholder="Senior Faculty / HOD"
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                        />
-                        {errors.designation && <p className="mt-1 text-xs text-red-500 font-bold">{errors.designation.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Subject Expertise <span className="text-red-500">*</span></Label>
-                        <Input
-                            type="text"
-                            {...register('subject')}
-                            onChange={isProfile ? undefined : register('subject').onChange}
-                            readOnly={isProfile}
-                            value={watch('subject') || ''}
-                            error={!!errors.subject}
-                            disabled={isProfile}
-                            icon={BookOpen}
-                            placeholder="Mathematics / AI / Physics"
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                        />
-                        {errors.subject && <p className="mt-1 text-xs text-red-500 font-bold">{errors.subject.message}</p>}
                     </div>
                 </div>
             </div>
 
             {/* Workplace & Compensation */}
-            <div className="bg-card p-8 rounded-sm border border-border shadow-sm">
-                <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
-                    <div className="p-2 bg-primary/10 rounded-sm">
-                        <ShieldCheck className="w-5 h-5 text-primary" />
-                    </div>
-                    <h3 className="text-sm font-black uppercase tracking-widest text-card-text">Workplace & Compensation</h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="space-y-2">
-                        <Label>Monthly Salary <span className="text-red-500">*</span></Label>
-                        <Input
-                            type="number"
-                            {...register('salary')}
-                            onChange={isProfile ? undefined : register('salary').onChange}
-                            readOnly={isProfile}
-                            value={watch('salary') || ''}
-                            error={!!errors.salary}
-                            disabled={isProfile}
-                            icon={DollarSign}
-                            placeholder="5000"
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                        />
-                        {errors.salary && <p className="mt-1 text-xs text-red-500 font-bold">{errors.salary.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Department</Label>
-                        <Input
-                            type="text"
-                            {...register('department')}
-                            error={!!errors.department}
-                            icon={BookOpen}
-                            placeholder="Computer Science"
-                        />
-                        {errors.department && <p className="mt-1 text-xs text-red-500 font-bold">{errors.department.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Joining Date</Label>
-                        <Input
-                            type="date"
-                            {...register('joiningDate')}
-                            onChange={isProfile ? undefined : register('joiningDate').onChange}
-                            readOnly={isProfile}
-                            value={watch('joiningDate') || ''}
-                            error={!!errors.joiningDate}
-                            disabled={isProfile}
-                            className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                        />
-                        {errors.joiningDate && <p className="mt-1 text-xs text-red-500 font-bold">{errors.joiningDate.message}</p>}
+            <div className="bg-linear-to-br from-card via-card/95 to-card/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
+                <div className="bg-linear-to-r from-primary/5 via-primary/10 to-transparent p-6 md:p-8 border-b border-primary/10">
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                            <div className="relative p-3 bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/30 shadow-lg">
+                                <ShieldCheck className="w-6 h-6 text-primary" />
+                            </div>
+                        </div>
+                        <h3 className="text-lg md:text-xl font-black text-foreground">Workplace & Compensation</h3>
                     </div>
                 </div>
 
-                <div className={`mt-8 p-5 bg-primary/5 rounded-sm border border-primary/10 flex items-center justify-between group transition-all select-none ${currentUser?.role !== Role.ORG_ADMIN ? 'cursor-not-allowed' : 'hover:bg-primary/10'}`}>
-                    <div className={`flex items-center gap-4 ${currentUser?.role !== Role.ORG_ADMIN ? 'pointer-events-none opacity-70' : ''}`}>
-                        <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 cursor-pointer ${formData.isManager ? 'bg-primary' : 'bg-card/5'}`}
-                            onClick={() => {
-                                if (currentUser?.role !== Role.ORG_ADMIN) return;
-                                setValue('isManager', !formData.isManager);
-                                trigger('isManager');
-                            }}>
-                            <div className={`absolute top-1 w-4 h-4 bg-card rounded-full transition-all duration-300 ${formData.isManager ? 'left-7' : 'left-1'}`} />
+                <div className="p-6 md:p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Monthly Salary <span className="text-red-500">*</span></Label>
+                            <Input
+                                type="number"
+                                {...register('salary')}
+                                onChange={isProfile ? undefined : register('salary').onChange}
+                                readOnly={isProfile}
+                                value={watch('salary') || ''}
+                                error={!!errors.salary}
+                                disabled={isProfile}
+                                icon={DollarSign}
+                                placeholder="5000"
+                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                            />
+                            {errors.salary && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.salary.message}</p>}
                         </div>
-                        <div>
-                            <p className="text-xs font-black uppercase tracking-widest text-card-text">Administrative Privileges</p>
-                            <p className="text-[10px] font-bold text-card-text/40 uppercase tracking-tight mt-0.5">Allow this teacher to manage school settings and users</p>
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Department</Label>
+                            <Input
+                                type="text"
+                                {...register('department')}
+                                error={!!errors.department}
+                                icon={BookOpen}
+                                placeholder="Computer Science"
+                                className="font-medium"
+                            />
+                            {errors.department && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.department.message}</p>}
+                        </div>
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Joining Date</Label>
+                            <Input
+                                type="date"
+                                {...register('joiningDate')}
+                                onChange={isProfile ? undefined : register('joiningDate').onChange}
+                                readOnly={isProfile}
+                                value={watch('joiningDate') || ''}
+                                error={!!errors.joiningDate}
+                                disabled={isProfile}
+                                className={isProfile ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                            />
+                            {errors.joiningDate && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.joiningDate.message}</p>}
                         </div>
                     </div>
-                    {formData.isManager && (
-                        <div className="px-3 py-1 bg-primary/20 rounded-sm border border-primary/20 animate-in fade-in zoom-in">
-                            <span className="text-[10px] font-black text-primary uppercase tracking-widest italic outline-none">Manager Mode Active</span>
+
+                    <div className={`mt-6 md:mt-8 p-4 md:p-5 bg-linear-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all select-none ${currentUser?.role !== Role.ORG_ADMIN ? 'cursor-not-allowed' : 'hover:border-primary/30'}`}>
+                        <div className={`flex items-center gap-4 ${currentUser?.role !== Role.ORG_ADMIN ? 'pointer-events-none opacity-70' : ''}`}>
+                            <div className={`w-14 h-7 rounded-full relative transition-colors duration-300 cursor-pointer ${formData.isManager ? 'bg-primary' : 'bg-muted'}`}
+                                onClick={() => {
+                                    if (currentUser?.role !== Role.ORG_ADMIN) return;
+                                    setValue('isManager', !formData.isManager);
+                                    trigger('isManager');
+                                }}>
+                                <div className={`absolute top-1 w-5 h-5 bg-card rounded-full shadow-md transition-all duration-300 ${formData.isManager ? 'left-8' : 'left-1'}`} />
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-foreground">Administrative Privileges</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">Allow this teacher to manage school settings and users</p>
+                            </div>
                         </div>
-                    )}
+                        {formData.isManager && (
+                            <div className="px-4 py-2 bg-primary/20 rounded-xl border border-primary/30 animate-in fade-in zoom-in">
+                                <span className="text-xs font-semibold text-primary uppercase tracking-wider">Manager Mode Active</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* Assignments */}
-            <div className="bg-card p-8 rounded-sm border border-border/10 shadow-sm">
-                <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
-                    <div className="p-2 bg-primary/10 rounded-sm">
-                        <Plus className="w-5 h-5 text-primary" />
+            <div className="bg-linear-to-br from-card via-card/95 to-card/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
+                <div className="bg-linear-to-r from-primary/5 via-primary/10 to-transparent p-6 md:p-8 border-b border-primary/10">
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                            <div className="relative p-3 bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/30 shadow-lg">
+                                <Plus className="w-6 h-6 text-primary" />
+                            </div>
+                        </div>
+                        <h3 className="text-lg md:text-xl font-black text-foreground">Section Assignments</h3>
                     </div>
-                    <h3 className="text-sm font-black uppercase tracking-widest text-card-text">Section Assignments</h3>
                 </div>
 
-                <div className="space-y-2 max-w-2xl">
-                    <Label>Assign to Sections</Label>
-                    <CustomMultiSelect
-                        options={sections.map(s => ({
-                            value: s.id,
-                            label: `${s.name} ${s.course?.name ? `(${s.course.name})` : ''}`
-                        }))}
-                        values={formData.sectionIds || []}
-                        onChange={(vals) => {
-                            if (isProfile) return;
-                            setValue('sectionIds', vals);
-                            trigger('sectionIds');
-                        }}
-                        placeholder="Choose one or more sections..."
-                        error={!!errors.sectionIds}
-                        disabled={isProfile}
-                    />
-                    {errors.sectionIds && <p className="mt-1 text-xs text-red-500 font-bold">{errors.sectionIds.message}</p>}
-                    <p className="text-[10px] font-bold text-card-text/40 uppercase tracking-[0.05em] pt-2">
-                        Teacher will be able to manage students and grading for selected sections.
-                    </p>
+                <div className="p-6 md:p-8">
+                    <div className="space-y-2 md:space-y-3 max-w-2xl">
+                        <Label>Assign to Sections</Label>
+                        <CustomMultiSelect
+                            options={sections.map(s => ({
+                                value: s.id,
+                                label: `${s.name} ${s.course?.name ? `(${s.course.name})` : ''}`
+                            }))}
+                            values={formData.sectionIds || []}
+                            onChange={(vals) => {
+                                if (isProfile) return;
+                                setValue('sectionIds', vals);
+                                trigger('sectionIds');
+                            }}
+                            placeholder="Choose one or more sections..."
+                            error={!!errors.sectionIds}
+                            disabled={isProfile}
+                        />
+                        {errors.sectionIds && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.sectionIds.message}</p>}
+                        <p className="text-xs text-muted-foreground font-medium pt-2">
+                            Teacher will be able to manage students and grading for selected sections.
+                        </p>
+                    </div>
                 </div>
             </div>
 
             {/* Personal Details */}
-            <div className="bg-card p-8 rounded-sm border border-border/10 shadow-sm">
-                <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
-                    <div className="p-2 bg-primary/10 rounded-sm">
-                        <User className="w-5 h-5 text-primary" />
+            <div className="bg-linear-to-br from-card via-card/95 to-card/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
+                <div className="bg-linear-to-r from-primary/5 via-primary/10 to-transparent p-6 md:p-8 border-b border-primary/10">
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                            <div className="relative p-3 bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/30 shadow-lg">
+                                <User className="w-6 h-6 text-primary" />
+                            </div>
+                        </div>
+                        <h3 className="text-lg md:text-xl font-black text-foreground">Personal Details</h3>
                     </div>
-                    <h3 className="text-sm font-black uppercase tracking-widest text-card-text">Personal Details</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                        <div className="space-y-2">
-                            <Label>Contact Phone <span className="text-red-500">*</span></Label>
-                            <Input
-                                type="text"
-                                {...register('phone')}
-                                error={!!errors.phone}
-                                icon={Phone}
-                                placeholder="+1 555-0123"
-                            />
-                            {errors.phone && <p className="mt-1 text-xs text-red-500 font-bold">{errors.phone.message}</p>}
+                <div className="p-6 md:p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                        <div className="space-y-4 md:space-y-6">
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Contact Phone <span className="text-red-500">*</span></Label>
+                                <Input
+                                    type="text"
+                                    {...register('phone')}
+                                    error={!!errors.phone}
+                                    icon={Phone}
+                                    placeholder="+1 555-0123"
+                                    className="font-medium"
+                                />
+                                {errors.phone && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.phone.message}</p>}
+                            </div>
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Emergency Contact</Label>
+                                <Input
+                                    type="text"
+                                    {...register('emergencyContact')}
+                                    error={!!errors.emergencyContact}
+                                    icon={Phone}
+                                    placeholder="Name - Relation - Phone"
+                                    className="font-medium"
+                                />
+                                {errors.emergencyContact && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.emergencyContact.message}</p>}
+                            </div>
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Blood Group</Label>
+                                <Input
+                                    type="text"
+                                    {...register('bloodGroup')}
+                                    error={!!errors.bloodGroup}
+                                    icon={Plus}
+                                    placeholder="O+, A-, etc."
+                                    className="font-medium"
+                                />
+                                {errors.bloodGroup && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.bloodGroup.message}</p>}
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Emergency Contact</Label>
-                            <Input
-                                type="text"
-                                {...register('emergencyContact')}
-                                error={!!errors.emergencyContact}
-                                icon={Phone}
-                                placeholder="Name - Relation - Phone"
-                            />
-                            {errors.emergencyContact && <p className="mt-1 text-xs text-red-500 font-bold">{errors.emergencyContact.message}</p>}
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Blood Group</Label>
-                            <Input
-                                type="text"
-                                {...register('bloodGroup')}
-                                error={!!errors.bloodGroup}
-                                icon={Plus}
-                                placeholder="O+, A-, etc."
-                            />
-                            {errors.bloodGroup && <p className="mt-1 text-xs text-red-500 font-bold">{errors.bloodGroup.message}</p>}
-                        </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <Label>Residential Address</Label>
-                        <div>
-                            <Textarea
-                                {...register('address')}
-                                error={!!errors.address}
-                                icon={MapPin}
-                                placeholder="123 Education Lane, Learning City"
-                                className="min-h-40"
-                            />
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Residential Address</Label>
+                            <div>
+                                <Textarea
+                                    {...register('address')}
+                                    error={!!errors.address}
+                                    icon={MapPin}
+                                    placeholder="123 Education Lane, Learning City"
+                                    className="min-h-32 md:min-h-40 font-medium"
+                                />
+                            </div>
+                            {errors.address && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.address.message}</p>}
                         </div>
-                        {errors.address && <p className="mt-1 text-xs text-red-500 font-bold">{errors.address.message}</p>}
                     </div>
                 </div>
             </div>
 
-            <div className="flex items-center justify-end gap-4 pb-12">
-                <Button type="button" variant="secondary" className="w-32" onClick={() => router.back()}>
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-6 border-t border-border/50">
+                <Button type="button" variant="secondary" onClick={() => router.back()} className="w-full sm:w-auto h-12 font-semibold">
                     Cancel
                 </Button>
-                <Button type="submit" className="w-64 h-12" loadingId="teacher-submit" loadingText="SAVING...">
-                    <span className="font-black uppercase tracking-widest text-[10px] italic">
-                        {isProfile ? 'Update Profile' : (teacherId ? 'Update Faculty Member' : 'Create Faculty Account')}
-                    </span>
+                <Button type="submit" loadingId="teacher-submit" loadingText="Saving..." className="w-full sm:w-auto h-12 font-semibold">
+                    {isProfile ? 'Update Profile' : (teacherId ? 'Update Faculty Member' : 'Create Faculty Account')}
                 </Button>
             </div>
         </form>

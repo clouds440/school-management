@@ -62,27 +62,32 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-full h-screen bg-background overflow-hidden relative">
       {/* Left Column: Branding Assets (Hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-10 overflow-hidden bg-background">
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-10 overflow-hidden bg-linear-to-br from-primary/5 via-background to-secondary/5">
         {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse"></div>
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/20 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse delay-700"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/30 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/30 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse delay-700"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/20 rounded-full mix-blend-screen filter blur-2xl opacity-10"></div>
 
         <div className="relative z-10 w-full max-w-lg text-center lg:text-left space-y-16 animate-in fade-in slide-in-from-left duration-1000">
-          <div className="space-y-4">
-            <h1 className="text-3xl xl:text-4xl font-black text-foreground leading-tight tracking-tighter">
-              The <span className="text-primary italic animate-pulse group-hover:scale-110 transition-transform inline-block">Verse</span> <br />
-              of Modern Education.
-            </h1>
+          <div className="space-y-6">
+            <div className="relative inline-block">
+              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+              <h1 className="relative text-4xl xl:text-5xl font-black text-foreground leading-tight tracking-tight">
+                The <span className="text-primary italic animate-pulse group-hover:scale-110 transition-transform inline-block">Verse</span> <br />
+                of Modern Education.
+              </h1>
+            </div>
             <p className="text-lg text-muted-foreground font-medium leading-relaxed max-w-md">
               Streamline your school&apos;s operations with the ultimate all-in-one management platform. Efficient, secure, and ready for the future.
             </p>
           </div>
-          <div className="relative w-full aspect-square max-w-md mx-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          <div className="relative w-full aspect-square max-w-md mx-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+            <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-secondary/10 rounded-3xl blur-3xl animate-pulse" />
             <Image
               src="/assets/eduverse-logo.png"
               alt="Eduverse Logo"
               fill
-              className="object-contain animate-float"
+              className="object-contain animate-float relative z-10"
               sizes="(max-width: 1024px) 0px, 28rem"
               unoptimized
             />
@@ -90,35 +95,40 @@ export default function LoginPage() {
         </div>
 
         {/* Footer branding */}
-        <div className="absolute bottom-8 left-12 z-10 flex items-center space-x-2 opacity-30 hover:opacity-100 transition-opacity duration-300">
-          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">&copy; 2026 {PLATFORM_NAME} Global Inc.</p>
+        <div className="absolute bottom-8 left-12 z-10 flex items-center space-x-2 opacity-40 hover:opacity-100 transition-opacity duration-300">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">&copy; 2026 {PLATFORM_NAME} Global Inc.</p>
         </div>
       </div>
 
       {/* Right Column: Interaction Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 bg-secondary/30 relative animate-in fade-in duration-700">
-        <div className="w-full max-w-md space-y-12">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 bg-linear-to-br from-background via-background to-secondary/10 relative animate-in fade-in duration-700">
+        {/* Decorative elements */}
+        <div className="absolute top-20 right-20 w-64 h-64 bg-primary/10 rounded-full mix-blend-screen filter blur-3xl opacity-20"></div>
+        <div className="absolute bottom-20 left-20 w-64 h-64 bg-secondary/10 rounded-full mix-blend-screen filter blur-3xl opacity-20"></div>
+
+        <div className="w-full max-w-md space-y-8 md:space-y-12 relative z-10">
           {/* Mobile Header Branding (Visible only on mobile) */}
           <div className="lg:hidden text-center mb-8">
-            <div className="mx-auto w-16 h-16 rounded-sm flex items-center justify-center mb-4">
+            <div className="relative mx-auto w-20 h-20 rounded-2xl flex items-center justify-center mb-4 bg-linear-to-br from-primary/10 to-secondary/10 border border-primary/20 shadow-xl">
+              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
               <BrandLogoIcon />
             </div>
             <Brand showLogo={false} size="lg" />
           </div>
 
-          <div className="space-y-2">
-            <h2 className="text-4xl font-black text-foreground tracking-tighter leading-tight italic">
+          <div className="space-y-3">
+            <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight italic">
               Welcome back.
             </h2>
-            <p className="text-sm text-muted-foreground font-medium tracking-tight">
+            <p className="text-sm md:text-base text-muted-foreground font-medium tracking-tight">
               Sign in to your organization or student portal.
             </p>
           </div>
 
-          <form className="space-y-8" onSubmit={handleSubmit}>
-            <div className="space-y-6">
-              <div>
-                <Label htmlFor="email-address" className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1 opacity-60">Email</Label>
+          <form className="space-y-6 md:space-y-8" onSubmit={handleSubmit}>
+            <div className="space-y-5 md:space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="email-address" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 opacity-70">Email</Label>
                 <Input
                   id="email-address"
                   name="email"
@@ -128,14 +138,14 @@ export default function LoginPage() {
                   placeholder="admin@school.edu"
                   value={formData.email}
                   onChange={handleChange}
-                  className="h-14 font-bold border-border focus:border-primary/50 transition-all bg-background"
+                  className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                 />
               </div>
 
-              <div>
-                <div className="flex justify-between items-center mb-2 ml-1">
-                  <Label htmlFor="password" className="text-[11px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Password</Label>
-                  <Link href="#" className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline italic">Forgot?</Link>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center ml-1">
+                  <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Password</Label>
+                  <Link href="#" className="text-xs font-semibold uppercase tracking-wider text-primary hover:text-primary/80 transition-colors">Forgot?</Link>
                 </div>
                 <Input
                   id="password"
@@ -143,10 +153,10 @@ export default function LoginPage() {
                   type="password"
                   required
                   icon={Lock}
-                  placeholder="********"
+                  placeholder="••••••••"
                   value={formData.password}
                   onChange={handleChange}
-                  className="h-14 font-bold border-border focus:border-primary/50 transition-all bg-background"
+                  className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                 />
               </div>
             </div>
@@ -162,7 +172,7 @@ export default function LoginPage() {
                     checked={formData.rememberMe}
                     onChange={handleChange}
                   />
-                  <div className="w-5 h-5 bg-muted border-2 border-border rounded-sm peer-checked:bg-primary peer-checked:border-primary transition-all duration-200 group-hover:border-primary/40 shadow-sm flex items-center justify-center">
+                  <div className="w-5 h-5 bg-muted/50 border-2 border-border/50 rounded-md peer-checked:bg-primary peer-checked:border-primary transition-all duration-200 group-hover:border-primary/40 shadow-sm flex items-center justify-center">
                     <svg
                       className={`w-3.5 h-3.5 text-white transition-opacity duration-200 ${formData.rememberMe ? 'opacity-100' : 'opacity-0'}`}
                       fill="none"
@@ -174,24 +184,24 @@ export default function LoginPage() {
                     </svg>
                   </div>
                 </div>
-                <span className="ml-3 text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
+                <span className="ml-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors">
                   Remember Session
                 </span>
               </label>
             </div>
 
-            <div className="space-y-4 pt-4">
+            <div className="space-y-4 pt-4 mb-10 pb-30">
               <Button
                 type="submit"
-                loadingText="Loggin In..."
-                className="w-full h-14"
+                loadingText="Logging In..."
+                className="w-full h-12 md:h-14 font-semibold shadow-lg hover:shadow-xl transition-shadow"
               >
-                <span className="font-black uppercase">Log In</span>
+                Log In
               </Button>
 
-              <p className="text-center text-xs text-muted-foreground font-bold tracking-tight">
+              <p className="text-center text-xs md:text-sm text-muted-foreground font-medium tracking-tight">
                 Don&apos;t have an account?{' '}
-                <Link href="/register" className="text-primary hover:text-primary/80 transition-colors underline underline-offset-4 decoration-2">
+                <Link href="/register" className="text-primary hover:text-primary/80 transition-colors font-semibold underline underline-offset-4 decoration-2">
                   Create new organization
                 </Link>
               </p>

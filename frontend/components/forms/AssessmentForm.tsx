@@ -116,9 +116,9 @@ export default function AssessmentForm({
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-4">
-                <div className="space-y-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 md:space-y-8">
+            <div className="space-y-4 md:space-y-6">
+                <div className="space-y-2 md:space-y-3">
                     <Label htmlFor="title">Assessment Title</Label>
                     <Input
                         id="title"
@@ -127,12 +127,13 @@ export default function AssessmentForm({
                         error={!!errors.title}
                         icon={FileText}
                         placeholder="e.g. Midterm Exam, Assignment 1"
+                        className="font-medium"
                     />
-                    {errors.title && <p className="text-xs text-red-500 font-bold">{errors.title.message}</p>}
+                    {errors.title && <p className="text-xs text-red-500 font-semibold">{errors.title.message}</p>}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div className="space-y-2 md:space-y-3">
                         <Label>Assessment Type</Label>
                         <CustomSelect
                             options={[
@@ -147,10 +148,10 @@ export default function AssessmentForm({
                             error={!!errors.type}
                             icon={Type}
                         />
-                        {errors.type && <p className="text-xs text-red-500 font-bold">{errors.type.message}</p>}
+                        {errors.type && <p className="text-xs text-red-500 font-semibold">{errors.type.message}</p>}
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 md:space-y-3">
                         <Label htmlFor="dueDate">Due Date</Label>
                         <Input
                             id="dueDate"
@@ -158,13 +159,14 @@ export default function AssessmentForm({
                             {...register('dueDate')}
                             error={!!errors.dueDate}
                             icon={Calendar}
+                            className="font-medium"
                         />
-                        {errors.dueDate && <p className="text-xs text-red-500 font-bold">{errors.dueDate.message}</p>}
+                        {errors.dueDate && <p className="text-xs text-red-500 font-semibold">{errors.dueDate.message}</p>}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div className="space-y-2 md:space-y-3">
                         <Label htmlFor="totalMarks">Total Marks</Label>
                         <Input
                             id="totalMarks"
@@ -173,11 +175,12 @@ export default function AssessmentForm({
                             error={!!errors.totalMarks}
                             icon={BookOpen}
                             placeholder="100"
+                            className="font-medium"
                         />
-                        {errors.totalMarks && <p className="text-xs text-red-500 font-bold">{errors.totalMarks.message}</p>}
+                        {errors.totalMarks && <p className="text-xs text-red-500 font-semibold">{errors.totalMarks.message}</p>}
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 md:space-y-3">
                         <Label htmlFor="weightage">Weightage (%)</Label>
                         <Input
                             id="weightage"
@@ -186,20 +189,21 @@ export default function AssessmentForm({
                             error={!!errors.weightage}
                             icon={Percent}
                             placeholder="10"
+                            className="font-medium"
                         />
-                        {errors.weightage && <p className="text-xs text-red-500 font-bold">{errors.weightage.message}</p>}
+                        {errors.weightage && <p className="text-xs text-red-500 font-semibold">{errors.weightage.message}</p>}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div className="space-y-2 md:space-y-3">
                         <div className="flex justify-between items-center mb-1">
                             <Label htmlFor="externalLink">External Link (Optional)</Label>
-                            <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-muted-foreground font-bold uppercase hover:text-foreground transition-colors">
+                            <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground font-semibold uppercase hover:text-foreground transition-colors">
                                 <span className={watch('isVideoLink') ? 'text-primary' : 'text-muted-foreground'}>Embed as Video</span>
                                 <div className="relative inline-flex items-center">
                                     <input type="checkbox" className="sr-only peer" {...register('isVideoLink')} />
-                                    <div className="w-7 h-4 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-card after:border-border after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary"></div>
+                                    <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-card after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                                 </div>
                             </label>
                         </div>
@@ -211,11 +215,12 @@ export default function AssessmentForm({
                             icon={LinkIcon}
                             placeholder="https://youtube.com/..."
                             disabled={isProcessing}
+                            className="font-medium"
                         />
-                        {errors.externalLink && <p className="text-xs text-red-500 font-bold">{errors.externalLink.message}</p>}
+                        {errors.externalLink && <p className="text-xs text-red-500 font-semibold">{errors.externalLink.message}</p>}
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 md:space-y-3">
                         <div className="flex items-center justify-between gap-2">
                             <Label>Attachment (Optional)</Label>
                             {selectedFile && (
@@ -226,9 +231,9 @@ export default function AssessmentForm({
                                         const fileInput = document.getElementById('file-upload') as HTMLInputElement;
                                         if (fileInput) fileInput.value = '';
                                     }}
-                                    className="px-1 shrink-0 border border-red-500/60 hover:border-red-500/50 bg-card/40 hover:bg-red-500/10 text-card-text/40 hover:text-red-500 rounded-sm transition-colors shadow-sm"
+                                    className="p-1 shrink-0 border border-red-500/60 hover:border-red-500 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-all shadow-sm"
                                 >
-                                    <X className="w-5 h-5" />
+                                    <X className="w-4 h-4" />
                                 </button>
                             )}
                         </div>
@@ -246,10 +251,10 @@ export default function AssessmentForm({
                             />
                             <Label
                                 htmlFor="file-upload"
-                                className={`flex items-center gap-2 px-3 py-2 border rounded-sm cursor-pointer transition-colors flex-1 ${selectedFile ? 'border-primary/50 bg-primary/5 text-primary' : 'border-border hover:border-primary/30 text-muted-foreground bg-card/40'}`}
+                                className={`flex items-center gap-2 px-4 py-2.5 border rounded-xl cursor-pointer transition-all flex-1 ${selectedFile ? 'border-primary/50 bg-primary/5 text-primary shadow-sm' : 'border-border hover:border-primary/30 text-muted-foreground bg-card/50 hover:bg-card'}`}
                             >
                                 <UploadCloud className="w-4 h-4" />
-                                <span className="truncate text-sm font-bold flex-1">
+                                <span className="truncate text-sm font-semibold flex-1">
                                     {selectedFile ? selectedFile.name : 'Choose file...'}
                                 </span>
                                 {selectedFile && <Check className="w-4 h-4 text-emerald-500" />}
@@ -258,23 +263,26 @@ export default function AssessmentForm({
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-card/40 border border-border rounded-sm">
-                    <div className="space-y-0.5">
-                        <Label className="text-sm font-bold text-foreground">Allow Submissions</Label>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Enable students to upload work for this assessment</p>
+                <div className="flex items-center justify-between p-4 md:p-5 bg-linear-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-2xl relative overflow-hidden">
+                    <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-transparent opacity-50" />
+                    <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+                        <div className="space-y-1">
+                            <Label className="text-sm md:text-base font-semibold text-foreground">Allow Submissions</Label>
+                            <p className="text-xs text-muted-foreground font-medium">Enable students to upload work for this assessment</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" className="sr-only peer" {...register('allowSubmissions')} />
+                            <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-card after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" {...register('allowSubmissions')} />
-                        <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-card after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
                 </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-                <Button type="button" variant="secondary" onClick={onCancel}>
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-6 border-t border-border/50">
+                <Button type="button" variant="secondary" onClick={onCancel} className="w-full sm:w-auto h-12 font-semibold">
                     Cancel
                 </Button>
-                <Button type="submit" loadingId="assessment-submit" loadingText="SAVING...">
+                <Button type="submit" loadingId="assessment-submit" loadingText="Saving..." className="w-full sm:w-auto h-12 font-semibold">
                     {assessmentId ? 'Update Assessment' : 'Create Assessment'}
                 </Button>
             </div>

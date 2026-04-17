@@ -212,7 +212,7 @@ export default function CoursesPage() {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
                 <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name or description..." />
@@ -222,7 +222,7 @@ export default function CoursesPage() {
                         {user?.role === Role.ORG_MANAGER && (
                             <div
                                 onClick={() => updateQueryParams({ my: !showOnlyMyCourses, page: 1 })}
-                                className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all cursor-pointer group select-none"
+                                className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-lg border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all cursor-pointer group select-none"
                             >
                                 <button
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMyCourses ? 'bg-primary' : 'bg-muted'}`}
@@ -301,7 +301,7 @@ export default function CoursesPage() {
                             id="description"
                             value={editFormData.description}
                             onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                            className="w-full px-6 py-4 rounded-sm border border-border bg-input focus:bg-background focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all min-h-30 text-card-foreground font-bold resize-none"
+                            className="w-full px-6 py-4 rounded-lg border border-border bg-input focus:bg-background focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all min-h-30 text-card-foreground font-bold resize-none"
                             placeholder="Briefly describe this course..."
                         />
                     </div>

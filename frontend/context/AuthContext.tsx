@@ -142,7 +142,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             router.replace(`/students/${user.userName}`);
                             return;
                         }
-                    } else if (user.role === Role.ORG_MANAGER || user.role === Role.TEACHER) {
+                    } else if (user.role === Role.ORG_MANAGER) {
+                        const isSettingsPage = pathSegments.includes('settings');
+                        if (isSettingsPage) {
+                            // Settings page handles its own redirect, no toast needed
+                            router.replace(`/teachers/${user.userName}/profile`);
+                            return;
+                        }
+                    } else if (user.role === Role.TEACHER) {
                         const isTeacherList = pathSegments[1] === 'teachers' && !pathSegments[2];
                         const isSettingsPage = pathSegments.includes('settings');
                         if (isSettingsPage) {

@@ -156,7 +156,7 @@ export default function TeachersPage() {
                 return sectionsList.length > 0 ? (
                     <div className="flex flex-wrap gap-1 max-w-50">
                         {sectionsList.map(sec => (
-                            <span key={sec?.id || Math.random()} className="bg-primary/5 text-primary px-2 py-1 rounded-sm text-xs font-medium border border-primary/10 truncate max-w-37.5" title={sec?.name}>
+                            <span key={sec?.id || Math.random()} className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10 truncate max-w-37.5" title={sec?.name}>
                                 {sec?.name || 'Unknown'}
                             </span>
                         ))}
@@ -204,7 +204,7 @@ export default function TeachersPage() {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
                 <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, email or subject..." />

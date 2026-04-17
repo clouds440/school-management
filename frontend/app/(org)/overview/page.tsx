@@ -27,7 +27,7 @@ export default function AdminPage() {
             <div className="space-y-8">
 
                 {/* Organization Profile Card */}
-                <div className="p-6 bg-card text-card-foreground backdrop-blur-xl rounded-sm shadow-xl border border-border flex flex-col md:flex-row gap-6 items-start">
+                <div className="p-6 bg-card text-card-foreground backdrop-blur-xl rounded-lg shadow-xl border border-border flex flex-col md:flex-row gap-6 items-start">
                     <OrgLogoOrIcon
                         logoUrl={orgData.logoUrl}
                         orgName={orgData.name}
@@ -54,25 +54,25 @@ export default function AdminPage() {
 
                 {/* Key metrics */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="p-6 bg-card text-card-foreground backdrop-blur-sm rounded-sm border border-border shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
+                    <div className="p-6 bg-card text-card-foreground backdrop-blur-sm rounded-lg border border-border shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
                         <span className="text-xs font-black opacity-40 uppercase tracking-widest">Total Users</span>
                         <span className="text-3xl font-black">{(stats?.TEACHERS ?? 0) + (stats?.STUDENTS ?? 0)}</span>
                         <span className="text-xs opacity-60">{stats?.TEACHERS} teachers · {stats?.STUDENTS} students</span>
                     </div>
-                    <div className="p-6 bg-card text-card-foreground backdrop-blur-sm rounded-sm border border-border shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
+                    <div className="p-6 bg-card text-card-foreground backdrop-blur-sm rounded-lg border border-border shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
                         <span className="text-xs font-black opacity-40 uppercase tracking-widest">Courses</span>
                         <span className="text-3xl font-black">{stats?.COURSES ?? 0}</span>
                         <span className="text-xs opacity-60">{stats?.SECTIONS ?? 0} sections</span>
                     </div>
-                    <div className="p-6 bg-card text-card-foreground backdrop-blur-sm rounded-sm border border-border shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
+                    <div className="p-6 bg-card text-card-foreground backdrop-blur-sm rounded-lg border border-border shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
                         <span className="text-xs font-black opacity-40 uppercase tracking-widest">Unread Mail</span>
-                        <span className="text-3xl font-black text-yellow-600">{state.stats.mail?.unread ?? 0}</span>
+                        <span className="text-3xl font-black text-amber-600">{state.stats.mail?.unread ?? 0}</span>
                         <span className="text-xs opacity-60">{state.stats.mail?.total ?? 0} total requests</span>
                     </div>
-                    <div className="p-6 bg-card text-card-foreground backdrop-blur-sm rounded-sm border border-border shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
+                    <div className="p-6 bg-card text-card-foreground backdrop-blur-sm rounded-lg border border-border shadow-sm flex flex-col gap-1 transition-all hover:scale-[1.02]">
                         <span className="text-xs font-black opacity-40 uppercase tracking-widest">System Health</span>
-                        <div className="flex items-center gap-2 text-emerald-600 font-bold">
-                            <div className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></div>
+                        <div className="flex items-center gap-2 text-emerald-500 font-bold">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                             <span>All systems go</span>
                         </div>
                     </div>
@@ -82,7 +82,7 @@ export default function AdminPage() {
                     {/* Recent Activity */}
                     <div className="lg:col-span-2 space-y-4">
                         <h3 className="text-lg font-black text-card-foreground flex items-center gap-2"><Clock className="w-5 h-5" /> Recent Activity</h3>
-                        <div className="bg-card/60 backdrop-blur-sm border border-border rounded-sm p-4 shadow-md space-y-3">
+                        <div className="bg-card/60 backdrop-blur-sm border border-border rounded-lg p-4 shadow-md space-y-3">
                             {[1, 2, 3].map(i => (
                                 <div key={i} className="flex items-start gap-3 border-b border-border/50 pb-2 last:border-0">
                                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
@@ -101,7 +101,7 @@ export default function AdminPage() {
                     {/* Quick Actions */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-black text-card-foreground flex items-center gap-2"><PlusCircle className="w-5 h-5" /> Quick Actions</h3>
-                        <div className="bg-card/60 backdrop-blur-sm border border-border rounded-sm p-4 shadow-md space-y-2">
+                        <div className="bg-card/60 backdrop-blur-sm border border-border rounded-lg p-4 shadow-md space-y-2">
                             <Link href="/teachers/add" className="flex items-center gap-3 p-2 hover:bg-accent/50 rounded transition text-muted-foreground hover:text-foreground font-bold">
                                 <UserPlus className="w-4 h-4 text-primary" /> Add Teacher
                             </Link>

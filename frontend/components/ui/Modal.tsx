@@ -48,8 +48,8 @@ export function ModalOverlay({
     if (!isOpen || !mounted) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-[2px] transition-all duration-300 p-3 pt-[7vh]">
-            <div className={`bg-card text-card-text backdrop-blur-2xl rounded-sm shadow-[0_30px_70px_rgba(0,0,0,0.2)] w-full ${maxWidth} transform transition-all border border-border animate-scale-in flex flex-col max-h-[85vh] overflow-hidden ${className}`}>
+        <div className="fixed inset-0 z-200 flex items-start justify-center bg-black/60 backdrop-blur-sm transition-all duration-300 p-3 sm:p-4 md:p-6 pt-[5vh] sm:pt-[8vh]">
+            <div className={`bg-linear-to-br from-card/95 via-card/90 to-card/95 backdrop-blur-xl rounded-2xl shadow-[0_30px_70px_rgba(0,0,0,0.3)] w-full ${maxWidth} transform transition-all border border-border/50 animate-scale-in flex flex-col max-h-[85vh] overflow-hidden ${className}`}>
                 {children}
             </div>
         </div>,
@@ -74,30 +74,30 @@ export function Modal({
                 customHeader
             ) : (
                 title && (
-                    <div className="flex justify-between items-start p-4 pb-2 shrink-0 border-b border-border">
+                    <div className="flex justify-between items-start p-4 md:p-6 pb-2 md:pb-3 shrink-0 border-b border-border/50">
                         <div>
-                            {typeof title === 'string' ? <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase leading-none">{title}</h2> : title}
-                            {subtitle && <div className="text-xs font-bold text-card-text/40 mt-2 uppercase tracking-widest">{subtitle}</div>}
+                            {typeof title === 'string' ? <h2 className="text-2xl md:text-3xl lg:text-4xl font-black italic tracking-tighter uppercase leading-none">{title}</h2> : title}
+                            {subtitle && <div className="text-xs md:text-sm font-semibold text-muted-foreground mt-2 uppercase tracking-widest">{subtitle}</div>}
                         </div>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="text-card-text/40 hover:text-red-500 hover:bg-foreground/5 p-2 rounded-sm transition-all active:scale-95 shrink-0"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-2 rounded-xl transition-all active:scale-95 shrink-0"
                         >
-                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                            <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
                 )
             )}
 
-            <div className="overflow-y-auto px-8 py-8 custom-scrollbar flex-1 relative">
+            <div className="overflow-y-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 lg:py-8 custom-scrollbar flex-1 relative">
                 {children}
             </div>
 
             {footer && (
-                <div className="p-4 px-8 border-t border-border bg-card/50 shrink-0">
+                <div className="p-4 md:p-6 px-6 md:px-8 border-t border-border/50 bg-card/50 backdrop-blur-sm shrink-0">
                     {footer}
                 </div>
             )}

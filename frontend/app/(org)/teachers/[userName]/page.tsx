@@ -12,6 +12,7 @@ import { useGlobal } from '@/context/GlobalContext';
 import { Teacher, ApiError, Role, Section, Assessment } from '@/types';
 import { formatDate } from '@/lib/utils';
 import { BrandIcon } from '@/components/ui/Brand';
+import { Loading } from '@/components/ui/Loading';
 
 
 export default function TeacherLandingPage() {
@@ -52,7 +53,7 @@ export default function TeacherLandingPage() {
     if (loading || fetchingData) {
         return (
             <div className="flex flex-1 items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <Loading size="lg" />
             </div>
         );
     }
@@ -73,8 +74,8 @@ export default function TeacherLandingPage() {
         <div className="flex flex-col w-full space-y-8 pb-12">
             {/* Premium Header with Profile */}
             <div className="relative group">
-                <div className="absolute -inset-1 bg-linear-to-r from-primary/20 to-primary/5 rounded-sm blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                <div className="relative p-6 md:p-8 bg-card text-card-text backdrop-blur-3xl rounded-sm shadow-2xl border border-border flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="absolute -inset-1 bg-linear-to-r from-primary/20 to-primary/5 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                <div className="relative p-6 md:p-8 bg-card text-card-text backdrop-blur-3xl rounded-lg shadow-2xl border border-border flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
                         <div className="relative">
                             <BrandIcon
@@ -156,7 +157,7 @@ export default function TeacherLandingPage() {
                             <Link
                                 key={section.id}
                                 href={`/sections/${section.id}`}
-                                className="group p-6 bg-card border border-border rounded-sm shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden flex flex-col justify-between"
+                                className="group p-6 bg-card border border-border rounded-lg shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden flex flex-col justify-between"
                             >
                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-all group-hover:scale-110 pointer-events-none">
                                     <BookOpen className="w-20 h-20" />
@@ -183,12 +184,12 @@ export default function TeacherLandingPage() {
                                         </div>
                                     </div>
                                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-all shadow-sm">
-                                        <ChevronRight className="w-4 h-4 text-primary group-hover:text-white" />
+                                        <ChevronRight className="w-4 h-4 text-primary group-hover:text-primary-foreground" />
                                     </div>
                                 </div>
                             </Link>
                         )) : (
-                            <div className="col-span-full py-12 text-center bg-muted/10 rounded-sm border border-dashed border-border">
+                            <div className="col-span-full py-12 text-center bg-muted/10 rounded-lg border border-dashed border-border">
                                 <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60">No classes assigned yet</p>
                             </div>
                         )}
@@ -202,7 +203,7 @@ export default function TeacherLandingPage() {
                         <h3 className="text-lg font-black italic uppercase tracking-tighter flex items-center gap-2 text-foreground">
                             <PlusCircle className="w-5 h-5 text-primary" /> Core Controls
                         </h3>
-                        <div className="bg-card border border-border rounded-sm p-2 shadow-xl space-y-1">
+                        <div className="bg-card border border-border rounded-lg p-2 shadow-xl space-y-1">
                             {payload.role === Role.ORG_MANAGER && (
                                 <ActionLink href="/admin" icon={ShieldCheck} label="Admin Portal" sub="Organization settings" primary />
                             )}
@@ -221,10 +222,10 @@ export default function TeacherLandingPage() {
                                 <Link
                                     key={a.id}
                                     href={`/sections/${a.sectionId}/assessments/${a.id}`}
-                                    className="block p-4 bg-card/50 border border-primary/30 rounded-sm hover:bg-card/80 transition-all active:scale-95 group"
+                                    className="block p-4 bg-card/50 border border-primary/30 rounded-lg hover:bg-card/80 transition-all active:scale-95 group"
                                 >
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="px-2 py-0.5 bg-primary/10 text-primary text-[8px] font-black uppercase tracking-widest rounded-sm">{a.type}</span>
+                                        <span className="px-2 py-0.5 bg-primary/10 text-primary text-[8px] font-black uppercase tracking-widest rounded-lg">{a.type}</span>
                                         <span className="text-[10px] font-bold text-muted-foreground">{formatDate(a.dueDate)}</span>
                                     </div>
                                     <h4 className="text-sm font-black uppercase italic tracking-tight text-foreground group-hover:text-primary transition-colors">
@@ -233,7 +234,7 @@ export default function TeacherLandingPage() {
                                     <p className="text-[10px] font-bold mt-1 uppercase tracking-widest text-muted-foreground/60">Weightage: {a.weightage}%</p>
                                 </Link>
                             )) : (
-                                <p className="text-xs font-bold italic text-center p-6 border border-dashed border-border rounded-sm text-muted-foreground/60">No upcoming deadlines</p>
+                                <p className="text-xs font-bold italic text-center p-6 border border-dashed border-border rounded-lg text-muted-foreground/60">No upcoming deadlines</p>
                             )}
                         </div>
                     </div>
@@ -261,7 +262,7 @@ function StatCard({ title, value, icon: Icon, color, subtitle, isTrend }: StatCa
     };
 
     return (
-        <div className="p-6 bg-card border border-border rounded-sm shadow-xl relative overflow-hidden group">
+        <div className="p-6 bg-card border border-border rounded-lg shadow-xl relative overflow-hidden group">
             <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity ${colorClasses[color].split(' ')[0]}`}>
                 <Icon className="w-16 h-16" />
             </div>
@@ -269,7 +270,7 @@ function StatCard({ title, value, icon: Icon, color, subtitle, isTrend }: StatCa
             <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
-                    <div className={`p-2 rounded-sm border ${colorClasses[color]}`}>
+                    <div className={`p-2 rounded-lg border ${colorClasses[color]}`}>
                         <Icon className="w-4 h-4" />
                     </div>
                 </div>
@@ -297,19 +298,19 @@ function ActionLink({ href, icon: Icon, label, sub, primary }: ActionLinkProps) 
     return (
         <Link
             href={href}
-            className={`flex items-center gap-4 p-4 rounded-sm transition-all duration-200 group ${primary
-                ? 'bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95'
+            className={`flex items-center gap-4 p-4 rounded-lg transition-all duration-200 group ${primary
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95'
                 : 'hover:bg-foreground/5 active:scale-[0.98]'
                 }`}
         >
-            <div className={`p-2.5 rounded-sm shadow-sm ${primary ? 'bg-white/20' : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white'}`}>
+            <div className={`p-2.5 rounded-lg shadow-sm ${primary ? 'bg-primary-foreground/20' : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'}`}>
                 <Icon className="w-5 h-5" />
             </div>
             <div>
-                <p className={`text-sm font-black uppercase italic tracking-tight leading-none ${primary ? 'text-white' : 'text-foreground font-bold'}`}>{label}</p>
-                <p className={`text-[10px] font-black uppercase tracking-widest mt-1.5 ${primary ? 'text-white/80' : 'text-muted-foreground'}`}>{sub}</p>
+                <p className={`text-sm font-black uppercase italic tracking-tight leading-none ${primary ? 'text-primary-foreground' : 'text-foreground font-bold'}`}>{label}</p>
+                <p className={`text-[10px] font-black uppercase tracking-widest mt-1.5 ${primary ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>{sub}</p>
             </div>
-            <ChevronRight className={`w-4 h-4 ml-auto transition-transform group-hover:translate-x-1 ${primary ? 'text-white/60' : 'text-muted-foreground/40'}`} />
+            <ChevronRight className={`w-4 h-4 ml-auto transition-transform group-hover:translate-x-1 ${primary ? 'text-primary-foreground/60' : 'text-muted-foreground/40'}`} />
         </Link>
     );
 }

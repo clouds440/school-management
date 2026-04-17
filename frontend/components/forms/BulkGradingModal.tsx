@@ -109,62 +109,67 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
             onClose={onClose}
             title="Grade All Students"
             subtitle={`Assessment: ${assessment.title}`}
-            maxWidth="max-w-4xl"
+            maxWidth="max-w-5xl"
         >
-            <div className="space-y-6">
-                <div className="bg-primary/5 p-4 rounded-sm border border-primary/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-sm font-bold">
-                    <div className="flex flex-col">
-                        <span className="text-primary italic">Enter marks and status for each student. Blank marks will be skipped.</span>
-                        <span className="text-card-text/60 mt-1">Total Marks: {assessment.totalMarks}</span>
-                    </div>
-                    <div className="flex items-center gap-3 bg-card p-2 rounded-sm border border-border shadow-sm w-full md:w-auto">
-                        <span className="text-xs uppercase tracking-widest text-card-text/60 whitespace-nowrap">Apply to all:</span>
-                        <div className="w-40">
-                            <CustomSelect<GradeStatus>
-                                value={(globalStatus as GradeStatus) || GradeStatus.DRAFT}
-                                onChange={handleGlobalStatusChange}
-                                options={[
-                                    { value: GradeStatus.DRAFT, label: 'Draft' },
-                                    { value: GradeStatus.PUBLISHED, label: 'Published' },
-                                    { value: GradeStatus.FINALIZED, label: 'Finalized' }
-                                ]}
-                            />
+            <div className="space-y-6 md:space-y-8">
+                {/* Instructions Section */}
+                <div className="bg-linear-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4 md:p-6 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-transparent opacity-50" />
+                    <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="flex flex-col">
+                            <span className="text-primary font-semibold text-sm md:text-base">Enter marks and status for each student. Blank marks will be skipped.</span>
+                            <span className="text-muted-foreground mt-1 text-xs md:text-sm">Total Marks: {assessment.totalMarks}</span>
+                        </div>
+                        <div className="flex items-center gap-3 bg-card/80 backdrop-blur-sm p-2 md:p-3 rounded-xl border border-border/50 shadow-lg w-full md:w-auto">
+                            <span className="text-xs uppercase tracking-wider text-muted-foreground whitespace-nowrap font-semibold">Apply to all:</span>
+                            <div className="w-36 md:w-40">
+                                <CustomSelect<GradeStatus>
+                                    value={(globalStatus as GradeStatus) || GradeStatus.DRAFT}
+                                    onChange={handleGlobalStatusChange}
+                                    options={[
+                                        { value: GradeStatus.DRAFT, label: 'Draft' },
+                                        { value: GradeStatus.PUBLISHED, label: 'Published' },
+                                        { value: GradeStatus.FINALIZED, label: 'Finalized' }
+                                    ]}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto max-h-[50vh]">
+                {/* Students Table */}
+                <div className="overflow-x-auto max-h-[50vh] rounded-xl border border-border/50">
                     <table className="w-full text-left border-collapse">
-                        <thead className="sticky top-0 bg-card z-10 shadow-sm">
-                            <tr className="bg-muted/40 border-y border-border">
-                                <th className="px-4 py-3 text-[11px] font-black uppercase tracking-widest text-card-text/40">Student Name</th>
-                                <th className="px-4 py-3 text-[11px] font-black uppercase tracking-widest text-card-text/40">Reg #</th>
-                                <th className="px-4 py-3 text-[11px] font-black uppercase tracking-widest text-card-text/40">Marks Obtained</th>
-                                <th className="px-4 py-3 text-[11px] font-black uppercase tracking-widest text-card-text/40">Grade Status</th>
+                        <thead className="sticky top-0 bg-card/95 backdrop-blur-sm z-10 shadow-sm">
+                            <tr className="bg-muted/30 border-y border-border/50">
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-black uppercase tracking-wider text-muted-foreground">Student Name</th>
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-black uppercase tracking-wider text-muted-foreground">Reg #</th>
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-black uppercase tracking-wider text-muted-foreground">Marks Obtained</th>
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-black uppercase tracking-wider text-muted-foreground">Grade Status</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-border">
+                        <tbody className="divide-y divide-border/50">
                             {section.students?.map((student) => (
-                                <tr key={student.id} className="hover:bg-muted/40 transition-colors">
-                                    <td className="px-4 py-3">
+                                <tr key={student.id} className="hover:bg-muted/30 transition-colors">
+                                    <td className="px-4 md:px-6 py-3 md:py-4">
                                         <div className="flex items-center gap-3">
-                                            <BrandIcon variant="user" size="sm" user={student.user} className="w-8 h-8 shadow-sm" />
-                                            <span className="font-bold text-sm text-card-text truncate max-w-37.5">{student.user.name}</span>
+                                            <BrandIcon variant="user" size="sm" user={student.user} className="w-9 h-9 md:w-10 md:h-10 shadow-md rounded-full" />
+                                            <span className="font-semibold text-sm md:text-base text-foreground truncate max-w-37.5">{student.user.name}</span>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-xs text-card-text/50 uppercase">{student.registrationNumber || 'N/A'}</td>
-                                    <td className="px-4 py-3">
+                                    <td className="px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm text-muted-foreground uppercase">{student.registrationNumber || 'N/A'}</td>
+                                    <td className="px-4 md:px-6 py-3 md:py-4">
                                         <input
                                             type="number"
                                             min="0"
                                             max={assessment.totalMarks}
                                             value={bulkData[student.id]?.marksObtained || ''}
                                             onChange={(e) => handleInputChange(student.id, 'marksObtained', e.target.value)}
-                                            className="w-24 bg-card border border-border rounded-sm px-3 py-1.5 text-sm font-bold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                                            className="w-24 md:w-28 bg-card/80 backdrop-blur-sm border border-border rounded-lg px-3 py-2 text-sm md:text-base font-semibold focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                             placeholder={`/${assessment.totalMarks}`}
                                         />
                                     </td>
-                                    <td className="px-4 py-3 min-w-40">
+                                    <td className="px-4 md:px-6 py-3 md:py-4 min-w-36 md:min-w-40">
                                         <CustomSelect<GradeStatus>
                                             value={bulkData[student.id]?.status || GradeStatus.DRAFT}
                                             onChange={(val) => handleInputChange(student.id, 'status', val)}
@@ -181,11 +186,12 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                     </table>
                 </div>
 
-                <div className="flex gap-4 justify-end pt-4 border-t border-border mt-6">
-                    <Button type="button" variant="secondary" onClick={onClose}>
+                {/* Buttons */}
+                <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-6 border-t border-border/50">
+                    <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto h-12 font-semibold">
                         Cancel
                     </Button>
-                    <Button type="button" onClick={handleBulkSubmit} loadingId="bulk-grading-submit" loadingText="SAVING ALL..." className="min-w-30">
+                    <Button type="button" onClick={handleBulkSubmit} loadingId="bulk-grading-submit" loadingText="Saving All..." className="w-full sm:w-auto h-12 font-semibold min-w-36">
                         Save All Grades
                     </Button>
                 </div>

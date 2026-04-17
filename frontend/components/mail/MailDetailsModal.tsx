@@ -128,6 +128,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
     };
 
     const isClosed = mail?.status === MailStatus.CLOSED || mail?.status === MailStatus.RESOLVED;
+    const isNoReply = mail?.status === MailStatus.NO_REPLY;
 
     return (
         <Modal
@@ -149,7 +150,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
                             <span className="flex items-center gap-1"><User className="w-3 h-3" />{mail.creator.name}</span>
                         </div>
                         <div className="block md:flex md:ml-5">
-                            {!isClosed && (
+                            {!isClosed && !isNoReply && (
                                 <div className="flex items-center mt-3 md:mt-0 gap-2 md:ml-4">
                                     {mail.status === MailStatus.OPEN && (
                                         <Button

@@ -71,8 +71,8 @@ export default function EditStudentPage() {
     if (authLoading || dataLoading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="flex flex-col items-center gap-4 text-white/60">
-                    <Loader2 className="w-10 h-10 animate-spin text-white" />
+                <div className="flex flex-col items-center gap-4 text-primary-foreground/60">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
                     <p className="font-bold text-sm uppercase tracking-widest">Loading Student Data...</p>
                 </div>
             </div>
@@ -87,7 +87,7 @@ export default function EditStudentPage() {
         <div className="flex flex-col">
             <div className="mb-6 shrink-0">
                 <div className="flex items-center gap-5">
-                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-sm border border-border shadow-xl shrink-0">
+                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-lg border border-border shadow-xl shrink-0">
                         <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                     </div>
                     <div>
@@ -101,7 +101,7 @@ export default function EditStudentPage() {
                 </div>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-2xl border border-border p-6 md:p-12 text-card-text mb-10">
+            <div className="bg-card/80 backdrop-blur-xl rounded-lg shadow-2xl border border-border p-6 md:p-12 text-card-text mb-10">
                 <StudentForm studentId={studentId} initialData={studentData} />
             </div>
         </div>

@@ -9,6 +9,7 @@ import { useGlobal } from '@/context/GlobalContext';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Input } from '@/components/ui/Input';
+import { Loading } from '@/components/ui/Loading';
 
 export default function GradesPage() {
     const { token, user } = useAuth();
@@ -46,7 +47,7 @@ export default function GradesPage() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center p-12 h-[60vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <Loading size="lg" />
             </div>
         );
     }
@@ -54,7 +55,7 @@ export default function GradesPage() {
     return (
         <div className="flex flex-col h-full w-full space-y-8">
             <div className="space-y-6">
-                <div className="flex items-center justify-between bg-card/50 p-6 rounded-sm border border-border shadow-inner">
+                <div className="flex items-center justify-between bg-card/50 p-6 rounded-lg border border-border shadow-inner">
                     <div className="flex-1 max-w-md">
                         <Input
                             placeholder="Search sections or courses..."
@@ -71,7 +72,7 @@ export default function GradesPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredSections.length === 0 ? (
-                        <div className="col-span-full bg-primary/5 border border-dashed border-border rounded-sm p-20 text-center">
+                        <div className="col-span-full bg-primary/5 border border-dashed border-border rounded-lg p-20 text-center">
                             <BookOpen className="w-16 h-16 text-card-text/20 mx-auto mb-4" />
                             <p className="text-card-text/40 font-bold italic uppercase tracking-widest">No matching sections found.</p>
                         </div>
@@ -80,11 +81,11 @@ export default function GradesPage() {
                             <Link
                                 key={section.id}
                                 href={`/sections/${section.id}`}
-                                className="bg-card border border-border rounded-sm p-8 space-y-4 hover:border-primary/50 transition-all group shadow-sm flex flex-col justify-between"
+                                className="bg-card border border-border rounded-lg p-8 space-y-4 hover:border-primary/50 transition-all group shadow-sm flex flex-col justify-between"
                             >
                                 <div>
                                     <div className="flex justify-between items-start mb-4">
-                                        <div className="p-3 bg-primary/35 rounded-sm border border-primary/10 group-hover:bg-primary group-hover:text-foreground transition-all duration-300">
+                                        <div className="p-3 bg-primary/35 rounded-lg border border-primary/10 group-hover:bg-primary group-hover:text-foreground transition-all duration-300">
                                             <GraduationCap className="w-6 h-6" />
                                         </div>
                                         <ChevronRight className="w-5 h-5 text-card-text/10 group-hover:text-primary transition-all group-hover:translate-x-1" />
@@ -94,7 +95,7 @@ export default function GradesPage() {
                                 </div>
                                 <div className="mt-8 pt-6 border-t border-border flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-card-text/30">
                                     <span>{section.semester} {section.year}</span>
-                                    <span className="bg-primary/5 px-2 py-1 rounded-sm text-primary group-hover:bg-primary group-hover:text-foreground transition-all">MANAGE GRADES</span>
+                                    <span className="bg-primary/5 px-2 py-1 rounded-lg text-primary group-hover:bg-primary group-hover:text-foreground transition-all">MANAGE GRADES</span>
                                 </div>
                             </Link>
                         ))

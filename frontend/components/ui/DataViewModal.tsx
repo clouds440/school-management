@@ -32,7 +32,7 @@ export function DataViewModal({ isOpen, onClose, title, subtitle, fields, action
                 </div>
                 <button
                     onClick={onClose}
-                    className="p-2 hover:bg-primary/10 rounded-sm transition-all group"
+                    className="p-2 hover:bg-primary/10 rounded-lg transition-all group"
                 >
                     <X className="w-8 h-8 opacity-40 group-hover:opacity-100 group-hover:text-red-500 transition-all" />
                 </button>
@@ -60,7 +60,7 @@ export function DataViewModal({ isOpen, onClose, title, subtitle, fields, action
                 {actions}
                 <button
                     onClick={onClose}
-                    className="px-8 py-3.5 rounded-sm border border-card-text/20 text-xs font-black uppercase tracking-widest hover:bg-card-text/10 transition-all active:scale-95"
+                    className="px-8 py-3.5 rounded-lg border border-card-text/20 text-xs font-black uppercase tracking-widest hover:bg-card-text/10 transition-all active:scale-95"
                 >
                     Close
                 </button>

@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { Monitor, Smartphone, Laptop, Globe, Shield, Trash2, LogOut, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Loading } from '@/components/ui/Loading';
 
 interface Session {
     id: string;
@@ -129,110 +130,154 @@ export default function SessionManagement({ userId, orgId }: SessionManagementPr
     };
 
     return (
-        <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-2xl border border-border p-6 md:p-8 text-card-foreground">
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                    <div className="p-3 bg-primary/10 rounded-sm border border-primary/20">
-                        <Shield className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-black text-card-foreground">Active Sessions</h2>
-                        <p className="text-sm text-muted-foreground font-medium mt-1">
-                            Manage your active devices and login sessions
-                        </p>
-                    </div>
-                </div>
-                <Button
-                    onClick={fetchSessions}
-                    variant="secondary"
-                    icon={RefreshCw}
-                    disabled={loading}
-                    className="shrink-0"
-                >
-                    Refresh
-                </Button>
-            </div>
-
-            {loading ? (
-                <div className="flex justify-center items-center h-40">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-            ) : sessions.length === 0 ? (
-                <div className="text-center py-12">
-                    <Globe className="w-16 h-16 text-muted-foreground/20 mx-auto mb-4" />
-                    <p className="text-muted-foreground font-medium">No active sessions found</p>
-                </div>
-            ) : (
-                <>
-                    <div className="space-y-3 mb-6">
-                        {sessions.map((session) => (
-                            <div
-                                key={session.id}
-                                className={`flex items-center justify-between p-4 rounded-sm border transition-all ${
-                                    isCurrentSession(session)
-                                        ? 'bg-primary/5 border-primary/30'
-                                        : 'bg-secondary/30 border-border hover:border-border/80'
-                                }`}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className={`p-2 rounded-sm ${
-                                        isCurrentSession(session)
-                                            ? 'bg-primary/20 text-primary'
-                                            : 'bg-secondary/50 text-muted-foreground'
-                                    }`}>
-                                        {getDeviceIcon(session.os)}
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-bold text-card-foreground">{session.deviceName || 'Unknown Device'}</p>
-                                            {isCurrentSession(session) && (
-                                                <span className="text-[10px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-sm">
-                                                    Current
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                                            <span>{session.os}</span>
-                                            <span>•</span>
-                                            <span>Last active: {formatDate(session.lastSeenAt)}</span>
-                                        </div>
-                                    </div>
+        <div className="w-full">
+            <div className="bg-linear-to-br from-card via-card/95 to-card/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
+                {/* Header */}
+                <div className="bg-linear-to-r from-primary/5 via-primary/10 to-transparent p-6 md:p-8 border-b border-primary/10">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                                <div className="relative p-3 bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/30 shadow-lg">
+                                    <Shield className="w-7 h-7 text-primary" />
                                 </div>
-                                {!isCurrentSession(session) && (
-                                    <Button
-                                        onClick={() => handleRevokeSession(session.id)}
-                                        variant="danger"
-                                        icon={Trash2}
-                                        disabled={revoking === session.id}
-                                        className="shrink-0"
-                                    >
-                                        {revoking === session.id ? 'Revoking...' : 'Revoke'}
-                                    </Button>
-                                )}
                             </div>
-                        ))}
-                    </div>
-
-                    <div className="pt-6 border-t border-border/50 flex justify-end">
+                            <div>
+                                <h2 className="text-2xl md:text-3xl font-black text-foreground tracking-tight">
+                                    Active Sessions
+                                </h2>
+                                <p className="text-sm md:text-base text-muted-foreground font-medium mt-1">
+                                    Manage your active devices and login sessions
+                                </p>
+                            </div>
+                        </div>
                         <Button
-                            onClick={handleRevokeAll}
-                            variant="danger"
-                            icon={LogOut}
-                            disabled={revokingAll || sessions.filter(s => !isCurrentSession(s)).length === 0}
-                            className="shrink-0"
+                            onClick={fetchSessions}
+                            variant="secondary"
+                            icon={RefreshCw}
+                            disabled={loading}
+                            className="shrink-0 w-full sm:w-auto"
                         >
-                            {revokingAll ? 'Revoking...' : 'Revoke All Other Sessions'}
+                            Refresh
                         </Button>
                     </div>
-                </>
-            )}
+                </div>
+
+                {/* Content */}
+                <div className="p-6 md:p-8">
+                    {loading ? (
+                        <div className="flex justify-center items-center h-40">
+                            <Loading size="md" />
+                        </div>
+                    ) : sessions.length === 0 ? (
+                        <div className="text-center py-16">
+                            <div className="relative inline-block mb-6">
+                                <div className="absolute inset-0 bg-primary/10 blur-3xl rounded-full" />
+                                <Globe className="w-20 h-20 text-muted-foreground/30 relative" />
+                            </div>
+                            <p className="text-lg font-semibold text-muted-foreground">No active sessions found</p>
+                            <p className="text-sm text-muted-foreground/60 mt-2">You're not currently logged in on any device</p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Sessions List */}
+                            <div className="space-y-3 md:space-y-4 mb-6 md:mb-8">
+                                {sessions.map((session) => (
+                                    <div
+                                        key={session.id}
+                                        className={`group relative overflow-hidden rounded-xl border transition-all duration-300 ${
+                                            isCurrentSession(session)
+                                                ? 'bg-linear-to-r from-primary/5 via-primary/10 to-primary/5 border-primary/30 shadow-lg shadow-primary/5'
+                                                : 'bg-card/50 border-border/50 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5'
+                                        }`}
+                                    >
+                                        <div className="p-4 md:p-5">
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                                {/* Device Info */}
+                                                <div className="flex items-start sm:items-center gap-4 flex-1">
+                                                    <div className={`relative shrink-0 p-3 rounded-xl transition-all ${
+                                                        isCurrentSession(session)
+                                                            ? 'bg-linear-to-br from-primary/20 to-primary/10 text-primary shadow-lg shadow-primary/10'
+                                                            : 'bg-linear-to-br from-muted/50 to-muted/30 text-muted-foreground group-hover:from-primary/10 group-hover:to-primary/5 group-hover:text-primary'
+                                                    }`}>
+                                                        {getDeviceIcon(session.os)}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                                                            <p className="font-bold text-foreground text-lg truncate">
+                                                                {session.deviceName || 'Unknown Device'}
+                                                            </p>
+                                                            {isCurrentSession(session) && (
+                                                                <span className="inline-flex items-center text-[10px] sm:text-xs font-black uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
+                                                                    <span className="w-1.5 h-1.5 bg-primary rounded-full mr-1.5 animate-pulse" />
+                                                                    Current
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-wrap items-center gap-2 mt-2 text-xs sm:text-sm text-muted-foreground">
+                                                            <span className="font-medium">{session.os}</span>
+                                                            <span className="text-muted-foreground/40">•</span>
+                                                            <span className="flex items-center gap-1.5">
+                                                                <span className="w-1 h-1 bg-muted-foreground/40 rounded-full" />
+                                                                Last active: {formatDate(session.lastSeenAt)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Revoke Button */}
+                                                {!isCurrentSession(session) && (
+                                                    <div className="flex sm:block shrink-0">
+                                                        <Button
+                                                            onClick={() => handleRevokeSession(session.id)}
+                                                            variant="danger"
+                                                            icon={Trash2}
+                                                            disabled={revoking === session.id}
+                                                            className="w-full sm:w-auto"
+                                                        >
+                                                            {revoking === session.id ? 'Revoking...' : 'Revoke'}
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Revoke All Button */}
+                            <div className="pt-6 border-t border-border/50">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                            <span className="font-medium">
+                                                {sessions.filter(s => !isCurrentSession(s)).length} other session{sessions.filter(s => !isCurrentSession(s)).length !== 1 ? 's' : ''} active
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        onClick={handleRevokeAll}
+                                        variant="danger"
+                                        icon={LogOut}
+                                        disabled={revokingAll || sessions.filter(s => !isCurrentSession(s)).length === 0}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        {revokingAll ? 'Revoking...' : 'Revoke All Other Sessions'}
+                                    </Button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
 
             <ConfirmDialog
                 isOpen={showRevokeAllDialog}
                 onClose={() => setShowRevokeAllDialog(false)}
                 onConfirm={handleConfirmRevokeAll}
-                title="Revoke All Sessions"
-                description="Are you sure you want to revoke all sessions? This will sign you out from all devices except this one."
+                title="Revoke All Other Sessions"
+                description="Are you sure you want to revoke all other sessions? This will sign you out from all devices except this one. You'll need to log in again on those devices."
                 confirmText="Revoke All"
                 isDestructive={true}
             />

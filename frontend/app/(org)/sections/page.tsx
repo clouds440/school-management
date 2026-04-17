@@ -165,7 +165,7 @@ export default function SectionsPage() {
                 <div className="flex flex-wrap gap-1">
                     {row.teachers && row.teachers.length > 0 ? (
                         row.teachers.map((teacher, idx) => (
-                            <span key={idx} className="bg-primary/5 text-primary px-2 py-1 rounded-sm text-xs font-medium border border-primary/10">
+                            <span key={idx} className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10">
                                 {teacher.user.name}
                             </span>
                         ))
@@ -236,7 +236,7 @@ export default function SectionsPage() {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
                 <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
                     <div className="flex-1 max-w-xl">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, course, or room..." />
@@ -246,7 +246,7 @@ export default function SectionsPage() {
                         {user?.role === Role.ORG_MANAGER && (
                             <div
                                 onClick={() => updateQueryParams({ my: !showOnlyMySections, page: 1 })}
-                                className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-sm border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all cursor-pointer group select-none"
+                                className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-lg border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all cursor-pointer group select-none"
                             >
                                 <button
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMySections ? 'bg-primary' : 'bg-muted'}`}
@@ -338,7 +338,7 @@ export default function SectionsPage() {
                             />
                         </div>
                     )}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="semester">Semester</Label>
                             <Input

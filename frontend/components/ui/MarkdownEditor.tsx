@@ -89,7 +89,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     };
 
     return (
-        <div className={`flex flex-col border border-border rounded-sm overflow-hidden bg-card shadow-inner ${className}`}>
+        <div className={`flex flex-col border border-border rounded-xl overflow-hidden bg-card shadow-inner ${className}`}>
             <div className="flex flex-wrap items-center justify-between px-3 bg-muted/30 border-b border-border gap-2">
                 <div className="flex items-center gap-1 flex-wrap">
                     {!previewMode && (
@@ -97,7 +97,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                             <button
                                 type="button"
                                 onClick={() => insertText('**', '**')}
-                                className="p-1.5 hover:bg-card rounded-sm text-muted-foreground transition-colors border border-transparent hover:border-border"
+                                className="p-1.5 hover:bg-card rounded-lg text-muted-foreground transition-colors border border-transparent hover:border-border"
                                 title="Bold"
                             >
                                 <Bold className="w-4 h-4" />
@@ -105,7 +105,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                             <button
                                 type="button"
                                 onClick={() => insertText('[', '](url)')}
-                                className="p-1.5 hover:bg-card rounded-sm text-muted-foreground transition-colors border border-transparent hover:border-border"
+                                className="p-1.5 hover:bg-card rounded-lg text-muted-foreground transition-colors border border-transparent hover:border-border"
                                 title="Link"
                             >
                                 <LinkIcon className="w-4 h-4" />
@@ -166,7 +166,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 <button
                     type="button"
                     onClick={() => setPreviewMode(!previewMode)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-sm transition-all border ${previewMode
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all border ${previewMode
                         ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
                         : 'text-muted-foreground border-border hover:bg-card'
                         }`}

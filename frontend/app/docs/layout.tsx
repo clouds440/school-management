@@ -85,7 +85,7 @@ export default function DocsLayout({
                   <li key={link.name}>
                     <Link
                       href={link.href}
-                      className="text-sm font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 px-2 py-1.5 rounded-sm block transition-all"
+                      className="text-sm font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 px-2 py-1.5 rounded-lg block transition-all"
                     >
                       {link.name}
                     </Link>

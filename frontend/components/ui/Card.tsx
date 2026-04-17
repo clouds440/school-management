@@ -26,19 +26,19 @@ export const Card = ({
 }: CardProps) => {
     const paddingClasses = {
         none: 'p-0',
-        sm: 'p-4',
-        md: 'p-6',
-        lg: 'p-7',
-        xl: 'p-8',
+        sm: 'p-3 md:p-4',
+        md: 'p-4 md:p-6',
+        lg: 'p-5 md:p-7',
+        xl: 'p-6 md:p-8',
     };
 
     return (
         <div
             onClick={onClick}
             className={cn(
-                "bg-card/80 backdrop-blur-sm border border-border rounded-2xl flex flex-col h-full relative overflow-hidden ring-1 ring-border transition-all duration-500",
+                "bg-linear-to-br from-card/90 via-card/70 to-card/90 backdrop-blur-xl border border-border/50 rounded-2xl flex flex-col h-full relative overflow-hidden ring-1 ring-border/50 transition-all duration-500 ease-out",
                 paddingClasses[padding],
-                hoverable && "hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 hover:z-10 group",
+                hoverable && "hover:border-primary/60 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 hover:scale-[1.01] hover:z-10 group",
                 onClick && "cursor-pointer",
                 animate && "opacity-0 animate-fade-in-up-subtle",
                 className
@@ -47,7 +47,7 @@ export const Card = ({
         >
             {/* Premium Accent Line */}
             {accentColor && (
-                <div className="absolute top-0 left-0 w-full h-[6px] group-hover:bg-primary/10 transition-colors">
+                <div className="absolute top-0 left-0 w-full h-1.5 group-hover:bg-primary/10 transition-colors duration-300">
                     <div className={cn(
                         "h-full w-0 group-hover:w-full transition-all duration-700 ease-out fill-mode-forwards",
                         accentColor

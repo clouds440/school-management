@@ -24,15 +24,15 @@ export function ConfirmDialog({
     isDestructive = false,
 }: ConfirmDialogProps) {
     return (
-        <ModalOverlay isOpen={isOpen} maxWidth="max-w-md" className="p-10 animate-scale-in">
-            <h3 className="text-2xl font-black mb-4 leading-tight">{title}</h3>
-            <p className="opacity-70 text-lg mb-10 leading-relaxed font-medium">{description}</p>
+        <ModalOverlay isOpen={isOpen} maxWidth="max-w-md" className="p-6 sm:p-8 md:p-10 animate-scale-in">
+            <h3 className="text-xl sm:text-2xl font-black mb-3 sm:mb-4 leading-tight">{title}</h3>
+            <p className="opacity-70 text-base sm:text-lg mb-6 sm:mb-8 md:mb-10 leading-relaxed font-medium">{description}</p>
 
-            <div className="flex gap-4 justify-end shrink-0">
+            <div className="flex gap-3 sm:gap-4 justify-end shrink-0 flex-col-reverse sm:flex-row">
                 <Button
                     variant="secondary"
                     onClick={onClose}
-                    className="px-8 py-3.5 text-sm font-bold shadow-sm"
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 text-sm sm:text-base font-semibold shadow-sm"
                 >
                     Cancel
                 </Button>
@@ -42,7 +42,7 @@ export function ConfirmDialog({
                         onConfirm();
                         onClose();
                     }}
-                    className={`px-8 py-3.5 text-sm font-bold border-none ${!isDestructive ? 'shadow-[0_8px_16px_var(--shadow-color)]' : 'shadow-red-500/30'}`}
+                    className={`w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 text-sm sm:text-base font-semibold border-none ${!isDestructive ? 'shadow-[0_8px_16px_var(--shadow-color)]' : 'shadow-red-500/30'}`}
                 >
                     {confirmText}
                 </Button>

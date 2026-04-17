@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pencil, Trash2, Eye, UserPen, Check, X, ShieldAlert, CheckCircle2, MessageSquareText, Send } from 'lucide-react';
+import { Loading } from './Loading';
 
 export type AdminActionVariant = 'approve' | 'reject' | 'suspend' | 'unsuspend' | 'resolve' | 'reapprove' | 'editMessage' | 'mail';
 
@@ -60,7 +61,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                         e.stopPropagation();
                         onView();
                     }}
-                    className="text-primary cursor-pointer hover:text-primary hover:bg-primary/10 border border-primary/20 rounded-sm transition-all shadow-xs active:scale-95 group relative flex items-center gap-2"
+                    className="text-primary cursor-pointer hover:text-primary hover:bg-primary/10 border border-primary/20 rounded-lg transition-all shadow-xs active:scale-95 group relative flex items-center gap-2"
                     title="View"
                 >
                     <Eye className="w-4 h-4" />
@@ -74,7 +75,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                         e.stopPropagation();
                         onEdit();
                     }}
-                    className="text-primary cursor-pointer hover:text-primary px-3 py-2.5 hover:bg-primary/10 border border-primary/20 rounded-sm transition-all shadow-xs active:scale-95 group relative flex items-center gap-2"
+                    className="text-primary cursor-pointer hover:text-primary px-3 py-2.5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all shadow-xs active:scale-95 group relative flex items-center gap-2"
                     title={editTitle}
                 >
                     <div className="flex items-center gap-2">
@@ -101,11 +102,11 @@ export const TableActions: React.FC<TableActionsProps> = ({
                             action.onClick();
                         }}
                         disabled={action.disabled || action.loading}
-                        className={`${config.color} cursor-pointer px-3 py-2.5 border border-current/20 rounded-sm transition-all shadow-xs active:scale-95 disabled:opacity-50 group relative flex items-center gap-2`}
+                        className={`${config.color} cursor-pointer px-3 py-2.5 border border-current/20 rounded-lg transition-all shadow-xs active:scale-95 disabled:opacity-50 group relative flex items-center gap-2`}
                         title={label}
                     >
                         {action.loading ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+                            <Loading size="xs" />
                         ) : (
                             <Icon className="w-4 h-4" />
                         )}
@@ -121,11 +122,11 @@ export const TableActions: React.FC<TableActionsProps> = ({
                         onDelete();
                     }}
                     disabled={isDeleting}
-                    className="text-red-600 cursor-pointer hover:bg-red-500/50 px-3 py-2.5 border border-red-500/20 rounded-sm transition-all shadow-xs active:scale-95 disabled:opacity-50 group flex items-center gap-2"
+                    className="text-red-600 cursor-pointer hover:bg-red-500/50 px-3 py-2.5 border border-red-500/20 rounded-lg transition-all shadow-xs active:scale-95 disabled:opacity-50 group flex items-center gap-2"
                     title={deleteTitle}
                 >
                     {isDeleting ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+                        <Loading size="xs" />
                     ) : (
                         <Trash2 className="w-4 h-4" />
                     )}

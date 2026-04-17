@@ -207,37 +207,37 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
                 {mode === 'CREATE' && (
                     <div className="bg-card -mx-6 px-6 py-4 border-b border-border">
                         <Label className="text-[10px] uppercase font-black tracking-widest text-primary/70 mb-3 block">Conversation Type</Label>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             <button
                                 type="button"
                                 onClick={() => setType('DIRECT')}
-                                className={`flex items-center p-4 rounded-xl border-2 transition-all group ${type === 'DIRECT'
+                                className={`flex items-center p-3 sm:p-4 rounded-xl border-2 transition-all group ${type === 'DIRECT'
                                     ? 'border-primary bg-primary/5 ring-4 ring-primary/5'
                                     : 'border-border bg-card hover:border-border'
                                     }`}
                             >
-                                <div className={`p-3 rounded-lg mr-4 transition-colors ${type === 'DIRECT' ? 'bg-primary text-foreground' : 'bg-background/50 text-primary border border-primary group-hover:bg-background/50'}`}>
-                                    <UserIcon size={24} />
+                                <div className={`p-2.5 sm:p-3 rounded-lg mr-3 sm:mr-4 transition-colors ${type === 'DIRECT' ? 'bg-primary text-foreground' : 'bg-background/50 text-primary border border-primary group-hover:bg-background/50'}`}>
+                                    <UserIcon size={20} className="sm:w-6 sm:h-6" />
                                 </div>
                                 <div className="text-left">
-                                    <span className={`block text-sm font-bold ${type === 'DIRECT' ? 'text-primary' : 'text-foreground'}`}>Direct Message</span>
-                                    <span className="text-[11px] text-foreground/70 font-medium tracking-tight">1-on-1 private chat</span>
+                                    <span className={`block text-xs sm:text-sm font-bold ${type === 'DIRECT' ? 'text-primary' : 'text-foreground'}`}>Direct Message</span>
+                                    <span className="text-[10px] sm:text-[11px] text-foreground/70 font-medium tracking-tight">1-on-1 private chat</span>
                                 </div>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setType('GROUP')}
-                                className={`flex items-center p-4 rounded-xl border-2 transition-all group ${type === 'GROUP'
+                                className={`flex items-center p-3 sm:p-4 rounded-xl border-2 transition-all group ${type === 'GROUP'
                                     ? 'border-primary bg-primary/5 ring-4 ring-primary/5'
                                     : 'border-border bg-card hover:border-border'
                                     }`}
                             >
-                                <div className={`p-3 rounded-lg mr-4 transition-colors ${type === 'GROUP' ? 'bg-primary text-foreground' : 'bg-background/50 text-primary border border-primary group-hover:bg-background/50'}`}>
-                                    <Users size={24} />
+                                <div className={`p-2.5 sm:p-3 rounded-lg mr-3 sm:mr-4 transition-colors ${type === 'GROUP' ? 'bg-primary text-foreground' : 'bg-background/50 text-primary border border-primary group-hover:bg-background/50'}`}>
+                                    <Users size={20} className="sm:w-6 sm:h-6" />
                                 </div>
                                 <div className="text-left">
-                                    <span className={`block text-sm font-bold ${type === 'GROUP' ? 'text-primary' : 'text-foreground'}`}>Group Chat</span>
-                                    <span className="text-[11px] text-foreground/70 font-medium tracking-tight">Chat with multiple people</span>
+                                    <span className={`block text-xs sm:text-sm font-bold ${type === 'GROUP' ? 'text-primary' : 'text-foreground'}`}>Group Chat</span>
+                                    <span className="text-[10px] sm:text-[11px] text-foreground/70 font-medium tracking-tight">Chat with multiple people</span>
                                 </div>
                             </button>
                         </div>

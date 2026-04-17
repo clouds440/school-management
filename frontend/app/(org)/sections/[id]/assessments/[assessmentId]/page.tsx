@@ -12,6 +12,7 @@ import { Modal } from '@/components/ui/Modal';
 import GradingForm from '@/components/forms/GradingForm';
 import { BulkGradingModal } from '@/components/forms/BulkGradingModal';
 import { BrandIcon } from '@/components/ui/Brand';
+import { Loading } from '@/components/ui/Loading';
 
 export default function AssessmentDetailPage() {
     const { token, user } = useAuth();
@@ -67,7 +68,7 @@ export default function AssessmentDetailPage() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center p-12 h-[60vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <Loading size="lg" />
             </div>
         );
     }
@@ -77,7 +78,7 @@ export default function AssessmentDetailPage() {
     return (
         <div className="flex flex-col w-full space-y-8">
             {/* Assessment Header */}
-            <div className="bg-card border border-border rounded-sm p-8 md:p-10 shadow-2xl relative overflow-hidden">
+            <div className="bg-card border border-border rounded-lg p-8 md:p-10 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none text-primary">
                     <Trophy className="w-40 h-40" />
                 </div>
@@ -85,7 +86,7 @@ export default function AssessmentDetailPage() {
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-3">
-                            <span className="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-[10px] font-black uppercase tracking-widest italic rounded-sm">
+                            <span className="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-[10px] font-black uppercase tracking-widest italic rounded-lg">
                                 {assessment.type}
                             </span>
                             <span className="text-[10px] font-bold text-card-text/40 uppercase tracking-widest leading-none">
@@ -121,7 +122,7 @@ export default function AssessmentDetailPage() {
                                 href={assessment.externalLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-4 py-2 bg-card/40 hover:bg-card border border-border rounded-sm text-xs font-bold transition-colors text-blue-400 hover:text-blue-300 shadow-sm"
+                                className="flex items-center gap-2 px-4 py-2 bg-card/40 hover:bg-card border border-border rounded-lg text-xs font-bold transition-colors text-blue-400 hover:text-blue-300 shadow-sm"
                             >
                                 <LinkIcon className="w-4 h-4" />
                                 External Resource
@@ -133,7 +134,7 @@ export default function AssessmentDetailPage() {
                                 href={getPublicUrl(file.path)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-sm text-xs font-bold transition-colors text-primary shadow-sm"
+                                className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg text-xs font-bold transition-colors text-primary shadow-sm"
                             >
                                 <Download className="w-4 h-4" />
                                 <div className="flex flex-col text-left leading-none">
@@ -148,7 +149,7 @@ export default function AssessmentDetailPage() {
 
             {/* Grading Table (Teachers & Admins) */}
             {isTeacherOrAdmin && (
-                <div className="bg-card border border-border rounded-sm shadow-xl overflow-hidden">
+                <div className="bg-card border border-border rounded-lg shadow-xl overflow-hidden">
                     <div className="p-6 border-b border-border bg-primary/5 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Users className="w-5 h-5 text-primary" />
@@ -157,7 +158,7 @@ export default function AssessmentDetailPage() {
                         {canGrade && (
                             <button
                                 onClick={() => setShowBulkGrading(true)}
-                                className="px-4 py-2 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white text-[10px] font-black uppercase tracking-widest italic rounded-sm transition-colors shadow-sm active:scale-95"
+                                className="px-4 py-2 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground text-[10px] font-black uppercase tracking-widest italic rounded-lg transition-colors shadow-sm active:scale-95"
                             >
                                 Grade All
                             </button>
@@ -257,7 +258,7 @@ export default function AssessmentDetailPage() {
                                                             e.stopPropagation();
                                                             setSelectedStudentId(student.id);
                                                         }}
-                                                        className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white text-[10px] font-black uppercase tracking-widest italic rounded-sm border border-primary/20 transition-all shadow-sm active:scale-95 z-10 relative"
+                                                        className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-[10px] font-black uppercase tracking-widest italic rounded-lg border border-primary/20 transition-all shadow-sm active:scale-95 z-10 relative"
                                                     >
                                                         {grade ? 'Update Grade' : 'Assign Grade'}
                                                     </button>
@@ -274,7 +275,7 @@ export default function AssessmentDetailPage() {
 
             {/* Student View: My Performance */}
             {!isTeacherOrAdmin && (
-                <div className="bg-card border border-border rounded-sm shadow-xl p-8 mt-4">
+                <div className="bg-card border border-border rounded-lg shadow-xl p-8 mt-4">
                     <h2 className="text-xl font-black uppercase italic tracking-wider mb-6 flex items-center gap-3">
                         <Trophy className="w-5 h-5 text-primary" /> My Performance
                     </h2>
@@ -287,7 +288,7 @@ export default function AssessmentDetailPage() {
 
                         return (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="bg-card/40 border border-border p-6 rounded-sm">
+                                <div className="bg-card/40 border border-border p-6 rounded-lg">
                                     <p className="text-[10px] font-black text-card-text/40 uppercase tracking-widest mb-2">Grade</p>
                                     <p className="text-3xl font-black italic text-primary">
                                         {myGrade ? `${myGrade.marksObtained} / ${assessment.totalMarks}` : 'Pending'}
@@ -298,7 +299,7 @@ export default function AssessmentDetailPage() {
                                         </p>
                                     )}
                                 </div>
-                                <div className="bg-card/40 border border-border p-6 rounded-sm">
+                                <div className="bg-card/40 border border-border p-6 rounded-lg">
                                     <p className="text-[10px] font-black text-card-text/40 uppercase tracking-widest mb-3">Submission Status</p>
                                     {mySubmission ? (
                                         <div>

@@ -172,7 +172,7 @@ export default function OrgMailPage() {
         {
             header: 'Category',
             accessor: (row: MailItem) => (
-                <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2 py-1 rounded-sm border border-indigo-100/50">
+                <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100/50">
                     <Tag className="w-3 h-3" />
                     {row.category.replace('_', ' ')}
                 </span>
@@ -195,7 +195,7 @@ export default function OrgMailPage() {
                         {row._count?.messages || 0}
                     </div>
                     {row.unreadCount > 0 && (
-                        <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-[9px] font-black animate-in fade-in zoom-in duration-300">
+                        <span className="bg-red-500 text-red-50 px-2 py-0.5 rounded-full text-[9px] font-black animate-in fade-in zoom-in duration-300">
                             {row.unreadCount} new
                         </span>
                     )}
@@ -215,7 +215,7 @@ export default function OrgMailPage() {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="bg-card/80 backdrop-blur-2xl p-1 md:p-2 rounded-sm border border-border shadow-xl flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="bg-card/80 backdrop-blur-2xl p-1 md:p-2 rounded-lg border border-border shadow-xl flex flex-col flex-1 min-h-0 overflow-hidden">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-2 shrink-0">
                     <div className="flex flex-1 items-center gap-4 w-full">
                         <div className="w-full md:w-64">
@@ -241,13 +241,15 @@ export default function OrgMailPage() {
                             className="bg-card/60 border-border"
                         />
                     </div>
-                    <Button
-                        onClick={() => setNewMailOpen(true)}
-                        icon={MailPlus}
-                        className="flex items-center justify-center gap-2 px-8 bg-primary text-primary-text rounded-sm text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 shrink-0 border-none"
-                    >
-                        New Mail
-                    </Button>
+                    <div className='w-full sm:w-auto'>
+                        <Button
+                            onClick={() => setNewMailOpen(true)}
+                            icon={MailPlus}
+                            className="flex items-center w-full justify-center gap-2 px-8 bg-primary text-primary-text rounded-lg text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 shrink-0 border-none"
+                        >
+                            New Mail
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="relative overflow-x-hidden flex-1 min-h-0">

@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { useTheme } from '@/context/ThemeContext';
 import { ThemeMode } from '@/types';
 import SessionManagement from '@/components/SessionManagement';
+import { Loading } from '@/components/ui/Loading';
 
 export default function SettingsPage() {
     const { token, user } = useAuth();
@@ -148,40 +149,41 @@ export default function SettingsPage() {
     if (loading || redirecting) {
         return (
             <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <Loading size="md" />
             </div>
         );
     }
 
     return (
         <div className="flex flex-1 flex-col max-w-7xl mx-auto w-full">
-            <div className="mb-2">
-                <div className="mt-2 flex items-center gap-5">
-                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-sm border border-primary/20 shadow-xl">
-                        <Settings className="w-10 h-10 text-primary" />
+            <div className="mb-6 md:mb-8">
+                <div className="mt-2 flex items-center gap-4 md:gap-6">
+                    <div className="relative p-3 md:p-4 bg-linear-to-br from-primary/10 to-primary/5 backdrop-blur-xl rounded-2xl border border-primary/20 shadow-xl">
+                        <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                        <Settings className="w-8 h-8 md:w-10 md:h-10 text-primary relative z-10" />
                     </div>
                     <div>
-                        <h1 className="text-5xl font-black text-primary tracking-tight drop-shadow-lg">Settings</h1>
-                        <p className="text-muted-foreground font-bold opacity-80 mt-1 uppercase tracking-wider">Organization Profile & Configuration</p>
+                        <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight">Settings</h1>
+                        <p className="text-muted-foreground font-semibold opacity-70 mt-1 uppercase tracking-wider text-xs md:text-sm">Organization Profile & Configuration</p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-2xl border border-border p-6 md:p-10 mb-10 text-card-foreground">
+            <div className="bg-linear-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 p-6 md:p-10 mb-10 text-card-foreground">
                 {orgData?.status === 'REJECTED' && (
-                    <div className="mb-8 p-6 bg-destructive/10 border border-destructive/20 rounded-sm flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-destructive/20 rounded-sm text-destructive">
-                                <ShieldOff className="w-6 h-6" />
+                    <div className="mb-6 md:mb-8 p-4 md:p-6 bg-destructive/10 border border-destructive/20 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
+                        <div className="flex items-center gap-3 md:gap-4">
+                            <div className="p-3 bg-destructive/20 rounded-xl text-destructive">
+                                <ShieldOff className="w-5 h-5 md:w-6 md:h-6" />
                             </div>
                             <div>
-                                <h4 className="text-lg font-black text-destructive leading-tight">Your application was rejected</h4>
+                                <h4 className="text-base md:text-lg font-black text-destructive leading-tight">Your application was rejected</h4>
                                 <div className="mt-2">
                                     <MarkdownRenderer
                                         content={orgData?.statusHistory && orgData.statusHistory.length > 0
                                             ? orgData.statusHistory[orgData.statusHistory.length - 1].message
                                             : 'Please correct the details below and re-submit for review.'}
-                                        className="text-sm text-destructive font-medium prose prose-red dark:prose-invert prose-sm max-w-none opacity-80"
+                                        className="text-xs md:text-sm text-destructive font-medium prose prose-red dark:prose-invert prose-sm max-w-none opacity-80"
                                     />
                                 </div>
                             </div>
@@ -189,10 +191,10 @@ export default function SettingsPage() {
                         <button
                             onClick={handleReapply}
                             disabled={reapplying}
-                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-8 py-3 rounded-sm font-bold transition-all shadow-lg hover:shadow-destructive/20 active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-6 md:px-8 py-2 md:py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-destructive/20 active:scale-95 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap text-sm md:text-base"
                         >
                             {reapplying ? (
-                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+                                <Loading size="xs" />
                             ) : (
                                 <RefreshCw className="w-4 h-4" />
                             )}
@@ -202,10 +204,10 @@ export default function SettingsPage() {
                 )}
 
 
-                <form onSubmit={handleSubmit} className="space-y-8">
+                <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
                     {/* Logo section */}
                     <div className="flex flex-col items-center gap-2 pb-6 border-b border-border/50">
-                        <Label className="mb-1">Organization Logo</Label>
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Organization Logo</Label>
                         <PhotoUploadPicker
                             currentImageUrl={orgData?.logoUrl}
                             onFileReady={handleLogoReady}
@@ -213,16 +215,16 @@ export default function SettingsPage() {
                             hint="Click to change logo — saved when you click Save Settings"
                         />
                         {pendingLogoFile && (
-                            <p className="text-xs text-primary font-bold flex items-center gap-1">
+                            <p className="text-xs text-primary font-semibold flex items-center gap-1">
                                 <CheckCircle className="w-3.5 h-3.5" />
                                 New logo ready — will upload on save
                             </p>
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
-                        <div>
-                            <Label>Organization Name</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 pt-6">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Organization Name</Label>
                             <Input
                                 type="text"
                                 name="name"
@@ -231,11 +233,12 @@ export default function SettingsPage() {
                                 required
                                 icon={School}
                                 placeholder="School Name"
+                                className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                             />
                         </div>
 
-                        <div>
-                            <Label>Primary Accent Color</Label>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Primary Accent Color</Label>
                             <div className="flex items-center gap-2">
                                 <div className="flex-1">
                                     <input
@@ -247,18 +250,18 @@ export default function SettingsPage() {
                                             // live preview
                                             setPrimaryColor(newPrimary).catch(() => { });
                                         }}
-                                        className="w-full h-12 rounded-sm border border-border cursor-pointer"
+                                        className="w-full h-12 rounded-xl border border-border/50 cursor-pointer"
                                     />
-                                    <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase tracking-widest leading-none">HEX: {formData.accentColor.primary}</p>
+                                    <p className="text-[10px] text-muted-foreground mt-1 font-semibold uppercase tracking-wider leading-none">HEX: {formData.accentColor.primary}</p>
                                 </div>
                             </div>
                             <p className="text-xs text-muted-foreground mt-2 leading-relaxed font-medium">
                                 Pick accent color.
                             </p>
 
-                            <div className="mt-4">
-                                <Label>Theme Mode</Label>
-                                <div className="flex items-center gap-3 mt-2">
+                            <div className="mt-4 space-y-2">
+                                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Theme Mode</Label>
+                                <div className="flex items-center gap-2 md:gap-3">
                                     {[ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK].map(m => (
                                         <button
                                             key={m}
@@ -267,7 +270,7 @@ export default function SettingsPage() {
                                                 setFormData({ ...formData, accentColor: { ...formData.accentColor, mode: m } });
                                                 setThemeMode(m).catch(() => { });
                                             }}
-                                            className={`px-3 py-2 rounded-md border text-sm font-bold transition-all ${themeMode === m ? 'bg-primary text-primary-foreground border-primary shadow-lg' : 'bg-secondary/50 text-muted-foreground border-border hover:bg-secondary'}`}>
+                                            className={`px-3 py-2 rounded-xl border text-xs md:text-sm font-semibold transition-all ${themeMode === m ? 'bg-primary text-primary-foreground border-primary shadow-lg' : 'bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary'}`}>
                                             {m === ThemeMode.SYSTEM ? 'System' : m === ThemeMode.LIGHT ? 'Light' : 'Dark'}
                                         </button>
                                     ))}
@@ -275,8 +278,8 @@ export default function SettingsPage() {
                             </div>
                         </div>
 
-                        <div>
-                            <Label>Location</Label>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Location</Label>
                             <Input
                                 type="text"
                                 name="location"
@@ -285,11 +288,12 @@ export default function SettingsPage() {
                                 required
                                 icon={MapPin}
                                 placeholder="City, State"
+                                className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                             />
                         </div>
 
-                        <div>
-                            <Label>Contact Email</Label>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Contact Email</Label>
                             <Input
                                 type="email"
                                 name="contactEmail"
@@ -297,11 +301,12 @@ export default function SettingsPage() {
                                 onChange={handleChange}
                                 icon={Mail}
                                 placeholder="contact@example.com"
+                                className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                             />
                         </div>
 
-                        <div>
-                            <Label>Phone Number</Label>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Phone Number</Label>
                             <Input
                                 type="text"
                                 name="phone"
@@ -309,6 +314,7 @@ export default function SettingsPage() {
                                 onChange={handleChange}
                                 icon={Phone}
                                 placeholder="+1 (555) 000-0000"
+                                className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                             />
                         </div>
                     </div>
@@ -316,7 +322,7 @@ export default function SettingsPage() {
                     <div className="pt-4 border-t border-border/50 flex justify-end">
                         <Button
                             type="submit"
-                            className="px-10"
+                            className="h-12 md:h-14 px-8 md:px-10 font-semibold shadow-lg hover:shadow-xl transition-shadow"
                             icon={Save}
                         >
                             SAVE SETTINGS

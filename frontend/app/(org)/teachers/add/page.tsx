@@ -22,7 +22,7 @@ export default function AddTeacherPage() {
         <div className="flex flex-col">
             <div className="mb-6">
                 <div className="flex items-center gap-5">
-                    <div className="p-4 bg-primary/10 backdrop-blur-md ml-2 rounded-sm md:rounded-sm border border-border shadow-xl shrink-0">
+                    <div className="p-4 bg-primary/10 backdrop-blur-md ml-2 rounded-lg md:rounded-lg border border-border shadow-xl shrink-0">
                         <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                     </div>
                     <div>
@@ -32,7 +32,7 @@ export default function AddTeacherPage() {
                 </div>
             </div>
 
-            <div className="bg-card rounded-sm shadow-[0_8px_30px_var(--shadow-color)] border border-border p-6 md:p-12 mb-10">
+            <div className="bg-card rounded-lg shadow-[0_8px_30px_var(--shadow-color)] border border-border p-6 md:p-12 mb-10">
                 <TeacherForm />
             </div>
         </div>

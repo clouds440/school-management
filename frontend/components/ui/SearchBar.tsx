@@ -41,13 +41,13 @@ export function SearchBar({ value, onChange, placeholder = 'Search...', delay = 
         <div className={cn("relative group w-full max-w-sm", className)}>
             <input
                 type="text"
-                className="block w-full pl-11 pr-4 h-12 bg-card/90 backdrop-blur-md border border-border rounded-sm text-sm font-bold text-foreground placeholder-muted-foreground focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary focus:bg-card transition-all duration-300 shadow-sm"
+                className="block w-full pl-11 pr-4 h-12 bg-linear-to-br from-card/90 via-card/80 to-card/90 backdrop-blur-xl border border-border/50 rounded-xl text-sm md:text-base font-semibold text-foreground placeholder-muted-foreground focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary/60 focus:bg-card transition-all duration-300 shadow-lg"
                 placeholder={placeholder}
                 value={localValue}
                 onChange={(e) => setLocalValue(e.target.value)}
             />
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                <Search className="h-4 w-4 text-muted-foreground group-focus-within:text-foreground transition-colors" />
+                <Search className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
             </div>
         </div>
     );

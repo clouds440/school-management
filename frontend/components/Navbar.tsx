@@ -12,6 +12,7 @@ import { AnnouncementDropdown } from './announcements/AnnouncementDropdown';
 import { useTheme } from '@/context/ThemeContext';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { ThemeMode } from '@/types';
+import { DASHBOARD_MODULES } from '@/lib/constants';
 
 
 export default function Navbar() {
@@ -22,8 +23,7 @@ export default function Navbar() {
     const { themeMode, setThemeMode } = useTheme();
     const chatUnread = state.stats.chat?.unread || 0;
 
-    const isDashboard = pathname?.startsWith('/admin/') ||
-        pathname?.split('/').length > 2; // Matches /something/deep OR /admin/something
+    const isDashboard = new RegExp(`^/(${DASHBOARD_MODULES.join('|')})(/|$)`).test(pathname);
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-100 flex items-center justify-between pl-2 pr-4 py-3 md:pr-10 backdrop-blur-xl bg-navbar border-b border-border shadow-sm h-16 transition-all duration-300 text-navbar-foreground">
@@ -37,7 +37,7 @@ export default function Navbar() {
                                 toggleMobileSidebar();
                             }
                         }}
-                        className="relative p-2 hover:bg-accent rounded-sm transition-colors text-muted-foreground outline-none focus-visible:ring-2 ring-primary"
+                        className="relative p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground outline-none focus-visible:ring-2 ring-primary"
                         title={mounted ? (isDesktop ? (isExpanded ? "Collapse Sidebar" : "Expand Sidebar") : (isMobileOpen ? "Close Menu" : "Open Menu")) : "Menu"}
                     >
                         {isDesktop ? (<Menu className="w-6 h-6" />) : (isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />)}
@@ -71,10 +71,10 @@ export default function Navbar() {
                         <NotificationDropdown />
                     </div>
                 ) : (
-                    <div className="flex items-center p-1 rounded-sm bg-secondary/20 shadow-inner border border-secondary/10">
+                    <div className="flex items-center p-1 rounded-lg bg-secondary/20 shadow-inner border border-secondary/10">
                         <Link
                             href="/login"
-                            className={`flex items-center mr-1 md:mr-2 space-x-2 px-3 py-2 md:px-5 md:py-2.5 rounded-sm transition-all duration-300 font-medium text-xs md:text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary ${pathname === '/login'
+                            className={`flex items-center mr-1 md:mr-2 space-x-2 px-3 py-2 md:px-5 md:py-2.5 rounded-lg transition-all duration-300 font-medium text-xs md:text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary ${pathname === '/login'
                                 ? 'bg-primary text-primary-foreground shadow-lg'
                                 : 'text-foreground hover:text-primary hover:bg-card'
                                 }`}
@@ -84,7 +84,7 @@ export default function Navbar() {
                         </Link>
                         <Link
                             href="/register"
-                            className={`flex items-center space-x-2 px-3 py-2 md:px-5 md:py-2.5 rounded-sm transition-all duration-300 font-medium text-xs md:text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary ${pathname === '/register'
+                            className={`flex items-center space-x-2 px-3 py-2 md:px-5 md:py-2.5 rounded-lg transition-all duration-300 font-medium text-xs md:text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary ${pathname === '/register'
                                 ? 'bg-primary text-primary-foreground shadow-lg'
                                 : 'text-foreground hover:text-primary hover:bg-card'
                                 }`}

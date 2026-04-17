@@ -23,7 +23,7 @@ export default function AddStudentPage() {
         <div className="flex flex-col">
             <div className="mb-6 p-2">
                 <div className="flex items-center gap-5">
-                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-sm border border-border shadow-xl shrink-0">
+                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-lg border border-border shadow-xl shrink-0">
                         <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                     </div>
                     <div>
@@ -33,7 +33,7 @@ export default function AddStudentPage() {
                 </div>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-xl rounded-sm shadow-2xl border border-border p-6 md:p-12 text-card-text">
+            <div className="bg-card/80 backdrop-blur-xl rounded-lg shadow-2xl border border-border p-6 md:p-12 text-card-text">
                 <StudentForm />
             </div>
         </div>

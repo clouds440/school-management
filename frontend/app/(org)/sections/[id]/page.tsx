@@ -8,6 +8,7 @@ import { Section, Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
 import { useParams, useRouter } from 'next/navigation';
 import AssessmentList from '@/components/sections/AssessmentList';
+import { Loading } from '@/components/ui/Loading';
 
 export default function SectionDetailPage() {
     const { token, user } = useAuth();
@@ -41,7 +42,7 @@ export default function SectionDetailPage() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center p-12 h-[60vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <Loading size="lg" />
             </div>
         );
     }
@@ -51,18 +52,18 @@ export default function SectionDetailPage() {
     return (
         <div className="flex flex-col w-full space-y-8">
             {/* Header Card - Premium Design */}
-            <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl border border-border p-2 md:p-4 relative overflow-hidden group">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-2 md:p-4 relative overflow-hidden group">
                 {/* Decorative background element */}
                 <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-700"></div>
 
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                     <div className="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
-                        <div className="p-6 bg-primary/10 rounded-sm shadow-inner border border-primary/20 transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                        <div className="p-6 bg-primary/10 rounded-lg shadow-inner border border-primary/20 transform rotate-3 hover:rotate-0 transition-transform duration-500">
                             <BookOpen className="w-8 h-8 text-primary" />
                         </div>
                         <div>
                             <div className="flex items-center gap-3 justify-center md:justify-start mb-2">
-                                <span className="px-3 py-1 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] italic rounded-sm shadow-lg shadow-primary/20">
+                                <span className="px-3 py-1 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-[0.2em] italic rounded-lg shadow-lg shadow-primary/20">
                                     SECTION ID: {section.id.substring(0, 8).toUpperCase()}
                                 </span>
                             </div>
@@ -97,10 +98,10 @@ export default function SectionDetailPage() {
             {/* Main Content Area */}
             <div className="grid grid-cols-1 gap-8">
                 {/* Assessments Panel */}
-                <div className="bg-card text-card-text rounded-sm shadow-2xl border border-border overflow-hidden transform transition-all hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)]">
+                <div className="bg-card text-card-text rounded-lg shadow-2xl border border-border overflow-hidden transform transition-all hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)]">
                     <div className="p-8 border-b border-border bg-linear-to-r from-primary/10 to-transparent flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="p-2.5 bg-primary/20 rounded-sm">
+                            <div className="p-2.5 bg-primary/20 rounded-lg">
                                 <Trophy className="w-6 h-6 text-primary" />
                             </div>
                             <div>

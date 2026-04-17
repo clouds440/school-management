@@ -119,7 +119,7 @@ export default function Overview({ sections, grades, assessments = [] }: { secti
                                         </div>
                                         <Link
                                             href={`/students/${user.userName}?tab=courses`}
-                                            className="p-2.5 bg-slate-900 text-white hover:bg-indigo-600 rounded-xl transition-all shadow-lg active:scale-90"
+                                            className="p-2.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl transition-all shadow-lg active:scale-90"
                                         >
                                             <CheckCircle className="w-5 h-5" />
                                         </Link>
@@ -234,7 +234,7 @@ export default function Overview({ sections, grades, assessments = [] }: { secti
                                     <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">
                                         {idx === 0 ? 'Upcoming • 10:00 AM' : 'Tomorrow • 09:30 AM'}
                                     </p>
-                                    <p className="text-sm font-black text-white leading-tight italic group-hover/sched:text-indigo-400 transition-colors uppercase tracking-tight">{sec.name}</p>
+                                    <p className="text-sm font-black text-primary-foreground leading-tight italic group-hover/sched:text-primary/80 transition-colors uppercase tracking-tight">{sec.name}</p>
                                     <p className="text-[9px] text-muted-foreground/60 mt-1.5 font-bold uppercase tracking-widest flex items-center gap-1.5">
                                         <MapPinHouse className="w-3 h-3 opacity-40" />
                                         {sec.room || 'Main Hall B'}

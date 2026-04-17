@@ -166,395 +166,422 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
     const isWatchMode = !isProfile && currentUser?.role === Role.TEACHER;
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-12" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 md:space-y-12" noValidate>
             {/* Enrollment Details */}
-            <div className="bg-card p-6 rounded-sm border border-border text-card-text">
-                <div className="flex flex-col md:flex-row gap-8 items-start mb-10">
-                    <div className="shrink-0 group relative">
-                        <PhotoUploadPicker
-                            onFileReady={handlePhotoReady}
-                            type="user"
-                            currentImageUrl={initialData?.user?.avatarUrl}
-                            disabled={isWatchMode}
-                        />
-                        {!isWatchMode && (
-                            <p className="mt-3 text-[10px] text-center font-black uppercase tracking-widest text-card-text/40 group-hover:text-primary transition-colors">
-                                {studentId ? 'Update Photo' : 'Upload Photo'}
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                        <div className="space-y-2">
-                            <Label>Full Name</Label>
-                            <Input
-                                type="text"
-                                {...register('name')}
-                                onChange={(isProfile || isWatchMode) ? undefined : register('name').onChange}
-                                readOnly={isProfile || isWatchMode}
-                                value={watch('name') || ''}
-                                error={!!errors.name}
-                                disabled={isProfile || isWatchMode}
-                                icon={User}
-                                placeholder="Alex Johnson"
-                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                            />
-                            {errors.name && <p className="mt-1 text-xs text-red-500 font-bold">{errors.name.message}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Account Email</Label>
-                            <Input
-                                type="email"
-                                {...register('email')}
-                                onChange={(!!studentId || isProfile || isWatchMode) ? undefined : register('email').onChange}
-                                readOnly={!!studentId || isProfile || isWatchMode}
-                                value={watch('email') || ''}
-                                error={!!errors.email}
-                                disabled={!!studentId || isProfile || isWatchMode}
-                                icon={Mail}
-                                placeholder="alex.j@example.com"
-                                className={studentId || isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                            />
-                            {errors.email && <p className="mt-1 text-xs text-red-500 font-bold">{errors.email.message}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Login Password</Label>
-                            <Input
-                                type="password"
-                                {...register('password')}
-                                error={!!errors.password}
+            <div className="bg-linear-to-br from-card via-card/95 to-card/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
+                <div className="p-6 md:p-8">
+                    <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start mb-8 md:mb-10">
+                        <div className="shrink-0 group relative mx-auto md:mx-0">
+                            <PhotoUploadPicker
+                                onFileReady={handlePhotoReady}
+                                type="user"
+                                currentImageUrl={initialData?.user?.avatarUrl}
                                 disabled={isWatchMode}
-                                icon={Lock}
-                                placeholder={studentId ? "Leave blank to keep current" : "Min 8 chars, 1 upper, 1 lower, 1 num"}
                             />
-                            {errors.password && <p className="mt-1 text-xs text-red-500 font-bold">{errors.password.message}</p>}
+                            {!isWatchMode && (
+                                <p className="mt-3 text-xs text-center font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-primary transition-colors">
+                                    {studentId ? 'Update Photo' : 'Upload Photo'}
+                                </p>
+                            )}
                         </div>
 
-                        <div className="space-y-2">
-                            <Label>Registration Number <span className="text-red-500">*</span></Label>
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Full Name</Label>
+                                <Input
+                                    type="text"
+                                    {...register('name')}
+                                    onChange={(isProfile || isWatchMode) ? undefined : register('name').onChange}
+                                    readOnly={isProfile || isWatchMode}
+                                    value={watch('name') || ''}
+                                    error={!!errors.name}
+                                    disabled={isProfile || isWatchMode}
+                                    icon={User}
+                                    placeholder="Alex Johnson"
+                                    className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                                />
+                                {errors.name && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.name.message}</p>}
+                            </div>
+
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Account Email</Label>
+                                <Input
+                                    type="email"
+                                    {...register('email')}
+                                    onChange={(!!studentId || isProfile || isWatchMode) ? undefined : register('email').onChange}
+                                    readOnly={!!studentId || isProfile || isWatchMode}
+                                    value={watch('email') || ''}
+                                    error={!!errors.email}
+                                    disabled={!!studentId || isProfile || isWatchMode}
+                                    icon={Mail}
+                                    placeholder="alex.j@example.com"
+                                    className={studentId || isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                                />
+                                {errors.email && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.email.message}</p>}
+                            </div>
+
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Login Password</Label>
+                                <Input
+                                    type="password"
+                                    {...register('password')}
+                                    error={!!errors.password}
+                                    disabled={isWatchMode}
+                                    icon={Lock}
+                                    placeholder={studentId ? "Leave blank to keep current" : "Min 8 chars, 1 upper, 1 lower, 1 num"}
+                                    className="font-medium"
+                                />
+                                {errors.password && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.password.message}</p>}
+                            </div>
+
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Registration Number <span className="text-red-500">*</span></Label>
+                                <Input
+                                    type="text"
+                                    {...register('registrationNumber')}
+                                    onChange={(isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)) ? undefined : register('registrationNumber').onChange}
+                                    readOnly={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
+                                    value={watch('registrationNumber') || ''}
+                                    error={!!errors.registrationNumber}
+                                    disabled={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
+                                    icon={Hash}
+                                    placeholder="ST-2026-001"
+                                    className={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                                />
+                                {errors.registrationNumber && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.registrationNumber.message}</p>}
+                            </div>
+
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Roll Number <span className="text-red-500">*</span></Label>
+                                <Input
+                                    type="text"
+                                    {...register('rollNumber')}
+                                    onChange={(isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)) ? undefined : register('rollNumber').onChange}
+                                    readOnly={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
+                                    value={watch('rollNumber') || ''}
+                                    error={!!errors.rollNumber}
+                                    disabled={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
+                                    icon={Hash}
+                                    placeholder="2026-001"
+                                    className={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                                />
+                                {errors.rollNumber && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.rollNumber.message}</p>}
+                            </div>
+
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Admission Date</Label>
+                                <Input
+                                    type="date"
+                                    {...register('admissionDate')}
+                                    onChange={(isProfile || isWatchMode) ? undefined : register('admissionDate').onChange}
+                                    readOnly={isProfile || isWatchMode}
+                                    value={watch('admissionDate') || ''}
+                                    error={!!errors.admissionDate}
+                                    disabled={isProfile || isWatchMode}
+                                    className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                                />
+                                {errors.admissionDate && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.admissionDate.message}</p>}
+                            </div>
+
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Student Status</Label>
+                                <CustomSelect
+                                    options={[
+                                        { value: StudentStatus.ACTIVE, label: 'Active', icon: ShieldCheck },
+                                        { value: StudentStatus.SUSPENDED, label: 'Suspended', icon: UserX },
+                                        { value: StudentStatus.ALUMNI, label: 'Alumni', icon: GraduationCap }
+                                    ]}
+                                    value={formData.status}
+                                    onChange={(val) => {
+                                        if (isProfile || isWatchMode) return;
+                                        setValue('status', val as StudentStatus);
+                                        trigger('status');
+                                    }}
+                                    error={!!errors.status}
+                                    disabled={isProfile || isWatchMode}
+                                    icon={
+                                        formData.status === StudentStatus.ACTIVE ? ShieldCheck :
+                                            formData.status === StudentStatus.SUSPENDED ? UserX : GraduationCap
+                                    }
+                                />
+                                {errors.status && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.status.message}</p>}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Major / Program <span className="text-red-500">*</span></Label>
                             <Input
                                 type="text"
-                                {...register('registrationNumber')}
-                                onChange={(isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)) ? undefined : register('registrationNumber').onChange}
-                                readOnly={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
-                                value={watch('registrationNumber') || ''}
-                                error={!!errors.registrationNumber}
-                                disabled={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
-                                icon={Hash}
-                                placeholder="ST-2026-001"
-                                className={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                            />
-                            {errors.registrationNumber && <p className="mt-1 text-xs text-red-500 font-bold">{errors.registrationNumber.message}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Roll Number <span className="text-red-500">*</span></Label>
-                            <Input
-                                type="text"
-                                {...register('rollNumber')}
-                                onChange={(isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)) ? undefined : register('rollNumber').onChange}
-                                readOnly={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
-                                value={watch('rollNumber') || ''}
-                                error={!!errors.rollNumber}
-                                disabled={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN)}
-                                icon={Hash}
-                                placeholder="2026-001"
-                                className={isProfile || isWatchMode || (!!studentId && currentUser?.role !== Role.ORG_ADMIN) ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                            />
-                            {errors.rollNumber && <p className="mt-1 text-xs text-red-500 font-bold">{errors.rollNumber.message}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Admission Date</Label>
-                            <Input
-                                type="date"
-                                {...register('admissionDate')}
-                                onChange={(isProfile || isWatchMode) ? undefined : register('admissionDate').onChange}
+                                {...register('major')}
+                                onChange={(isProfile || isWatchMode) ? undefined : register('major').onChange}
                                 readOnly={isProfile || isWatchMode}
-                                value={watch('admissionDate') || ''}
-                                error={!!errors.admissionDate}
+                                value={watch('major') || ''}
+                                error={!!errors.major}
                                 disabled={isProfile || isWatchMode}
-                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
+                                icon={GraduationCap}
+                                placeholder="Computer Science"
+                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
                             />
-                            {errors.admissionDate && <p className="mt-1 text-xs text-red-500 font-bold">{errors.admissionDate.message}</p>}
+                            {errors.major && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.major.message}</p>}
                         </div>
-
-                        <div className="space-y-2">
-                            <Label>Student Status</Label>
-                            <CustomSelect
-                                options={[
-                                    { value: StudentStatus.ACTIVE, label: 'Active', icon: ShieldCheck },
-                                    { value: StudentStatus.SUSPENDED, label: 'Suspended', icon: UserX },
-                                    { value: StudentStatus.ALUMNI, label: 'Alumni', icon: GraduationCap }
-                                ]}
-                                value={formData.status}
-                                onChange={(val) => {
-                                    if (isProfile || isWatchMode) return;
-                                    setValue('status', val as StudentStatus);
-                                    trigger('status');
-                                }}
-                                error={!!errors.status}
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Department</Label>
+                            <Input
+                                type="text"
+                                {...register('department')}
+                                onChange={(isProfile || isWatchMode) ? undefined : register('department').onChange}
+                                readOnly={isProfile || isWatchMode}
+                                value={watch('department') || ''}
+                                error={!!errors.department}
                                 disabled={isProfile || isWatchMode}
-                                icon={
-                                    formData.status === StudentStatus.ACTIVE ? ShieldCheck :
-                                        formData.status === StudentStatus.SUSPENDED ? UserX : GraduationCap
-                                }
+                                icon={BookOpen}
+                                placeholder="Engineering & Tech"
+                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
                             />
-                            {errors.status && <p className="mt-1 text-xs text-red-500 font-bold">{errors.status.message}</p>}
+                            {errors.department && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.department.message}</p>}
                         </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label>Major / Program <span className="text-red-500">*</span></Label>
-                        <Input
-                            type="text"
-                            {...register('major')}
-                            onChange={(isProfile || isWatchMode) ? undefined : register('major').onChange}
-                            readOnly={isProfile || isWatchMode}
-                            value={watch('major') || ''}
-                            error={!!errors.major}
-                            disabled={isProfile || isWatchMode}
-                            icon={GraduationCap}
-                            placeholder="Computer Science"
-                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                        />
-                        {errors.major && <p className="mt-1 text-xs text-red-500 font-bold">{errors.major.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Department</Label>
-                        <Input
-                            type="text"
-                            {...register('department')}
-                            onChange={(isProfile || isWatchMode) ? undefined : register('department').onChange}
-                            readOnly={isProfile || isWatchMode}
-                            value={watch('department') || ''}
-                            error={!!errors.department}
-                            disabled={isProfile || isWatchMode}
-                            icon={BookOpen}
-                            placeholder="Engineering & Tech"
-                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                        />
-                        {errors.department && <p className="mt-1 text-xs text-red-500 font-bold">{errors.department.message}</p>}
                     </div>
                 </div>
             </div>
 
             {/* Academic Placement */}
-            <div className="bg-card p-8 rounded-sm border border-border shadow-sm">
-                <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
-                    <div className="p-2 bg-primary/10 rounded-sm">
-                        <Plus className="w-5 h-5 text-primary" />
+            <div className="bg-linear-to-br from-card via-card/95 to-card/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
+                <div className="bg-linear-to-r from-primary/5 via-primary/10 to-transparent p-6 md:p-8 border-b border-primary/10">
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                            <div className="relative p-3 bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/30 shadow-lg">
+                                <Plus className="w-6 h-6 text-primary" />
+                            </div>
+                        </div>
+                        <h3 className="text-lg md:text-xl font-black text-foreground">Academic Placement</h3>
                     </div>
-                    <h3 className="text-sm font-black uppercase tracking-widest text-card-text">Academic Placement</h3>
                 </div>
 
-                <div className="space-y-2 max-w-2xl">
-                    <Label>Enroll in Sections</Label>
-                    <CustomMultiSelect
-                        options={sections.map(s => ({
-                            value: s.id,
-                            label: `${s.name} ${s.course?.name ? `(${s.course.name})` : ''}`
-                        }))}
-                        values={formData.sectionIds || []}
-                        onChange={(vals) => {
-                            if (isProfile || isWatchMode) return;
-                            setValue('sectionIds', vals);
-                            trigger('sectionIds');
-                        }}
-                        placeholder="Select one or more sections..."
-                        error={!!errors.sectionIds}
-                        disabled={isProfile || isWatchMode}
-                    />
-                    {errors.sectionIds && <p className="mt-1 text-xs text-red-500 font-bold">{errors.sectionIds.message}</p>}
+                <div className="p-6 md:p-8">
+                    <div className="space-y-2 md:space-y-3 max-w-2xl">
+                        <Label>Enroll in Sections</Label>
+                        <CustomMultiSelect
+                            options={sections.map(s => ({
+                                value: s.id,
+                                label: `${s.name} ${s.course?.name ? `(${s.course.name})` : ''}`
+                            }))}
+                            values={formData.sectionIds || []}
+                            onChange={(vals) => {
+                                if (isProfile || isWatchMode) return;
+                                setValue('sectionIds', vals);
+                                trigger('sectionIds');
+                            }}
+                            placeholder="Select one or more sections..."
+                            error={!!errors.sectionIds}
+                            disabled={isProfile || isWatchMode}
+                        />
+                        {errors.sectionIds && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.sectionIds.message}</p>}
+                    </div>
                 </div>
             </div>
 
             {/* Billing & Progress */}
-            <div className="bg-card p-8 rounded-sm border border-border shadow-sm">
-                <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
-                    <div className="p-2 bg-primary/10 rounded-sm">
-                        <DollarSign className="w-5 h-5 text-primary" />
+            <div className="bg-linear-to-br from-card via-card/95 to-card/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
+                <div className="bg-linear-to-r from-primary/5 via-primary/10 to-transparent p-6 md:p-8 border-b border-primary/10">
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                            <div className="relative p-3 bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/30 shadow-lg">
+                                <DollarSign className="w-6 h-6 text-primary" />
+                            </div>
+                        </div>
+                        <h3 className="text-lg md:text-xl font-black text-foreground">Billing & Expected Progress</h3>
                     </div>
-                    <h3 className="text-sm font-black uppercase tracking-widest text-card-text">Billing & Expected Progress</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="space-y-2">
-                        <Label>Annual/Semester Fee <span className="text-red-500">*</span></Label>
-                        <Input
-                            type="number"
-                            {...register('fee')}
-                            onChange={(isProfile || isWatchMode) ? undefined : register('fee').onChange}
-                            readOnly={isProfile || isWatchMode}
-                            value={watch('fee') || ''}
-                            error={!!errors.fee}
-                            disabled={isProfile || isWatchMode}
-                            icon={DollarSign}
-                            placeholder="12000"
-                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                        />
-                        {errors.fee && <p className="mt-1 text-xs text-red-500 font-bold">{errors.fee.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Fee Plan <span className="text-red-500">*</span></Label>
-                        <Input
-                            type="text"
-                            {...register('feePlan')}
-                            onChange={(isProfile || isWatchMode) ? undefined : register('feePlan').onChange}
-                            readOnly={isProfile || isWatchMode}
-                            value={watch('feePlan') || ''}
-                            error={!!errors.feePlan}
-                            disabled={isProfile || isWatchMode}
-                            icon={BookOpen}
-                            placeholder="Standard / Installments"
-                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                        />
-                        {errors.feePlan && <p className="mt-1 text-xs text-red-500 font-bold">{errors.feePlan.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Exp. Graduation</Label>
-                        <Input
-                            type="date"
-                            {...register('graduationDate')}
-                            onChange={(isProfile || isWatchMode) ? undefined : register('graduationDate').onChange}
-                            readOnly={isProfile || isWatchMode}
-                            value={watch('graduationDate') || ''}
-                            error={!!errors.graduationDate}
-                            disabled={isProfile || isWatchMode}
-                            className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : ''}
-                        />
-                        {errors.graduationDate && <p className="mt-1 text-xs text-red-500 font-bold">{errors.graduationDate.message}</p>}
+                <div className="p-6 md:p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Annual/Semester Fee <span className="text-red-500">*</span></Label>
+                            <Input
+                                type="number"
+                                {...register('fee')}
+                                onChange={(isProfile || isWatchMode) ? undefined : register('fee').onChange}
+                                readOnly={isProfile || isWatchMode}
+                                value={watch('fee') || ''}
+                                error={!!errors.fee}
+                                disabled={isProfile || isWatchMode}
+                                icon={DollarSign}
+                                placeholder="12000"
+                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                            />
+                            {errors.fee && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.fee.message}</p>}
+                        </div>
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Fee Plan <span className="text-red-500">*</span></Label>
+                            <Input
+                                type="text"
+                                {...register('feePlan')}
+                                onChange={(isProfile || isWatchMode) ? undefined : register('feePlan').onChange}
+                                readOnly={isProfile || isWatchMode}
+                                value={watch('feePlan') || ''}
+                                error={!!errors.feePlan}
+                                disabled={isProfile || isWatchMode}
+                                icon={BookOpen}
+                                placeholder="Standard / Installments"
+                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                            />
+                            {errors.feePlan && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.feePlan.message}</p>}
+                        </div>
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Exp. Graduation</Label>
+                            <Input
+                                type="date"
+                                {...register('graduationDate')}
+                                onChange={(isProfile || isWatchMode) ? undefined : register('graduationDate').onChange}
+                                readOnly={isProfile || isWatchMode}
+                                value={watch('graduationDate') || ''}
+                                error={!!errors.graduationDate}
+                                disabled={isProfile || isWatchMode}
+                                className={isProfile || isWatchMode ? 'opacity-70 cursor-not-allowed bg-muted/40' : 'font-medium'}
+                            />
+                            {errors.graduationDate && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.graduationDate.message}</p>}
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Profile & Contact */}
-            <div className="bg-card p-8 rounded-sm border border-border shadow-sm">
-                <div className="flex items-center gap-3 mb-8 pb-4 border-b border-primary/10">
-                    <div className="p-2 bg-primary/10 rounded-sm">
-                        <User className="w-5 h-5 text-primary" />
-                    </div>
-                    <h3 className="text-sm font-black uppercase tracking-widest text-card-text">Personal Profile</h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-                    <div className="space-y-2">
-                        <Label>Father / Guardian Name</Label>
-                        <Input
-                            type="text"
-                            {...register('fatherName')}
-                            error={!!errors.fatherName}
-                            disabled={isWatchMode}
-                            icon={User}
-                            placeholder="Michael Johnson"
-                        />
-                        {errors.fatherName && <p className="mt-1 text-xs text-red-500 font-bold">{errors.fatherName.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Current Age</Label>
-                        <Input
-                            type="number"
-                            {...register('age')}
-                            error={!!errors.age}
-                            disabled={isWatchMode}
-                            icon={User}
-                            placeholder="16"
-                        />
-                        {errors.age && <p className="mt-1 text-xs text-red-500 font-bold">{errors.age.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Gender Identification <span className="text-red-500">*</span></Label>
-                        <CustomSelect
-                            options={[
-                                { value: 'Male', label: 'Male' },
-                                { value: 'Female', label: 'Female' },
-                                { value: 'Other', label: 'Other' }
-                            ]}
-                            value={formData.gender || ''}
-                            onChange={(val) => {
-                                if (isProfile || isWatchMode) return;
-                                setValue('gender', val);
-                                trigger('gender');
-                            }}
-                            error={!!errors.gender}
-                            disabled={isProfile || isWatchMode}
-                            icon={Users}
-                            placeholder="Gender"
-                        />
-                        {errors.gender && <p className="mt-1 text-xs text-red-500 font-bold">{errors.gender.message}</p>}
+            <div className="bg-linear-to-br from-card via-card/95 to-card/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
+                <div className="bg-linear-to-r from-primary/5 via-primary/10 to-transparent p-6 md:p-8 border-b border-primary/10">
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                            <div className="relative p-3 bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/30 shadow-lg">
+                                <User className="w-6 h-6 text-primary" />
+                            </div>
+                        </div>
+                        <h3 className="text-lg md:text-xl font-black text-foreground">Personal Profile</h3>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                        <div className="space-y-2">
-                            <Label>Contact Phone</Label>
+                <div className="p-6 md:p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Father / Guardian Name</Label>
                             <Input
                                 type="text"
-                                {...register('phone')}
-                                error={!!errors.phone}
+                                {...register('fatherName')}
+                                error={!!errors.fatherName}
                                 disabled={isWatchMode}
-                                icon={Phone}
-                                placeholder="+1 555-0100"
+                                icon={User}
+                                placeholder="Michael Johnson"
+                                className="font-medium"
                             />
-                            {errors.phone && <p className="mt-1 text-xs text-red-500 font-bold">{errors.phone.message}</p>}
+                            {errors.fatherName && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.fatherName.message}</p>}
                         </div>
-                        <div className="space-y-2">
-                            <Label>Emergency Contact</Label>
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Current Age</Label>
                             <Input
-                                type="text"
-                                {...register('emergencyContact')}
-                                error={!!errors.emergencyContact}
+                                type="number"
+                                {...register('age')}
+                                error={!!errors.age}
                                 disabled={isWatchMode}
-                                icon={Phone}
-                                placeholder="Relationship - Phone"
+                                icon={User}
+                                placeholder="16"
+                                className="font-medium"
                             />
-                            {errors.emergencyContact && <p className="mt-1 text-xs text-red-500 font-bold">{errors.emergencyContact.message}</p>}
+                            {errors.age && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.age.message}</p>}
                         </div>
-                        <div className="space-y-2">
-                            <Label>Blood Group</Label>
-                            <Input
-                                type="text"
-                                {...register('bloodGroup')}
-                                error={!!errors.bloodGroup}
-                                disabled={isWatchMode}
-                                icon={Plus}
-                                placeholder="A+, B-, etc."
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Gender Identification <span className="text-red-500">*</span></Label>
+                            <CustomSelect
+                                options={[
+                                    { value: 'Male', label: 'Male' },
+                                    { value: 'Female', label: 'Female' },
+                                    { value: 'Other', label: 'Other' }
+                                ]}
+                                value={formData.gender || ''}
+                                onChange={(val) => {
+                                    if (isProfile || isWatchMode) return;
+                                    setValue('gender', val);
+                                    trigger('gender');
+                                }}
+                                error={!!errors.gender}
+                                disabled={isProfile || isWatchMode}
+                                icon={Users}
+                                placeholder="Gender"
                             />
-                            {errors.bloodGroup && <p className="mt-1 text-xs text-red-500 font-bold">{errors.bloodGroup.message}</p>}
+                            {errors.gender && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.gender.message}</p>}
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label>Residential Address</Label>
-                        <div>
-                            <Textarea
-                                {...register('address')}
-                                disabled={isWatchMode}
-                                error={!!errors.address}
-                                icon={MapPin}
-                                placeholder="123 Education Lane, Learning City"
-                                className="min-h-40"
-                            />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                        <div className="space-y-4 md:space-y-6">
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Contact Phone</Label>
+                                <Input
+                                    type="text"
+                                    {...register('phone')}
+                                    error={!!errors.phone}
+                                    disabled={isWatchMode}
+                                    icon={Phone}
+                                    placeholder="+1 555-0100"
+                                    className="font-medium"
+                                />
+                                {errors.phone && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.phone.message}</p>}
+                            </div>
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Emergency Contact</Label>
+                                <Input
+                                    type="text"
+                                    {...register('emergencyContact')}
+                                    error={!!errors.emergencyContact}
+                                    disabled={isWatchMode}
+                                    icon={Phone}
+                                    placeholder="Relationship - Phone"
+                                    className="font-medium"
+                                />
+                                {errors.emergencyContact && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.emergencyContact.message}</p>}
+                            </div>
+                            <div className="space-y-2 md:space-y-3">
+                                <Label>Blood Group</Label>
+                                <Input
+                                    type="text"
+                                    {...register('bloodGroup')}
+                                    error={!!errors.bloodGroup}
+                                    disabled={isWatchMode}
+                                    icon={Plus}
+                                    placeholder="A+, B-, etc."
+                                    className="font-medium"
+                                />
+                                {errors.bloodGroup && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.bloodGroup.message}</p>}
+                            </div>
                         </div>
-                        {errors.address && <p className="mt-1 text-xs text-red-500 font-bold">{errors.address.message}</p>}
+
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Residential Address</Label>
+                            <div>
+                                <Textarea
+                                    {...register('address')}
+                                    disabled={isWatchMode}
+                                    error={!!errors.address}
+                                    icon={MapPin}
+                                    placeholder="123 Education Lane, Learning City"
+                                    className="min-h-32 md:min-h-40 font-medium"
+                                />
+                            </div>
+                            {errors.address && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.address.message}</p>}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="flex items-center justify-end gap-4 pb-12">
-                <Button type="button" variant="secondary" className="w-32" onClick={() => router.back()}>
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-6 border-t border-border/50">
+                <Button type="button" variant="secondary" onClick={() => router.back()} className="w-full sm:w-auto h-12 font-semibold">
                     {isWatchMode ? 'Go Back' : 'Cancel'}
                 </Button>
                 {!isWatchMode && (
-                    <Button type="submit" className="w-64 h-12" loadingId="student-submit" loadingText="SAVING...">
-                        <span className="font-black uppercase tracking-widest text-[10px] italic">
-                            {isProfile ? 'Update Profile' : (studentId ? 'Update Student Record' : 'Register Student')}
-                        </span>
+                    <Button type="submit" loadingId="student-submit" loadingText="Saving..." className="w-full sm:w-auto h-12 font-semibold">
+                        {isProfile ? 'Update Profile' : (studentId ? 'Update Student Record' : 'Register Student')}
                     </Button>
                 )}
             </div>

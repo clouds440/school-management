@@ -1358,12 +1358,12 @@ export function ChatLayout() {
             {/* ===== SIDEBAR ===== */}
             <div className={`
             ${activeChatId && !isDesktop ? 'hidden' : 'flex'} 
-            w-full lg:max-w-[320px] xl:max-w-110 border-r border-border flex-col bg-card h-full
+            w-full sm:max-w-xs md:max-w-sm lg:max-w-[320px] xl:max-w-87.5 2xl:max-w-95 border-r border-border flex-col bg-card h-full transition-all duration-300 ease-in-out
         `}>
-                <div className="px-5 py-4 border-b border-border bg-card/50 flex justify-between items-center">
+                <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-border bg-card/50 flex justify-between items-center">
                     <div>
-                        <h2 className="text-lg font-extrabold text-foreground tracking-tight">Messages</h2>
-                        <p className="text-[13px] text-muted-foreground font-semibold tracking-wide mt-0.5">{chats.length} conversation{chats.length !== 1 ? 's' : ''}</p>
+                        <h2 className="text-base sm:text-lg font-extrabold text-foreground tracking-tight">Messages</h2>
+                        <p className="text-[12px] sm:text-[13px] text-muted-foreground font-semibold tracking-wide mt-0.5">{chats.length} conversation{chats.length !== 1 ? 's' : ''}</p>
                     </div>
                     {user.role !== Role.STUDENT && (
                         <button
@@ -1377,15 +1377,15 @@ export function ChatLayout() {
                 </div>
 
                 {/* Search */}
-                <div className="px-4 py-3">
+                <div className="px-3 sm:px-4 py-2 sm:py-3">
                     <div className="relative">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/80 pointer-events-none" />
+                        <Search size={isDesktop ? 16 : 14} className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-primary/80 pointer-events-none" />
                         <input
                             type="text"
                             placeholder="Search conversations..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-background/80 border border-border/50 rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:bg-background focus:border-primary/30 focus:ring-2 focus:ring-primary/10 transition-all"
+                            className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 bg-background/80 border border-border/50 rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:bg-background focus:border-primary/30 focus:ring-2 focus:ring-primary/10 transition-all"
                         />
                     </div>
                 </div>
@@ -1428,38 +1428,38 @@ export function ChatLayout() {
                                     type='button'
                                     key={chat.id}
                                     onClick={() => setActiveChatId(chat.id)}
-                                    className={`w-full flex items-center px-4 py-3.5 transition-all text-left group relative
+                                    className={`w-full flex items-center px-3 sm:px-4 py-3 sm:py-3.5 transition-all text-left group relative
                                         ${isActive
                                             ? 'bg-primary/5 border-l-[3px] border-l-primary'
                                             : 'hover:bg-muted/50 border-l-[3px] border-l-transparent'
                                         }`}
                                 >
-                                    <div className="relative mr-3 shrink-0">
+                                    <div className="relative mr-2.5 sm:mr-3 shrink-0">
                                         <UserAvatar
                                             targetUser={chat.type === ChatType.GROUP
                                                 ? { name: displayName, avatarUrl: chat.avatarUrl, avatarUpdatedAt: chat.avatarUpdatedAt }
                                                 : otherUsers[0]?.user
                                             }
-                                            className="w-12 h-12"
+                                            className="w-10 h-10 sm:w-12 sm:h-12"
                                             isOnline={!!(chat.type === ChatType.DIRECT && otherUsers[0]?.user?.id && onlineUsers[otherUsers[0].user.id])}
                                         />
                                         {hasUnread && (
-                                            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-background" />
+                                            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-primary rounded-full border-2 border-background" />
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-center mb-0.5">
-                                            <h4 className={`text-[13.5px] truncate pr-2 ${isActive ? 'font-bold text-primary' : hasUnread ? 'font-bold text-foreground' : 'font-semibold text-foreground/80'}`}>
+                                            <h4 className={`text-[12px] sm:text-[13.5px] truncate pr-2 ${isActive ? 'font-bold text-primary' : hasUnread ? 'font-bold text-foreground' : 'font-semibold text-foreground/80'}`}>
                                                 {displayName}
                                             </h4>
                                             {lastMsg && (
-                                                <span className={`text-[13px] shrink-0 ${hasUnread ? 'text-primary font-bold' : 'text-muted-foreground font-medium'}`}>
+                                                <span className={`text-[11px] sm:text-[13px] shrink-0 ${hasUnread ? 'text-primary font-bold' : 'text-muted-foreground font-medium'}`}>
                                                     {formatDistanceToNow(new Date(lastMsg.createdAt), { addSuffix: false })}
                                                 </span>
                                             )}
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <p className={`text-[13px] truncate flex-1 ${hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                                            <p className={`text-[11px] sm:text-[13px] truncate flex-1 ${hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                                                 {lastMsg ? (
                                                     <>
                                                         <span className="text-muted-foreground">{lastMsg.senderId === user.id ? 'You: ' : (chat.type === ChatType.GROUP ? `${lastMsg.sender?.name?.split(' ')[0]}: ` : '')}</span>
@@ -1481,7 +1481,7 @@ export function ChatLayout() {
                                                 )}
                                             </p>
                                             {hasUnread && (
-                                                <span className="ml-2 flex items-center justify-center min-w-5 h-5 px-1.5 text-[13px] font-bold text-foreground bg-primary/30 rounded-full">
+                                                <span className="ml-1.5 sm:ml-2 flex items-center justify-center min-w-4 h-4 sm:min-w-5 sm:h-5 px-1 sm:px-1.5 text-[11px] sm:text-[13px] font-bold text-foreground bg-primary/30 rounded-full">
                                                     {chat.unreadCount}
                                                 </span>
                                             )}
@@ -1496,16 +1496,16 @@ export function ChatLayout() {
             {/* ===== CHAT PANEL ===== */}
             <div className={`
             ${!activeChatId && !isDesktop ? 'hidden' : 'flex'} 
-            flex-1 flex-col bg-background h-full relative overflow-visible
-            ${!isDesktop && activeChatId ? 'animate-chat-slide-in' : ''}
+            flex-1 flex-col bg-background h-full relative overflow-hidden
+            ${!isDesktop && activeChatId ? 'animate-in slide-in-from-right duration-300 ease-out' : ''}
         `}>
                 {activeChat ? (
                     <>
                         {/* Chat Header */}
                         <div
-                            className="relative w-full px-4 py-3 border-b border-border flex items-center justify-between z-20 bg-background/95 backdrop-blur-md"
+                            className="relative w-full px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border flex items-center justify-between z-20 bg-background/95 backdrop-blur-md transition-all duration-200"
                         >
-                            <div className="flex items-center space-x-3 min-w-0">
+                            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
                                 {!isDesktop && (
                                     <button
                                         type='button'
@@ -1521,18 +1521,18 @@ export function ChatLayout() {
                                         ? { name: activeChat.name, avatarUrl: activeChat.avatarUrl, avatarUpdatedAt: activeChat.avatarUpdatedAt }
                                         : activeChat.participants?.find(p => p.userId !== user.id)?.user
                                     }
-                                    className="w-10 h-10"
+                                    className="w-9 h-9 sm:w-10 sm:h-10"
                                     isOnline={!!(directChatTarget?.id && onlineUsers[directChatTarget.id])}
                                 />
                                 <div className="min-w-0">
-                                    <h3 className="font-bold text-[15px] text-foreground leading-tight truncate">
+                                    <h3 className="font-bold text-[14px] sm:text-[15px] text-foreground leading-tight truncate">
                                         {activeChat.type === ChatType.GROUP ? activeChat.name : activeChat.participants?.find(p => p.userId !== user.id)?.user?.name || 'Unknown'}
                                     </h3>
                                     <button
                                         type='button'
                                         id="participants-toggle"
                                         onClick={() => setShowParticipants(!showParticipants)}
-                                        className={`text-[13px] font-semibold rounded-md transition-all flex items-center gap-1.5 ${showParticipants ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                                        className={`text-[12px] sm:text-[13px] font-semibold rounded-md transition-all flex items-center gap-1.5 ${showParticipants ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
                                     >
                                         {typingIndicatorLabel ? (
                                             <span className="inline-flex items-center gap-1.5">
@@ -1572,7 +1572,7 @@ export function ChatLayout() {
                             <div
                                 ref={messagesContainerRef}
                                 onScroll={handleScroll}
-                                className="flex-1 overflow-y-auto px-3 md:px-5 py-3 space-y-0.5 custom-scrollbar chat-bg-pattern"
+                                className="flex-1 overflow-y-auto overflow-x-hidden px-2 sm:px-3 md:px-4 lg:px-5 py-2 sm:py-3 space-y-0.5 custom-scrollbar chat-bg-pattern"
                                 style={{
                                     paddingBottom: !isDesktop
                                         ? `calc(${composerHeight + 16}px + env(safe-area-inset-bottom, 0px))`
@@ -1672,10 +1672,10 @@ export function ChatLayout() {
                             {showParticipants && (
                                 <div
                                     ref={participantsRef}
-                                    className="absolute top-0 right-0 h-full w-72 bg-card border-l border-border shadow-2xl z-30 animate-in slide-in-from-right duration-300 flex flex-col"
+                                    className="absolute top-0 right-0 h-full w-64 sm:w-72 bg-card border-l border-border shadow-2xl z-30 animate-in slide-in-from-right duration-300 flex flex-col"
                                 >
-                                    <div className="px-4 py-3 border-b border-border flex justify-between items-center">
-                                        <h4 className="font-bold text-foreground text-[13px]">Members</h4>
+                                    <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border flex justify-between items-center">
+                                        <h4 className="font-bold text-foreground text-[12px] sm:text-[13px]">Members</h4>
                                         <button
                                             type="button"
                                             onClick={() => setShowParticipants(false)}
@@ -1685,14 +1685,14 @@ export function ChatLayout() {
                                             <X size={16} className="text-primary/80 hover:text-primary" />
                                         </button>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto p-3 space-y-0.5 custom-scrollbar">
+                                    <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-0.5 custom-scrollbar">
                                         {activeChat.participants?.filter(p => p.isActive).map(p => (
-                                            <div key={p.id} className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted transition-colors group/item">
-                                                <div className="flex items-center space-x-2.5 min-w-0">
-                                                    <UserAvatar targetUser={p.user} className="w-8 h-8" isOnline={!!onlineUsers[p.userId]} />
+                                            <div key={p.id} className="flex items-center justify-between p-2 sm:p-2.5 rounded-xl hover:bg-muted transition-colors group/item">
+                                                <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0">
+                                                    <UserAvatar targetUser={p.user} className="w-7 h-7 sm:w-8 sm:h-8" isOnline={!!onlineUsers[p.userId]} />
                                                     <div className="min-w-0">
-                                                        <p className="text-[13px] font-semibold text-foreground truncate">{p.user?.name} {p.userId === user.id && <span className="text-muted-foreground font-normal">(You)</span>}</p>
-                                                        <p className="text-[13px] text-muted-foreground font-medium capitalize truncate">{p.user?.role?.toLowerCase().replace('_', ' ')}</p>
+                                                        <p className="text-[12px] sm:text-[13px] font-semibold text-foreground truncate">{p.user?.name} {p.userId === user.id && <span className="text-muted-foreground font-normal">(You)</span>}</p>
+                                                        <p className="text-[11px] sm:text-[13px] text-muted-foreground font-medium capitalize truncate">{p.user?.role?.toLowerCase().replace('_', ' ')}</p>
                                                     </div>
                                                 </div>
                                                 {isGroupAdmin && p.userId !== user.id && p.userId !== activeChat.creatorId && (
@@ -1714,19 +1714,19 @@ export function ChatLayout() {
                             {/* Input Composer */}
                             <div
                                 ref={composerRef}
-                                className="absolute bottom-0 w-full border-border px-1 md:px-1 py-1 z-20"
+                                className="absolute bottom-0 w-full border-border px-2 sm:px-3 py-2 z-20"
                                 style={!isDesktop ? { paddingBottom: mobileBottomInset } : undefined}
                             >
-                                {/* Reply / Edit Banner - unchanged */}
+                                {/* Reply / Edit Banner */}
                                 {(replyToMessage || editingMessage) && (
-                                    <div className="mb-1 px-3 py-2 mr-2 bg-muted border-l-4 border-primary rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
-                                        <div className="flex-1 min-w-0 pr-3">
-                                            <p className="text-[13px] font-semibold text-primary mb-0.5">
+                                    <div className="mb-1.5 sm:mb-1 px-2.5 sm:px-3 py-2 sm:py-2 mr-2 bg-muted border-l-4 border-primary rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                                        <div className="flex-1 min-w-0 pr-2 sm:pr-3">
+                                            <p className="text-[12px] sm:text-[13px] font-semibold text-primary mb-0.5">
                                                 {editingMessage ? 'Editing Message' : `Replying to ${replyToMessage?.sender?.name == user.name ? 'Yourself' : replyToMessage?.sender?.name || 'Message'}`}
                                             </p>
                                             <div
                                                 onClick={() => { if (replyToMessage) scrollToMessage(replyToMessage.id); }}
-                                                className="text-[13px] text-muted-foreground! truncate cursor-pointer"
+                                                className="text-[12px] sm:text-[13px] text-muted-foreground! truncate cursor-pointer"
                                             >
                                                 <MarkdownRenderer content={getTruncatedMessagePreview(editingMessage?.content || replyToMessage?.content, isDesktop ? 70 : 35)} className='text-muted-foreground!' />
                                             </div>
@@ -1752,14 +1752,14 @@ export function ChatLayout() {
 
                                 {/* Mention Banner */}
                                 {mentionedUsers.length > 0 && !editingMessage && (
-                                    <div className="mb-1 px-3 py-2 mr-2 bg-muted border-l-4 border-indigo-500 rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
-                                        <div className="flex-1 min-w-0 pr-3">
-                                            <p className="text-[13px] font-semibold text-indigo-500 mb-0.5">
+                                    <div className="mb-1.5 sm:mb-1 px-2.5 sm:px-3 py-2 sm:py-2 mr-2 bg-muted border-l-4 border-indigo-500 rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                                        <div className="flex-1 min-w-0 pr-2 sm:pr-3">
+                                            <p className="text-[12px] sm:text-[13px] font-semibold text-indigo-500 mb-0.5">
                                                 Mentioning
                                             </p>
                                             <div className="flex flex-wrap gap-1">
                                                 {mentionedUsers.map(u => (
-                                                    <span key={u.id} className="text-[12px] bg-indigo-500/10 text-indigo-600 px-1.5 py-0.5 rounded-md font-medium">
+                                                    <span key={u.id} className="text-[11px] sm:text-[12px] bg-indigo-500/10 text-indigo-600 px-1.5 py-0.5 rounded-md font-medium">
                                                         @{u.name}
                                                     </span>
                                                 ))}
@@ -1776,23 +1776,23 @@ export function ChatLayout() {
                                     </div>
                                 )}
 
-                                {/* Staged Files - unchanged */}
+                                {/* Staged Files */}
                                 {stagedFiles.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mb-1 mr-2">
+                                    <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-1.5 sm:mb-1 mr-2">
                                         {stagedFiles.map((file, i) => (
                                             <div key={i} className="group relative flex items-center bg-muted border border-border pl-2 pr-1 py-1 rounded-xl hover:border-primary/30 transition-all">
                                                 {file.type.startsWith('image/') ? (
-                                                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-muted-foreground/10 mr-2 relative">
+                                                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg overflow-hidden bg-muted-foreground/10 mr-1.5 sm:mr-2 relative">
                                                         <Image src={URL.createObjectURL(file)} alt="" fill className="object-cover" unoptimized />
                                                     </div>
                                                 ) : (
-                                                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary mr-2">
+                                                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary mr-1.5 sm:mr-2">
                                                         <Pencil size={14} className="text-primary/80" />
                                                     </div>
                                                 )}
-                                                <div className="flex flex-col mr-1.5 max-w-20">
-                                                    <span className="text-[13px] font-semibold text-foreground truncate">{file.name}</span>
-                                                    <span className="text-[11px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
+                                                <div className="flex flex-col mr-1 sm:mr-1.5 max-w-16 sm:max-w-20">
+                                                    <span className="text-[11px] sm:text-[13px] font-semibold text-foreground truncate">{file.name}</span>
+                                                    <span className="text-[10px] sm:text-[11px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
                                                 </div>
                                                 <button
                                                     type="button"
@@ -1817,7 +1817,7 @@ export function ChatLayout() {
                                 )}
 
                                 {/* Composer Row */}
-                                <div className={`flex mr-2 flex-col space-y-2`}>
+                                <div className={`flex mr-2 flex-col space-y-1.5 sm:space-y-2`}>
                                     <input
                                         title="Upload File"
                                         type="file"
@@ -1828,16 +1828,16 @@ export function ChatLayout() {
                                     />
 
                                     {/* Main composer container */}
-                                    <div className="w-full bg-muted border border-transparent mb-2 rounded-2xl focus-within:bg-card focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                                    <div className="w-full bg-muted border border-transparent mb-1.5 sm:mb-2 rounded-2xl focus-within:bg-card focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
                                         {/* Top row */}
                                         <div className={`flex items-end ${isComposerExpanded ? 'px-2 pt-1' : 'px-2'}`}>
                                             {/* Left buttons only in compact mode */}
                                             {!isComposerExpanded && (
-                                                <div className="flex items-center gap-1 pb-4">
+                                                <div className="flex items-center gap-0.5 sm:gap-1 pb-3 sm:pb-4">
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
+                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
                                                         title={isPreviewMode ? "Write text" : "Preview markdown"}
                                                     >
                                                         {isPreviewMode ? <Pencil size={24} /> : <View size={24} />}
@@ -1846,7 +1846,7 @@ export function ChatLayout() {
                                                     <button
                                                         type="button"
                                                         onClick={() => document.getElementById('chat-file-upload')?.click()}
-                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
+                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
                                                         title="Attach file"
                                                     >
                                                         <Paperclip size={22} className="cursor-pointer -rotate-45" />
@@ -1923,18 +1923,18 @@ export function ChatLayout() {
                                                     onBlur={() => setTimeout(() => setShowMentionDropdown(false), 200)}
                                                     placeholder={stagedFiles.length > 0 ? "Add a caption..." : `Message... ${isDesktop ? '(Shift + Enter for new line)' : ''}`}
                                                     rows={1}
-                                                    className={`w-full bg-transparent px-2 pb-2 pt-3 border-none text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-60 leading-relaxed`}
+                                                    className={`w-full bg-transparent px-1.5 sm:px-2 pb-2 pt-2.5 sm:pt-3 border-none text-[13px] sm:text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-60 leading-relaxed`}
                                                 />
 
                                                 {/* Mention Dropdown */}
                                                 {showMentionDropdown && filteredMembers.length > 0 && (
-                                                    <div className="absolute bottom-full left-0 mb-2 w-64 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
-                                                        <div className="p-2 border-b border-border">
-                                                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-2">Group Members</p>
+                                                    <div className="absolute bottom-full left-0 mb-2 w-56 sm:w-64 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                                        <div className="p-1.5 sm:p-2 border-b border-border">
+                                                            <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-2">Group Members</p>
                                                         </div>
                                                         <div
                                                             ref={mentionDropdownRef}
-                                                            className="max-h-60 overflow-y-auto py-1 custom-scrollbar"
+                                                            className="max-h-48 sm:max-h-60 overflow-y-auto py-1 custom-scrollbar"
                                                         >
                                                             {filteredMembers.map((member, idx) => (
                                                                 <button
@@ -1944,12 +1944,12 @@ export function ChatLayout() {
                                                                         e.preventDefault(); // Prevents textarea from losing focus
                                                                         handleSelectMember(member);
                                                                     }}
-                                                                    className={`mention-item w-full flex items-center space-x-3 px-3 py-2 transition-colors ${idx === mentionSelectedIndex ? 'bg-primary/10' : 'hover:bg-muted'}`}
+                                                                    className={`mention-item w-full flex items-center space-x-2 sm:space-x-3 px-2.5 sm:px-3 py-1.5 sm:py-2 transition-colors ${idx === mentionSelectedIndex ? 'bg-primary/10' : 'hover:bg-muted'}`}
                                                                 >
-                                                                    <UserAvatar targetUser={member.user} className="w-7 h-7" isOnline={!!onlineUsers[member.userId]} />
+                                                                    <UserAvatar targetUser={member.user} className="w-6 h-6 sm:w-7 sm:h-7" isOnline={!!onlineUsers[member.userId]} />
                                                                     <div className="text-left min-w-0">
-                                                                        <p className="text-[13px] font-semibold text-foreground truncate">{member.user?.name}</p>
-                                                                        <p className="text-[11px] text-muted-foreground capitalize">{member.user?.role?.toLowerCase().replace('_', ' ')}</p>
+                                                                        <p className="text-[12px] sm:text-[13px] font-semibold text-foreground truncate">{member.user?.name}</p>
+                                                                        <p className="text-[10px] sm:text-[11px] text-muted-foreground capitalize">{member.user?.role?.toLowerCase().replace('_', ' ')}</p>
                                                                     </div>
                                                                 </button>
                                                             ))}
@@ -1964,7 +1964,7 @@ export function ChatLayout() {
                                                     type="button"
                                                     onClick={() => { void handleSendMessage(); }}
                                                     disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
-                                                    className="shrink-0 mr-2 pb-4 px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
+                                                    className="shrink-0 mr-2 pb-3 sm:pb-4 px-1.5 sm:px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
                                                     title="Send"
                                                 >
                                                     <Send size={24} className="cursor-pointer" />
@@ -1974,12 +1974,12 @@ export function ChatLayout() {
 
                                         {/* Bottom row actions in expanded mode */}
                                         {isComposerExpanded && (
-                                            <div className="flex items-center justify-between px-2 py-2">
-                                                <div className="flex items-center gap-1">
+                                            <div className="flex items-center justify-between px-2 py-1.5 sm:py-2">
+                                                <div className="flex items-center gap-0.5 sm:gap-1">
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
+                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
                                                         title={isPreviewMode ? "Write text" : "Preview markdown"}
                                                     >
                                                         {isPreviewMode ? <Pencil size={22} /> : <View size={22} />}
@@ -1988,7 +1988,7 @@ export function ChatLayout() {
                                                     <button
                                                         type="button"
                                                         onClick={() => document.getElementById('chat-file-upload')?.click()}
-                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
+                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
                                                         title="Attach file"
                                                     >
                                                         <Paperclip size={22} className="cursor-pointer -rotate-45" />
@@ -2000,7 +2000,7 @@ export function ChatLayout() {
                                                         type="button"
                                                         onClick={() => { void handleSendMessage(); }}
                                                         disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
-                                                        className="shrink-0 pb-4 px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
+                                                        className="shrink-0 pb-3 sm:pb-4 px-1.5 sm:px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
                                                         title="Send"
                                                     >
                                                         <Send size={24} className="cursor-pointer" />
@@ -2016,12 +2016,12 @@ export function ChatLayout() {
                     </>
                 ) : (
                     /* Empty State */
-                    <div className="flex-1 flex flex-col items-center justify-center chat-bg-pattern">
-                        <div className="w-20 h-20 bg-card rounded-xl flex items-center justify-center shadow-sm border border-border mb-5">
+                    <div className="flex-1 flex flex-col items-center justify-center chat-bg-pattern px-4">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-card rounded-2xl flex items-center justify-center shadow-sm border border-border mb-4 sm:mb-5">
                             <MessageSquarePlus size={36} className="text-primary/80" />
                         </div>
-                        <h3 className="text-lg font-bold text-foreground mb-1">Your Messages</h3>
-                        <p className="text-sm text-muted-foreground max-w-xs text-center">Select a conversation or start a new one to begin chatting</p>
+                        <h3 className="text-base sm:text-lg font-bold text-foreground mb-1">Your Messages</h3>
+                        <p className="text-xs sm:text-sm text-muted-foreground max-w-xs sm:max-w-sm text-center">Select a conversation or start a new one to begin chatting</p>
                     </div>
                 )}
             </div>
@@ -2029,22 +2029,24 @@ export function ChatLayout() {
             {/* Image Preview Modal */}
             {previewImageUrl && (
                 <div
-                    className="absolute w-full h-full z-50 flex items-center justify-center bg-accent backdrop-blur-sm"
+                    className="absolute w-full h-full z-50 flex items-center justify-center bg-accent/90 backdrop-blur-sm"
                     onClick={() => setPreviewImageUrl(null)}
                 >
-                    <div className="max-w-4xl max-h-screen p-4 min-w-75 min-h-75">
-                        <Image
-                            src={previewImageUrl}
-                            alt="Preview"
-                            fill
-                            className="object-contain rounded-sm shadow-2xl"
-                            unoptimized
-                        />
+                    <div className="relative max-w-4xl max-h-screen p-3 sm:p-4 w-full h-full flex items-center justify-center">
+                        <div className="relative w-full h-full max-h-[85vh] flex items-center justify-center">
+                            <Image
+                                src={previewImageUrl}
+                                alt="Preview"
+                                fill
+                                className="object-contain rounded-lg shadow-2xl"
+                                unoptimized
+                            />
+                        </div>
                         <button
                             title='Close'
                             type='button'
                             onClick={() => setPreviewImageUrl(null)}
-                            className="absolute top-4 right-4 p-2 bg-accent/80 hover:bg-accent/70 rounded-full transition-colors"
+                            className="absolute top-3 sm:top-4 right-3 sm:right-4 p-2 bg-accent/80 hover:bg-accent/70 rounded-full transition-colors shadow-lg"
                         >
                             <X size={24} className="text-primary/80 hover:text-primary" />
                         </button>

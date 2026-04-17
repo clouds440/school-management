@@ -318,12 +318,12 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                 <h2 className="text-2xl font-black text-foreground tracking-tight">{selectedAssessment.title}</h2>
                                 <p className="text-muted-foreground font-medium mt-1">{selectedAssessment.section?.name}</p>
                             </div>
-                            <span className={`self-start text-xs font-bold uppercase px-3 py-1.5 rounded-sm tracking-wider ${(selectedAssessment._count?.submissions || 0) > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                            <span className={`self-start text-xs font-bold uppercase px-3 py-1.5 rounded-lg tracking-wider ${(selectedAssessment._count?.submissions || 0) > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
                                 {(selectedAssessment._count?.submissions || 0) > 0 ? 'Completed' : 'Pending'}
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-xl border border-border">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-xl border border-border">
                             <div>
                                 <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">Type</p>
                                 <p className="text-sm font-bold text-foreground">{selectedAssessment.type}</p>
@@ -375,7 +375,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                 <h3 className="text-sm font-bold text-foreground uppercase tracking-widest">Attachments</h3>
                                 {selectedAssessment.files.map((file: Attachment) => (
                                     <a key={file.id} href={getPublicUrl(file.path)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl hover:border-primary/50 hover:shadow-sm transition-all group">
-                                        <div className="p-2 bg-primary/10 text-primary rounded-lg group-hover:bg-primary group-hover:text-white transition-colors">
+                                        <div className="p-2 bg-primary/10 text-primary rounded-lg group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                                             <FileText className="w-5 h-5" />
                                         </div>
                                         <div className="flex-1">

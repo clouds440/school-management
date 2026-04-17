@@ -55,32 +55,42 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            <div className="bg-primary/5 border border-border rounded-sm p-8 text-center border-dashed relative group overflow-hidden">
-                <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 md:space-y-8">
+            {/* Upload Section */}
+            <div className="bg-linear-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-6 md:p-8 text-center border-dashed relative group overflow-hidden transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5">
+                <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                <Upload className="w-12 h-12 text-primary/40 mx-auto mb-4 group-hover:scale-110 transition-transform duration-500" />
-                <h3 className="text-xl font-black italic uppercase tracking-tighter text-card-text mb-2">Upload Your Work</h3>
-                <p className="text-[10px] font-black text-card-text/40 uppercase tracking-widest leading-relaxed max-w-xs mx-auto">
-                    Provide a link to your project repository, document, or hosted file for evaluation.
-                </p>
+                <div className="relative">
+                    <div className="relative inline-block mb-4">
+                        <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                        <div className="relative p-4 bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/30 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            <Upload className="w-10 h-10 md:w-12 md:h-12 text-primary" />
+                        </div>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-black text-foreground mb-2">Upload Your Work</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+                        Provide a link to your project repository, document, or hosted file for evaluation.
+                    </p>
+                </div>
             </div>
 
-            <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-card-text/40 ml-1">Submission URL</label>
+            {/* URL Input */}
+            <div className="space-y-3">
+                <label className="text-xs md:text-sm font-semibold uppercase tracking-wider text-muted-foreground ml-1">Submission URL</label>
                 <Input
-                    placeholder="https://github.com/your-repo / https://drive.google.com/..."
+                    placeholder="https://github.com/your-repo or https://drive.google.com/..."
                     error={!!errors.fileUrl}
                     {...register('fileUrl')}
-                    className="font-black italic uppercase tracking-tight placeholder:not-italic placeholder:text-card-text/20"
+                    className="font-medium placeholder:text-muted-foreground/40"
                 />
             </div>
 
-            <div className="flex justify-end gap-4 pt-4 border-t border-border">
-                <Button type="button" variant="secondary" onClick={onCancel} className="px-8 h-12 font-black italic uppercase tracking-widest text-xs">
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-6 border-t border-border/50">
+                <Button type="button" variant="secondary" onClick={onCancel} className="w-full sm:w-auto h-12 font-semibold">
                     Cancel
                 </Button>
-                <Button type="submit" loadingId="submission-submit" loadingText="SUBMITTING..." className="px-10 h-12 font-black italic uppercase tracking-widest text-xs flex gap-2">
+                <Button type="submit" loadingId="submission-submit" loadingText="Submitting..." className="w-full sm:w-auto h-12 font-semibold flex items-center justify-center gap-2">
                     <FileCheck className="w-4 h-4" />
                     Submit Final Work
                 </Button>

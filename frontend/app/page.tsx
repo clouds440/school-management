@@ -27,13 +27,12 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-auto bg-background text-foreground">
       {/* Hero Section */}
-      <section className="relative pt-10 pb-16 md:pt-20 md:pb-40 overflow-hidden"
+      <section className="relative pt-10 pb-16 md:pt-20 md:pb-40 overflow-hidden bg-linear-to-br from-primary/10 via-background to-secondary/10"
         style={{
           backgroundImage: `url('/assets/home-banner.png')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundBlendMode: 'overlay',
-          backgroundColor: 'rgba(180, 180, 220, 0.95)'
+          backgroundBlendMode: 'overlay'
         }}>
         <div className="absolute inset-0 z-0">
           <div className="absolute top-0 -left-1/4 w-75 md:w-150 h-75 md:h-150 bg-primary/5 rounded-full blur-3xl animate-pulse" />
@@ -43,13 +42,13 @@ export default function HomePage() {
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-8">
             <Reveal delay={100}>
-              <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight text-black leading-[1.1] md:leading-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight text-foreground leading-[1.1] md:leading-tight">
                 Empower Your Institution with <Image src={"/assets/eduverse-logo.png"} alt="Eduverse" width={400} height={120} className="mt-6 inline-block h-auto animate-float w-auto" unoptimized />
               </h1>
             </Reveal>
 
             <Reveal delay={200}>
-              <p className="text-lg md:text-xl text-black font-bold max-w-2xl mx-auto leading-relaxed opacity-90">
+              <p className="text-lg md:text-xl text-foreground font-bold max-w-2xl mx-auto leading-relaxed opacity-90">
                 A unified, cloud-based ecosystem designed to bridge the gap between
                 administration, teachers, and students. Experience seamless school management.
               </p>
@@ -58,7 +57,7 @@ export default function HomePage() {
             <Reveal delay={300}>
               <div className="pt-4 flex flex-col items-center gap-6">
                 <HeroButtons />
-                <div className="flex flex-wrap justify-center items-center gap-4 text-[10px] md:text-xs text-black/80 font-bold uppercase tracking-widest">
+                <div className="flex flex-wrap justify-center items-center gap-4 text-[10px] md:text-xs text-foreground/80 font-bold uppercase tracking-widest">
                   <span className="flex items-center"><ShieldCheck className="w-4 h-4 mr-1 text-emerald-500" /> No Card Required</span>
                   <span className="flex items-center"><Zap className="w-4 h-4 mr-1 text-amber-500" /> 14-Day Free Trial</span>
                 </div>

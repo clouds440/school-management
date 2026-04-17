@@ -8,21 +8,21 @@ export default function CareersPage() {
   return (
     <div className="flex flex-col bg-background">
       {/* Hero */}
-      <section className="pt-24 pb-16 md:pt-32 md:pb-40 bg-card-bg overflow-hidden relative border-b border-border">
+      <section className="pt-24 pb-16 md:pt-32 md:pb-40 bg-card overflow-hidden relative border-b border-border">
         <div className="absolute inset-0 z-0">
           <div className="absolute top-0 -left-1/4 w-75 md:w-150 h-75 md:h-150 bg-primary/20 rounded-full blur-3xl animate-pulse" />
         </div>
         <div className="container mx-auto px-6 text-center max-w-4xl space-y-6 relative z-10">
           <Reveal>
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-[rgba(var(--primary-rgb),0.08)] text-primary-text text-xs font-bold mb-4 tracking-wide uppercase border border-border backdrop-blur-md">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary-foreground text-xs font-bold mb-4 tracking-wide uppercase border border-primary/20 backdrop-blur-md">
               Join the Mission
             </div>
           </Reveal>
           <Reveal delay={200}>
-            <h1 className="text-4xl md:text-6xl font-black text-card-text tracking-tight leading-tight">Help Us Build the <span className="text-primary bg-clip-text bg-linear-to-r from-primary via-indigo-400 to-purple-400">Future of Education</span></h1>
+            <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight leading-tight">Help Us Build the <span className="text-primary bg-clip-text bg-linear-to-r from-primary via-indigo-400 to-purple-400">Future of Education</span></h1>
           </Reveal>
           <Reveal delay={400}>
-            <p className="text-xl text-muted-text font-medium leading-relaxed max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground font-medium leading-relaxed max-w-2xl mx-auto">
               We&apos;re a distributed team of dreamers and doers building the tools 
               that empower thousands of educational institutions.
             </p>
@@ -107,7 +107,7 @@ export default function CareersPage() {
                       <span>{job.location}</span>
                     </div>
                   </div>
-                  <Link href="/contact" className="w-full md:w-auto px-8 py-4 bg-card text-foreground rounded-xl font-bold hover:bg-primary hover:text-white transition-all text-center border border-border">
+                  <Link href="/contact" className="w-full md:w-auto px-8 py-4 bg-card text-foreground rounded-xl font-bold hover:bg-primary hover:text-primary-foreground transition-all text-center border border-border">
                     Apply Now
                   </Link>
                 </div>

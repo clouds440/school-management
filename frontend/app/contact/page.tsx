@@ -68,25 +68,29 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center py-12 px-4 md:px-8">
-      <div className="max-w-4xl w-full mb-8 self-start lg:ml-0 overflow-visible">
+    <div className="min-h-screen bg-linear-to-br from-background via-background to-secondary/5 flex flex-col items-center py-8 md:py-12 px-4 md:px-8 relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute top-20 left-20 w-64 h-64 bg-primary/10 rounded-full mix-blend-screen filter blur-3xl opacity-20"></div>
+      <div className="absolute bottom-20 right-20 w-64 h-64 bg-secondary/10 rounded-full mix-blend-screen filter blur-3xl opacity-20"></div>
+
+      <div className="max-w-4xl w-full mb-6 md:mb-8 self-start lg:ml-0 relative z-10">
         <BackButton showHome={true} label="Back to Previous" />
       </div>
-      <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-5 gap-12">
+      <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-5 gap-8 md:gap-12 relative z-10">
 
         {/* Left Side: Info */}
-        <div className="lg:col-span-2 space-y-8 animate-fade-in-up">
+        <div className="lg:col-span-2 space-y-6 md:space-y-8 animate-fade-in-up">
           <div className="space-y-4">
-            <h1 className="text-4xl font-extrabold text-foreground tracking-tight leading-tight">
-              Get in <span className="text-primary">Touch</span>
+            <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
+              Get in <span className="text-primary italic">Touch</span>
             </h1>
-              <p className="text-muted-foreground leading-relaxed text-lg">
+              <p className="text-muted-foreground leading-relaxed text-base md:text-lg font-medium">
               Have a question about the platform or need technical assistance?
               Our administrative team is here to help.
             </p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <InfoCard
               icon={<ShieldHalf className="w-5 h-5 text-indigo-600" />}
               title="Identity Verified"
@@ -99,16 +103,16 @@ export default function ContactPage() {
             />
           </div>
 
-          <div className="pt-8 border-t border-border">
+          <div className="pt-6 md:pt-8 border-t border-border/50">
             <Link
               href="/docs"
-              className="group flex items-center p-6 bg-card rounded-sm shadow-sm border border-border hover:border-primary/20 hover:shadow-md transition-all"
+              className="group flex items-center p-4 md:p-6 bg-linear-to-br from-card/50 to-card/30 backdrop-blur-xl rounded-2xl shadow-lg border border-border/50 hover:border-primary/30 hover:shadow-xl transition-all"
             >
-              <div className="w-12 h-12 bg-primary/5 rounded-sm flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-linear-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 transition-transform border border-primary/20">
                 <BookOpen className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h4 className="font-bold text-foreground group-hover:text-primary transition-colors">Documentation</h4>
+                <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">Documentation</h4>
                 <p className="text-sm text-muted-foreground mt-1">Self-service guides and FAQs</p>
               </div>
               <ArrowRight className="ml-auto w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -118,21 +122,24 @@ export default function ContactPage() {
 
         {/* Right Side: Form */}
         <div className="lg:col-span-3">
-          <div className="bg-card rounded-sm shadow-xl shadow-gray-200/50 border border-border p-8 md:p-10 relative overflow-hidden">
+          <div className="bg-linear-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 p-6 md:p-10 relative overflow-hidden">
             {!user ? (
               <div className="text-center py-12 space-y-6">
-                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <AlertCircle className="w-8 h-8 text-red-500" />
+                <div className="relative mx-auto w-16 h-16 mb-6">
+                  <div className="absolute inset-0 bg-red-100 rounded-full animate-pulse" />
+                  <div className="relative w-full h-full bg-red-50 rounded-full flex items-center justify-center">
+                    <AlertCircle className="w-8 h-8 text-red-500" />
+                  </div>
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">Login Required</h2>
-                <p className="text-muted-foreground">
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground">Login Required</h2>
+                <p className="text-muted-foreground text-base md:text-lg">
                   To ensure the security and tracking of your support requests,
                   you must be logged in to contact our team.
                 </p>
                 <div className="pt-4">
                   <Link
                     href="/login"
-                    className="px-8 py-3 bg-primary text-primary rounded-sm font-bold hover:brightness-95 shadow-lg transition-all"
+                    className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-xl font-semibold hover:brightness-95 shadow-lg hover:shadow-xl transition-all"
                   >
                     Login to Continue
                   </Link>
@@ -140,24 +147,27 @@ export default function ContactPage() {
               </div>
             ) : isSuccess ? (
               <div className="text-center py-12 space-y-6 animate-scale-in">
-                <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle className="w-10 h-10 text-green-500" />
+                <div className="relative mx-auto w-20 h-20 mb-6">
+                  <div className="absolute inset-0 bg-green-100 rounded-full animate-pulse" />
+                  <div className="relative w-full h-full bg-green-50 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-10 h-10 text-green-500" />
+                  </div>
                 </div>
-                <h2 className="text-3xl font-bold text-foreground">Message Sent!</h2>
-                <p className="text-muted-foreground text-lg">
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground">Message Sent!</h2>
+                <p className="text-muted-foreground text-base md:text-lg font-medium">
                   Thank you for reaching out. Your mail has been logged and assigned to
                   our administrative team. You will receive a notification when they reply.
                 </p>
                 <button
                   onClick={() => setIsSuccess(false)}
-                  className="text-primary font-bold hover:underline py-2"
+                  className="text-primary font-semibold hover:text-primary/80 underline underline-offset-4 py-2"
                 >
                   Send another message
                 </button>
                 <div className="pt-6">
                   <Link
                     href={user.role === Role.SUPER_ADMIN ? '/admin/organizations' : '/mail'}
-                    className="px-8 py-3 bg-primary text-primary-text rounded-sm font-bold hover:brightness-95 shadow-lg transition-all"
+                    className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-xl font-semibold hover:brightness-95 shadow-lg hover:shadow-xl transition-all"
                   >
                     Go to Your Mailbox
                   </Link>
@@ -166,19 +176,19 @@ export default function ContactPage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in-up" noValidate>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider ml-1">Subject</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 opacity-70">Subject</label>
                   <input
                     type="text"
                     required
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder="Brief summary of your inquiry"
-                    className="w-full px-5 py-4 bg-card border border-border rounded-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground placeholder:text-muted-foreground"
+                    className="w-full px-5 py-4 bg-background/50 backdrop-blur-sm border border-border/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground placeholder:text-muted-foreground font-medium"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-foreground uppercase tracking-wider ml-1">Message</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-foreground ml-1 opacity-70">Message</label>
                   <MarkdownEditor
                     value={message}
                     onChange={setMessage}
@@ -193,7 +203,7 @@ export default function ContactPage() {
                 </div>
 
                 {error && (
-                  <div className="p-4 bg-red-200 text-red-600 rounded-sm flex items-center text-sm font-medium animate-shake">
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center text-sm font-medium animate-shake">
                     <AlertCircle className="w-5 h-5 mr-3 shrink-0" />
                     {error}
                   </div>
@@ -205,12 +215,12 @@ export default function ContactPage() {
                   icon={Send}
                   variant="primary"
                   loadingText="Sending..."
-                  className="w-full text-lg"
+                  className="w-full text-base font-semibold shadow-lg hover:shadow-xl transition-shadow"
                 >
                   Send Message
                 </Button>
                 <p className="text-center text-xs text-muted-foreground font-medium">
-                  By submitting this form, you agree to our <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+                  By submitting this form, you agree to our <Link href="/terms" className="text-primary hover:text-primary/80 underline underline-offset-4">Terms of Service</Link> and <Link href="/privacy" className="text-primary hover:text-primary/80 underline underline-offset-4">Privacy Policy</Link>.
                 </p>
               </form>
             )}
@@ -224,7 +234,7 @@ export default function ContactPage() {
 function InfoCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (
     <div className="flex items-start space-x-4">
-      <div className="w-10 h-10 bg-card rounded-sm shadow-sm border border-border flex items-center justify-center shrink-0">
+      <div className="w-10 h-10 bg-card rounded-lg shadow-sm border border-border flex items-center justify-center shrink-0">
         {icon}
       </div>
       <div>
