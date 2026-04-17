@@ -126,34 +126,43 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
     });
 
     useEffect(() => {
+        let mounted = true;
+
         const fetchAllData = () => {
-            if (token && (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER || user?.role === Role.TEACHER || user?.role === Role.STUDENT)) {
+            // Prevent fetching if component has unmounted
+            if (!mounted) return;
+
+            // Check if token is still valid (not cleared from localStorage)
+            const currentToken = localStorage.getItem('token');
+            if (!currentToken) return;
+
+            if (currentToken && (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER || user?.role === Role.TEACHER || user?.role === Role.STUDENT)) {
                 // Fetch Org Stats
-                api.org.getStats(token)
-                    .then(data => dispatch({ type: 'STATS_SET_ORG', payload: data }))
+                api.org.getStats(currentToken)
+                    .then(data => { if (mounted) dispatch({ type: 'STATS_SET_ORG', payload: data }); })
                     .catch(err => console.error('Failed to fetch org stats:', err));
 
                 // Fetch Org Data
-                api.org.getOrgData(token)
+                api.org.getOrgData(currentToken)
                     .then((data: Organization) => {
-                        dispatch({ type: 'STATS_SET_ORG_DATA', payload: data });
+                        if (mounted) dispatch({ type: 'STATS_SET_ORG_DATA', payload: data });
                     })
                     .catch((err) => console.error('Failed to fetch org data:', err));
 
                 // Fetch Mail Stats
-                api.mail.getUnreadCount(token)
-                    .then(data => dispatch({ type: 'STATS_SET_MAIL', payload: data }))
+                api.mail.getUnreadCount(currentToken)
+                    .then(data => { if (mounted) dispatch({ type: 'STATS_SET_MAIL', payload: data }); })
                     .catch(err => console.error('Failed to fetch mail stats:', err));
 
                 // Fetch Chat Stats
-                api.chat.getUnreadCount(token)
-                    .then(data => dispatch({ type: 'STATS_SET_CHAT', payload: data }))
+                api.chat.getUnreadCount(currentToken)
+                    .then(data => { if (mounted) dispatch({ type: 'STATS_SET_CHAT', payload: data }); })
                     .catch(err => console.error('Failed to fetch chat stats:', err));
 
                 // Fetch User Profile (if Teacher or Student)
                 if ((user?.role === Role.TEACHER || user?.role === Role.STUDENT || user?.role === Role.ORG_MANAGER) && !userProfile) {
-                    api.org.getProfile(token)
-                        .then(data => dispatch({ type: 'AUTH_SET_PROFILE', payload: data as Teacher | Student }))
+                    api.org.getProfile(currentToken)
+                        .then(data => { if (mounted) dispatch({ type: 'AUTH_SET_PROFILE', payload: data as Teacher | Student }); })
                         .catch(err => console.error('Failed to fetch profile:', err));
                 }
             }
@@ -164,9 +173,10 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
         // Debounce global refreshes to avoid storms when socket events flood
         const timerRef: { current: number | null } = { current: null };
         const scheduleFetch = () => {
+            if (!mounted) return;
             if (timerRef.current) window.clearTimeout(timerRef.current);
             timerRef.current = window.setTimeout(() => {
-                fetchAllData();
+                if (mounted) fetchAllData();
                 timerRef.current = null;
             }, 1000);
         };
@@ -182,6 +192,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
         window.addEventListener('stats-updated', refreshOnEvent);
 
         return () => {
+            mounted = false;
             unsubs.forEach(u => u());
             window.removeEventListener('stats-updated', refreshOnEvent);
             if (timerRef.current) window.clearTimeout(timerRef.current);

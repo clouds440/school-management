@@ -161,7 +161,7 @@ export function DataTable<T>({
                                             onClick={(e) => e.stopPropagation()}
                                             className="absolute right-0 top-0 h-full w-1 cursor-col-resize group-hover/th:bg-primary/20 transition-colors z-10"
                                         >
-                                            <div className="absolute right-0 top-1/4 h-1/2 w-[2px] bg-border group-hover/th:bg-primary/60 transition-colors" />
+                                            <div className="absolute right-0 top-1/4 h-1/2 w-0.5 bg-border group-hover/th:bg-primary/60 transition-colors" />
                                         </div>
                                     </th>
                                 );

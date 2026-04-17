@@ -304,7 +304,7 @@ export default function CoursesPage() {
                             id="description"
                             value={editFormData.description}
                             onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                            className="w-full px-6 py-4 rounded-sm border border-border bg-input focus:bg-background focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all min-h-[120px] text-card-foreground font-bold resize-none"
+                            className="w-full px-6 py-4 rounded-sm border border-border bg-input focus:bg-background focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all min-h-30 text-card-foreground font-bold resize-none"
                             placeholder="Briefly describe this course..."
                         />
                     </div>

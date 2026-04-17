@@ -13,7 +13,7 @@ interface ToastProps {
     onClose: (id: string) => void;
 }
 
-export function Toast({ id, message, type, duration = 3000, onClose }: ToastProps) {
+export function Toast({ id, message, type, duration = 2000, onClose }: ToastProps) {
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
@@ -23,7 +23,7 @@ export function Toast({ id, message, type, duration = 3000, onClose }: ToastProp
         const timer = setTimeout(() => {
             setIsVisible(false);
             // Wait for exit animation to complete before removing
-            setTimeout(() => onClose(id), 400);
+            setTimeout(() => onClose(id), 300);
         }, duration);
 
         return () => clearTimeout(timer);
@@ -31,7 +31,7 @@ export function Toast({ id, message, type, duration = 3000, onClose }: ToastProp
 
     const handleClose = () => {
         setIsVisible(false);
-        setTimeout(() => onClose(id), 300);
+        setTimeout(() => onClose(id), 200);
     };
 
     const icons = {
@@ -52,7 +52,7 @@ export function Toast({ id, message, type, duration = 3000, onClose }: ToastProp
                 }`}
         >
             <div className="shrink-0 p-2 bg-foreground/5 rounded-sm shadow-sm">{icons[type]}</div>
-            <p className="font-bold text-md drop-shadow-[0_1.2px_1.2px_rgba(255,255,255,0.5)] flex-1 wrap-break-word">{message}</p>
+            <p className="font-bold text-md flex-1 wrap-break-word">{message}</p>
             <button
                 onClick={handleClose}
                 className="shrink-0 p-1.5 hover:bg-foreground/10 rounded-sm transition-all active:scale-90"

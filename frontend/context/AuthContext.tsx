@@ -7,6 +7,7 @@ import { Role } from '@/types';
 import { useGlobal, JwtPayload } from './GlobalContext';
 import { PLATFORM_NAME, DASHBOARD_MODULES } from '@/lib/constants';
 import { clearChatSession } from '@/lib/chatStore';
+import { disconnectSocket } from '@/hooks/useSocket';
 
 export type { JwtPayload };
 
@@ -32,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('token');
         localStorage.removeItem('themeMode');
         clearChatSession();
+        disconnectSocket();
         dispatch({ type: 'AUTH_LOGOUT' });
         router.replace('/login');
         if (currentToken) {
@@ -79,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (currentToken && (!failedToken || failedToken === currentToken)) {
                 localStorage.removeItem('token');
                 clearChatSession();
+                disconnectSocket();
                 dispatch({ type: 'AUTH_LOGOUT' });
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Your session has expired. Please log in again.', type: 'info' } });
                 router.replace('/login');

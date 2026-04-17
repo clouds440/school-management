@@ -155,9 +155,9 @@ export default function TeachersPage() {
             accessor: (row: Teacher) => {
                 const sectionsList = row.sections || [];
                 return sectionsList.length > 0 ? (
-                    <div className="flex flex-wrap gap-1 max-w-[200px]">
+                    <div className="flex flex-wrap gap-1 max-w-50">
                         {sectionsList.map(sec => (
-                            <span key={sec?.id || Math.random()} className="bg-primary/5 text-primary px-2 py-1 rounded-sm text-xs font-medium border border-primary/10 truncate max-w-[150px]" title={sec?.name}>
+                            <span key={sec?.id || Math.random()} className="bg-primary/5 text-primary px-2 py-1 rounded-sm text-xs font-medium border border-primary/10 truncate max-w-37.5" title={sec?.name}>
                                 {sec?.name || 'Unknown'}
                             </span>
                         ))}

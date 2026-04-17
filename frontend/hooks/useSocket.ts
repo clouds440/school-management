@@ -120,3 +120,16 @@ export function useSocket(options: UseSocketOptions) {
 
     return { socket: socketSingleton, subscribe, joinRoom, leaveRoom, emit, isConnected };
 }
+
+/**
+ * Disconnect the socket singleton. Call this on logout to prevent
+ * socket events from firing with stale tokens.
+ */
+export function disconnectSocket() {
+    if (socketSingleton) {
+        socketSingleton.disconnect();
+        socketSingleton = null;
+        connected = false;
+        listenersSingleton.clear();
+    }
+}
