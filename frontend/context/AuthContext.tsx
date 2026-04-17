@@ -6,6 +6,7 @@ import { api, setUnauthorizedHandler } from '@/lib/api';
 import { Role } from '@/types';
 import { useGlobal, JwtPayload } from './GlobalContext';
 import { PLATFORM_NAME, DASHBOARD_MODULES } from '@/lib/constants';
+import { clearChatSession } from '@/lib/chatStore';
 
 export type { JwtPayload };
 
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentToken = token;
         localStorage.removeItem('token');
         localStorage.removeItem('themeMode');
+        clearChatSession();
         dispatch({ type: 'AUTH_LOGOUT' });
         router.replace('/login');
         if (currentToken) {
@@ -76,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // This prevents race conditions when switching accounts
             if (currentToken && (!failedToken || failedToken === currentToken)) {
                 localStorage.removeItem('token');
+                clearChatSession();
                 dispatch({ type: 'AUTH_LOGOUT' });
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Your session has expired. Please log in again.', type: 'info' } });
                 router.replace('/login');

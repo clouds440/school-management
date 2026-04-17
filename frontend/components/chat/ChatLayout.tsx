@@ -8,7 +8,16 @@ import { useUI } from '@/context/UIContext';
 import { useSocket } from '@/hooks/useSocket';
 import Image from 'next/image';
 import { api } from '@/lib/api';
-import { getUserChatsCached, insertOrUpdateChatFromMessage, markAsReadGuard, getCachedChats } from '@/lib/chatStore';
+import {
+    getUserChatsCached,
+    insertOrUpdateChatFromMessage,
+    markAsReadGuard,
+    getCachedChats,
+    getCachedMessages,
+    setCachedMessages,
+    getCachedComposerStates,
+    setCachedComposerStates
+} from '@/lib/chatStore';
 import { BrandIcon } from '../ui/Brand';
 import { Chat, ChatMessage, ChatParticipant, ChatType, ChatMessageType, PaginatedResponse, Role, User } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -65,11 +74,17 @@ export function ChatLayout() {
             setTargetMessageId(msgIdParam);
         }
     }, [msgIdParam]);
-    const [messages, setMessages] = useState<ChatMessageWithMeta[]>([]);
+    // Initialize from persistent store
+    const [messages, setMessages] = useState<ChatMessageWithMeta[]>(() => {
+        if (initialChatId) {
+            return getCachedMessages(initialChatId);
+        }
+        return [];
+    });
     const [isLoadingChats, setIsLoadingChats] = useState(true);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [isSending, setIsSending] = useState(false);
-    const [chatComposerStates, setChatComposerStates] = useState<ChatComposerStateMap>({});
+    const [chatComposerStates, setChatComposerStates] = useState<ChatComposerStateMap>(() => getCachedComposerStates());
     const [isUploading, setIsUploading] = useState(false);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
@@ -314,7 +329,9 @@ export function ChatLayout() {
                 res = await api.chat.getChatMessages(chatId, token, { limit: 35, page: 1 });
             }
 
-            setMessages(res.data);
+            const messagesData = res.data;
+            setMessages(messagesData);
+            setCachedMessages(chatId, messagesData);
             setHasMoreMessages(res.hasMoreBefore ?? (res.currentPage < res.totalPages));
             setHasMoreAfter(res.hasMoreAfter ?? false);
 
@@ -343,8 +360,28 @@ export function ChatLayout() {
 
     useEffect(() => {
         if (!activeChatId) return;
-        fetchInitialMessages(activeChatId, targetMessageId);
-    }, [activeChatId, fetchInitialMessages, targetMessageId]);
+        // Load cached messages if available, otherwise fetch
+        const cachedMessages = getCachedMessages(activeChatId);
+        if (cachedMessages.length > 0 && !targetMessageId) {
+            setMessages(cachedMessages);
+            setIsLoadingMessages(false);
+            setTimeout(() => scrollToBottom('instant'), 100);
+        } else {
+            fetchInitialMessages(activeChatId, targetMessageId);
+        }
+    }, [activeChatId, fetchInitialMessages, targetMessageId, scrollToBottom]);
+
+    // Sync chatComposerStates to cache whenever it changes
+    useEffect(() => {
+        setCachedComposerStates(chatComposerStates);
+    }, [chatComposerStates]);
+
+    // Sync messages state to cache whenever it changes
+    useEffect(() => {
+        if (activeChatId && messages.length > 0) {
+            setCachedMessages(activeChatId, messages);
+        }
+    }, [messages, activeChatId]);
 
     useEffect(() => {
         const unread = chats.reduce((total, chat) => total + (chat.unreadCount || 0), 0);
@@ -1818,7 +1855,7 @@ export function ChatLayout() {
                                             )}
 
                                             {/* Textarea */}
-                                            <div className="relative flex-1">
+                                            <div className="relative flex-1 py-0.5">
                                                 <textarea
                                                     ref={textareaRef}
                                                     value={messageDraft}
@@ -1886,8 +1923,7 @@ export function ChatLayout() {
                                                     onBlur={() => setTimeout(() => setShowMentionDropdown(false), 200)}
                                                     placeholder={stagedFiles.length > 0 ? "Add a caption..." : `Message... ${isDesktop ? '(Shift + Enter for new line)' : ''}`}
                                                     rows={1}
-                                                    className={`w-full bg-transparent border-none text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-60 leading-relaxed
-                                                        ${isComposerExpanded ? 'px-2 py-3' : 'py-3 px-2'}`}
+                                                    className={`w-full bg-transparent px-2 pb-2 pt-3 border-none text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-60 leading-relaxed`}
                                                 />
 
                                                 {/* Mention Dropdown */}
@@ -1938,12 +1974,12 @@ export function ChatLayout() {
 
                                         {/* Bottom row actions in expanded mode */}
                                         {isComposerExpanded && (
-                                            <div className="flex items-center justify-between px-2 pb-2 pt-1">
+                                            <div className="flex items-center justify-between px-2 py-2">
                                                 <div className="flex items-center gap-1">
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                                        className="text-primary/80 py-2 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
+                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
                                                         title={isPreviewMode ? "Write text" : "Preview markdown"}
                                                     >
                                                         {isPreviewMode ? <Pencil size={22} /> : <View size={22} />}
@@ -1952,7 +1988,7 @@ export function ChatLayout() {
                                                     <button
                                                         type="button"
                                                         onClick={() => document.getElementById('chat-file-upload')?.click()}
-                                                        className="text-primary/80 py-2 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
+                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-2 rounded-lg"
                                                         title="Attach file"
                                                     >
                                                         <Paperclip size={22} className="cursor-pointer -rotate-45" />

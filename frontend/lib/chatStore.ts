@@ -1,5 +1,6 @@
 import { api } from './api';
 import { Chat, ChatMessage } from '@/types';
+import { ChatComposerStateMap, ChatMessageWithMeta } from '@/components/chat/chatLayoutHelpers';
 
 type ChatCache = {
     data: Chat[] | null;
@@ -10,10 +11,56 @@ type ChatCache = {
 
 const CHAT_CACHE_TTL_MS = 3 * 1000; // 3 seconds - keep UI responsive to new messages
 
-const cache: { chats: ChatCache; lastReadByChat: Record<string, string | number> } = {
-    chats: { data: null, promise: null, lastFetched: null, isFetching: false },
-    lastReadByChat: {}
+const STORAGE_KEY = 'chat_session_store';
+
+type ChatSessionStore = {
+    messagesByChat: Record<string, ChatMessageWithMeta[]>;
+    composerStates: ChatComposerStateMap;
+    lastReadByChat: Record<string, string | number>;
 };
+
+const cache: { chats: ChatCache; session: ChatSessionStore } = {
+    chats: { data: null, promise: null, lastFetched: null, isFetching: false },
+    session: {
+        messagesByChat: {},
+        composerStates: {},
+        lastReadByChat: {}
+    }
+};
+
+// Load from localStorage on module init
+function loadFromStorage(): ChatSessionStore {
+    if (typeof window === 'undefined') {
+        return { messagesByChat: {}, composerStates: {}, lastReadByChat: {} };
+    }
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            return {
+                messagesByChat: parsed.messagesByChat || {},
+                composerStates: parsed.composerStates || {},
+                lastReadByChat: parsed.lastReadByChat || {}
+            };
+        }
+    } catch (err) {
+        console.warn('Failed to load chat session from storage', err);
+    }
+    return { messagesByChat: {}, composerStates: {}, lastReadByChat: {} };
+}
+
+// Save to localStorage
+function saveToStorage() {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cache.session));
+    } catch (err) {
+        console.warn('Failed to save chat session to storage', err);
+    }
+}
+
+// Initialize session from storage
+cache.session = loadFromStorage();
 
 export async function getUserChatsCached(token: string): Promise<Chat[]> {
     if (!token) return [];
@@ -78,17 +125,18 @@ export function getCachedChats() {
 }
 
 export function getLastReadMessageId(chatId: string) {
-    return cache.lastReadByChat[chatId];
+    return cache.session.lastReadByChat[chatId];
 }
 
 export function setLastReadMessageId(chatId: string, messageId: string | number) {
-    cache.lastReadByChat[chatId] = messageId;
+    cache.session.lastReadByChat[chatId] = messageId;
+    saveToStorage();
 }
 
 export async function markAsReadGuard(chatId: string, messageId: string | number | '', token: string) {
     if (!token) return;
     // If messageId is empty, we treat it as "mark latest"; skip if we already recorded the latest
-    const last = cache.lastReadByChat[chatId];
+    const last = cache.session.lastReadByChat[chatId];
     if (messageId && last !== undefined) {
         try {
             const numLast = typeof last === 'number' ? last : Number(last);
@@ -100,9 +148,55 @@ export async function markAsReadGuard(chatId: string, messageId: string | number
 
     try {
         await api.chat.markAsRead(chatId, messageId === '' ? '' : String(messageId), token);
-        cache.lastReadByChat[chatId] = messageId || '';
+        cache.session.lastReadByChat[chatId] = messageId || '';
+        saveToStorage();
     } catch (err) {
         // don't throw — just log; callers already handle UI
         console.error('markAsReadGuard failed', err);
     }
+}
+
+// Chat message management
+export function getCachedMessages(chatId: string): ChatMessageWithMeta[] {
+    return cache.session.messagesByChat[chatId] || [];
+}
+
+export function setCachedMessages(chatId: string, messages: ChatMessageWithMeta[]) {
+    cache.session.messagesByChat[chatId] = messages;
+    saveToStorage();
+}
+
+export function updateCachedMessages(chatId: string, messages: ChatMessageWithMeta[]) {
+    const existing = cache.session.messagesByChat[chatId] || [];
+    cache.session.messagesByChat[chatId] = messages;
+    saveToStorage();
+}
+
+// Composer state management
+export function getCachedComposerState(chatId: string) {
+    return cache.session.composerStates[chatId];
+}
+
+export function setCachedComposerState(chatId: string, state: any) {
+    cache.session.composerStates[chatId] = state;
+    saveToStorage();
+}
+
+export function getCachedComposerStates(): ChatComposerStateMap {
+    return cache.session.composerStates;
+}
+
+export function setCachedComposerStates(states: ChatComposerStateMap) {
+    cache.session.composerStates = states;
+    saveToStorage();
+}
+
+// Clear all session data (for logout)
+export function clearChatSession() {
+    cache.session = {
+        messagesByChat: {},
+        composerStates: {},
+        lastReadByChat: {}
+    };
+    saveToStorage();
 }
