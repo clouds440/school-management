@@ -87,7 +87,11 @@ export class AuthService {
     return this.generateToken(user, rememberMe, loginDto);
   }
 
-  async generateToken(user: TokenUser, rememberMe: boolean = false, loginDto?: LoginDto) {
+  async generateToken(
+    user: TokenUser,
+    rememberMe: boolean = false,
+    loginDto?: LoginDto,
+  ) {
     const payload = {
       sub: user.id,
       email: user.email,
@@ -142,7 +146,9 @@ export class AuthService {
           where: { userId: user.id },
           select: { deviceId: true },
         });
-        const isNewDevice = !deviceSessions.some(s => s.deviceId === loginDto.deviceId);
+        const isNewDevice = !deviceSessions.some(
+          (s) => s.deviceId === loginDto.deviceId,
+        );
 
         // Create new session
         await this.prisma.session.create({
@@ -263,7 +269,11 @@ export class AuthService {
     return sessions;
   }
 
-  async revokeSession(userId: string, sessionId: string, currentToken?: string) {
+  async revokeSession(
+    userId: string,
+    sessionId: string,
+    currentToken?: string,
+  ) {
     const session = await this.prisma.session.findFirst({
       where: { id: sessionId, userId },
     });
@@ -275,7 +285,10 @@ export class AuthService {
     // Check if trying to revoke current session
     if (currentToken && session.token === currentToken) {
       // Instead of revoking, return instruction to logout
-      return { message: 'Cannot revoke current session. Please log out instead.', shouldLogout: true };
+      return {
+        message: 'Cannot revoke current session. Please log out instead.',
+        shouldLogout: true,
+      };
     }
 
     await this.prisma.session.update({

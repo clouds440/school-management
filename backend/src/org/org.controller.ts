@@ -548,11 +548,10 @@ export class OrgController {
     // Find student profile for the current user
     return this.orgService.getStudentByUserId(req.user.id).then((student) => {
       if (!student) throw new NotFoundException('Student profile not found');
-      return this.orgService.createSubmission(
-        orgId,
-        student.id,
-        { ...dto, assessmentId },
-      );
+      return this.orgService.createSubmission(orgId, student.id, {
+        ...dto,
+        assessmentId,
+      });
     });
   }
 

@@ -78,7 +78,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Delete('sessions/:sessionId')
   async revokeSession(
-    @Request() req: { user: { id: string }; headers: { authorization?: string } },
+    @Request()
+    req: { user: { id: string }; headers: { authorization?: string } },
     @Param('sessionId') sessionId: string,
   ) {
     const authHeader = req.headers.authorization;
@@ -88,7 +89,13 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Delete('sessions')
-  async revokeAllSessions(@Request() req: { user: { id: string }; headers: { authorization?: string } }) {
+  async revokeAllSessions(
+    @Request()
+    req: {
+      user: { id: string };
+      headers: { authorization?: string };
+    },
+  ) {
     const authHeader = req.headers.authorization;
     const token = authHeader?.replace('Bearer ', '');
     return this.authService.revokeAllSessions(req.user.id, token);

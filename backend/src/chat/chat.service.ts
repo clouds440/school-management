@@ -31,7 +31,7 @@ export class ChatService {
     private readonly prisma: PrismaService,
     private readonly events: EventsGateway,
     private readonly notifications: NotificationsService,
-  ) { }
+  ) {}
 
   async searchUsers(query: string, user: CurrentUser) {
     if (user.role === Role.STUDENT) {
@@ -634,11 +634,11 @@ export class ChatService {
       }),
       ...(lastHistory
         ? [
-          this.prisma.chatMembershipHistory.update({
-            where: { id: lastHistory.id },
-            data: { deactivatedAt: new Date() },
-          }),
-        ]
+            this.prisma.chatMembershipHistory.update({
+              where: { id: lastHistory.id },
+              data: { deactivatedAt: new Date() },
+            }),
+          ]
         : []),
     ]);
 
@@ -1156,21 +1156,30 @@ export class ChatService {
       this.events.emitToRoom(`user:${p.userId}`, 'chat:message', newMessage);
     }
 
-    if (dto.mentionedUserIds && dto.mentionedUserIds.length > 0 && newMessage.chat?.type === ChatType.GROUP) {
+    if (
+      dto.mentionedUserIds &&
+      dto.mentionedUserIds.length > 0 &&
+      newMessage.chat?.type === ChatType.GROUP
+    ) {
       const senderName = newMessage.sender?.name || 'Someone';
       const chatName = newMessage.chat?.name || 'a group';
 
       for (const userId of dto.mentionedUserIds) {
         if (userId === user.id) continue;
-        const isParticipant = activeParticipants.find(p => p.userId === userId);
+        const isParticipant = activeParticipants.find(
+          (p) => p.userId === userId,
+        );
         if (isParticipant) {
-          const body = dto.content.length > 30 ? dto.content.substring(0, 30) + '...' : dto.content;
+          const body =
+            dto.content.length > 30
+              ? dto.content.substring(0, 30) + '...'
+              : dto.content;
           await this.notifications.createNotification({
             userId,
             title: `${senderName} mentioned you in ${chatName}.`,
             body,
             type: 'CHAT_MENTION',
-            actionUrl: `/chat?id=${chatId}&msgId=${newMessage.id}`
+            actionUrl: `/chat?id=${chatId}&msgId=${newMessage.id}`,
           });
         }
       }
