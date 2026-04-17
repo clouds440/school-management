@@ -159,10 +159,10 @@ export class AdminService {
       },
     });
 
-    // Instant Revocation: Force logout all users to refresh their tokens with the new status
-    await this.prisma.user.updateMany({
-      where: { organizationId: id },
-      data: { tokenVersion: { increment: 1 } },
+    // Instant Revocation: Revoke all sessions for organization users
+    await this.prisma.session.updateMany({
+      where: { user: { organizationId: id } },
+      data: { isActive: false },
     });
 
     // Find the admin user to send the welcome/re-approval mail
@@ -230,9 +230,9 @@ export class AdminService {
       });
 
       // 2. Instant Revocation for all Org users
-      await tx.user.updateMany({
-        where: { organizationId: id },
-        data: { tokenVersion: { increment: 1 } },
+      await tx.session.updateMany({
+        where: { user: { organizationId: id } },
+        data: { isActive: false },
       });
 
       // 3. Find any admin user of this organization to be the target of the mail
@@ -305,9 +305,9 @@ export class AdminService {
       });
 
       // 2. Instant Revocation for all Org users
-      await tx.user.updateMany({
-        where: { organizationId: id },
-        data: { tokenVersion: { increment: 1 } },
+      await tx.session.updateMany({
+        where: { user: { organizationId: id } },
+        data: { isActive: false },
       });
 
       // 3. Find any admin user of this organization to be the target of the mail
@@ -431,7 +431,6 @@ export class AdminService {
         name: data.name,
         phone: data.phone,
         role: Role.PLATFORM_ADMIN,
-        tokenVersion: 0,
       },
       select: {
         id: true,
@@ -502,7 +501,6 @@ export class AdminService {
       data: {
         password: hashedNew,
         isFirstLogin: false,
-        tokenVersion: { increment: 1 },
       },
     });
 

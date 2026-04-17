@@ -6,7 +6,6 @@ import { Socket } from 'socket.io';
 
 interface WsJwtPayload {
   sub: string;
-  tokenVersion?: number;
 }
 
 /**
@@ -51,14 +50,10 @@ export class WsJwtGuard implements CanActivate {
           name: true,
           email: true,
           organizationId: true,
-          tokenVersion: true,
         },
       });
 
       if (!user) return false;
-
-      // Token version check
-      if (user.tokenVersion !== payload.tokenVersion) return false;
 
       // Attach user data to socket for downstream use
       client.data.user = user;

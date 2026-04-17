@@ -370,7 +370,6 @@ export class OrgService {
             organizationId: orgId,
             name: data.name,
             phone: data.phone,
-            tokenVersion: 0,
           },
         });
 
@@ -1006,7 +1005,6 @@ export class OrgService {
             organizationId: orgId,
             name: data.name,
             phone: data.phone,
-            tokenVersion: 0,
           },
         });
 

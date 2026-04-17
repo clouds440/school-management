@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { ConfigService } from '@nestjs/config';
 import { WsJwtGuard } from './ws-jwt.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { ExtractJwt } from 'passport-jwt';
 
 /**
  * Authenticated user data attached to socket.data.user by WsJwtGuard.
@@ -62,6 +63,30 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {}
 
   // ──────────────────────────── Connection lifecycle ──────────────────────────
+
+  /**
+   * Check if the user's session is active.
+   * Used to validate write operations while allowing read-only access.
+   */
+  private async isSessionActive(client: Socket): Promise<boolean> {
+    const token = ExtractJwt.fromAuthHeaderAsBearerToken()(client.handshake.auth as Record<string, string>) ||
+                  client.handshake.headers?.authorization?.replace('Bearer ', '');
+    
+    if (!token) return false;
+
+    const user = client.data.user as SocketUser;
+    if (!user) return false;
+
+    const session = await this.prisma.session.findFirst({
+      where: {
+        userId: user.id,
+        token,
+        isActive: true,
+      },
+    });
+
+    return !!session;
+  }
 
   async handleConnection(client: Socket): Promise<void> {
     const isValid = await this.wsGuard.validateClient(client);
@@ -117,6 +142,13 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const user = client.data.user as SocketUser;
 
+    // Check session is active for write operations
+    const isSessionActive = await this.isSessionActive(client);
+    if (!isSessionActive) {
+      client.emit('error', { message: 'Session expired. Please log in again.' });
+      return;
+    }
+
     // Security: For chat rooms, verify active participation
     if (data.roomId.startsWith('chat:')) {
       const chatId = data.roomId.replace('chat:', '');
@@ -156,6 +188,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!client.data.user || !data?.chatId) return;
 
     const user = client.data.user as SocketUser;
+
+    // Check session is active for write operations
+    const isSessionActive = await this.isSessionActive(client);
+    if (!isSessionActive) {
+      client.emit('error', { message: 'Session expired. Please log in again.' });
+      return;
+    }
+
     const participant = await this.prisma.chatParticipant.findUnique({
       where: { chatId_userId: { chatId: data.chatId, userId: user.id } },
     });
@@ -188,6 +228,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!client.data.user || !data?.chatId) return;
 
     const user = client.data.user as SocketUser;
+
+    // Check session is active for write operations
+    const isSessionActive = await this.isSessionActive(client);
+    if (!isSessionActive) {
+      client.emit('error', { message: 'Session expired. Please log in again.' });
+      return;
+    }
+
     const participant = await this.prisma.chatParticipant.findUnique({
       where: { chatId_userId: { chatId: data.chatId, userId: user.id } },
     });
