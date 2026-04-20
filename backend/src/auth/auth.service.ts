@@ -68,7 +68,7 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, ip: string = 'unknown') {
     const user = await this.prisma.user.findUnique({
       where: { email: loginDto.email },
       include: { organization: true, teacherProfile: true },
@@ -83,14 +83,18 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Cleanup old inactive sessions for this user (older than 90 days)
+    await this.cleanupOldSessions(user.id);
+
     const rememberMe = loginDto.rememberMe === true;
-    return this.generateToken(user, rememberMe, loginDto);
+    return this.generateToken(user, rememberMe, loginDto, ip);
   }
 
   async generateToken(
     user: TokenUser,
     rememberMe: boolean = false,
     loginDto?: LoginDto,
+    ip: string = 'unknown',
   ) {
     const payload = {
       sub: user.id,
@@ -117,6 +121,22 @@ export class AuthService {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + (rememberMe ? 30 : 1));
 
+      // Get location from IP (simple lookup)
+      let location: string | null = null;
+      if (ip !== 'unknown') {
+        try {
+          // Using a free IP geolocation API
+          const response = await fetch(`http://ip-api.com/json/${ip}`);
+          const data = await response.json();
+          if (data.status === 'success') {
+            location = `${data.city}, ${data.country}`;
+          }
+        } catch (error) {
+          // Silently fail location lookup
+          console.warn('Failed to lookup location from IP:', error);
+        }
+      }
+
       // Check if this device already has an active session
       const existingSession = await this.prisma.session.findFirst({
         where: {
@@ -127,6 +147,9 @@ export class AuthService {
       });
 
       if (existingSession) {
+        // Check for IP change (suspicious activity)
+        const ipChanged = existingSession.ip && existingSession.ip !== ip && ip !== 'unknown';
+        
         // Update existing session
         await this.prisma.session.update({
           where: { id: existingSession.id },
@@ -138,13 +161,36 @@ export class AuthService {
             deviceType: loginDto.deviceType,
             browser: loginDto.browser,
             os: loginDto.os,
+            ip,
+            location: location || existingSession.location,
           },
         });
+
+        // Send notification if IP changed (suspicious activity)
+        if (ipChanged) {
+          await this.prisma.notification.create({
+            data: {
+              userId: user.id,
+              title: 'Suspicious Activity Detected',
+              body: `Your account was accessed from a new IP address (${ip}) from ${location || 'Unknown Location'}. Previous IP: ${existingSession.ip}. If this wasn't you, please revoke this session in your settings.`,
+              type: 'SECURITY',
+              actionUrl: '/settings#sessions',
+              metadata: {
+                deviceId: loginDto.deviceId,
+                deviceName: loginDto.deviceName,
+                previousIp: existingSession.ip,
+                newIp: ip,
+                location,
+                loginTime: new Date().toISOString(),
+              },
+            },
+          });
+        }
       } else {
         // Check if this is a new device (first time seeing this deviceId)
         const deviceSessions = await this.prisma.session.findMany({
           where: { userId: user.id },
-          select: { deviceId: true },
+          select: { deviceId: true, ip: true, location: true },
         });
         const isNewDevice = !deviceSessions.some(
           (s) => s.deviceId === loginDto.deviceId,
@@ -161,6 +207,8 @@ export class AuthService {
             os: loginDto.os,
             token,
             expiresAt,
+            ip,
+            location,
           },
         });
 
@@ -170,12 +218,14 @@ export class AuthService {
             data: {
               userId: user.id,
               title: 'New Device Login',
-              body: `A new device (${loginDto.deviceName || 'Unknown Device'}) has logged into your account. If this wasn't you, please revoke this session in your settings.`,
+              body: `A new device (${loginDto.deviceName || 'Unknown Device'}) has logged into your account from ${location || 'Unknown Location'} (IP: ${ip}). If this wasn't you, please revoke this session in your settings.`,
               type: 'SECURITY',
-              actionUrl: '/settings',
+              actionUrl: '/settings#sessions',
               metadata: {
                 deviceId: loginDto.deviceId,
                 deviceName: loginDto.deviceName,
+                ip,
+                location,
                 loginTime: new Date().toISOString(),
               },
             },
@@ -246,13 +296,48 @@ export class AuthService {
     return this.generateToken(updatedUser);
   }
 
-  async logout(userId: string) {
-    // Revoke all sessions for this user
-    await this.prisma.session.updateMany({
-      where: { userId },
-      data: { isActive: false },
-    });
+  async logout(userId: string, token?: string) {
+    if (token) {
+      // Revoke only the current session
+      const session = await this.prisma.session.findFirst({
+        where: {
+          userId,
+          token,
+          isActive: true,
+        },
+      });
+
+      if (session) {
+        await this.prisma.session.update({
+          where: { id: session.id },
+          data: { isActive: false },
+        });
+      }
+    } else {
+      // Fallback: revoke all sessions if no token provided
+      await this.prisma.session.updateMany({
+        where: { userId },
+        data: { isActive: false },
+      });
+    }
     return { message: 'Logged out successfully' };
+  }
+
+  /**
+   * Cleanup old inactive sessions for a user
+   * Removes inactive sessions older than 90 days
+   */
+  private async cleanupOldSessions(userId: string) {
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    await this.prisma.session.deleteMany({
+      where: {
+        userId,
+        isActive: false,
+        expiresAt: { lt: ninetyDaysAgo },
+      },
+    });
   }
 
   async getSessions(userId: string) {

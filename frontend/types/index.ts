@@ -498,6 +498,7 @@ export interface Chat {
     creatorId: string;
     createdAt: string;
     updatedAt: string;
+    readOnly?: boolean;
     participants?: ChatParticipant[];
     messages?: ChatMessage[];
     _count?: { messages: number };

@@ -50,7 +50,7 @@ export const BrandIcon = React.memo(function BrandIcon({
   const user: FlexibleUser | null = externalUser || sessionUser;
 
   const segments = pathname?.split('/').filter(Boolean) || [];
-  const isDashboardContext = segments.length >= 2 && DASHBOARD_MODULES.includes(segments[1]);
+  const isDashboardContext = segments.length >= 1 && DASHBOARD_MODULES.includes(segments[0]);
   const isOrgBrandingActive = !forcePlatform && isDashboardContext && user?.orgName;
 
   const sizeClasses = {
@@ -175,7 +175,7 @@ export const Brand = React.memo(function Brand({
   const activeUser = user || sessionUser;
 
   const segments = pathname?.split('/').filter(Boolean) || [];
-  const isDashboardContext = segments.length >= 2 && DASHBOARD_MODULES.includes(segments[1]);
+  const isDashboardContext = segments.length >= 1 && DASHBOARD_MODULES.includes(segments[0]);
   const isOrgBrandingActive = !forcePlatform && isDashboardContext && activeUser?.orgName;
 
   const displayName = isOrgBrandingActive ? activeUser.orgName : PLATFORM_NAME;

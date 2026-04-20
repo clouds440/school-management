@@ -8,7 +8,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
     variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning' | 'black'
     icon?: React.ElementType
     px?: string
-    py?: string
+    py?: 'py-2.5' | string;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

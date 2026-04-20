@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, UserPlus, UserMinus, Shield, Loader2, Save } from 'lucide-react';
-import { Chat, User, Role } from '@/types';
+import { X, UserPlus, UserMinus, Shield, Loader2, Save, Lock, Unlock } from 'lucide-react';
+import { Chat, User, Role, ChatParticipantRole } from '@/types';
 import { api } from '@/lib/api';
 import { BrandIcon } from '../ui/Brand';
 import { PhotoUploadPicker } from '../ui/PhotoUploadPicker';
@@ -32,6 +32,7 @@ export function ChatSettingsModal({
     const { dispatch } = useGlobal();
     const [name, setName] = useState(chat.name || '');
     const [avatarUrl, setAvatarUrl] = useState(chat.avatarUrl || '');
+    const [readOnly, setReadOnly] = useState(chat.readOnly || false);
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -39,6 +40,7 @@ export function ChatSettingsModal({
         if (isOpen) {
             setName(chat.name || '');
             setAvatarUrl(chat.avatarUrl || '');
+            setReadOnly(chat.readOnly || false);
         }
     }, [isOpen, chat]);
 
@@ -50,7 +52,7 @@ export function ChatSettingsModal({
         if (!name.trim()) return;
         try {
             setIsSaving(true);
-            await api.chat.updateChat(chat.id, { name: name.trim(), avatarUrl }, token);
+            await api.chat.updateChat(chat.id, { name: name.trim(), avatarUrl, readOnly }, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Chat settings updated', type: 'success' } });
             onUpdate();
             onClose();
@@ -102,6 +104,17 @@ export function ChatSettingsModal({
         }
     };
 
+    const handleUpdateParticipantRole = async (userId: string, newRole: 'ADMIN' | 'MOD' | 'MEMBER') => {
+        try {
+            await api.chat.updateParticipantRole(chat.id, userId, newRole, token);
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Participant role updated', type: 'success' } });
+            onUpdate();
+        } catch (err) {
+            console.error(err);
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to update role', type: 'error' } });
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-200 flex items-start justify-center bg-black/60 backdrop-blur-sm p-4 pt-[5h] sm:pt-[8vh] animate-in fade-in duration-300">
             <div className="bg-card w-full max-w-md rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-border">
@@ -150,6 +163,27 @@ export function ChatSettingsModal({
                         </div>
                     </div>
 
+                    {/* Read-Only Mode Toggle */}
+                    {isGroupAdmin && (
+                        <div className="flex items-center justify-between p-3 rounded-lg border border-border/10 bg-card/30">
+                            <div className="flex items-center space-x-3">
+                                <div className={`p-2 rounded-lg ${readOnly ? 'bg-primary/10 text-primary' : 'bg-muted/10 text-muted-foreground'}`}>
+                                    {readOnly ? <Lock size={18} /> : <Unlock size={18} />}
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-foreground">Read-Only Mode</p>
+                                    <p className="text-[10px] text-muted-foreground">Only admins and moderators can send messages</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setReadOnly(!readOnly)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${readOnly ? 'bg-primary' : 'bg-muted'}`}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${readOnly ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                    )}
+
                     <div className="h-px bg-border" />
 
                     {/* Participants Section */}
@@ -168,38 +202,60 @@ export function ChatSettingsModal({
                         </div>
 
                         <div className="space-y-2 max-h-75 overflow-y-auto pr-2 custom-scrollbar">
-                            {chat.participants?.filter(p => p.isActive).map(p => (
-                                <div key={p.id} className="flex items-center justify-between p-2 rounded-lg border border-border/10 bg-card/30 group/item transition-all hover:bg-card/80 hover:border-border hover:shadow-sm">
-                                    <div className="flex items-center space-x-3">
-                                        <BrandIcon variant="user" user={p.user} size="sm" className="w-8 h-8" />
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-bold text-foreground truncate">
-                                                {p.user?.name} {p.userId === currentUser.id && '(You)'}
-                                            </p>
-                                            <div className="flex items-center space-x-2">
-                                                <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter">
-                                                    {p.user?.role?.toLowerCase().replace('_', ' ')}
+                            {chat.participants?.filter(p => p.isActive).map(p => {
+                                const participantRole = p.role || ChatParticipantRole.MEMBER;
+                                const isCreator = p.userId === chat.creatorId;
+                                return (
+                                    <div key={p.id} className="flex items-center justify-between p-2 rounded-lg border border-border/10 bg-card/30 group/item transition-all hover:bg-card/80 hover:border-border hover:shadow-sm">
+                                        <div className="flex items-center space-x-3">
+                                            <BrandIcon variant="user" user={p.user} size="sm" className="w-8 h-8" />
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-bold text-foreground truncate">
+                                                    {p.user?.name} {p.userId === currentUser.id && '(You)'}
                                                 </p>
-                                                {p.userId === chat.creatorId && (
-                                                    <span className="bg-primary/10 text-primary text-[8px] font-black px-1.5 rounded-lg flex items-center">
-                                                        <Shield size={8} className="mr-1" />
-                                                        CREATOR
-                                                    </span>
-                                                )}
+                                                <div className="flex items-center space-x-2">
+                                                    <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter">
+                                                        {p.user?.role?.toLowerCase().replace('_', ' ')}
+                                                    </p>
+                                                    {isCreator && (
+                                                        <span className="bg-primary/10 text-primary text-[8px] font-black px-1.5 rounded-lg flex items-center">
+                                                            <Shield size={8} className="mr-1" />
+                                                            CREATOR
+                                                        </span>
+                                                    )}
+                                                    {!isCreator && participantRole !== 'MEMBER' && (
+                                                        <span className={`text-[8px] font-black px-1.5 rounded-lg flex items-center ${participantRole === 'MOD' ? 'bg-blue-500/10 text-blue-500' : 'bg-green-500/10 text-green-500'}`}>
+                                                            {participantRole}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
+                                        <div className="flex items-center space-x-1">
+                                            {isGroupAdmin && !isCreator && p.userId !== currentUser.id && (
+                                                <select
+                                                    value={participantRole}
+                                                    onChange={(e) => handleUpdateParticipantRole(p.userId, e.target.value as 'ADMIN' | 'MOD' | 'MEMBER')}
+                                                    className="text-[9px] font-bold bg-card/50 border border-border/30 rounded px-1.5 py-1 focus:outline-none focus:border-primary/50"
+                                                >
+                                                    <option value="MEMBER">Member</option>
+                                                    <option value="MOD">Mod</option>
+                                                    <option value="ADMIN">Admin</option>
+                                                </select>
+                                            )}
+                                            {isGroupAdmin && p.userId !== currentUser.id && p.userId !== chat.creatorId && (
+                                                <button
+                                                    onClick={() => handleRemoveParticipant(p.userId)}
+                                                    className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover/item:opacity-100 transition-all"
+                                                    title="Remove from group"
+                                                >
+                                                    <UserMinus size={14} />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                    {isGroupAdmin && p.userId !== currentUser.id && p.userId !== chat.creatorId && (
-                                        <button
-                                            onClick={() => handleRemoveParticipant(p.userId)}
-                                            className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover/item:opacity-100 transition-all"
-                                            title="Remove from group"
-                                        >
-                                            <UserMinus size={14} />
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { api } from '@/lib/api';
-import { Monitor, Smartphone, Laptop, Globe, Shield, Trash2, LogOut, RefreshCw } from 'lucide-react';
+import { Monitor, Smartphone, Laptop, Globe, Shield, Trash2, LogOut, RefreshCw, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Loading } from '@/components/ui/Loading';
@@ -19,6 +19,8 @@ interface Session {
     lastSeenAt: string;
     expiresAt: string;
     createdAt: string;
+    ip?: string | null;
+    location?: string | null;
 }
 
 interface SessionManagementProps {
@@ -221,6 +223,15 @@ export default function SessionManagement({ userId, orgId }: SessionManagementPr
                                                                 <span className="w-1 h-1 bg-muted-foreground/40 rounded-full" />
                                                                 Last active: {formatDate(session.lastSeenAt)}
                                                             </span>
+                                                            {(session.ip || session.location) && (
+                                                                <>
+                                                                    <span className="text-muted-foreground/40">•</span>
+                                                                    <span className="flex items-center gap-1.5">
+                                                                        <MapPin className="w-3 h-3" />
+                                                                        {session.location || session.ip}
+                                                                    </span>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>

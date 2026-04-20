@@ -23,6 +23,7 @@ interface CurrentUser {
   id: string;
   role: Role;
   organizationId: string | null;
+  name?: string;
 }
 
 @Injectable()
@@ -648,9 +649,94 @@ export class ChatService {
     return { message: 'Participant removed successfully.' };
   }
 
+  async updateParticipantRole(
+    chatId: string,
+    targetUserId: string,
+    role: ChatParticipantRole,
+    user: CurrentUser,
+  ) {
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: { participants: { include: { user: true } } },
+    });
+
+    if (!chat) throw new NotFoundException('Chat not found.');
+    if (chat.type === ChatType.DIRECT)
+      throw new BadRequestException(
+        'Cannot update roles in a direct chat.',
+      );
+
+    // Creator cannot be demoted from ADMIN
+    if (targetUserId === chat.creatorId && role !== ChatParticipantRole.ADMIN) {
+      throw new ForbiddenException(
+        'The group creator must remain as ADMIN.',
+      );
+    }
+
+    // Permission check: Creator or Org Admin
+    const isCreator = chat.creatorId === user.id;
+    const isOrgAdmin = user.role === Role.ORG_ADMIN;
+    if (!isCreator && !isOrgAdmin) {
+      throw new ForbiddenException(
+        'Only the group creator or an org admin can update participant roles.',
+      );
+    }
+
+    const participant = chat.participants.find(
+      (p) => p.userId === targetUserId,
+    );
+    if (!participant || !participant.isActive) {
+      throw new BadRequestException(
+        'User is not an active participant of this chat.',
+      );
+    }
+
+    const oldRole = participant.role;
+    const updatedParticipant = await this.prisma.chatParticipant.update({
+      where: { id: participant.id },
+      data: { role },
+    });
+
+    // Log system message for role change
+    const actorName = user.name || 'Admin';
+    const targetName = participant.user?.name || 'User';
+    let roleChangeMessage: string;
+
+    if (oldRole === role) {
+      roleChangeMessage = `${actorName} set ${targetName}'s role to ${role}`;
+    } else if (role === ChatParticipantRole.ADMIN) {
+      roleChangeMessage = `${actorName} promoted ${targetName} to Admin`;
+    } else if (role === ChatParticipantRole.MOD) {
+      roleChangeMessage = `${actorName} promoted ${targetName} to Moderator`;
+    } else if (role === ChatParticipantRole.MEMBER) {
+      roleChangeMessage = `${actorName} demoted ${targetName} to Member`;
+    } else {
+      roleChangeMessage = `${actorName} changed ${targetName}'s role to ${role}`;
+    }
+
+    const systemMessage = await this.prisma.chatMessage.create({
+      data: {
+        chatId,
+        senderId: user.id,
+        organizationId: user.organizationId,
+        content: roleChangeMessage,
+        type: ChatMessageType.SYSTEM,
+      },
+      include: { sender: { select: { id: true, name: true } } },
+    });
+
+    this.events.emitToRoom(`chat:${chatId}`, 'chat:message', systemMessage);
+    const activeParticipants = chat.participants.filter((p) => p.isActive);
+    for (const p of activeParticipants) {
+      this.events.emitToRoom(`user:${p.userId}`, 'chat:message', systemMessage);
+    }
+
+    return { message: 'Participant role updated successfully.', participant: updatedParticipant };
+  }
+
   async updateChat(
     chatId: string,
-    dto: { name?: string; avatarUrl?: string },
+    dto: { name?: string; avatarUrl?: string; readOnly?: boolean },
     user: CurrentUser,
   ) {
     const chat = await this.prisma.chat.findUnique({
@@ -688,6 +774,12 @@ export class ChatService {
       data.avatarUrl = dto.avatarUrl;
       data.avatarUpdatedAt = new Date();
       systemMessages.push(`${actorName} updated the group picture`);
+    }
+    if (dto.readOnly !== undefined && dto.readOnly !== chat.readOnly) {
+      data.readOnly = dto.readOnly;
+      systemMessages.push(
+        `${actorName} ${dto.readOnly ? 'enabled' : 'disabled'} read-only mode`,
+      );
     }
 
     if (Object.keys(data).length === 0) return chat;
@@ -1104,6 +1196,18 @@ export class ChatService {
     if (!participant.isActive) {
       throw new ForbiddenException(
         'You have been removed from this chat and can no longer send messages.',
+      );
+    }
+
+    // Check if chat is in readOnly mode
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      select: { readOnly: true },
+    });
+
+    if (chat?.readOnly && participant.role !== ChatParticipantRole.ADMIN && participant.role !== ChatParticipantRole.MOD) {
+      throw new ForbiddenException(
+        'This chat is in read-only mode. Only admins and moderators can send messages.',
       );
     }
 

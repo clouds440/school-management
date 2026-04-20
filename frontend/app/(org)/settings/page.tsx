@@ -27,6 +27,17 @@ export default function SettingsPage() {
     const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
     const [redirecting, setRedirecting] = useState(user?.role === Role.ORG_ADMIN ? false : true);
 
+    // Scroll to section if hash is present
+    useEffect(() => {
+        const hash = window.location.hash;
+        if (hash === '#sessions') {
+            const element = document.getElementById('sessions');
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }, []);
+
     const [formData, setFormData] = useState({
         name: '',
         location: '',
@@ -41,12 +52,18 @@ export default function SettingsPage() {
     useEffect(() => {
         if (!token || !user) return;
 
+        // Preserve hash from URL for scrolling
+        const hash = typeof window !== 'undefined' ? window.location.hash : '';
+
         // Redirect based on role
-        if (user.role === Role.ORG_MANAGER || user.role === Role.TEACHER) {
-            router.push(`/teachers/${user.userName}/profile`);
+        if (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) {
+            router.push(`/admin/settings${hash}`);
+            return;
+        } else if (user.role === Role.ORG_MANAGER || user.role === Role.TEACHER) {
+            router.push(`/teachers/${user.userName}/profile${hash}`);
             return;
         } else if (user.role === Role.STUDENT) {
-            router.push(`/students/${user.userName}?tab=profile`);
+            router.push(`/students/${user.userName}?tab=profile${hash}`);
             return;
         }
 
@@ -331,7 +348,9 @@ export default function SettingsPage() {
                 </form>
             </div>
 
-            <SessionManagement userId={user?.id} />
+            <div id="sessions">
+                <SessionManagement userId={user?.id} />
+            </div>
         </div>
     );
 }

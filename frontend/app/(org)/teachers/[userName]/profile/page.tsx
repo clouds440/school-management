@@ -6,6 +6,7 @@ import TeacherForm from '@/components/forms/TeacherForm';
 import SessionManagement from '@/components/SessionManagement';
 import { Settings, UserCircle } from 'lucide-react';
 import { Loading } from '@/components/ui/Loading';
+import { useEffect } from 'react';
 
 import { useParams } from 'next/navigation';
 
@@ -13,6 +14,18 @@ export default function TeacherProfilePage() {
     const { state } = useGlobal();
     const teacherData = state.auth.userProfile as Teacher | null;
     const loading = state.auth.loading;
+
+    // Scroll to section if hash is present
+    useEffect(() => {
+        const hash = window.location.hash;
+        if (hash) {
+            const elementId = hash.substring(1); // Remove the # symbol
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }, []);
 
     return (
         <div className="flex flex-col w-full gap-6 md:gap-8">
@@ -63,7 +76,9 @@ export default function TeacherProfilePage() {
 
             {/* Session Management */}
             {!loading && teacherData && (
-                <SessionManagement userId={teacherData.id} />
+                <div id="sessions">
+                    <SessionManagement userId={teacherData.id} />
+                </div>
             )}
         </div>
     );

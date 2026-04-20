@@ -311,12 +311,14 @@ export const api = {
             request<void>(`/chat/${chatId}/read${messageId ? `/${messageId}` : ''}`, { method: 'PATCH', token }),
         deleteMessage: (chatId: string, messageId: string, token: string) =>
             request<void>(`/chat/${chatId}/messages/${messageId}/delete`, { method: 'POST', token }),
-        updateChat: (chatId: string, data: { name?: string, avatarUrl?: string }, token: string) =>
+        updateChat: (chatId: string, data: { name?: string, avatarUrl?: string, readOnly?: boolean }, token: string) =>
             request<Chat>(`/chat/${chatId}`, { method: 'PATCH', body: JSON.stringify(data), token }),
         addParticipants: (chatId: string, participantIds: string[], token: string) =>
             request<void>(`/chat/${chatId}/participants`, { method: 'POST', body: JSON.stringify({ participantIds }), token }),
         removeParticipant: (chatId: string, userId: string, token: string) =>
             request<void>(`/chat/${chatId}/participants/${userId}/remove`, { method: 'POST', token }),
+        updateParticipantRole: (chatId: string, userId: string, role: 'ADMIN' | 'MOD' | 'MEMBER', token: string) =>
+            request<void>(`/chat/${chatId}/participants/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role }), token }),
     },
 
     notifications: {

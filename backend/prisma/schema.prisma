@@ -398,6 +398,7 @@ enum ChatType {
 
 enum ChatParticipantRole {
   ADMIN
+  MOD
   MEMBER
 }
 
@@ -414,6 +415,7 @@ model Chat {
   avatarUpdatedAt DateTime?
   organizationId String? // Null if platform-level chat
   creatorId      String // User who created the group
+  readOnly       Boolean  @default(false) // If true, only ADMIN and MOD can send messages
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

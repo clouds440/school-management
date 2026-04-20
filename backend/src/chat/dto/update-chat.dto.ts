@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsBoolean } from 'class-validator';
 
 export class UpdateChatDto {
   @IsOptional()
@@ -8,4 +8,8 @@ export class UpdateChatDto {
   @IsOptional()
   @IsString()
   avatarUrl?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  readOnly?: boolean;
 }

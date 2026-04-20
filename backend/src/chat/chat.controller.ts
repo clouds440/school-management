@@ -16,6 +16,7 @@ import { CreateGroupChatDto } from './dto/create-group.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { AddParticipantsDto } from './dto/add-participants.dto';
+import { ChatParticipantRole } from '@prisma/client';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 
 @UseGuards(JwtAuthGuard)
@@ -159,6 +160,20 @@ export class ChatController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.chatService.removeParticipant(id, userId, {
+      id: req.user.id,
+      role: req.user.role,
+      organizationId: req.user.organizationId,
+    });
+  }
+
+  @Patch(':id/participants/:userId/role')
+  async updateParticipantRole(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body('role') role: 'ADMIN' | 'MOD' | 'MEMBER',
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.chatService.updateParticipantRole(id, userId, role as ChatParticipantRole, {
       id: req.user.id,
       role: req.user.role,
       organizationId: req.user.organizationId,

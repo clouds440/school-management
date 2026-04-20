@@ -103,6 +103,7 @@ export enum ChatType {
 
 export enum ChatParticipantRole {
     ADMIN = 'ADMIN',
+    MOD = 'MOD',
     MEMBER = 'MEMBER',
 }
 

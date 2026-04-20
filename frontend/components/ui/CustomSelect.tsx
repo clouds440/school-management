@@ -124,7 +124,7 @@ export function CustomSelect<T extends string = string>({
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 disabled={disabled}
                 className={cn(
-                    "flex items-center w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border transition-all duration-200 outline-none",
+                    "flex items-center w-full px-3 sm:px-4 py-2.5 rounded-xl border transition-all duration-200 outline-none",
                     isOpen
                         ? 'border-primary ring-4 ring-primary/10 bg-background'
                         : error

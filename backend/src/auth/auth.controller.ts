@@ -25,8 +25,16 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Request() req: { ip?: string; headers: { 'x-forwarded-for'?: string; 'x-real-ip'?: string } },
+  ) {
+    // Extract IP from request (handle proxy scenarios)
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+               req.headers['x-real-ip'] ||
+               req.ip ||
+               'unknown';
+    return this.authService.login(loginDto, ip);
   }
 
   // Protected Route
@@ -65,8 +73,16 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  async logout(@Request() req: { user: { id: string } }) {
-    return this.authService.logout(req.user.id);
+  async logout(
+    @Request()
+    req: {
+      user: { id: string };
+      headers: { authorization?: string };
+    },
+  ) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.replace('Bearer ', '');
+    return this.authService.logout(req.user.id, token);
   }
 
   @UseGuards(JwtAuthGuard)

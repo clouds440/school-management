@@ -37,6 +37,16 @@ function StudentPortalContent() {
     useEffect(() => {
         if (!token || !user) return;
 
+        // Scroll to section if hash is present
+        const hash = window.location.hash;
+        if (hash) {
+            const elementId = hash.substring(1); // Remove the # symbol
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
         // Role Guard: Only Student self-view, ORG_ADMIN, or ORG_MANAGER
         // We can add TEACHER check later if needed, but for now strict access.
         const isAuthorized =

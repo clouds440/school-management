@@ -19,12 +19,12 @@ import {
     setCachedComposerStates
 } from '@/lib/chatStore';
 import { BrandIcon } from '../ui/Brand';
-import { Chat, ChatMessage, ChatParticipant, ChatType, ChatMessageType, PaginatedResponse, Role, User } from '@/types';
+import { Chat, ChatMessage, ChatParticipant, ChatType, ChatMessageType, PaginatedResponse, Role, User, ChatParticipantRole } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import {
     Search, Plus, Paperclip, MessageSquarePlus, SendHorizonal as Send, MoreVertical, X, Loader2,
     UserMinus, Trash2, Info, ChevronLeft, Check, CheckCheck, ArrowDown, Pencil, Reply, ArrowUp, Download, RotateCcw,
-    Copy, View
+    Copy, View, Lock as LockIcon
 } from 'lucide-react';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 import { Button } from '../ui/Button';
@@ -681,6 +681,18 @@ export function ChatLayout() {
     );
     const { messageDraft, stagedFiles, replyToMessage, editingMessage, mentionedUsers } = activeChatComposerState;
 
+    // Check if user can send messages (not read-only or has admin/mod role)
+    const currentUserParticipant = useMemo(
+        () => activeChat?.participants?.find(p => p.userId === user?.id),
+        [activeChat, user?.id]
+    );
+    const canSendMessage = useMemo(() => {
+        if (!activeChat || !currentUserParticipant) return false;
+        if (!activeChat.readOnly) return true;
+        // In read-only mode, only ADMIN and MOD can send messages
+        return currentUserParticipant.role === ChatParticipantRole.ADMIN || currentUserParticipant.role === ChatParticipantRole.MOD;
+    }, [activeChat, currentUserParticipant]);
+
     useEffect(() => {
         if (!emit) return;
 
@@ -936,21 +948,30 @@ export function ChatLayout() {
     const handleDeleteMessage = useCallback((messageId: string) => {
         if (!token || !activeChatId) return;
 
+        // Check if this is a failed message (client-side only)
+        const failedMessage = messages.find(m => m.id === messageId && m.clientStatus === 'failed');
+
         setConfirmConfig({
             isOpen: true,
             title: 'Delete Message?',
             description: 'Are you sure you want to delete this message? This action cannot be undone.',
             isDestructive: true,
             onConfirm: async () => {
-                try {
-                    await api.chat.deleteMessage(activeChatId, messageId, token);
-                } catch (err) {
-                    console.error(err);
-                    dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to delete message', type: 'error' } });
+                if (failedMessage) {
+                    // For failed messages, just remove from local state
+                    setMessages(prev => prev.filter(m => m.id !== messageId));
+                } else {
+                    // For normal messages, call the API
+                    try {
+                        await api.chat.deleteMessage(activeChatId, messageId, token);
+                    } catch (err) {
+                        console.error(err);
+                        dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to delete message', type: 'error' } });
+                    }
                 }
             }
         });
-    }, [token, activeChatId, dispatch]);
+    }, [token, activeChatId, dispatch, messages]);
 
     const handleRemoveParticipant = (participantUserId: string) => {
         if (!token || !activeChatId) return;
@@ -1711,7 +1732,8 @@ export function ChatLayout() {
                                     </div>
                                 </div>
                             )}
-                            {/* Input Composer */}
+                            {/* Input Composer - Only show if user can send messages */}
+                            {canSendMessage ? (
                             <div
                                 ref={composerRef}
                                 className="absolute bottom-0 w-full border-border px-2 sm:px-3 py-2 z-20"
@@ -1725,7 +1747,7 @@ export function ChatLayout() {
                                                 {editingMessage ? 'Editing Message' : `Replying to ${replyToMessage?.sender?.name == user.name ? 'Yourself' : replyToMessage?.sender?.name || 'Message'}`}
                                             </p>
                                             <div
-                                                onClick={() => { if (replyToMessage) scrollToMessage(replyToMessage.id); }}
+                                                onClick={() => { if (replyToMessage) scrollToMessage(replyToMessage.id); else (scrollToMessage(editingMessage!.id)) }}
                                                 className="text-[12px] sm:text-[13px] text-muted-foreground! truncate cursor-pointer"
                                             >
                                                 <MarkdownRenderer content={getTruncatedMessagePreview(editingMessage?.content || replyToMessage?.content, isDesktop ? 70 : 35)} className='text-muted-foreground!' />
@@ -2012,6 +2034,14 @@ export function ChatLayout() {
                                 </div>
 
                             </div>
+                            ) : (
+                                <div className="absolute bottom-0 left-0 right-0 px-2 sm:px-3 py-2 sm:py-2.5 bg-amber-500/10 border-x-4 border-amber-500 rounded-lg flex items-center justify-center gap-2 animate-in slide-in-from-bottom duration-200">
+                                    <LockIcon size={14} className="text-amber-600 shrink-0" />
+                                    <p className="text-[11px] sm:text-[12px] md:text-[13px] font-semibold text-amber-600 text-center">
+                                        Read-Only Mode - Only admins and moderators can send messages
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </>
                 ) : (

@@ -9,13 +9,13 @@ export default function Profile({ profile }: { profile: Student | null }) {
     return (
         <div className="flex flex-col w-full gap-6 md:gap-8">
             {/* Profile Section */}
-            <div className="bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
+            <div className="bg-linear-to-br from-card via-card/95 to-card/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-transparent p-6 md:p-8 border-b border-primary/10">
+                <div className="bg-linear-to-r from-primary/5 via-primary/10 to-transparent p-6 md:p-8 border-b border-primary/10">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                         <div className="relative">
                             <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-                            <div className="relative p-4 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/30 shadow-lg">
+                            <div className="relative p-4 bg-linear-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/30 shadow-lg">
                                 <UserCircle className="w-10 h-10 text-primary" />
                             </div>
                         </div>
@@ -51,7 +51,9 @@ export default function Profile({ profile }: { profile: Student | null }) {
 
             {/* Session Management */}
             {profile && (
-                <SessionManagement userId={profile.id} />
+                <div id="sessions">
+                    <SessionManagement userId={profile.id} />
+                </div>
             )}
         </div>
     );
