@@ -37,26 +37,24 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
                 const placeholder = `
                                         <div class="inline-block text-center">
                                                 <div class="absolute top-2 left-2 text-xs text-muted-foreground">${alt}</div>
-                                                <div class="w-35 h-35 border border-border rounded-md bg-card/40 flex items-center justify-center">
+                                                <div class="w-35 h-35 border border-border rounded-md bg-card/40 flex flex-col items-center justify-center">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image-off-icon lucide-image-off text-foreground"><line x1="2" x2="22" y1="2" y2="22"/><path d="M10.41 10.41a2 2 0 1 1-2.83-2.83"/><line x1="13.5" x2="6" y1="13.5" y2="21"/><line x1="18" x2="21" y1="12" y2="15"/><path d="M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59"/><path d="M21 15V5a2 2 0 0 0-2-2H9"/></svg>
+                                                <span class="italic text-[10px] text-muted-foreground">Couldn't load image</span>
                                             </div>
                                         </div>
                                 `;
 
                 if (!url || failedMarkdownImageUrls.has(url)) return placeholder;
 
-                // When url exists, render the image and replace it with the placeholder on error.
-                // We encode the placeholder and decode it inside the onerror handler to avoid escaping issues.
-                const placeholderEscaped = encodeURIComponent(placeholder);
-                const urlEscaped = encodeURIComponent(url);
+                // When url exists, render the image with a simple error handler
                 return `
-                                    <img src="${url}" alt="${alt}" title="${titleAttr}" class="max-w-full h-auto rounded-lg shadow-sm my-2 border border-border" onerror="(window.__eduverseFailedMarkdownImages=window.__eduverseFailedMarkdownImages||{})[decodeURIComponent('${urlEscaped}')]=true;this.outerHTML=decodeURIComponent('${placeholderEscaped}')" />
+                                    <img src="${escapeHtml(url)}" alt="${alt}" title="${titleAttr}" class="max-w-full h-auto rounded-lg shadow-sm my-2 border border-border markdown-image" data-failed-url="${escapeHtml(url)}" />
                                 `;
             };
 
             // Override link rendering for external/internal links
             renderer.link = ({ href, title, text }) => {
-                if (!href) return `<a title="${title || ''}">${text}</a>`;
+                if (!href) return `<a title="${escapeHtml(title || '')}">${text}</a>`;
 
                 // Comprehensive external link detection
                 const isExternal = /^https?:\/\/|^\/\/|^www\.|^mailto:|^tel:/.test(href);
@@ -74,7 +72,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
                 }
 
                 const targetAttr = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
-                return `<a href="${url}" title="${title || ''}" ${targetAttr}>${text}</a>`;
+                return `<a href="${escapeHtml(url)}" title="${escapeHtml(title || '')}" ${targetAttr}>${text}</a>`;
             };
 
             // Configure marked for safe and simple rendering

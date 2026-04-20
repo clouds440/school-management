@@ -45,3 +45,35 @@ export function formatDate(date: string | Date | null | undefined): string {
         day: 'numeric',
     });
 }
+
+// FNV-1a hash function for consistent color selection
+const fnv1aHash = (str: string) => {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h >>> 0;
+};
+
+/**
+ * Get a consistent color for a user based on their ID
+ * Uses HSL color space with distinct hues to ensure super distinct colors
+ * and minimize the chance of collisions (theoretical max: 360 unique hues)
+ */
+export function getUserColor(userId: string | undefined | null): string {
+    const seed = userId || 'anon';
+    const hash = fnv1aHash(seed);
+
+    // Use the hash to select a distinct hue (0-359)
+    // We use modulo 360 to ensure we get a valid hue value
+    const hue = hash % 360;
+
+    // Use high saturation and lightness for vibrant, distinct colors
+    // Saturation: 70-80% for vibrant colors
+    // Lightness: 45-55% for good contrast on both light and dark backgrounds
+    const saturation = 75 + (hash % 10); // 75-85%
+    const lightness = 45 + (hash % 15); // 45-60%
+
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}

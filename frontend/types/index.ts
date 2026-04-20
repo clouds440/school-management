@@ -486,6 +486,7 @@ export interface ChatMessage {
     chat?: Partial<Chat>;
     replyToId?: string | null;
     replyTo?: ChatMessage | null;
+    readBy?: string[];
 }
 
 export interface Chat {

@@ -8,6 +8,7 @@ import { useUI } from '@/context/UIContext';
 import { useSocket } from '@/hooks/useSocket';
 import Image from 'next/image';
 import { api } from '@/lib/api';
+import { getUserColor } from '@/lib/utils';
 import {
     getUserChatsCached,
     insertOrUpdateChatFromMessage,
@@ -151,14 +152,17 @@ export function ChatLayout() {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const mentionDropdownRef = useRef<HTMLDivElement>(null);
+    const readOnlyBannerRef = useRef<HTMLDivElement>(null);
     const observerRef = useRef<ResizeObserver | null>(null);
 
     const [composerHeight, setComposerHeight] = useState(0);
+    const [readOnlyBannerHeight, setReadOnlyBannerHeight] = useState(0);
     const longPressTimerRef = useRef<number | null>(null);
     const suppressCloseRef = useRef<string | null>(null);
     const pendingMessageIdRef = useRef<string | null>(null);
     const sendLockRef = useRef(false);
-    const typingStateRef = useRef<{ chatId: string | null; isTyping: boolean }>({ chatId: null, isTyping: false });
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const typingChatIdRef = useRef<string | null>(null);
     const mobileBottomInset = 'env(safe-area-inset-bottom, 0px)';
 
     const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
@@ -210,10 +214,10 @@ export function ChatLayout() {
         const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
         const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
-        // Use a 50px threshold for "at bottom"
+        // Use a dynamic threshold for "at bottom"
         const atBottom = distanceFromBottom < 50;
         setIsAtBottom(atBottom);
-        setShowScrollToBottom(distanceFromBottom > clientHeight * 2);
+        setShowScrollToBottom(distanceFromBottom > clientHeight * 1.5);
 
         if (atBottom && unreadSinceScroll > 0) {
             setUnreadSinceScroll(0);
@@ -252,6 +256,17 @@ export function ChatLayout() {
             });
             observer.observe(node);
             observerRef.current = observer;
+        }
+    }, []);
+
+    const readOnlyBannerRefCallback = useCallback((node: HTMLDivElement | null) => {
+        if (node) {
+            const observer = new ResizeObserver((entries) => {
+                for (const entry of entries) {
+                    setReadOnlyBannerHeight((entry.target as HTMLElement).offsetHeight);
+                }
+            });
+            observer.observe(node);
         }
     }, []);
 
@@ -388,14 +403,9 @@ export function ChatLayout() {
         dispatch({ type: 'STATS_SET_CHAT', payload: { unread } });
     }, [chats, dispatch]);
 
+    // Presence: subscribe to presence:update (global — doesn't depend on active chat)
     useEffect(() => {
         if (!subscribe) return;
-
-        const unsubscribePresenceState = subscribe('presence:state', (payload: unknown) => {
-            const event = payload as PresenceStateEvent;
-            if (!activeChatId || event.chatId !== activeChatId) return;
-            setOnlineUsers(prev => updateOnlineUsersFromPresenceState(prev, event));
-        });
 
         const unsubscribePresenceUpdate = subscribe('presence:update', (payload: unknown) => {
             const event = payload as PresenceUpdateEvent;
@@ -405,30 +415,46 @@ export function ChatLayout() {
             }
         });
 
+        return () => unsubscribePresenceUpdate();
+    }, [subscribe]);
+
+    // Presence: subscribe to presence:state (response to our request)
+    useEffect(() => {
+        if (!subscribe) return;
+
+        const unsubscribePresenceState = subscribe('presence:state', (payload: unknown) => {
+            const event = payload as PresenceStateEvent;
+            setOnlineUsers(prev => updateOnlineUsersFromPresenceState(prev, event));
+        });
+
+        return () => unsubscribePresenceState();
+    }, [subscribe]);
+
+    // Typing: subscribe to typing events (global — doesn't depend on active chat)
+    useEffect(() => {
+        if (!subscribe) return;
+
         const unsubscribeTyping = subscribe('chat:typing', (payload: unknown) => {
             const event = payload as ChatTypingEvent;
             setTypingByChatId(prev => updateChatTypingState(prev, event));
         });
 
-        return () => {
-            unsubscribePresenceState();
-            unsubscribePresenceUpdate();
-            unsubscribeTyping();
-        };
-    }, [subscribe, activeChatId]);
+        return () => unsubscribeTyping();
+    }, [subscribe]);
 
-    useEffect(() => {
-        if (!activeChatId || !emit) return;
-        emit('presence:request', { chatId: activeChatId });
-    }, [activeChatId, emit]);
-
+    // Typing: stop typing on unmount or chat switch
     useEffect(() => {
         return () => {
-            if (typingStateRef.current.chatId && typingStateRef.current.isTyping) {
-                emit('chat:typing', { chatId: typingStateRef.current.chatId, isTyping: false });
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+                typingTimeoutRef.current = null;
+            }
+            if (typingChatIdRef.current && emit) {
+                emit('chat:typing', { chatId: typingChatIdRef.current, isTyping: false });
+                typingChatIdRef.current = null;
             }
         };
-    }, [emit]);
+    }, [activeChatId, emit]);
 
     const loadEarlierMessages = async () => {
         if (!token || !activeChatId || isLoadingMore || !hasMoreMessages) return;
@@ -513,6 +539,7 @@ export function ChatLayout() {
                 }
 
                 if (message.senderId !== user.id) {
+                    // Recipient marks the message as read immediately
                     markAsReadGuard(activeChatId, message.id, token);
                 }
             }
@@ -543,6 +570,7 @@ export function ChatLayout() {
 
         const unsubRead = subscribe('chat:read', (data: unknown) => {
             const readData = data as { chatId: string; userId: string; messageId: string };
+            // Update messages if chat is active
             if (readData.chatId === activeChatId) {
                 setMessages(prev => {
                     const readMessage = prev.find(candidate => candidate.id === readData.messageId);
@@ -557,6 +585,7 @@ export function ChatLayout() {
                     });
                 });
             }
+            // Update unread count for the current user
             if (readData.userId === user.id) {
                 setChats(prev => prev.map(c => {
                     if (c.id === readData.chatId) {
@@ -564,6 +593,33 @@ export function ChatLayout() {
                     }
                     return c;
                 }));
+            }
+            // Update chat list messages for read status (for sender to see double ticks)
+            setChats(prev => prev.map(c => {
+                if (c.id === readData.chatId && c.messages?.[0]) {
+                    const readAt = new Date(c.messages[0].createdAt).getTime();
+                    if (c.messages[0].senderId === user.id && readData.userId !== user.id) {
+                        // This is the sender's message being read by someone else
+                        const readBy = Array.from(new Set([...(c.messages[0].readBy || []), readData.userId]));
+                        return { ...c, messages: [{ ...c.messages[0], readBy }] };
+                    }
+                }
+                return c;
+            }));
+            // Update cached messages for the chat so read status persists
+            const cachedMessages = getCachedMessages(readData.chatId);
+            if (cachedMessages.length > 0) {
+                const readMessage = cachedMessages.find(candidate => candidate.id === readData.messageId);
+                const readAt = readMessage ? new Date(readMessage.createdAt).getTime() : null;
+                const updatedMessages = cachedMessages.map(m => {
+                    const messageAt = new Date(m.createdAt).getTime();
+                    if (m.senderId !== readData.userId && readAt !== null && readAt >= messageAt) {
+                        const readBy = Array.from(new Set([...(m.readBy || []), readData.userId]));
+                        return { ...m, readBy };
+                    }
+                    return m;
+                });
+                setCachedMessages(readData.chatId, updatedMessages);
             }
         });
 
@@ -595,7 +651,18 @@ export function ChatLayout() {
 
         const unsubUpdate = subscribe('chat:update', (updatedChat: unknown) => {
             const chat = updatedChat as Chat;
-            setChats(prev => prev.map(c => c.id === chat.id ? { ...c, ...chat } : c));
+            setChats(prev => {
+                const existingIndex = prev.findIndex(c => c.id === chat.id);
+                if (existingIndex !== -1) {
+                    // Update existing chat
+                    const newChats = [...prev];
+                    newChats[existingIndex] = { ...newChats[existingIndex], ...chat };
+                    return newChats;
+                } else {
+                    // Add new chat to the list
+                    return [chat, ...prev];
+                }
+            });
         });
 
         const unsubRoomLeft = subscribe('roomLeft', (data: unknown) => {
@@ -620,25 +687,39 @@ export function ChatLayout() {
         };
     }, [subscribe, activeChatId, token, user, dispatch, setActiveChatId, isAtBottom, scrollToBottom]);
 
-    // 4. Join/Leave rooms and Sync URL
+    // 4. Join/Leave rooms, Sync URL, and request presence
     useEffect(() => {
         if (!activeChatId) return;
 
         // Join the room
         if (joinRoom && leaveRoom) {
             joinRoom(`chat:${activeChatId}`);
+
+            // Request online presence AFTER joining the room
+            if (emit) {
+                // Small delay to ensure join is processed server-side first
+                const presenceTimer = setTimeout(() => {
+                    emit('presence:request', { chatId: activeChatId });
+                }, 300);
+                // Update URL without full page reload
+                const url = new URL(window.location.href);
+                url.searchParams.set('id', activeChatId);
+                window.history.replaceState({}, '', url.toString());
+
+                return () => {
+                    clearTimeout(presenceTimer);
+                    leaveRoom(`chat:${activeChatId}`);
+                };
+            }
+
             // Update URL without full page reload
             const url = new URL(window.location.href);
-            if (activeChatId) {
-                url.searchParams.set('id', activeChatId);
-            } else {
-                url.searchParams.delete('id');
-            }
-            window.history.pushState({}, '', url.toString());
+            url.searchParams.set('id', activeChatId);
+            window.history.replaceState({}, '', url.toString());
 
             return () => leaveRoom(`chat:${activeChatId}`);
         }
-    }, [activeChatId, joinRoom, leaveRoom]);
+    }, [activeChatId, joinRoom, leaveRoom, emit]);
 
     // 5. Image click handler for thumbnails
     useEffect(() => {
@@ -688,41 +769,49 @@ export function ChatLayout() {
     );
     const canSendMessage = useMemo(() => {
         if (!activeChat || !currentUserParticipant) return false;
+        // Direct chats should never be read-only
+        if (activeChat.type === ChatType.DIRECT) return true;
         if (!activeChat.readOnly) return true;
         // In read-only mode, only ADMIN and MOD can send messages
         return currentUserParticipant.role === ChatParticipantRole.ADMIN || currentUserParticipant.role === ChatParticipantRole.MOD;
     }, [activeChat, currentUserParticipant]);
 
-    useEffect(() => {
-        if (!emit) return;
+    // Typing: emit typing status with debounce
+    const emitTypingStart = useCallback(() => {
+        if (!emit || !activeChatId) return;
 
-        const hasDraftText = messageDraft.trim().length > 0;
-        const previousTypingState = typingStateRef.current;
-
-        if (
-            previousTypingState.chatId &&
-            previousTypingState.chatId !== activeChatId &&
-            previousTypingState.isTyping
-        ) {
-            emit('chat:typing', { chatId: previousTypingState.chatId, isTyping: false });
-            typingStateRef.current = { chatId: previousTypingState.chatId, isTyping: false };
+        // If switching chats, stop typing on old chat first
+        if (typingChatIdRef.current && typingChatIdRef.current !== activeChatId) {
+            emit('chat:typing', { chatId: typingChatIdRef.current, isTyping: false });
+            typingChatIdRef.current = null;
         }
 
-        if (!activeChatId) {
-            typingStateRef.current = { chatId: null, isTyping: false };
-            return;
+        // Emit start-typing if not already typing in this chat
+        if (typingChatIdRef.current !== activeChatId) {
+            emit('chat:typing', { chatId: activeChatId, isTyping: true });
+            typingChatIdRef.current = activeChatId;
         }
 
-        if (
-            previousTypingState.chatId === activeChatId &&
-            previousTypingState.isTyping === hasDraftText
-        ) {
-            return;
-        }
+        // Reset the inactivity timer — stop typing after 5s of no input
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+            if (typingChatIdRef.current && emit) {
+                emit('chat:typing', { chatId: typingChatIdRef.current, isTyping: false });
+                typingChatIdRef.current = null;
+            }
+        }, 5000);
+    }, [activeChatId, emit]);
 
-        emit('chat:typing', { chatId: activeChatId, isTyping: hasDraftText });
-        typingStateRef.current = { chatId: activeChatId, isTyping: hasDraftText };
-    }, [activeChatId, emit, messageDraft]);
+    const emitTypingStop = useCallback(() => {
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = null;
+        }
+        if (typingChatIdRef.current && emit) {
+            emit('chat:typing', { chatId: typingChatIdRef.current, isTyping: false });
+            typingChatIdRef.current = null;
+        }
+    }, [emit]);
 
     const filteredChats = useMemo(() => {
         if (!searchQuery.trim()) return chats;
@@ -763,7 +852,8 @@ export function ChatLayout() {
 
         // Ensure exactly one trailing space
         const spaceSuffix = ' ';
-        const newText = `${textBefore}\`@${member.user.name}\`${spaceSuffix}${textAfter.trimStart()}`;
+        const safeName = (member.user.name || '').replace(/`/g, '\\`');
+        const newText = `${textBefore}\`@${safeName}\`${spaceSuffix}${textAfter.trimStart()}`;
 
         updateActiveComposerState({
             messageDraft: newText,
@@ -803,6 +893,7 @@ export function ChatLayout() {
         if (!token || !user || !chatId || (!draftText && filesToSend.length === 0)) return;
         if (sendLockRef.current || isSending || isUploading) return;
         sendLockRef.current = true;
+        emitTypingStop();
         try {
             setIsSending(true);
             let tempMessageId = retryMessage?.id;
@@ -870,18 +961,24 @@ export function ChatLayout() {
                 const attachmentLinks = uploadResults.map((res, i) => {
                     const file = filesToSend[i];
                     const url = res.url || res.path || '';
-                    const isImage = file.type.startsWith('image/');
-                    const isPdf = file.type === 'application/pdf';
-                    const isOffice = [
+                    const safeName = (file.name || '').replace(/[\\`()\[\]{}]/g, '\\$&');
+                    const isImage = [
+                        'image/jpeg',
+                        'image/jpg',
+                        'image/png',
+                        'image/gif',
+                        'image/webp',
+                        'image/svg+xml'
+                    ].includes(file.type);
+
+                    if (isImage) return `\n![${safeName}](${url})`;
+                    if (file.type === 'application/pdf') return `\n[📄 PDF: ${safeName}](${url})`;
+                    if ([
                         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                         'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-                    ].includes(file.type);
-
-                    if (isImage) return `\n![${file.name}](${url})`;
-                    if (isPdf) return `\n[📄 PDF: ${file.name}](${url})`;
-                    if (isOffice) return `\n[📝 Doc: ${file.name}](${url})`;
-                    return `\n[📎 Attachment: ${file.name}](${url})`;
+                    ].includes(file.type)) return `\n[📝 Doc: ${safeName}](${url})`;
+                    return `\n[📎 Attachment: ${safeName}](${url})`;
                 }).join('');
 
                 finalContent += attachmentLinks;
@@ -943,7 +1040,7 @@ export function ChatLayout() {
             sendLockRef.current = false;
             setIsSending(false);
         }
-    }, [messageDraft, stagedFiles, replyToMessage, token, user, activeChatId, isSending, isUploading, editingMessage, dispatch, scrollToBottom, updateComposerStateForChat]);
+    }, [messageDraft, stagedFiles, replyToMessage, token, user, activeChatId, isSending, isUploading, editingMessage, dispatch, scrollToBottom, updateComposerStateForChat, emitTypingStop]);
 
     const handleDeleteMessage = useCallback((messageId: string) => {
         if (!token || !activeChatId) return;
@@ -1143,7 +1240,7 @@ export function ChatLayout() {
                     <div className="flex justify-center py-2">
                         <div className="bg-card/80 backdrop-blur-sm text-muted-foreground px-4 py-1.5 rounded-full text-[13px] font-medium flex items-center border border-border shadow-sm">
                             <Info size={12} className="mr-1.5 text-primary/80" />
-                            {msg.content}
+                            <span>{msg.content}</span> <sub className='text-[10px] ml-3'>{formatChatTimestamp(msg.createdAt)}</sub>
                         </div>
                     </div>
                 </div>
@@ -1175,13 +1272,13 @@ export function ChatLayout() {
                         </div>
                     )}
                     <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] min-w-0 ${isMine ? 'items-end' : 'items-start'}`}>
-                        {activeChat?.type === ChatType.GROUP && !isMine && showAvatar && (
-                            <span className="text-[13px] font-semibold text-primary/70 mb-0.5 ml-1 tracking-wide">
-                                {msg.sender?.name}
-                            </span>
-                        )}
                         <div className={`flex items-end space-x-1.5 relative max-w-full min-w-0 group/content ${isMine ? 'flex-row-reverse space-x-reverse justify-start' : 'flex-row justify-end'}`}>
                             <div className="flex flex-col items-inherit max-w-full min-w-0">
+                                {activeChat?.type === ChatType.GROUP && !isMine && showAvatar && (
+                                    <span className="text-[12px] font-bold mb-1.5 ml-1" style={{ color: getUserColor(msg.sender?.id) }}>
+                                        {msg.sender?.name}
+                                    </span>
+                                )}
                                 {msg.replyTo && !isDeleted && (() => {
                                     const isMineRepliedTo = msg.replyTo.senderId === user?.id;
                                     return (
@@ -1204,7 +1301,7 @@ export function ChatLayout() {
                                     <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed my-1 bg-card text-muted-foreground border border-border ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
                                         <div className="flex items-center space-x-1.5 italic">
                                             <Trash2 size={13} className="opacity-50 text-red-500" />
-                                            <span>Message deleted {msg.deletedBy?.name ? `by ${msg.deletedBy.name} ` : ''} <span className='opacity-70'>{formatChatTimestamp(msg.createdAt!)}</span></span>
+                                            <span>Message deleted {msg.deletedBy?.name ? <span>by {msg.deletedBy.name} </span> : null} <sub className='opacity-70'>{formatChatTimestamp(msg.createdAt!)}</sub></span>
                                         </div>
                                     </div>
                                 ) : (
@@ -1254,17 +1351,17 @@ export function ChatLayout() {
                                                             <div className={`prose prose-sm max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground!'}`}>
                                                                 <MarkdownRenderer content={segment} className={`${isMine ? 'text-foreground!' : 'text-(--card-text)!'} whitespace-pre-wrap wrap-break-word text-foreground!`} />
                                                             </div>
-                                                            <span className="text-[12px] text-foreground font-medium flex items-center justify-end space-x-1">
+                                                            <span className="text-[12px] text-foreground font-medium flex items-center my-1.5 justify-end space-x-1">
                                                                 {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
-                                                                    <span className="text-[10px] text-foreground font-medium italic opacity-85">Edited</span>
+                                                                    <sub className="text-[10px] text-foreground font-medium italic opacity-85">Edited</sub>
                                                                 )}
-                                                                <span className='text-[11px] text-foreground/80'>{formatChatTimestamp(msg.createdAt)}</span>
+                                                                <sub className='text-[11px] text-foreground/80'>{formatChatTimestamp(msg.createdAt)}</sub>
                                                                 {isMine && (
                                                                     isSendingMessage ? (
                                                                         <Loader2 className="w-3.5 h-3.5 animate-spin text-foreground/70" strokeWidth={2.5} />
                                                                     ) : isFailedMessage ? (
                                                                         <span className="ml-1 inline-flex items-center gap-1">
-                                                                            <span className="text-[10px] text-foreground/60">Failed</span>
+                                                                            <sub className="text-[10px] text-foreground/60">Failed</sub>
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => { void handleSendMessage(msg); }}
@@ -1276,9 +1373,9 @@ export function ChatLayout() {
                                                                             </button>
                                                                         </span>
                                                                     ) : msg.readBy && msg.readBy.length > 0 ? (
-                                                                        <CheckCheck className="w-4 h-4 text-foreground/70" strokeWidth={2.5} />
+                                                                        <CheckCheck className="w-4 h-4 text-[10px] transform translate-y-0.5 text-foreground/70" strokeWidth={2.5} />
                                                                     ) : (
-                                                                        <Check className="w-4 h-4 text-foreground/70" strokeWidth={2.5} />
+                                                                        <Check className="w-4 h-4 text-[10px] transform translate-y-0.5 text-foreground/70" strokeWidth={2.5} />
                                                                     )
                                                                 )}
                                                             </span>
@@ -1481,25 +1578,34 @@ export function ChatLayout() {
                                         </div>
                                         <div className="flex items-center justify-between">
                                             <p className={`text-[11px] sm:text-[13px] truncate flex-1 ${hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                                                {lastMsg ? (
-                                                    <>
-                                                        <span className="text-muted-foreground">{lastMsg.senderId === user.id ? 'You: ' : (chat.type === ChatType.GROUP ? `${lastMsg.sender?.name?.split(' ')[0]}: ` : '')}</span>
-                                                        {lastMsg.deletedAt ? (
-                                                            <span className="italic text-muted-foreground">Message deleted</span>
-                                                        ) : (
-                                                            (() => {
-                                                                const content = lastMsg.content || '';
-                                                                if (content.includes('![')) {
-                                                                    const textPart = content.replace(/!\[.*?\]\(.*?\)/g, '').trim();
-                                                                    return textPart ? `${textPart} 📷` : '📷 Photo';
-                                                                }
-                                                                return content;
-                                                            })()
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <span className="italic text-muted-foreground">Tap to start chatting</span>
-                                                )}
+                                                {(() => {
+                                                    const chatTypingUsers = getTypingUsersForChat(typingByChatId, chat.id, user?.id);
+                                                    if (chatTypingUsers.length > 0) {
+                                                        const typingLabel = chat.type === ChatType.GROUP
+                                                            ? `${(chatTypingUsers[0].name || 'Someone').replace(/[()`]/g, '\\$&')} ${chatTypingUsers.length === 1 ? 'is' : 'are'} typing...`
+                                                            : 'typing...';
+                                                        return <span className="text-primary font-medium">{typingLabel}</span>;
+                                                    }
+                                                    return lastMsg ? (
+                                                        <>
+                                                            <span className="text-muted-foreground">{lastMsg.senderId === user.id ? 'You: ' : <span>{lastMsg.sender?.name}: </span>}</span>
+                                                            {lastMsg.deletedAt ? (
+                                                                <span className="italic text-muted-foreground">Message deleted</span>
+                                                            ) : (
+                                                                (() => {
+                                                                    const content = lastMsg.content || '';
+                                                                    if (content.includes('![')) {
+                                                                        const textPart = content.replace(/!\[.*?\]\(.*?\)/g, '').trim();
+                                                                        return textPart ? `${textPart} 📷` : '📷 Photo';
+                                                                    }
+                                                                    return content;
+                                                                })()
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <span className="italic text-muted-foreground">Tap to start chatting</span>
+                                                    );
+                                                })()}
                                             </p>
                                             {hasUnread && (
                                                 <span className="ml-1.5 sm:ml-2 flex items-center justify-center min-w-4 h-4 sm:min-w-5 sm:h-5 px-1 sm:px-1.5 text-[11px] sm:text-[13px] font-bold text-foreground bg-primary/30 rounded-full">
@@ -1524,7 +1630,7 @@ export function ChatLayout() {
                     <>
                         {/* Chat Header */}
                         <div
-                            className="relative w-full px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border flex items-center justify-between z-20 bg-background/95 backdrop-blur-md transition-all duration-200"
+                            className="relative w-full px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border flex items-center justify-between z-9999 bg-background/95 backdrop-blur-md transition-all duration-200"
                         >
                             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
                                 {!isDesktop && (
@@ -1596,8 +1702,8 @@ export function ChatLayout() {
                                 className="flex-1 overflow-y-auto overflow-x-hidden px-2 sm:px-3 md:px-4 lg:px-5 py-2 sm:py-3 space-y-0.5 custom-scrollbar chat-bg-pattern"
                                 style={{
                                     paddingBottom: !isDesktop
-                                        ? `calc(${composerHeight + 16}px + env(safe-area-inset-bottom, 0px))`
-                                        : composerHeight + 16
+                                        ? `calc(${(canSendMessage ? composerHeight : readOnlyBannerHeight) + 16}px + env(safe-area-inset-bottom, 0px))`
+                                        : (canSendMessage ? composerHeight : readOnlyBannerHeight) + 16
                                 }}
                             >
                                 {isLoadingMessages ? (
@@ -1675,8 +1781,8 @@ export function ChatLayout() {
                                     className="absolute right-5 z-30 p-2.5 bg-card text-foreground/70 rounded-full shadow-lg border border-border hover:bg-card/95 hover:text-primary hover:border-primary transition-all active:scale-95 group"
                                     style={{
                                         bottom: !isDesktop
-                                            ? `calc(${composerHeight + 12}px + env(safe-area-inset-bottom, 0px))`
-                                            : composerHeight + 12
+                                            ? `calc(${(canSendMessage ? composerHeight : readOnlyBannerHeight) + 12}px + env(safe-area-inset-bottom, 0px))`
+                                            : (canSendMessage ? composerHeight : readOnlyBannerHeight) + 12
                                     }}
                                     title={isViewingHistory ? "Jump to Present" : "Scroll to bottom"}
                                 >
@@ -1734,308 +1840,315 @@ export function ChatLayout() {
                             )}
                             {/* Input Composer - Only show if user can send messages */}
                             {canSendMessage ? (
-                            <div
-                                ref={composerRef}
-                                className="absolute bottom-0 w-full border-border px-2 sm:px-3 py-2 z-20"
-                                style={!isDesktop ? { paddingBottom: mobileBottomInset } : undefined}
-                            >
-                                {/* Reply / Edit Banner */}
-                                {(replyToMessage || editingMessage) && (
-                                    <div className="mb-1.5 sm:mb-1 px-2.5 sm:px-3 py-2 sm:py-2 mr-2 bg-muted border-l-4 border-primary rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
-                                        <div className="flex-1 min-w-0 pr-2 sm:pr-3">
-                                            <p className="text-[12px] sm:text-[13px] font-semibold text-primary mb-0.5">
-                                                {editingMessage ? 'Editing Message' : `Replying to ${replyToMessage?.sender?.name == user.name ? 'Yourself' : replyToMessage?.sender?.name || 'Message'}`}
-                                            </p>
-                                            <div
-                                                onClick={() => { if (replyToMessage) scrollToMessage(replyToMessage.id); else (scrollToMessage(editingMessage!.id)) }}
-                                                className="text-[12px] sm:text-[13px] text-muted-foreground! truncate cursor-pointer"
+                                <div
+                                    ref={composerRef}
+                                    className="absolute bottom-0 w-full border-border px-2 sm:px-3 py-2 z-20"
+                                    style={!isDesktop ? { paddingBottom: mobileBottomInset } : undefined}
+                                >
+                                    {/* Reply / Edit Banner */}
+                                    {(replyToMessage || editingMessage) && (
+                                        <div className="mb-1.5 sm:mb-1 px-2.5 sm:px-3 py-2 sm:py-2 mr-2 bg-muted border-l-4 border-primary rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                                            <div className="flex-1 min-w-0 pr-2 sm:pr-3">
+                                                <p className="text-[12px] sm:text-[13px] font-semibold text-primary mb-0.5">
+                                                    {editingMessage ? 'Editing Message' : `Replying to ${replyToMessage?.sender?.name == user.name ? 'Yourself' : (replyToMessage?.sender?.name || 'Message')}`}
+                                                </p>
+                                                <div
+                                                    onClick={() => { if (replyToMessage) scrollToMessage(replyToMessage.id); else (scrollToMessage(editingMessage!.id)) }}
+                                                    className="text-[12px] sm:text-[13px] text-muted-foreground! truncate cursor-pointer"
+                                                >
+                                                    <MarkdownRenderer content={getTruncatedMessagePreview(editingMessage?.content || replyToMessage?.content, isDesktop ? 70 : 35)} className='text-muted-foreground!' />
+                                                </div>
+                                            </div>
+                                            <button
+                                                title='Cancel'
+                                                type="button"
+                                                onClick={() => {
+                                                    updateActiveComposerState({ replyToMessage: null });
+                                                    if (editingMessage) {
+                                                        updateActiveComposerState({
+                                                            editingMessage: null,
+                                                            messageDraft: ''
+                                                        });
+                                                    }
+                                                }}
+                                                className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/40 rounded-lg transition-colors"
                                             >
-                                                <MarkdownRenderer content={getTruncatedMessagePreview(editingMessage?.content || replyToMessage?.content, isDesktop ? 70 : 35)} className='text-muted-foreground!' />
-                                            </div>
+                                                <X size={14} className="text-primary/80 hover:text-primary" />
+                                            </button>
                                         </div>
-                                        <button
-                                            title='Cancel'
-                                            type="button"
-                                            onClick={() => {
-                                                updateActiveComposerState({ replyToMessage: null });
-                                                if (editingMessage) {
-                                                    updateActiveComposerState({
-                                                        editingMessage: null,
-                                                        messageDraft: ''
-                                                    });
-                                                }
-                                            }}
-                                            className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/40 rounded-lg transition-colors"
-                                        >
-                                            <X size={14} className="text-primary/80 hover:text-primary" />
-                                        </button>
-                                    </div>
-                                )}
+                                    )}
 
-                                {/* Mention Banner */}
-                                {mentionedUsers.length > 0 && !editingMessage && (
-                                    <div className="mb-1.5 sm:mb-1 px-2.5 sm:px-3 py-2 sm:py-2 mr-2 bg-muted border-l-4 border-indigo-500 rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
-                                        <div className="flex-1 min-w-0 pr-2 sm:pr-3">
-                                            <p className="text-[12px] sm:text-[13px] font-semibold text-indigo-500 mb-0.5">
-                                                Mentioning
-                                            </p>
-                                            <div className="flex flex-wrap gap-1">
-                                                {mentionedUsers.map(u => (
-                                                    <span key={u.id} className="text-[11px] sm:text-[12px] bg-indigo-500/10 text-indigo-600 px-1.5 py-0.5 rounded-md font-medium">
-                                                        @{u.name}
-                                                    </span>
-                                                ))}
+                                    {/* Mention Banner */}
+                                    {mentionedUsers.length > 0 && !editingMessage && (
+                                        <div className="mb-1.5 sm:mb-1 px-2.5 sm:px-3 py-2 sm:py-2 mr-2 bg-muted border-l-4 border-indigo-500 rounded-lg flex items-center justify-between animate-in slide-in-from-bottom duration-200">
+                                            <div className="flex-1 min-w-0 pr-2 sm:pr-3">
+                                                <p className="text-[12px] sm:text-[13px] font-semibold text-indigo-500 mb-0.5">
+                                                    Mentioning
+                                                </p>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {mentionedUsers.map(u => (
+                                                        <span key={u.id} className="text-[11px] sm:text-[12px] bg-indigo-500/10 text-indigo-600 px-1.5 py-0.5 rounded-md font-medium">
+                                                            @{u.name}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </div>
+                                            <button
+                                                title='Clear Mentions'
+                                                type="button"
+                                                onClick={() => updateActiveComposerState({ mentionedUsers: [] })}
+                                                className="p-1 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                                            >
+                                                <X size={14} className="text-indigo-500/80 hover:text-indigo-500" />
+                                            </button>
                                         </div>
-                                        <button
-                                            title='Clear Mentions'
-                                            type="button"
-                                            onClick={() => updateActiveComposerState({ mentionedUsers: [] })}
-                                            className="p-1 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
-                                        >
-                                            <X size={14} className="text-indigo-500/80 hover:text-indigo-500" />
-                                        </button>
-                                    </div>
-                                )}
+                                    )}
 
-                                {/* Staged Files */}
-                                {stagedFiles.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-1.5 sm:mb-1 mr-2">
-                                        {stagedFiles.map((file, i) => (
-                                            <div key={i} className="group relative flex items-center bg-muted border border-border pl-2 pr-1 py-1 rounded-xl hover:border-primary/30 transition-all">
-                                                {file.type.startsWith('image/') ? (
-                                                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg overflow-hidden bg-muted-foreground/10 mr-1.5 sm:mr-2 relative">
-                                                        <Image src={URL.createObjectURL(file)} alt="" fill className="object-cover" unoptimized />
+                                    {/* Staged Files */}
+                                    {stagedFiles.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-1.5 sm:mb-1 mr-2">
+                                            {stagedFiles.map((file, i) => (
+                                                <div key={i} className="group relative flex items-center bg-muted border border-border pl-2 pr-1 py-1 rounded-xl hover:border-primary/30 transition-all">
+                                                    {file.type.startsWith('image/') ? (
+                                                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg overflow-hidden bg-muted-foreground/10 mr-1.5 sm:mr-2 relative">
+                                                            <Image src={URL.createObjectURL(file)} alt="" fill className="object-cover" unoptimized />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary mr-1.5 sm:mr-2">
+                                                            <Pencil size={14} className="text-primary/80" />
+                                                        </div>
+                                                    )}
+                                                    <div className="flex flex-col mr-1 sm:mr-1.5 max-w-16 sm:max-w-20">
+                                                        <span className="text-[11px] sm:text-[13px] font-semibold text-foreground truncate">{file.name}</span>
+                                                        <span className="text-[10px] sm:text-[11px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
                                                     </div>
-                                                ) : (
-                                                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary mr-1.5 sm:mr-2">
-                                                        <Pencil size={14} className="text-primary/80" />
+                                                    <button
+                                                        type="button"
+                                                        title='Remove'
+                                                        onClick={() => removeStagedFile(i)}
+                                                        className="p-0.5 text-foreground hover:text-red-500 rounded-full transition-all"
+                                                    >
+                                                        <X size={12} className="text-primary/80 hover:text-primary" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Preview Mode Render - unchanged */}
+                                    {isPreviewMode && messageDraft.trim() && (
+                                        <div className="my-1 px-4 py-3 mx-2 bg-muted rounded-xl border border-border max-h-37.5 overflow-y-auto custom-scrollbar">
+                                            <div className="prose prose-sm max-w-none prose-p:text-foreground/80">
+                                                <MarkdownRenderer content={messageDraft} className='text-foreground!' />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Composer Row */}
+                                    <div className={`flex mr-2 flex-col space-y-1.5 sm:space-y-2`}>
+                                        <input
+                                            title="Upload File"
+                                            type="file"
+                                            id="chat-file-upload"
+                                            className="hidden"
+                                            onChange={handleFileUpload}
+                                            multiple
+                                        />
+
+                                        {/* Main composer container */}
+                                        <div className="w-full bg-muted border border-transparent mb-1.5 sm:mb-2 rounded-2xl focus-within:bg-card focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                                            {/* Top row */}
+                                            <div className={`flex items-end ${isComposerExpanded ? 'px-2 pt-1' : 'px-2'}`}>
+                                                {/* Left buttons only in compact mode */}
+                                                {!isComposerExpanded && (
+                                                    <div className="flex items-center gap-0.5 sm:gap-1 pb-3 sm:pb-4">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsPreviewMode(!isPreviewMode)}
+                                                            className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
+                                                            title={isPreviewMode ? "Write text" : "Preview markdown"}
+                                                        >
+                                                            {isPreviewMode ? <Pencil size={24} /> : <View size={24} />}
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => document.getElementById('chat-file-upload')?.click()}
+                                                            className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
+                                                            title="Attach file"
+                                                        >
+                                                            <Paperclip size={22} className="cursor-pointer -rotate-45" />
+                                                        </button>
                                                     </div>
                                                 )}
-                                                <div className="flex flex-col mr-1 sm:mr-1.5 max-w-16 sm:max-w-20">
-                                                    <span className="text-[11px] sm:text-[13px] font-semibold text-foreground truncate">{file.name}</span>
-                                                    <span className="text-[10px] sm:text-[11px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    title='Remove'
-                                                    onClick={() => removeStagedFile(i)}
-                                                    className="p-0.5 text-foreground hover:text-red-500 rounded-full transition-all"
-                                                >
-                                                    <X size={12} className="text-primary/80 hover:text-primary" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
 
-                                {/* Preview Mode Render - unchanged */}
-                                {isPreviewMode && messageDraft.trim() && (
-                                    <div className="my-1 px-4 py-3 mx-2 bg-muted rounded-xl border border-border max-h-37.5 overflow-y-auto custom-scrollbar">
-                                        <div className="prose prose-sm max-w-none prose-p:text-foreground/80">
-                                            <MarkdownRenderer content={messageDraft} className='text-foreground!' />
-                                        </div>
-                                    </div>
-                                )}
+                                                {/* Textarea */}
+                                                <div className="relative flex-1 py-0.5">
+                                                    <textarea
+                                                        ref={textareaRef}
+                                                        value={messageDraft}
+                                                        disabled={isUploading}
+                                                        onChange={(e) => {
+                                                            const el = e.target;
+                                                            const newVal = el.value;
+                                                            const cursorIdx = el.selectionStart || 0;
 
-                                {/* Composer Row */}
-                                <div className={`flex mr-2 flex-col space-y-1.5 sm:space-y-2`}>
-                                    <input
-                                        title="Upload File"
-                                        type="file"
-                                        id="chat-file-upload"
-                                        className="hidden"
-                                        onChange={handleFileUpload}
-                                        multiple
-                                    />
+                                                            // Auto-deselect mentions if they are erased from text (check specifically for `@name`)
+                                                            const remainingMentions = mentionedUsers.filter(u => newVal.includes(`@${u.name}`));
+                                                            const wasMentionRemoved = remainingMentions.length !== mentionedUsers.length;
 
-                                    {/* Main composer container */}
-                                    <div className="w-full bg-muted border border-transparent mb-1.5 sm:mb-2 rounded-2xl focus-within:bg-card focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-                                        {/* Top row */}
-                                        <div className={`flex items-end ${isComposerExpanded ? 'px-2 pt-1' : 'px-2'}`}>
-                                            {/* Left buttons only in compact mode */}
-                                            {!isComposerExpanded && (
-                                                <div className="flex items-center gap-0.5 sm:gap-1 pb-3 sm:pb-4">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
-                                                        title={isPreviewMode ? "Write text" : "Preview markdown"}
-                                                    >
-                                                        {isPreviewMode ? <Pencil size={24} /> : <View size={24} />}
-                                                    </button>
+                                                            updateActiveComposerState({
+                                                                messageDraft: newVal,
+                                                                ...(wasMentionRemoved ? { mentionedUsers: remainingMentions } : {})
+                                                            });
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => document.getElementById('chat-file-upload')?.click()}
-                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
-                                                        title="Attach file"
-                                                    >
-                                                        <Paperclip size={22} className="cursor-pointer -rotate-45" />
-                                                    </button>
-                                                </div>
-                                            )}
+                                                            // Trigger typing indicator
+                                                            if (newVal.trim().length > 0) {
+                                                                emitTypingStart();
+                                                            } else {
+                                                                emitTypingStop();
+                                                            }
 
-                                            {/* Textarea */}
-                                            <div className="relative flex-1 py-0.5">
-                                                <textarea
-                                                    ref={textareaRef}
-                                                    value={messageDraft}
-                                                    disabled={isUploading}
-                                                    onChange={(e) => {
-                                                        const el = e.target;
-                                                        const newVal = el.value;
-                                                        const cursorIdx = el.selectionStart || 0;
+                                                            el.style.height = 'auto';
+                                                            el.style.height = el.scrollHeight + 'px';
+                                                            el.style.height = Math.min(el.scrollHeight, 200) + 'px';
 
-                                                        // Auto-deselect mentions if they are erased from text (check specifically for `@name`)
-                                                        const remainingMentions = mentionedUsers.filter(u => newVal.includes(`@${u.name}`));
-                                                        const wasMentionRemoved = remainingMentions.length !== mentionedUsers.length;
-
-                                                        updateActiveComposerState({
-                                                            messageDraft: newVal,
-                                                            ...(wasMentionRemoved ? { mentionedUsers: remainingMentions } : {})
-                                                        });
-
-                                                        el.style.height = 'auto';
-                                                        el.style.height = el.scrollHeight + 'px';
-                                                        el.style.height = Math.min(el.scrollHeight, 200) + 'px';
-
-                                                        // @Mention Detection
-                                                        const textBeforeCursor = newVal.slice(0, cursorIdx);
-                                                        const lastAtIdx = textBeforeCursor.lastIndexOf('@');
-                                                        if (lastAtIdx !== -1 && (lastAtIdx === 0 || textBeforeCursor[lastAtIdx - 1] === ' ')) {
-                                                            const query = textBeforeCursor.slice(lastAtIdx + 1);
-                                                            if (!query.includes(' ')) {
-                                                                setMentionSearchQuery(query);
-                                                                setShowMentionDropdown(true);
-                                                                setMentionCursorIndex(lastAtIdx);
-                                                                setMentionSelectedIndex(0); // Reset index
+                                                            // @Mention Detection
+                                                            const textBeforeCursor = newVal.slice(0, cursorIdx);
+                                                            const lastAtIdx = textBeforeCursor.lastIndexOf('@');
+                                                            if (lastAtIdx !== -1 && (lastAtIdx === 0 || textBeforeCursor[lastAtIdx - 1] === ' ')) {
+                                                                const query = textBeforeCursor.slice(lastAtIdx + 1);
+                                                                if (!query.includes(' ')) {
+                                                                    setMentionSearchQuery(query);
+                                                                    setShowMentionDropdown(true);
+                                                                    setMentionCursorIndex(lastAtIdx);
+                                                                    setMentionSelectedIndex(0); // Reset index
+                                                                } else {
+                                                                    setShowMentionDropdown(false);
+                                                                }
                                                             } else {
                                                                 setShowMentionDropdown(false);
                                                             }
-                                                        } else {
-                                                            setShowMentionDropdown(false);
-                                                        }
-                                                    }}
-                                                    onKeyDown={(e) => {
-                                                        if (showMentionDropdown && filteredMembers.length > 0) {
-                                                            if (e.key === 'ArrowDown') {
-                                                                e.preventDefault();
-                                                                setMentionSelectedIndex(prev => (prev + 1) % filteredMembers.length);
-                                                                return;
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (showMentionDropdown && filteredMembers.length > 0) {
+                                                                if (e.key === 'ArrowDown') {
+                                                                    e.preventDefault();
+                                                                    setMentionSelectedIndex(prev => (prev + 1) % filteredMembers.length);
+                                                                    return;
+                                                                }
+                                                                if (e.key === 'ArrowUp') {
+                                                                    e.preventDefault();
+                                                                    setMentionSelectedIndex(prev => (prev - 1 + filteredMembers.length) % filteredMembers.length);
+                                                                    return;
+                                                                }
+                                                                if (e.key === 'Enter' || e.key === 'Tab') {
+                                                                    e.preventDefault();
+                                                                    handleSelectMember(filteredMembers[mentionSelectedIndex]);
+                                                                    return;
+                                                                }
+                                                                if (e.key === 'Escape') {
+                                                                    setShowMentionDropdown(false);
+                                                                    return;
+                                                                }
                                                             }
-                                                            if (e.key === 'ArrowUp') {
-                                                                e.preventDefault();
-                                                                setMentionSelectedIndex(prev => (prev - 1 + filteredMembers.length) % filteredMembers.length);
-                                                                return;
-                                                            }
-                                                            if (e.key === 'Enter' || e.key === 'Tab') {
-                                                                e.preventDefault();
-                                                                handleSelectMember(filteredMembers[mentionSelectedIndex]);
-                                                                return;
-                                                            }
-                                                            if (e.key === 'Escape') {
-                                                                setShowMentionDropdown(false);
-                                                                return;
-                                                            }
-                                                        }
-                                                        handleKeyDown(e);
-                                                    }}
-                                                    onFocus={handleEditorFocus}
-                                                    onBlur={() => setTimeout(() => setShowMentionDropdown(false), 200)}
-                                                    placeholder={stagedFiles.length > 0 ? "Add a caption..." : `Message... ${isDesktop ? '(Shift + Enter for new line)' : ''}`}
-                                                    rows={1}
-                                                    className={`w-full bg-transparent px-1.5 sm:px-2 pb-2 pt-2.5 sm:pt-3 border-none text-[13px] sm:text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-60 leading-relaxed`}
-                                                />
+                                                            handleKeyDown(e);
+                                                        }}
+                                                        onFocus={handleEditorFocus}
+                                                        onBlur={() => setTimeout(() => setShowMentionDropdown(false), 200)}
+                                                        placeholder={stagedFiles.length > 0 ? "Add a caption..." : `Message... ${isDesktop ? '(Shift + Enter for new line)' : ''}`}
+                                                        rows={1}
+                                                        className={`w-full bg-transparent px-1.5 sm:px-2 pb-2 pt-2.5 sm:pt-3 border-none text-[13px] sm:text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-60 leading-relaxed`}
+                                                    />
 
-                                                {/* Mention Dropdown */}
-                                                {showMentionDropdown && filteredMembers.length > 0 && (
-                                                    <div className="absolute bottom-full left-0 mb-2 w-56 sm:w-64 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
-                                                        <div className="p-1.5 sm:p-2 border-b border-border">
-                                                            <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-2">Group Members</p>
+                                                    {/* Mention Dropdown */}
+                                                    {showMentionDropdown && filteredMembers.length > 0 && (
+                                                        <div className="absolute bottom-full left-0 mb-2 w-56 sm:w-64 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                                            <div className="p-1.5 sm:p-2 border-b border-border">
+                                                                <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-2">Group Members</p>
+                                                            </div>
+                                                            <div
+                                                                ref={mentionDropdownRef}
+                                                                className="max-h-48 sm:max-h-60 overflow-y-auto py-1 custom-scrollbar"
+                                                            >
+                                                                {filteredMembers.map((member, idx) => (
+                                                                    <button
+                                                                        key={member.userId}
+                                                                        type="button"
+                                                                        onMouseDown={(e) => {
+                                                                            e.preventDefault(); // Prevents textarea from losing focus
+                                                                            handleSelectMember(member);
+                                                                        }}
+                                                                        className={`mention-item w-full flex items-center space-x-2 sm:space-x-3 px-2.5 sm:px-3 py-1.5 sm:py-2 transition-colors ${idx === mentionSelectedIndex ? 'bg-primary/10' : 'hover:bg-muted'}`}
+                                                                    >
+                                                                        <UserAvatar targetUser={member.user} className="w-6 h-6 sm:w-7 sm:h-7" isOnline={!!onlineUsers[member.userId]} />
+                                                                        <div className="text-left min-w-0">
+                                                                            <p className="text-[12px] sm:text-[13px] font-semibold text-foreground truncate">{member.user?.name}</p>
+                                                                            <p className="text-[10px] sm:text-[11px] text-muted-foreground capitalize">{member.user?.role?.toLowerCase().replace('_', ' ')}</p>
+                                                                        </div>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
                                                         </div>
-                                                        <div
-                                                            ref={mentionDropdownRef}
-                                                            className="max-h-48 sm:max-h-60 overflow-y-auto py-1 custom-scrollbar"
-                                                        >
-                                                            {filteredMembers.map((member, idx) => (
-                                                                <button
-                                                                    key={member.userId}
-                                                                    type="button"
-                                                                    onMouseDown={(e) => {
-                                                                        e.preventDefault(); // Prevents textarea from losing focus
-                                                                        handleSelectMember(member);
-                                                                    }}
-                                                                    className={`mention-item w-full flex items-center space-x-2 sm:space-x-3 px-2.5 sm:px-3 py-1.5 sm:py-2 transition-colors ${idx === mentionSelectedIndex ? 'bg-primary/10' : 'hover:bg-muted'}`}
-                                                                >
-                                                                    <UserAvatar targetUser={member.user} className="w-6 h-6 sm:w-7 sm:h-7" isOnline={!!onlineUsers[member.userId]} />
-                                                                    <div className="text-left min-w-0">
-                                                                        <p className="text-[12px] sm:text-[13px] font-semibold text-foreground truncate">{member.user?.name}</p>
-                                                                        <p className="text-[10px] sm:text-[11px] text-muted-foreground capitalize">{member.user?.role?.toLowerCase().replace('_', ' ')}</p>
-                                                                    </div>
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Send button only in compact mode */}
-                                            {!isComposerExpanded && (messageDraft.trim() || stagedFiles.length > 0) && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => { void handleSendMessage(); }}
-                                                    disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
-                                                    className="shrink-0 mr-2 pb-3 sm:pb-4 px-1.5 sm:px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
-                                                    title="Send"
-                                                >
-                                                    <Send size={24} className="cursor-pointer" />
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        {/* Bottom row actions in expanded mode */}
-                                        {isComposerExpanded && (
-                                            <div className="flex items-center justify-between px-2 py-1.5 sm:py-2">
-                                                <div className="flex items-center gap-0.5 sm:gap-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
-                                                        title={isPreviewMode ? "Write text" : "Preview markdown"}
-                                                    >
-                                                        {isPreviewMode ? <Pencil size={22} /> : <View size={22} />}
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => document.getElementById('chat-file-upload')?.click()}
-                                                        className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
-                                                        title="Attach file"
-                                                    >
-                                                        <Paperclip size={22} className="cursor-pointer -rotate-45" />
-                                                    </button>
+                                                    )}
                                                 </div>
 
-                                                {(messageDraft.trim() || stagedFiles.length > 0) && (
+                                                {/* Send button only in compact mode */}
+                                                {!isComposerExpanded && (messageDraft.trim() || stagedFiles.length > 0) && (
                                                     <button
                                                         type="button"
                                                         onClick={() => { void handleSendMessage(); }}
                                                         disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
-                                                        className="shrink-0 pb-3 sm:pb-4 px-1.5 sm:px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
+                                                        className="shrink-0 mr-2 pb-3 sm:pb-4 px-1.5 sm:px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
                                                         title="Send"
                                                     >
                                                         <Send size={24} className="cursor-pointer" />
                                                     </button>
                                                 )}
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
 
-                            </div>
+                                            {/* Bottom row actions in expanded mode */}
+                                            {isComposerExpanded && (
+                                                <div className="flex items-center justify-between px-2 py-1.5 sm:py-2">
+                                                    <div className="flex items-center gap-0.5 sm:gap-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsPreviewMode(!isPreviewMode)}
+                                                            className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
+                                                            title={isPreviewMode ? "Write text" : "Preview markdown"}
+                                                        >
+                                                            {isPreviewMode ? <Pencil size={22} /> : <View size={22} />}
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => document.getElementById('chat-file-upload')?.click()}
+                                                            className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
+                                                            title="Attach file"
+                                                        >
+                                                            <Paperclip size={22} className="cursor-pointer -rotate-45" />
+                                                        </button>
+                                                    </div>
+
+                                                    {(messageDraft.trim() || stagedFiles.length > 0) && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { void handleSendMessage(); }}
+                                                            disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
+                                                            className="shrink-0 pb-3 sm:pb-4 px-1.5 sm:px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
+                                                            title="Send"
+                                                        >
+                                                            <Send size={24} className="cursor-pointer" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                </div>
                             ) : (
-                                <div className="absolute bottom-0 left-0 right-0 px-2 sm:px-3 py-2 sm:py-2.5 bg-amber-500/10 border-x-4 border-amber-500 rounded-lg flex items-center justify-center gap-2 animate-in slide-in-from-bottom duration-200">
+                                <div ref={readOnlyBannerRefCallback} className="absolute bottom-0 left-0 right-0 px-2 sm:px-3 py-2 sm:py-2.5 bg-amber-500/10 mr-2.5 mb-1 border-x-4 border-amber-500 rounded-lg flex items-center justify-center gap-2 animate-in slide-in-from-bottom duration-200">
                                     <LockIcon size={14} className="text-amber-600 shrink-0" />
                                     <p className="text-[11px] sm:text-[12px] md:text-[13px] font-semibold text-amber-600 text-center">
                                         Read-Only Mode - Only admins and moderators can send messages

@@ -161,10 +161,10 @@ export function buildAttachmentMarkdown(files: File[], uploadResults: FileUpload
         const isPdf = file.type === 'application/pdf';
         const isOffice = OFFICE_FILE_TYPES.has(file.type);
 
-        if (isImage) return `\n![${file.name}](${url})`;
-        if (isPdf) return `\n[PDF: ${file.name}](${url})`;
-        if (isOffice) return `\n[Doc: ${file.name}](${url})`;
-        return `\n[Attachment: ${file.name}](${url})`;
+        if (isImage) return `\n![${(file.name || '').replace(/[\\`()\[\]{}]/g, '\\$&')}](${url})`;
+        if (isPdf) return `\n[PDF: ${(file.name || '').replace(/[\\`()\[\]{}]/g, '\\$&')}](${url})`;
+        if (isOffice) return `\n[Doc: ${(file.name || '').replace(/[\\`()\[\]{}]/g, '\\$&')}](${url})`;
+        return `\n[Attachment: ${(file.name || '').replace(/[\\`()\[\]{}]/g, '\\$&')}](${url})`;
     }).join('');
 }
 
@@ -245,11 +245,11 @@ export function getTypingIndicatorLabel(chat: Chat | undefined, typingUsers: Typ
     }
 
     if (typingUsers.length === 1) {
-        return `${typingUsers[0].name || 'Someone'} is typing`;
+        return `${(typingUsers[0].name || 'Someone').replace(/[()`]/g, '\\$&')} is typing`;
     }
 
     if (typingUsers.length === 2) {
-        return `${typingUsers[0].name || 'Someone'} and ${typingUsers[1].name || 'someone'} are typing`;
+        return `${(typingUsers[0].name || 'Someone').replace(/[()`]/g, '\\$&')} and ${(typingUsers[1].name || 'someone').replace(/[()`]/g, '\\$&')} are typing`;
     }
 
     return 'Several people are typing';

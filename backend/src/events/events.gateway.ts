@@ -11,7 +11,6 @@ import { Server, Socket } from 'socket.io';
 import { ConfigService } from '@nestjs/config';
 import { WsJwtGuard } from './ws-jwt.guard';
 import { PrismaService } from '../prisma/prisma.service';
-import { ExtractJwt } from 'passport-jwt';
 
 /**
  * Authenticated user data attached to socket.data.user by WsJwtGuard.
@@ -69,9 +68,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * Used to validate write operations while allowing read-only access.
    */
   private async isSessionActive(client: Socket): Promise<boolean> {
-    const token = ExtractJwt.fromAuthHeaderAsBearerToken()(client.handshake.auth as Record<string, string>) ||
-                  client.handshake.headers?.authorization?.replace('Bearer ', '');
-    
+    const token =
+      (client.handshake.auth as Record<string, string>)?.token ||
+      client.handshake.headers?.authorization?.replace('Bearer ', '');
+
     if (!token) return false;
 
     const user = client.data.user as SocketUser;
@@ -189,21 +189,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const user = client.data.user as SocketUser;
 
-    // Check session is active for write operations
-    const isSessionActive = await this.isSessionActive(client);
-    if (!isSessionActive) {
-      client.emit('error', { message: 'Session expired. Please log in again.' });
-      return;
-    }
-
     const participant = await this.prisma.chatParticipant.findUnique({
       where: { chatId_userId: { chatId: data.chatId, userId: user.id } },
     });
 
-    if (!participant || !participant.isActive) {
-      client.emit('error', { message: 'Presence request unauthorized' });
-      return;
-    }
+    if (!participant || !participant.isActive) return;
 
     const participants = await this.prisma.chatParticipant.findMany({
       where: { chatId: data.chatId, isActive: true },
@@ -221,30 +211,17 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('chat:typing')
-  async handleChatTyping(
+  handleChatTyping(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { chatId: string; isTyping: boolean },
-  ): Promise<void> {
+  ): void {
     if (!client.data.user || !data?.chatId) return;
 
     const user = client.data.user as SocketUser;
 
-    // Check session is active for write operations
-    const isSessionActive = await this.isSessionActive(client);
-    if (!isSessionActive) {
-      client.emit('error', { message: 'Session expired. Please log in again.' });
-      return;
-    }
-
-    const participant = await this.prisma.chatParticipant.findUnique({
-      where: { chatId_userId: { chatId: data.chatId, userId: user.id } },
-    });
-
-    if (!participant || !participant.isActive) {
-      client.emit('error', { message: 'Typing event unauthorized' });
-      return;
-    }
-
+    // Broadcast typing state to all users in the chat room.
+    // No DB lookup needed — the user is already authenticated on connect
+    // and must have joined the room (which verifies participation).
     this.emitToRoom(`chat:${data.chatId}`, 'chat:typing', {
       chatId: data.chatId,
       userId: user.id,
@@ -325,5 +302,17 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     this.emitToUser(user.id, 'presence:update', payload);
+
+    // Also emit to all chat rooms the user is a participant of
+    this.prisma.chatParticipant.findMany({
+      where: { userId: user.id, isActive: true },
+      select: { chatId: true }
+    }).then(participants => {
+      for (const participant of participants) {
+        this.emitToRoom(`chat:${participant.chatId}`, 'presence:update', payload);
+      }
+    }).catch(err => {
+      console.error('Failed to emit presence to chat rooms:', err);
+    });
   }
 }

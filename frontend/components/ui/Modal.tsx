@@ -76,15 +76,15 @@ export function Modal({
                 title && (
                     <div className="flex justify-between items-start p-4 md:p-6 pb-2 md:pb-3 shrink-0 border-b border-border/50">
                         <div>
-                            {typeof title === 'string' ? <h2 className="text-2xl md:text-3xl lg:text-4xl font-black italic tracking-tighter uppercase leading-none">{title}</h2> : title}
-                            {subtitle && <div className="text-xs md:text-sm font-semibold text-muted-foreground mt-2 uppercase tracking-widest">{subtitle}</div>}
+                            {typeof title === 'string' ? <h2 className="text-xl md:text-2xl lg:text-3xl font-black text-primary tracking-tighter leading-none">{title}</h2> : title}
+                            {subtitle && <div className="text-xs md:text-sm font-semibold text-muted-foreground mt-2 tracking-widest">{subtitle}</div>}
                         </div>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-2 rounded-xl transition-all active:scale-95 shrink-0"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-2 cursor-pointer rounded-xl transition-all active:scale-95 shrink-0"
                         >
-                            <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-4 h-4 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>

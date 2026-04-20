@@ -121,7 +121,7 @@ export class AuthService {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + (rememberMe ? 30 : 1));
 
-      // Get location from IP (simple lookup)
+      // Get location (country only) from IP (simple lookup)
       let location: string | null = null;
       if (ip !== 'unknown') {
         try {
@@ -129,7 +129,7 @@ export class AuthService {
           const response = await fetch(`http://ip-api.com/json/${ip}`);
           const data = await response.json();
           if (data.status === 'success') {
-            location = `${data.city}, ${data.country}`;
+            location = data.country;
           }
         } catch (error) {
           // Silently fail location lookup
@@ -147,10 +147,10 @@ export class AuthService {
       });
 
       if (existingSession) {
-        // Check for IP change (suspicious activity)
-        const ipChanged = existingSession.ip && existingSession.ip !== ip && ip !== 'unknown';
-        
-        // Update existing session
+        // Check for country change (suspicious activity)
+        const countryChanged = existingSession.location && location && existingSession.location !== location;
+
+        // Update existing session (IP binding removed to support mobile users with changing IPs)
         await this.prisma.session.update({
           where: { id: existingSession.id },
           data: {
@@ -159,28 +159,25 @@ export class AuthService {
             expiresAt,
             deviceName: loginDto.deviceName,
             deviceType: loginDto.deviceType,
-            browser: loginDto.browser,
-            os: loginDto.os,
             ip,
-            location: location || existingSession.location,
+            location,
           },
         });
 
-        // Send notification if IP changed (suspicious activity)
-        if (ipChanged) {
+        // Send notification if country changed (suspicious activity)
+        if (countryChanged) {
           await this.prisma.notification.create({
             data: {
               userId: user.id,
               title: 'Suspicious Activity Detected',
-              body: `Your account was accessed from a new IP address (${ip}) from ${location || 'Unknown Location'}. Previous IP: ${existingSession.ip}. If this wasn't you, please revoke this session in your settings.`,
+              body: `Your account was accessed from a new location (${location}). Previous location: ${existingSession.location}. If this wasn't you, please revoke this session in your settings.`,
               type: 'SECURITY',
               actionUrl: '/settings#sessions',
               metadata: {
                 deviceId: loginDto.deviceId,
                 deviceName: loginDto.deviceName,
-                previousIp: existingSession.ip,
-                newIp: ip,
-                location,
+                previousLocation: existingSession.location,
+                newLocation: location,
                 loginTime: new Date().toISOString(),
               },
             },

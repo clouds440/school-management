@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { CustomMultiSelect, MultiSelectOption } from '@/components/ui/CustomMultiSelect';
-import { Send, Users, Shield, User as UserIcon, ChevronLeft } from 'lucide-react';
+import { Users, Shield, User as UserIcon, ChevronLeft, MessageSquarePlus } from 'lucide-react';
 import { useGlobal } from '@/context/GlobalContext';
 import { Role } from '@/types';
 
@@ -352,8 +352,8 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
                     <Button variant="secondary" onClick={onClose} type="button">
                         Cancel
                     </Button>
-                    <Button type="submit" variant="primary" icon={mode === 'ADD_PARTICIPANTS' ? Users : Send} isLoading={isLoading} className="px-10 shadow-lg shadow-primary/20">
-                        {mode === 'ADD_PARTICIPANTS' ? 'Add Participants' : 'Create Conversation'}
+                    <Button type="submit" variant="primary" icon={mode === 'ADD_PARTICIPANTS' ? Users : MessageSquarePlus} isLoading={isLoading} className="px-10 shadow-lg shadow-primary/20">
+                        {mode === 'ADD_PARTICIPANTS' ? 'Add' : 'Create Chat'}
                     </Button>
                 </div>
             </form>

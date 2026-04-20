@@ -135,11 +135,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
             isOpen={isOpen}
             onClose={onClose}
             title={
-                mail ? (
-                    <div className="flex items-center w-full pr-12 text-sm sm:text-base md:text-xl">
-                        <span className="text-xl font-black text-foreground">{mail.subject}</span>
-                    </div>
-                ) : undefined
+                mail ? mail.subject : undefined
             }
             subtitle={
                 mail ? (

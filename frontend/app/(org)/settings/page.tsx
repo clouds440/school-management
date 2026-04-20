@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School, RefreshCw, ShieldOff } from 'lucide-react';
@@ -16,6 +16,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { ThemeMode } from '@/types';
 import SessionManagement from '@/components/SessionManagement';
 import { Loading } from '@/components/ui/Loading';
+import { ThemeDropdown } from '@/components/ui/ThemeDropdown';
 
 export default function SettingsPage() {
     const { token, user } = useAuth();
@@ -30,13 +31,13 @@ export default function SettingsPage() {
     // Scroll to section if hash is present
     useEffect(() => {
         const hash = window.location.hash;
-        if (hash === '#sessions') {
+        if (hash === '#sessions' && !redirecting && !loading) {
             const element = document.getElementById('sessions');
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
-    }, []);
+    }, [redirecting, loading]);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -278,20 +279,13 @@ export default function SettingsPage() {
 
                             <div className="mt-4 space-y-2">
                                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Theme Mode</Label>
-                                <div className="flex items-center gap-2 md:gap-3">
-                                    {[ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK].map(m => (
-                                        <button
-                                            key={m}
-                                            type="button"
-                                            onClick={() => {
-                                                setFormData({ ...formData, accentColor: { ...formData.accentColor, mode: m } });
-                                                setThemeMode(m).catch(() => { });
-                                            }}
-                                            className={`px-3 py-2 rounded-xl border text-xs md:text-sm font-semibold transition-all ${themeMode === m ? 'bg-primary text-primary-foreground border-primary shadow-lg' : 'bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary'}`}>
-                                            {m === ThemeMode.SYSTEM ? 'System' : m === ThemeMode.LIGHT ? 'Light' : 'Dark'}
-                                        </button>
-                                    ))}
-                                </div>
+                                <ThemeDropdown
+                                    currentMode={themeMode}
+                                    onModeChange={(mode) => {
+                                        setFormData({ ...formData, accentColor: { ...formData.accentColor, mode } });
+                                        setThemeMode(mode).catch(() => { });    
+                                    }}
+                                />
                             </div>
                         </div>
 

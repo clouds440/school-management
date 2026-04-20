@@ -229,7 +229,7 @@ export class ChatService {
     }
 
     // Create new direct chat
-    return this.prisma.chat.create({
+    const chat = await this.prisma.chat.create({
       data: {
         type: ChatType.DIRECT,
         organizationId: user.organizationId,
@@ -265,6 +265,13 @@ export class ChatService {
         },
       },
     });
+
+    // Emit chat update event so frontend receives full chat data with participants
+    this.events.emitToRoom(`chat:${chat.id}`, 'chat:update', chat);
+    this.events.emitToRoom(`user:${user.id}`, 'chat:update', chat);
+    this.events.emitToRoom(`user:${dto.participantId}`, 'chat:update', chat);
+
+    return chat;
   }
 
   async createGroupChat(dto: CreateGroupChatDto, user: CurrentUser) {
@@ -418,6 +425,12 @@ export class ChatService {
       this.events.emitToRoom(`user:${p}`, 'chat:message', systemMsg);
     }
 
+    // Emit chat update event so frontend receives full chat data with participants
+    this.events.emitToRoom(`chat:${chat.id}`, 'chat:update', chat);
+    for (const p of participants) {
+      this.events.emitToRoom(`user:${p}`, 'chat:update', chat);
+    }
+
     return chat;
   }
 
@@ -547,6 +560,32 @@ export class ChatService {
       }
     }
 
+    // Emit chat update event so frontend can refresh with full participant data
+    const updatedChat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarUrl: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    if (updatedChat) {
+      this.events.emitToRoom(`chat:${chatId}`, 'chat:update', updatedChat);
+      for (const p of updatedChat.participants) {
+        this.events.emitToRoom(`user:${p.userId}`, 'chat:update', updatedChat);
+      }
+    }
+
     return { message: 'Participants added successfully.' };
   }
 
@@ -646,6 +685,32 @@ export class ChatService {
     // Terminate WebSocket subscription immediately
     await this.events.forceLeaveRoom(targetUserId, `chat:${chatId}`);
 
+    // Emit chat:update to refresh participant list for all users
+    const updatedChat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarUrl: true,
+                role: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    if (updatedChat) {
+      this.events.emitToRoom(`chat:${chatId}`, 'chat:update', updatedChat);
+      for (const p of updatedChat.participants) {
+        this.events.emitToRoom(`user:${p.userId}`, 'chat:update', updatedChat);
+      }
+    }
+
     return { message: 'Participant removed successfully.' };
   }
 
@@ -731,6 +796,18 @@ export class ChatService {
       this.events.emitToRoom(`user:${p.userId}`, 'chat:message', systemMessage);
     }
 
+    // Emit chat:update to refresh participant roles for all users
+    const updatedChat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: { participants: true },
+    });
+    if (updatedChat) {
+      this.events.emitToRoom(`chat:${chatId}`, 'chat:update', updatedChat);
+      for (const p of activeParticipants) {
+        this.events.emitToRoom(`user:${p.userId}`, 'chat:update', updatedChat);
+      }
+    }
+
     return { message: 'Participant role updated successfully.', participant: updatedParticipant };
   }
 
@@ -770,7 +847,7 @@ export class ChatService {
         `${actorName} changed the group name to "${dto.name}"`,
       );
     }
-    if (dto.avatarUrl !== undefined && dto.avatarUrl !== chat.avatarUrl) {
+    if (dto.avatarUrl !== undefined && dto.avatarUrl !== chat.avatarUrl && dto.avatarUrl !== '') {
       data.avatarUrl = dto.avatarUrl;
       data.avatarUpdatedAt = new Date();
       systemMessages.push(`${actorName} updated the group picture`);
@@ -1199,13 +1276,13 @@ export class ChatService {
       );
     }
 
-    // Check if chat is in readOnly mode
+    // Check if chat is in readOnly mode (direct chats should never be read-only)
     const chat = await this.prisma.chat.findUnique({
       where: { id: chatId },
-      select: { readOnly: true },
+      select: { readOnly: true, type: true },
     });
 
-    if (chat?.readOnly && participant.role !== ChatParticipantRole.ADMIN && participant.role !== ChatParticipantRole.MOD) {
+    if (chat?.type === ChatType.GROUP && chat?.readOnly && participant.role !== ChatParticipantRole.ADMIN && participant.role !== ChatParticipantRole.MOD) {
       throw new ForbiddenException(
         'This chat is in read-only mode. Only admins and moderators can send messages.',
       );
@@ -1344,6 +1421,21 @@ export class ChatService {
       userId: user.id,
       messageId: finalReadMessageId,
     });
+
+    // Also emit to all other participants in the chat so senders can see read receipts
+    const allParticipants = await this.prisma.chatParticipant.findMany({
+      where: { chatId, isActive: true },
+      select: { userId: true },
+    });
+    for (const p of allParticipants) {
+      if (p.userId !== user.id) {
+        this.events.emitToRoom(`user:${p.userId}`, 'chat:read', {
+          chatId,
+          userId: user.id,
+          messageId: finalReadMessageId,
+        });
+      }
+    }
 
     return updatedParticipant;
   }

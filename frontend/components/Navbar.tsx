@@ -9,9 +9,8 @@ import { useGlobal } from '@/context/GlobalContext';
 import { Brand } from './ui/Brand';
 import { NotificationDropdown } from './notifications/NotificationDropdown';
 import { AnnouncementDropdown } from './announcements/AnnouncementDropdown';
+import { ThemeDropdown } from './ui/ThemeDropdown';
 import { useTheme } from '@/context/ThemeContext';
-import { Sun, Moon, Monitor } from 'lucide-react';
-import { ThemeMode } from '@/types';
 import { DASHBOARD_MODULES } from '@/lib/constants';
 
 
@@ -54,19 +53,11 @@ export default function Navbar() {
             <div className="flex items-center space-x-2 md:space-x-4">
                 {token && user ? (
                     <div className="flex items-center space-x-1 md:space-x-3 pr-2">
-                        <button
-                            onClick={() => {
-                                // cycle: system -> dark -> light -> system
-                                const next = themeMode === ThemeMode.SYSTEM ? ThemeMode.DARK : (themeMode === ThemeMode.DARK ? ThemeMode.LIGHT : ThemeMode.SYSTEM);
-                                setThemeMode(next).catch(() => { /* swallow */ });
-                            }}
-                            title={`Theme: ${themeMode}`}
-                            className="p-2 hover:bg-primary/10 rounded-full transition-colors text-primary/80 hover:text-primary outline-none focus-visible:ring-2 ring-primary"
-                        >
-                            {themeMode === ThemeMode.LIGHT && <Sun className="w-5 h-5" />}
-                            {themeMode === ThemeMode.DARK && <Moon className="w-5 h-5" />}
-                            {themeMode === ThemeMode.SYSTEM && <Monitor className="w-5 h-5" />}
-                        </button>
+                        <ThemeDropdown
+                            currentMode={themeMode}
+                            onModeChange={(mode) => setThemeMode(mode).catch(() => { /* swallow */ })}
+                            variant="compact"
+                        />
                         <AnnouncementDropdown />
                         <NotificationDropdown />
                     </div>
