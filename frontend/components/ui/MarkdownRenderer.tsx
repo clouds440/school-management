@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { marked } from 'marked';
 import { getPublicUrl } from '@/lib/utils';
 
@@ -12,6 +12,9 @@ interface MarkdownRendererProps {
 const failedMarkdownImageUrls = new Set<string>();
 
 export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [, forceUpdate] = React.useState({});
+
     const htmlContent = useMemo(() => {
         try {
             const renderer = new marked.Renderer();
@@ -35,12 +38,10 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
 
                 // Placeholder markup shown when no url or when image fails to load
                 const placeholder = `
-                                        <div class="inline-block text-center">
-                                                <div class="absolute top-2 left-2 text-xs text-muted-foreground">${alt}</div>
-                                                <div class="w-35 h-35 border border-border rounded-md bg-card/40 flex flex-col items-center justify-center">
+                                        <div class="text-center relative w-32 h-32 border border-border rounded-md bg-card/40 flex flex-col items-center justify-center">
+                                                <div class="absolute top-1 left-1 text-[10px] text-muted-foreground max-w-full truncate px-1">${alt}</div>
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image-off-icon lucide-image-off text-foreground"><line x1="2" x2="22" y1="2" y2="22"/><path d="M10.41 10.41a2 2 0 1 1-2.83-2.83"/><line x1="13.5" x2="6" y1="13.5" y2="21"/><line x1="18" x2="21" y1="12" y2="15"/><path d="M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59"/><path d="M21 15V5a2 2 0 0 0-2-2H9"/></svg>
-                                                <span class="italic text-[10px] text-muted-foreground">Couldn't load image</span>
-                                            </div>
+                                                <span class="italic text-[10px] text-muted-foreground mt-1">Couldn't load image</span>
                                         </div>
                                 `;
 
@@ -98,8 +99,34 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
         }
     }, [content]);
 
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        const images = containerRef.current.querySelectorAll('img.markdown-image');
+        images.forEach((img) => {
+            const url = img.getAttribute('data-failed-url');
+            if (!url) return;
+
+            const handleError = () => {
+                failedMarkdownImageUrls.add(url);
+                // Store in window for persistence across renders
+                if (typeof window !== 'undefined') {
+                    const failedMap = (window as Window & { __eduverseFailedMarkdownImages?: Record<string, boolean> }).__eduverseFailedMarkdownImages || {};
+                    failedMap[url] = true;
+                    (window as Window & { __eduverseFailedMarkdownImages?: Record<string, boolean> }).__eduverseFailedMarkdownImages = failedMap;
+                }
+                // Force re-render to show placeholder
+                forceUpdate({});
+            };
+
+            img.addEventListener('error', handleError);
+            return () => img.removeEventListener('error', handleError);
+        });
+    }, [htmlContent]);
+
     return (
         <div
+            ref={containerRef}
             className={`markdown-content ${className}`}
             dangerouslySetInnerHTML={{ __html: htmlContent }}
             dir="auto"
@@ -151,12 +178,12 @@ if (typeof document !== 'undefined') {
                 margin: 1.5rem 0;
             }
             .markdown-content code {
-                background-color: #f3f4f6;
+                background-color: rgba(246, 240, 240, 0.8);
                 padding: 0.2rem 0.4rem;
                 border-radius: 0.25rem;
                 font-size: 0.875em;
                 font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-                color: #991b1b;
+                color: #7f1d1d;
             }
             .markdown-content pre { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; margin: 0; }
             .markdown-content code { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }

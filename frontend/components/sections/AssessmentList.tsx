@@ -130,7 +130,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                                                     e.stopPropagation();
                                                     setEditingAssessment(assessment);
                                                 }}
-                                                className="p-2.5 text-slate-400 hover:text-primary transition-all hover:bg-primary/10 rounded-xl border border-transparent hover:border-primary/20 bg-slate-50 shadow-xs"
+                                                className="p-2.5 text-muted hover:text-primary transition-all hover:bg-primary/10 rounded-xl border border-transparent hover:border-primary bg-foreground shadow-xs"
                                                 title="Edit"
                                             >
                                                 <Edit className="w-4 h-4" />
@@ -140,7 +140,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                                                     e.stopPropagation();
                                                     setDeletingAssessment(assessment);
                                                 }}
-                                                className="p-2.5 text-slate-400 hover:text-red-500 transition-all hover:bg-red-50/50 rounded-xl border border-transparent hover:border-red-100 bg-slate-50 shadow-xs"
+                                                className="p-2.5 text-red-500 hover:text-red-500 transition-all hover:bg-red-500/50 rounded-xl border border-transparent hover:border-red-500 bg-foreground shadow-xs"
                                                 title="Delete"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -150,14 +150,14 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                                 </CardHeader>
 
                                 <CardContent>
-                                    <h4 className="text-xl font-black text-slate-900 leading-tight tracking-tight group-hover:text-primary transition-colors duration-300">{assessment.title}</h4>
+                                    <h4 className="text-xl font-black text-foreground leading-tight tracking-tight group-hover:text-primary transition-colors duration-300">{assessment.title}</h4>
 
                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-500 font-bold uppercase tracking-widest pt-2">
-                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 rounded-full border border-primary">
                                             <Trophy className="w-4 h-4 text-primary/70" />
                                             <span>{assessment.totalMarks} Marks</span>
                                         </div>
-                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 rounded-full border border-primary">
                                             <Calendar className="w-4 h-4 text-primary/70" />
                                             <span>{assessment.dueDate ? formatDate(assessment.dueDate) : 'No due date'}</span>
                                         </div>
@@ -171,7 +171,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                        <div className="h-10 px-6 text-[11px] uppercase font-black tracking-widest gap-2 flex items-center justify-center bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200 group-hover:bg-primary group-hover:shadow-primary/20 transition-all duration-300">
+                                        <div className="h-10 px-6 text-[11px] uppercase font-black tracking-widest gap-2 flex items-center justify-center bg-background text-foreground group-hover:text-white rounded-xl shadow-lg group-hover:bg-primary group-hover:shadow-primary/50 transition-all duration-300">
                                             {canView ? (
                                                 <><Users className="w-4 h-4" /> View Grades</>
                                             ) : (

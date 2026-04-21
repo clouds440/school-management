@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, UserPlus, UserMinus, Shield, Loader2, Save, Lock, Unlock } from 'lucide-react';
 import { Chat, User, Role, ChatParticipantRole, ChatType } from '@/types';
 import { api } from '@/lib/api';
+import { getUserColor } from '@/lib/utils';
 import { BrandIcon } from '../ui/Brand';
 import { PhotoUploadPicker } from '../ui/PhotoUploadPicker';
 import { Button } from '../ui/Button';
@@ -220,9 +221,9 @@ export function ChatSettingsModal({
                             return (
                                 <div key={p.id} className="flex items-center justify-between p-2 rounded-lg border border-border/10 bg-card/30 group/item transition-all hover:bg-card/80 hover:border-border hover:shadow-sm">
                                     <div className="flex items-center space-x-2 sm:space-x-3">
-                                        <BrandIcon variant="user" user={p.user} size="sm" className="w-7 h-7 sm:w-8 sm:h-8" />
+                                        <BrandIcon variant="user" user={p.user} size="sm" className="w-7 h-7 sm:w-8 sm:h-8" initialsFallback/>
                                         <div className="min-w-0">
-                                            <p className="text-[11px] sm:text-xs font-bold text-foreground truncate">
+                                            <p className="text-[11px] sm:text-xs font-bold truncate" style={{ color: getUserColor(p.user?.id) }}>
                                                 {p.user?.name} {p.userId === currentUser.id && '(You)'}
                                             </p>
                                             <div className="flex items-center space-x-1.5 sm:space-x-2">

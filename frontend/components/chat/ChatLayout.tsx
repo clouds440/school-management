@@ -24,14 +24,15 @@ import { Chat, ChatMessage, ChatParticipant, ChatType, ChatMessageType, Paginate
 import { formatDistanceToNow } from 'date-fns';
 import {
     Search, Plus, Paperclip, MessageSquarePlus, SendHorizonal as Send, MoreVertical, X, Loader2,
-    UserMinus, Trash2, Info, ChevronLeft, Check, CheckCheck, ArrowDown, Pencil, Reply, ArrowUp, Download, RotateCcw,
-    Copy, View, Lock as LockIcon
+    UserMinus, Trash2, Info, ChevronLeft, Check, CheckCheck, ArrowDown, Pencil, Reply, ArrowUp, RotateCcw,
+    View, Lock as LockIcon
 } from 'lucide-react';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 import { Button } from '../ui/Button';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { NewChatModal } from './NewChatModal';
 import { ChatSettingsModal } from './ChatSettingsModal';
+import { MessageActionsDropdown } from './MessageActionsDropdown';
 import {
     type ChatTypingEvent,
     type ChatTypingStateMap,
@@ -1204,21 +1205,6 @@ export function ChatLayout() {
         return activeChat.creatorId === user.id;
     }, [activeChat, user]);
 
-    const handleTouchStart = useCallback((e: React.TouchEvent, msgId: string) => {
-        e.stopPropagation();
-        if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
-        longPressTimerRef.current = window.setTimeout(() => {
-            setTappedMessageId(msgId);
-        }, 10) as unknown as number;
-    }, []);
-
-    const handleTouchEnd = useCallback(() => {
-        if (longPressTimerRef.current) {
-            window.clearTimeout(longPressTimerRef.current);
-            longPressTimerRef.current = null;
-        }
-    }, []);
-
     const handleDownload = useCallback((e: React.MouseEvent, url: string, name: string) => {
         e.stopPropagation();
         const link = document.createElement('a');
@@ -1237,10 +1223,9 @@ export function ChatLayout() {
             return (
                 <div key={msg.id}>
                     {showDateSep && <div className="chat-date-separator"><span>{formatChatDateLabel(msg.createdAt)}</span></div>}
-                    <div className="flex justify-center py-2">
-                        <div className="bg-card/80 backdrop-blur-sm text-muted-foreground px-4 py-1.5 rounded-full text-[13px] font-medium flex items-center border border-border shadow-sm">
-                            <Info size={12} className="mr-1.5 text-primary/80" />
-                            <span>{msg.content}</span> <sub className='text-[10px] ml-3'>{formatChatTimestamp(msg.createdAt)}</sub>
+                    <div className="flex justify-center py-2 px-3">
+                        <div className="bg-card/80 backdrop-blur-sm text-muted-foreground px-4 py-1.5 rounded-full text-[13px] font-medium flex items-center border border-border shadow-sm max-w-[90%] sm:max-w-[80%] md:max-w-[70%] text-center overflow-hidden">
+                            <span className="whitespace-normal wrap-break-word">{msg.content}</span> <sub className='text-[10px] ml-2 shrink-0 whitespace-nowrap'>{formatChatTimestamp(msg.createdAt)}</sub>
                         </div>
                     </div>
                 </div>
@@ -1260,10 +1245,7 @@ export function ChatLayout() {
                 {showDateSep && <div className="chat-date-separator"><span>{formatChatDateLabel(msg.createdAt)}</span></div>}
                 <div
                     id={`msg-${msg.id}`}
-                    onTouchStart={(e) => handleTouchStart(e, msg.id)}
-                    onTouchEnd={handleTouchEnd}
-                    onTouchMove={handleTouchEnd}
-                    onTouchCancel={handleTouchEnd}
+                    onTouchStart={(e) => { e.stopPropagation(); setTappedMessageId(msg.id); }}
                     className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-3.5' : 'mb-0.5'} px-3 md:px-5 -mx-3 md:-mx-5 ${highlightedMessageId === msg.id ? 'bg-primary/30 rounded-sm' : ''}`}
                 >
                     {!isMine && (
@@ -1310,7 +1292,25 @@ export function ChatLayout() {
                                         const segments = msg.content.split(imageRegex).filter(s => s.trim() !== '');
 
                                         return (
-                                            <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} space-y-3`}>
+                                            <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} space-y-1 relative`}>
+                                                {!isDeleted && (
+                                                    <div className={`absolute top-0 shrink-0 flex items-center justify-center transition-all z-10
+                                                        opacity-0 group-hover/content:opacity-100
+                                                        ${showActionsOnMobile ? 'opacity-100!' : ''}
+                                                    `}>
+                                                        <MessageActionsDropdown
+                                                            msg={msg}
+                                                            user={user}
+                                                            isMine={isMine}
+                                                            isFailedMessage={isFailedMessage}
+                                                            onReply={handleReply}
+                                                            onCopyText={handleCopyText}
+                                                            onEditMessage={handleEditMessage}
+                                                            onDownload={handleDownload}
+                                                            onDeleteMessage={handleDeleteMessage}
+                                                        />
+                                                    </div>
+                                                )}
                                                 {segments.map((segment, idx) => {
                                                     const isImage = segment.match(/^!\[.*?\]\(.*?\)$/);
                                                     if (isImage) {
@@ -1349,7 +1349,7 @@ export function ChatLayout() {
                                                                         `}>
 
                                                             <div className={`prose prose-sm max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground!'}`}>
-                                                                <MarkdownRenderer content={segment} className={`${isMine ? 'text-foreground!' : 'text-(--card-text)!'} whitespace-pre-wrap wrap-break-word text-foreground!`} />
+                                                                <MarkdownRenderer content={segment} className={`${isMine ? 'text-white!' : 'text-(--card-text)!'} whitespace-pre-wrap wrap-break-word text-foreground!`} />
                                                             </div>
                                                             <span className="text-[12px] text-foreground font-medium flex items-center my-1.5 justify-end space-x-1">
                                                                 {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
@@ -1387,83 +1387,12 @@ export function ChatLayout() {
                                     })()
                                 )}
                             </div>
-
-                            {!isDeleted && (
-                                <div className={`absolute top-1 ${isMine ? '-left-6' : '-right-6'} shrink-0 flex items-center justify-center transition-all mb-4.5
-                                                                        ${isDesktop
-                                        ? `${openDropdownId !== msg.id ? 'opacity-0 group-hover/content:opacity-100' : 'opacity-100'}`
-                                        : `${showActionsOnMobile || openDropdownId === msg.id ? 'opacity-100' : 'opacity-0'}`
-                                    }
-                                                                    `}>
-                                    <button
-                                        onClick={(e) => {
-                                            try { (e.nativeEvent).stopImmediatePropagation(); } catch (err) { console.error(err); }
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            suppressCloseRef.current = msg.id;
-                                            window.setTimeout(() => { if (suppressCloseRef.current === msg.id) suppressCloseRef.current = null; }, 300);
-                                            setOpenDropdownId(prev => prev === msg.id ? null : msg.id);
-                                        }}
-                                        className={`p-1.5 rounded-lg transition-all border shadow-sm ${openDropdownId === msg.id ? 'bg-foreground text-primary border-primary/20' : 'text-muted-foreground hover:text-primary hover:bg-foreground/70 border-border bg-foreground/80 backdrop-blur-sm'} more-actions-btn`}
-                                        title="More actions"
-                                    >
-                                        <MoreVertical size={15} className="text-primary/80 hover:text-primary" />
-                                    </button>
-                                    {openDropdownId === msg.id && (
-                                        <div className={`absolute ${isMine ? 'left-0' : 'right-0'} ${i === messages.length - 1 ? 'bottom-full' : 'top-full'} overflow-hidden mb-1 w-32 bg-card border border-border rounded-xl shadow-xl z-99 flex flex-col animate-in fade-in zoom-in-95 duration-100 chat-dropdown`}>
-                                            {!isFailedMessage && (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleReply(msg); }}
-                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
-                                                >
-                                                    <Reply size={12} className="mr-2 opacity-85 text-purple-700" /> Reply
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleCopyText(msg); }}
-                                                className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
-                                            >
-                                                <Copy size={12} className="mr-2 opacity-85 text-yellow-400" /> Copy Text
-                                            </button>
-                                            {isMine && !isFailedMessage && (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleEditMessage(msg); }}
-                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
-                                                >
-                                                    <Pencil size={12} className="mr-2 opacity-85 text-green-400" /> Edit
-                                                </button>
-                                            )}
-                                            {Array.from(msg.content.matchAll(/\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g)).map((match, idx) => {
-                                                const label = (match[1] || '').trim();
-                                                return (
-                                                    <button
-                                                        key={idx}
-                                                        onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDownload(e, match[2], label || 'download'); }}
-                                                        className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-foreground hover:bg-primary/40 flex items-center"
-                                                    >
-                                                        <Download size={12} className="mr-2 opacity-85 text-blue-400" />
-                                                        Download
-                                                    </button>
-                                                );
-                                            })}
-                                            {(isMine || user?.role === Role.ORG_ADMIN) && (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDeleteMessage(msg.id); }}
-                                                    className="w-full rounded-sm text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-700/30 flex items-center border-t border-border"
-                                                >
-                                                    <Trash2 size={12} className="mr-2 opacity-85 text-red-500" /> Delete
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
             </div>
         );
-    }), [messages, user?.id, user?.role, tappedMessageId, openDropdownId, highlightedMessageId, isDesktop, activeChat?.type, handleTouchStart, handleTouchEnd, scrollToMessage, isSending, isUploading, handleReply, handleCopyText, handleEditMessage, handleDownload, handleDeleteMessage, handleSendMessage, onlineUsers]);
+    }), [messages, user?.id, user?.role, tappedMessageId, openDropdownId, highlightedMessageId, isDesktop, activeChat?.type, scrollToMessage, isSending, isUploading, handleReply, handleCopyText, handleEditMessage, handleDownload, handleDeleteMessage, handleSendMessage, onlineUsers]);
 
     if (!user) return null;
 
@@ -1630,7 +1559,7 @@ export function ChatLayout() {
                     <>
                         {/* Chat Header */}
                         <div
-                            className="relative w-full px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border flex items-center justify-between z-9999 bg-background/95 backdrop-blur-md transition-all duration-200"
+                            className="relative w-full px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border flex items-center justify-between z-20 bg-background/95 backdrop-blur-md transition-all duration-200"
                         >
                             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
                                 {!isDesktop && (
@@ -1818,7 +1747,7 @@ export function ChatLayout() {
                                                 <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0">
                                                     <UserAvatar targetUser={p.user} className="w-7 h-7 sm:w-8 sm:h-8" isOnline={!!onlineUsers[p.userId]} />
                                                     <div className="min-w-0">
-                                                        <p className="text-[12px] sm:text-[13px] font-semibold text-foreground truncate">{p.user?.name} {p.userId === user.id && <span className="text-muted-foreground font-normal">(You)</span>}</p>
+                                                        <p className="text-[12px] sm:text-[13px] font-semibold truncate" style={{ color: getUserColor(p.user?.id) }}>{p.user?.name} {p.userId === user.id && <span className="text-muted-foreground font-normal">(You)</span>}</p>
                                                         <p className="text-[11px] sm:text-[13px] text-muted-foreground font-medium capitalize truncate">{p.user?.role?.toLowerCase().replace('_', ' ')}</p>
                                                     </div>
                                                 </div>
