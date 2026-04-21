@@ -34,6 +34,7 @@ export function CustomMultiSelect({
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [coords, setCoords] = useState<{ top: number; left: number; width: number; isMobile?: boolean } | null>(null);
+    const [isFlipped, setIsFlipped] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +48,7 @@ export function CustomMultiSelect({
         );
     }, [options, searchTerm]);
 
-    const updateCoords = () => {
+    const updateCoords = (recalculateFlip = false) => {
         if (containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
             const windowHeight = window.innerHeight;
@@ -56,18 +57,22 @@ export function CustomMultiSelect({
             const isMobile = window.innerWidth <= 640;
             const shouldFlip = !isMobile && (rect.bottom + dropdownHeight > windowHeight) && (rect.top > dropdownHeight);
 
+            if (recalculateFlip) {
+                setIsFlipped(shouldFlip);
+            }
+
             if (isMobile) {
                 const margin = 16;
                 setCoords({
-                    top: rect.bottom,
-                    left: margin,
+                    top: rect.bottom + window.scrollY,
+                    left: margin + window.scrollX,
                     width: window.innerWidth - margin * 2,
                     isMobile: true
                 });
             } else {
                 setCoords({
-                    top: shouldFlip ? rect.top - dropdownHeight - 8 : rect.bottom,
-                    left: rect.left,
+                    top: (isFlipped ? rect.top - dropdownHeight - 8 : rect.bottom) + window.scrollY,
+                    left: rect.left + window.scrollX,
                     width: rect.width,
                 });
             }
@@ -76,13 +81,13 @@ export function CustomMultiSelect({
 
     useLayoutEffect(() => {
         if (isOpen) {
-            updateCoords();
-            window.addEventListener('scroll', updateCoords, true);
-            window.addEventListener('resize', updateCoords);
+            updateCoords(true);
+            window.addEventListener('scroll', () => updateCoords(false), true);
+            window.addEventListener('resize', () => updateCoords(false));
         }
         return () => {
-            window.removeEventListener('scroll', updateCoords, true);
-            window.removeEventListener('resize', updateCoords);
+            window.removeEventListener('scroll', () => updateCoords(false), true);
+            window.removeEventListener('resize', () => updateCoords(false));
         };
     }, [isOpen]);
 
@@ -179,13 +184,13 @@ export function CustomMultiSelect({
                 <div
                     ref={dropdownRef}
                     style={{
-                        position: 'fixed',
+                        position: 'absolute',
                         top: coords.top + 8,
                         left: coords.left,
                         width: coords.width,
                         zIndex: 9999
                     }}
-                    className={`py-2 bg-linear-to-br from-background to-background/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl max-h-[60vh] sm:max-h-[70vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-100 ${coords.isMobile ? 'left-4 right-4 rounded-xl' : ''}`}
+                    className={`py-2 bg-linear-to-br from-background to-background/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl max-h-[60vh] sm:max-h-[70vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-100 ${coords.isMobile ? '' : ''}`}
                 >
                     <div className="px-3 sm:px-4 pb-2 sm:pb-3 border-b border-border/50">
                         <div className="relative">

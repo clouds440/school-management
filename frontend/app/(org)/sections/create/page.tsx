@@ -9,6 +9,7 @@ import { useGlobal } from '@/context/GlobalContext';
 import Link from 'next/link';
 import { Course, Role } from '@/types';
 import { Input } from '@/components/ui/Input';
+import { sectionsStore } from '@/lib/sectionsStore';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -55,6 +56,7 @@ export default function CreateSectionPage() {
         try {
             if (!token) return;
             await api.org.createSection(formData, token);
+            sectionsStore.invalidate();
 
             window.dispatchEvent(new Event('stats-updated'));
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Section created successfully', type: 'success' } });

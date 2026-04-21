@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/Label';
 import { useGlobal } from '@/context/GlobalContext';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 import { Loading } from '@/components/ui/Loading';
+import { coursesStore } from '@/lib/coursesStore';
 
 interface CourseParams extends BasePaginationParams {
     my?: boolean;
@@ -63,7 +64,7 @@ export default function CoursesPage() {
         (p) => api.org.getCourses(token!, p),
         courseParams,
         'courses',
-        { enabled: !!token }
+        { enabled: !!token, store: coursesStore }
     );
 
     useEffect(() => {
@@ -105,6 +106,7 @@ export default function CoursesPage() {
         dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             await api.org.updateCourse(editingCourse.id, editFormData, token);
+            coursesStore.invalidate();
             setEditModalOpen(false);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Course updated successfully', type: 'success' } });
             refresh();
@@ -122,6 +124,7 @@ export default function CoursesPage() {
         if (!deletingCourse || !token) return;
         try {
             await api.org.deleteCourse(deletingCourse.id, token);
+            coursesStore.invalidate();
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Course deleted successfully', type: 'success' } });
             setDeleteDialogOpen(false);
             refresh();

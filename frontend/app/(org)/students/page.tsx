@@ -17,6 +17,7 @@ import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData
 import { Loading } from '@/components/ui/Loading';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
+import { studentsStore } from '@/lib/studentsStore';
 
 interface StudentParams extends BasePaginationParams {
     my?: boolean;
@@ -71,7 +72,7 @@ export default function StudentsPage() {
         (p) => api.org.getStudents(token!, p),
         studentParams,
         'students',
-        { enabled: !!token }
+        { enabled: !!token, store: studentsStore }
     );
 
     useEffect(() => {
@@ -174,7 +175,7 @@ export default function StudentsPage() {
                             +{sectionsList.length - 1} more
                         </span>
                     </div>
-                ) : <span className="text-muted-foreground/30 italic">Unassigned</span>;
+                ) : <span className="text-muted-foreground/30 italic">Not enrolled</span>;
             }
         },
         {
@@ -228,6 +229,7 @@ export default function StudentsPage() {
         if (!selectedStudent || !token) return;
         try {
             await api.org.deleteStudent(selectedStudent.id, token);
+            studentsStore.invalidate();
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Student removed successfully', type: 'success' } });
             setIsDeleteDialogOpen(false);
             refresh();

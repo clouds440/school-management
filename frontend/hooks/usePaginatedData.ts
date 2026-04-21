@@ -18,13 +18,23 @@ export interface BasePaginationParams {
     [key: string]: unknown; // Allow for extra filter fields
 }
 
+// Interface for external stores (organizationsStore, studentsStore, etc.)
+export interface PaginatedDataStore<T> {
+    get(params: BasePaginationParams): PaginatedResponse<T> | null;
+    set(params: BasePaginationParams, data: PaginatedResponse<T>): void;
+    hasData?(params: BasePaginationParams): boolean;
+    hasFreshData?(params: BasePaginationParams): boolean;
+    invalidate?(): void;
+    invalidateParams?(params: BasePaginationParams): void;
+}
+
 export function usePaginatedData<T, P extends BasePaginationParams = BasePaginationParams>(
     fetcher: (params: P) => Promise<PaginatedResponse<T>>,
     initialParams: P,
     cacheKeyPrefix: string,
-    options: { enabled?: boolean } = {}
+    options: { enabled?: boolean; store?: PaginatedDataStore<T> } = {}
 ) {
-    const { enabled = true } = options;
+    const { enabled = true, store } = options;
     const [data, setData] = useState<PaginatedResponse<T> | null>(null);
     const [loading, setLoading] = useState(true);
     const [fetching, setFetching] = useState(false);
@@ -37,6 +47,9 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
 
     const cacheKeyPrefixRef = useRef(cacheKeyPrefix);
     useEffect(() => { cacheKeyPrefixRef.current = cacheKeyPrefix; }, [cacheKeyPrefix]);
+
+    const storeRef = useRef(store);
+    useEffect(() => { storeRef.current = store; }, [store]);
 
     // Sync params when initialParams changes (e.g. from URL search params change)
     // We use a serialized version to avoid reference identity issues.
@@ -68,8 +81,37 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
         if (!enabled) return;
         const cacheKey = `${cacheKeyPrefixRef.current}-${JSON.stringify(currentParams)}`;
         const canCache = isCacheable(currentParams);
+        const externalStore = storeRef.current;
 
-        if (useCache && canCache && cache.current[cacheKey]) {
+        // Try external store first if provided
+        if (useCache && canCache && externalStore) {
+            // Check if store has hasFreshData method (for organizationsStore with TTL)
+            if (externalStore.hasFreshData) {
+                if (externalStore.hasFreshData(currentParams)) {
+                    const cachedData = externalStore.get(currentParams);
+                    if (cachedData) {
+                        setData(cachedData);
+                        setLoading(false);
+                        setFetching(false);
+                        return;
+                    }
+                }
+            } else if (externalStore.hasData) {
+                // For other stores, check if data exists
+                if (externalStore.hasData(currentParams)) {
+                    const cachedData = externalStore.get(currentParams);
+                    if (cachedData) {
+                        setData(cachedData);
+                        setLoading(false);
+                        setFetching(false);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Fall back to internal cache if no store or store miss
+        if (useCache && canCache && !externalStore && cache.current[cacheKey]) {
             const entry = cache.current[cacheKey];
             if (Date.now() - entry.timestamp < CACHE_TTL) {
                 setData(entry.data);
@@ -85,8 +127,13 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
 
             const result = await fetcherRef.current(currentParams);
 
-            // Only update cache if it's a default (non-filtered) page
-            if (canCache) {
+            // Update external store if provided and cacheable
+            if (canCache && externalStore) {
+                externalStore.set(currentParams, result);
+            }
+
+            // Only update internal cache if it's a default (non-filtered) page and no external store
+            if (canCache && !externalStore) {
                 cache.current[cacheKey] = {
                     data: result,
                     timestamp: Date.now()
@@ -117,12 +164,23 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
         fetchData(params, false);
     };
 
+    const invalidate = () => {
+        const externalStore = storeRef.current;
+        if (externalStore && externalStore.invalidate) {
+            externalStore.invalidate();
+        }
+        // Also clear internal cache for this specific params
+        const cacheKey = `${cacheKeyPrefixRef.current}-${JSON.stringify(params)}`;
+        delete cache.current[cacheKey];
+    };
+
     return {
         data,
         loading,
         fetching,
         params,
         updateParams,
-        refresh
+        refresh,
+        invalidate
     };
 }

@@ -725,6 +725,21 @@ export class OrgService {
           teachers: {
             include: { user: { select: { email: true, name: true } } },
           },
+          enrollments: {
+            include: {
+              student: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
           _count: { select: { enrollments: true } },
         },
         orderBy,
@@ -734,6 +749,10 @@ export class OrgService {
 
     const formattedSections = sections.map((s) => ({
       ...s,
+      students: s.enrollments.map((e) => ({
+        ...e.student,
+        user: e.student.user,
+      })),
       studentsCount: s._count?.enrollments || 0,
     }));
 

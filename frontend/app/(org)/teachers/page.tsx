@@ -16,6 +16,7 @@ import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData
 import { Loading } from '@/components/ui/Loading';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
+import { teachersStore } from '@/lib/teachersStore';
 
 type TeacherParams = BasePaginationParams;
 
@@ -62,7 +63,7 @@ export default function TeachersPage() {
         (p) => api.org.getTeachers(token!, p),
         teacherParams,
         'teachers',
-        { enabled: !!token }
+        { enabled: !!token, store: teachersStore }
     );
 
     useEffect(() => {
@@ -101,6 +102,7 @@ export default function TeachersPage() {
         if (!deletingTeacher || !token) return;
         try {
             await api.org.deleteTeacher(deletingTeacher.id, token);
+            teachersStore.invalidate();
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Teacher removed from organization', type: 'success' } });
             setDeleteDialogOpen(false);
             refresh();

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
 import { api } from '@/lib/api';
+import { coursesStore } from '@/lib/coursesStore';
 
 export default function CreateCoursePage() {
     const { token, user } = useAuth();
@@ -44,6 +45,7 @@ export default function CreateCoursePage() {
 
         try {
             await api.org.createCourse(formData, token);
+            coursesStore.invalidate();
             window.dispatchEvent(new Event('stats-updated'));
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Course created successfully', type: 'success' } });
             router.push('/courses');

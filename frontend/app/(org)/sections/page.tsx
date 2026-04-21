@@ -10,14 +10,16 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Button } from '@/components/ui/Button';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Section, Course, Role, PaginatedResponse } from '@/types';
+import { Section, Course, Role, PaginatedResponse, Student } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { useGlobal } from '@/context/GlobalContext';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 import { Loading } from '@/components/ui/Loading';
+import { sectionsStore } from '@/lib/sectionsStore';
 
 interface SectionParams extends BasePaginationParams {
     my?: boolean;
@@ -34,6 +36,8 @@ export default function SectionsPage() {
 
     // Redundant paginatedData state removed
     const [courses, setCourses] = useState<Course[]>([]);
+    const [students, setStudents] = useState<Student[]>([]);
+    const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
     // URL State
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -66,7 +70,7 @@ export default function SectionsPage() {
         (p) => api.org.getSections(token!, p),
         sectionParams,
         'sections',
-        { enabled: !!token }
+        { enabled: !!token, store: sectionsStore }
     );
 
     useEffect(() => {
@@ -110,6 +114,16 @@ export default function SectionsPage() {
         }
     }, [token]);
 
+    const fetchStudents = useCallback(async () => {
+        if (!token) return;
+        try {
+            const studentsResponse = await api.org.getStudents(token);
+            setStudents(Array.isArray(studentsResponse) ? studentsResponse : (studentsResponse as PaginatedResponse<Student>).data || []);
+        } catch (err: unknown) {
+            console.error(err);
+        }
+    }, [token]);
+
     useEffect(() => {
         if (token) fetchCoursesOnly();
     }, [token, fetchCoursesOnly]);
@@ -120,6 +134,39 @@ export default function SectionsPage() {
         dispatch({ type: 'UI_SET_PROCESSING', payload: true });
         try {
             await api.org.updateSection(editingSection.id, editFormData, token);
+
+            // Handle student enrollment changes
+            const currentlyEnrolledIds = editingSection.students?.map(s => s.id) || [];
+            const newlyEnrolledIds = selectedStudentIds.filter(id => !currentlyEnrolledIds.includes(id));
+            const removedIds = currentlyEnrolledIds.filter(id => !selectedStudentIds.includes(id));
+
+            // Add newly enrolled students
+            for (const studentId of newlyEnrolledIds) {
+                try {
+                    const student = students.find(s => s.id === studentId);
+                    if (!student) continue;
+                    const currentSectionIds = student.enrollments?.map((e: { section?: { id?: string } }) => e.section?.id).filter((id: string | undefined): id is string => Boolean(id)) || [];
+                    await api.org.updateStudent(studentId, { sectionIds: [...currentSectionIds, editingSection.id] }, token);
+                } catch (error) {
+                    console.error(`Failed to enroll student ${studentId}:`, error);
+                    throw error;
+                }
+            }
+
+            // Remove students who were unenrolled
+            for (const studentId of removedIds) {
+                try {
+                    const student = students.find(s => s.id === studentId);
+                    if (!student) continue;
+                    const currentSectionIds = student.enrollments?.map((e: { section?: { id?: string } }) => e.section?.id).filter((id: string | undefined): id is string => Boolean(id)) || [];
+                    await api.org.updateStudent(studentId, { sectionIds: currentSectionIds.filter((id: string) => id !== editingSection.id) }, token);
+                } catch (error) {
+                    console.error(`Failed to unenroll student ${studentId}:`, error);
+                    throw error;
+                }
+            }
+
+            sectionsStore.invalidate();
             setEditModalOpen(false);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Section updated successfully', type: 'success' } });
             refresh();
@@ -135,6 +182,7 @@ export default function SectionsPage() {
         if (!deletingSection || !token) return;
         try {
             await api.org.deleteSection(deletingSection.id, token);
+            sectionsStore.invalidate();
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Section deleted successfully', type: 'success' } });
             setDeleteDialogOpen(false);
             refresh();
@@ -159,7 +207,7 @@ export default function SectionsPage() {
             )
         },
         {
-            header: 'Enrolled Teachers',
+            header: 'Assigned Teachers',
             sortable: false,
             accessor: (row: Section) => (
                 <div className="flex flex-wrap gap-1">
@@ -174,6 +222,33 @@ export default function SectionsPage() {
                     )}
                 </div>
             )
+        },
+        {
+            header: 'Enrolled Students',
+            sortable: false,
+            accessor: (row: Section) => {
+                const studentsList = row.students || [];
+                return studentsList.length > 0 && studentsList.length < 2 ? (
+                    <div className="flex flex-wrap gap-1 max-w-50">
+                        {studentsList.map(student => (
+                            <span key={student.id} className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10 truncate max-w-37.5" title={student.user.name}>
+                                {student.user.name}
+                            </span>
+                        ))}
+                    </div>
+                ) : studentsList.length >= 2 ? (
+                    <div className="flex flex-wrap gap-1 max-w-50">
+                        {studentsList.slice(0, 1).map(student => (
+                            <span key={student.id} className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10 truncate max-w-37.5" title={student.user.name}>
+                                {student.user.name}
+                            </span>
+                        ))}
+                        <span className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10 truncate max-w-37.5" title='Click to view all students'>
+                            +{studentsList.length - 1} more
+                        </span>
+                    </div>
+                ) : <span className="text-muted-foreground/30 italic">No students</span>;
+            }
         },
         {
             header: 'Term',
@@ -202,6 +277,11 @@ export default function SectionsPage() {
                                 year: row.year || '',
                                 room: row.room || '',
                                 courseId: row.courseId || ''
+                            });
+                            // Fetch students and pre-select enrolled ones
+                            fetchStudents().then(() => {
+                                const enrolledStudentIds = row.students?.map(s => s.id) || [];
+                                setSelectedStudentIds(enrolledStudentIds);
                             });
                             setEditModalOpen(true);
                         } : undefined}
@@ -376,6 +456,17 @@ export default function SectionsPage() {
                             disabled={user?.role === Role.TEACHER}
                         />
                     </div>
+                    {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
+                        <div className="space-y-2">
+                            <Label>Enroll Students</Label>
+                            <CustomMultiSelect
+                                options={students.map(s => ({ value: s.id, label: `${s.user.name} (${s.registrationNumber || 'N/A'})` }))}
+                                values={selectedStudentIds}
+                                onChange={(vals) => setSelectedStudentIds(vals)}
+                                placeholder="Select students to enroll..."
+                            />
+                        </div>
+                    )}
                 </div>
             </ModalForm>
 

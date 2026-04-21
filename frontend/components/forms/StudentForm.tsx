@@ -17,6 +17,7 @@ import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { studentCreateSchema, studentUpdateSchema, studentProfileSchema, StudentCreateFormData, StudentUpdateFormData, StudentProfileFormData } from '@/lib/schemas';
+import { studentsStore } from '@/lib/studentsStore';
 
 interface StudentFormProps {
     studentId?: string;
@@ -104,8 +105,10 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
                 savedStudent = await api.org.updateProfile<Student>(payload as UpdateStudentRequest, token!);
             } else if (studentId) {
                 savedStudent = await api.org.updateStudent(studentId, payload as UpdateStudentRequest, token!);
+                studentsStore.invalidate();
             } else {
                 savedStudent = await api.org.createStudent(payload as CreateStudentRequest, token!);
+                studentsStore.invalidate();
             }
 
             // Sync global auth state if the updated student is the current user

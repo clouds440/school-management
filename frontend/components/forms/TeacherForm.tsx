@@ -17,6 +17,7 @@ import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { teacherCreateSchema, teacherUpdateSchema, teacherProfileSchema, TeacherCreateFormData, TeacherUpdateFormData, TeacherProfileFormData } from '@/lib/schemas';
+import { teachersStore } from '@/lib/teachersStore';
 
 interface TeacherFormProps {
     teacherId?: string;
@@ -95,8 +96,10 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
                 savedTeacher = await api.org.updateProfile<Teacher>(payload as UpdateTeacherRequest, token!);
             } else if (teacherId) {
                 savedTeacher = await api.org.updateTeacher(teacherId, payload as UpdateTeacherRequest, token!);
+                teachersStore.invalidate();
             } else {
                 savedTeacher = await api.org.createTeacher(payload as CreateTeacherRequest, token!);
+                teachersStore.invalidate();
             }
 
             // Sync global auth state if the updated teacher is the current user
@@ -358,9 +361,9 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
                         </div>
                     </div>
 
-                    <div className={`mt-6 md:mt-8 p-4 md:p-5 bg-linear-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all select-none ${currentUser?.role !== Role.ORG_ADMIN ? 'cursor-not-allowed' : 'hover:border-primary/30'}`}>
-                        <div className={`flex items-center gap-4 ${currentUser?.role !== Role.ORG_ADMIN ? 'pointer-events-none opacity-70' : ''}`}>
-                            <div className={`w-14 h-7 rounded-full relative transition-colors duration-300 cursor-pointer ${formData.isManager ? 'bg-primary' : 'bg-muted'}`}
+                    <div className={`mt-6 md:mt-8 p-4 md:p-5 bg-linear-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all select-none ${currentUser?.role !== Role.ORG_ADMIN ? 'cursor-not-allowed' : 'hover:border-primary/30'}`}>
+                        <div className={`flex items-start sm:items-center flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto ${currentUser?.role !== Role.ORG_ADMIN ? 'pointer-events-none opacity-70' : ''}`}>
+                            <div className={`w-14 h-7 flex items-center justify-start rounded-full relative transition-colors duration-300 cursor-pointer shrink-0 ${formData.isManager ? 'bg-primary' : 'bg-muted'}`}
                                 onClick={() => {
                                     if (currentUser?.role !== Role.ORG_ADMIN) return;
                                     setValue('isManager', !formData.isManager);
@@ -368,13 +371,13 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
                                 }}>
                                 <div className={`absolute top-1 w-5 h-5 bg-card rounded-full shadow-md transition-all duration-300 ${formData.isManager ? 'left-8' : 'left-1'}`} />
                             </div>
-                            <div>
+                            <div className="text-left sm:text-left">
                                 <p className="text-sm font-semibold text-foreground">Administrative Privileges</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">Allow this teacher to manage school settings and users</p>
                             </div>
                         </div>
                         {formData.isManager && (
-                            <div className="px-4 py-2 bg-primary/20 rounded-xl border border-primary/30 animate-in fade-in zoom-in">
+                            <div className="px-4 py-2 bg-primary/20 rounded-xl border border-primary/30 animate-in fade-in zoom-in w-full sm:w-auto text-center sm:text-left">
                                 <span className="text-xs font-semibold text-primary uppercase tracking-wider">Manager Mode Active</span>
                             </div>
                         )}
