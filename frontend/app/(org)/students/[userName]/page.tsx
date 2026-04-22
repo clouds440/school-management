@@ -5,7 +5,7 @@ import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
-import { Section, FinalGradeResponse, Student, ApiError, Role, Assessment } from '@/types';
+import { Section, FinalGradeResponse, Student, ApiError, Role, Assessment, DashboardInsights } from '@/types';
 import { ShieldOff, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import { Loading } from '@/components/ui/Loading';
@@ -30,6 +30,7 @@ function StudentPortalContent() {
     const [sections, setSections] = useState<Section[]>([]);
     const [grades, setGrades] = useState<FinalGradeResponse[]>([]);
     const [assessments, setAssessments] = useState<Assessment[]>([]);
+    const [insights, setInsights] = useState<DashboardInsights | null>(null);
     const fetchingData = state.ui.isLoading;
 
     const profile = state.auth.userProfile as Student | null;
@@ -69,15 +70,17 @@ function StudentPortalContent() {
             dispatch({ type: 'UI_SET_LOADING', payload: true });
 
             try {
-                const [sectionsRes, gradesRes, assessmentsRes] = await Promise.all([
+                const [sectionsRes, gradesRes, assessmentsRes, insightsRes] = await Promise.all([
                     api.org.getSections(token, { my: true }).catch(() => ({ data: [] })),
                     api.org.getOwnFinalGrades(token).catch(() => []),
-                    api.org.getAssessments(token).catch(() => [])
+                    api.org.getAssessments(token).catch(() => []),
+                    api.org.getInsights(token).catch(() => null),
                 ]);
 
                 setSections(sectionsRes.data || []);
                 setGrades(gradesRes || []);
                 setAssessments(Array.isArray(assessmentsRes) ? assessmentsRes : []);
+                setInsights(insightsRes);
             } catch (err: unknown) {
                 const apiError = err as ApiError;
                 if (apiError?.response?.data?.message === 'Silent') return; // Custom check if needed
@@ -134,7 +137,7 @@ function StudentPortalContent() {
             )}
 
             <div className="mt-4">
-                {tab === 'overview' && <Overview sections={sections} grades={grades} assessments={assessments} />}
+                {tab === 'overview' && <Overview insights={insights} />}
                 {tab === 'courses' && <Courses sections={sections} />}
                 {tab === 'assessments' && <Assessments assessments={assessments} sections={sections} />}
                 {tab === 'grades' && <Grades grades={grades} />}

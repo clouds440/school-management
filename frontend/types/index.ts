@@ -1,5 +1,5 @@
-import { Role, TeacherStatus, StudentStatus, MailStatus, MailCategory, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority, ThemeMode } from './enums';
-export { Role, TeacherStatus, StudentStatus, MailStatus, MailCategory, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority, ThemeMode } from './enums';
+import { Role, TeacherStatus, StudentStatus, MailStatus, MailCategory, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority, ThemeMode, AttendanceStatus } from './enums';
+export { Role, TeacherStatus, StudentStatus, MailStatus, MailCategory, OrganizationType, OrgStatus, AssessmentType, GradeStatus, ChatType, ChatParticipantRole, ChatMessageType, TargetType, AnnouncementPriority, ThemeMode, AttendanceStatus } from './enums';
 
 export interface PaginatedResponse<T> {
     data: T[];
@@ -61,6 +61,7 @@ export interface Section {
     studentsCount?: number;
     updatedBy?: string;
     updatedAt?: string;
+    schedules?: SectionSchedule[];
 }
 
 export interface Student {
@@ -185,6 +186,54 @@ export interface OrgStats {
     SECTIONS: number;
     STUDENTS: number;
     PENDING_ASSESSMENTS?: number;
+}
+
+export interface DashboardInsightCard {
+    id: string;
+    label: string;
+    value: string;
+    detail?: string;
+    href?: string;
+    tone?: 'default' | 'info' | 'success' | 'warning' | 'danger';
+}
+
+export interface DashboardInsightItem {
+    id: string;
+    title: string;
+    description?: string;
+    meta?: string;
+    href?: string;
+    badge?: string;
+    tone?: 'default' | 'info' | 'success' | 'warning' | 'danger';
+}
+
+export interface DashboardInsightGroup {
+    id: string;
+    title: string;
+    description?: string;
+    items: DashboardInsightItem[];
+}
+
+export interface DashboardInsightActivity {
+    id: string;
+    title: string;
+    description?: string;
+    createdAt: string;
+    href?: string;
+    tone?: 'default' | 'info' | 'success' | 'warning' | 'danger';
+}
+
+export interface DashboardInsights {
+    role: string;
+    headline: {
+        eyebrow?: string;
+        title: string;
+        subtitle: string;
+    };
+    summaryCards: DashboardInsightCard[];
+    spotlight: DashboardInsightItem | null;
+    groups: DashboardInsightGroup[];
+    recentActivity: DashboardInsightActivity[];
 }
 
 // ─── Mail System Types ────────────────────────────────────────────────────────
@@ -531,4 +580,98 @@ export interface Announcement {
     createdAt: string;
     creator?: User;
     organization?: Organization;
+}
+
+// ─── Timetable & Attendance System Types ─────────────────────────────────────
+
+export interface SectionSchedule {
+    id: string;
+    sectionId: string;
+    day: number;
+    startTime: string;
+    endTime: string;
+    room?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+    section?: Section;
+}
+
+export interface TimetableEntry {
+    scheduleId: string;
+    sectionId: string;
+    sectionName: string;
+    courseName: string;
+    day: number;
+    startTime: string;
+    endTime: string;
+    room: string | null;
+}
+
+export interface AttendanceSession {
+    id: string;
+    sectionId: string;
+    scheduleId?: string | null;
+    isAdhoc: boolean;
+    date: string;
+    startTime?: string | null;
+    endTime?: string | null;
+    createdAt?: string;
+    records?: AttendanceRecord[];
+    section?: {
+        id: string;
+        name: string;
+        course?: {
+            name: string;
+        };
+    };
+}
+
+export interface AttendanceRecord {
+    id: string;
+    sessionId: string;
+    studentId: string;
+    status: AttendanceStatus;
+    session?: AttendanceSession;
+    student?: Student;
+}
+
+export interface SectionAttendanceStudent {
+    studentId: string;
+    name: string;
+    email: string;
+    registrationNumber?: string;
+    rollNumber?: string;
+    status: AttendanceStatus | null;
+}
+
+export interface SectionAttendanceResponse {
+    sessionId: string | null;
+    date: string;
+    students: SectionAttendanceStudent[];
+}
+export interface RangeAttendanceResponse {
+    sessions: { 
+        id: string; 
+        date: string; 
+        isAdhoc?: boolean;
+        startTime?: string;
+        endTime?: string;
+        schedule?: {
+            startTime: string;
+            endTime: string;
+            room: string | null;
+        } | null;
+    }[];
+    students: {
+        studentId: string;
+        name: string;
+        email: string;
+        registrationNumber: string | null;
+        rollNumber: string | null;
+        records: {
+            sessionId: string;
+            date: string;
+            status: AttendanceStatus | null;
+        }[];
+    }[];
 }

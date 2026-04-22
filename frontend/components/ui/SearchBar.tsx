@@ -29,7 +29,6 @@ export function SearchBar({ value, onChange, placeholder = 'Search...', delay = 
     }
 
     // Trigger parent onChange only when debounced value changes. This is to prevent the parent component from re-rendering unnecessarily.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (debouncedValue !== prevDebouncedValue) {
             setPrevDebouncedValue(debouncedValue);

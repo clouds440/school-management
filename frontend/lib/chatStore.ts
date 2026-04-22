@@ -167,7 +167,6 @@ export function setCachedMessages(chatId: string, messages: ChatMessageWithMeta[
 }
 
 export function updateCachedMessages(chatId: string, messages: ChatMessageWithMeta[]) {
-    const existing = cache.session.messagesByChat[chatId] || [];
     cache.session.messagesByChat[chatId] = messages;
     saveToStorage();
 }
@@ -177,7 +176,7 @@ export function getCachedComposerState(chatId: string) {
     return cache.session.composerStates[chatId];
 }
 
-export function setCachedComposerState(chatId: string, state: any) {
+export function setCachedComposerState(chatId: string, state: ChatComposerStateMap[string]) {
     cache.session.composerStates[chatId] = state;
     saveToStorage();
 }

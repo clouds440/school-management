@@ -31,7 +31,7 @@ export function MessageActionsDropdown({
 }: MessageActionsDropdownProps) {
     const [isOpen, setIsOpen] = useState(false);
 
-    const { refs, floatingStyles, context } = useFloating({
+    const { refs: floatingRefs, floatingStyles, context } = useFloating({
         open: isOpen,
         onOpenChange: setIsOpen,
         placement: isMine ? 'bottom-start' : 'bottom-end',
@@ -46,6 +46,8 @@ export function MessageActionsDropdown({
     const dismiss = useDismiss(context);
 
     const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss]);
+    const setReference = floatingRefs.setReference;
+    const setFloating = floatingRefs.setFloating;
 
     const handleAction = (action: () => void) => {
         setIsOpen(false);
@@ -57,7 +59,7 @@ export function MessageActionsDropdown({
     return (
         <>
             <button
-                ref={refs.setReference}
+                ref={setReference}
                 {...getReferenceProps()}
                 className={`py-0.5 px-3 rounded-lg transition-all bg-background shadow-sm more-actions-btn`}
                 title="More actions"
@@ -66,7 +68,7 @@ export function MessageActionsDropdown({
             </button>
             {isOpen && (
                 <div
-                    ref={refs.setFloating}
+                    ref={setFloating}
                     style={floatingStyles}
                     {...getFloatingProps()}
                     className="overflow-hidden w-32 bg-card border border-border rounded-xl shadow-xl z-50 flex flex-col animate-in fade-in zoom-in-95 duration-100 chat-dropdown"

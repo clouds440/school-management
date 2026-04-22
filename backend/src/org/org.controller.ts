@@ -39,15 +39,24 @@ import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateAssessmentDto } from './dto/update-assessment.dto';
 import { UpdateGradeDto } from './dto/update-grade.dto';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
+import { CreateScheduleDto } from './dto/create-schedule.dto';
+import { UpdateScheduleDto } from './dto/update-schedule.dto';
+import { AttendanceRecordDto } from './dto/mark-attendance.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('org')
 export class OrgController {
-  constructor(private readonly orgService: OrgService) {}
+  constructor(private readonly orgService: OrgService) { }
 
   @Get('stats')
   getStats(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
     return this.orgService.getStats(orgId, req.user);
+  }
+
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+  @Get('insights')
+  getInsights(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
+    return this.orgService.getInsights(orgId, req.user);
   }
 
   // --- Settings ---
@@ -273,8 +282,12 @@ export class OrgController {
 
   @Get('sections/:id')
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
-  getSection(@OrgId() orgId: string, @Param('id') id: string) {
-    return this.orgService.getSection(orgId, id);
+  getSection(
+    @OrgId() orgId: string,
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.orgService.getSection(orgId, id, req.user);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
@@ -574,4 +587,123 @@ export class OrgController {
   ) {
     return this.orgService.calculateFinalGrade(studentId, sectionId);
   }
+
+  // --- Timetable & Schedules ---
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Post('sections/:id/schedules')
+  createSchedule(
+    @OrgId() orgId: string,
+    @Param('id') id: string,
+    @Body() dto: CreateScheduleDto,
+  ) {
+    return this.orgService.createSchedule(orgId, id, dto);
+  }
+
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Patch('sections/:id/schedules/:scheduleId')
+  updateSchedule(
+    @OrgId() orgId: string,
+    @Param('id') id: string,
+    @Param('scheduleId') scheduleId: string,
+    @Body() dto: UpdateScheduleDto,
+  ) {
+    return this.orgService.updateSchedule(orgId, scheduleId, dto);
+  }
+
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Delete('sections/:id/schedules/:scheduleId')
+  deleteSchedule(
+    @OrgId() orgId: string,
+    @Param('id') id: string,
+    @Param('scheduleId') scheduleId: string,
+  ) {
+    return this.orgService.deleteSchedule(orgId, scheduleId);
+  }
+
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+  @Get('sections/:id/schedules')
+  getSchedules(@OrgId() orgId: string, @Param('id') id: string) {
+    return this.orgService.getSchedules(orgId, id);
+  }
+
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+  @Get('timetable')
+  getTimetable(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
+    if (req.user.role === Role.STUDENT) {
+      return this.orgService.getStudentTimetable(orgId, req.user.id);
+    }
+    // For Teacher, Manager - show teaching schedule if they have a teacher record
+    return this.orgService.getTeacherTimetable(orgId, req.user.id);
+  }
+
+  // --- Attendance ---
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+  @Post('sections/:id/attendance/sessions')
+  createAttendanceSession(
+    @OrgId() orgId: string,
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+    @Body('date') date: string,
+    @Body('scheduleId') scheduleId?: string,
+    @Body('startTime') startTime?: string,
+    @Body('endTime') endTime?: string,
+  ) {
+    return this.orgService.createAttendanceSession(
+      orgId,
+      id,
+      req.user,
+      date,
+      scheduleId,
+      startTime,
+      endTime,
+    );
+  }
+
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+  @Post('attendance/:sessionId')
+  markAttendance(
+    @OrgId() orgId: string,
+    @Param('sessionId') sessionId: string,
+    @Request() req: AuthenticatedRequest,
+    @Body() records: AttendanceRecordDto[],
+  ) {
+    return this.orgService.markAttendance(orgId, sessionId, req.user, records);
+  }
+
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+  @Get('sections/:id/attendance')
+  getSectionAttendance(
+    @OrgId() orgId: string,
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+    @Query('date') date: string,
+    @Query('scheduleId') scheduleId?: string,
+  ) {
+    if (!date) throw new BadRequestException('Query parameter "date" is required');
+    return this.orgService.getSectionAttendance(orgId, id, req.user, date, scheduleId);
+  }
+
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+  @Get('sections/:id/attendance/range')
+  getSectionAttendanceRange(
+    @OrgId() orgId: string,
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+    @Query('start') start: string,
+    @Query('end') end: string,
+  ) {
+    if (!start || !end) throw new BadRequestException('Query parameters "start" and "end" are required');
+    return this.orgService.getSectionAttendanceRange(orgId, id, req.user, start, end);
+  }
+
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+  @Get('students/:id/attendance')
+  getStudentAttendance(
+    @OrgId() orgId: string,
+    @Param('id') studentId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.orgService.getStudentAttendance(orgId, studentId, req.user);
+  }
 }
+

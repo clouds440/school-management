@@ -1,0 +1,136 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
+import { ApiError, Section, SectionSchedule } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+import { useGlobal } from '@/context/GlobalContext';
+import { Loading } from '@/components/ui/Loading';
+import { CalendarDays, Clock, MapPin, ChevronRight, Layers } from 'lucide-react';
+import Link from 'next/link';
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+interface SectionWithSchedules extends Section {
+    schedules?: SectionSchedule[];
+}
+
+export default function SchedulesPage() {
+    const { token } = useAuth();
+    const { dispatch } = useGlobal();
+    const [sections, setSections] = useState<SectionWithSchedules[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!token) return;
+        
+        const fetchAllData = async () => {
+            setLoading(true);
+            try {
+                // Fetch sections first
+                const response = await api.org.getSections(token, { limit: 100 });
+                const sectionData = response.data || [];
+                
+                // Now fetch schedules for each section (since getSections doesn't include them)
+                const sectionsWithSchedules = await Promise.all(
+                    sectionData.map(async (section: Section): Promise<SectionWithSchedules> => {
+                        const schedules = await api.org.getSchedules(section.id, token);
+                        return { ...section, schedules };
+                    })
+                );
+                
+                setSections(sectionsWithSchedules);
+            } catch (err: unknown) {
+                dispatch({
+                    type: 'TOAST_ADD',
+                    payload: { message: (err as ApiError)?.message || 'Failed to load schedules', type: 'error' }
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAllData();
+    }, [token, dispatch]);
+
+    if (loading) return <Loading fullScreen text="Synchronizing Time-slots..." size="lg" />;
+
+    return (
+        <div className="flex flex-col h-full w-full space-y-8 pb-12">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-3xl shadow-2xl border border-border p-8 md:p-10 overflow-hidden">
+                <div className="mb-10 flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-8 border-b border-border/50">
+                    <div>
+                        <div className="flex items-center gap-3 mb-3">
+                            <span className="w-8 h-1 bg-primary rounded-full"></span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary italic">Organization Control</span>
+                        </div>
+                        <h1 className="text-5xl font-black uppercase italic tracking-tighter text-foreground leading-none">Global Schedules</h1>
+                        <p className="text-muted-foreground mt-3 text-sm font-bold uppercase tracking-widest max-w-md">Unified overview of all instructional timelines across the institution.</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    {sections.length === 0 ? (
+                        <div className="col-span-full text-center py-24 bg-muted/10 border border-border/30 rounded-3xl border-dashed">
+                            <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Layers className="w-8 h-8 text-muted-foreground/30" />
+                            </div>
+                            <p className="text-sm font-black uppercase tracking-widest opacity-40">No active academic sections detected.</p>
+                        </div>
+                    ) : (
+                        sections.map((section) => (
+                            <div key={section.id} className="group bg-card border border-border/50 rounded-3xl overflow-hidden hover:border-primary/50 transition-all duration-500 shadow-lg hover:shadow-primary/5">
+                                <div className="p-6 bg-linear-to-br from-primary/5 via-transparent to-transparent border-b border-border/50 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-500">
+                                            <CalendarDays className="w-6 h-6 text-primary" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-black uppercase italic tracking-tighter">{section.name}</h3>
+                                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{section.course?.name}</p>
+                                        </div>
+                                    </div>
+                                    <Link 
+                                        href={`/sections/${section.id}`}
+                                        className="p-3 rounded-xl bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-all group/btn"
+                                    >
+                                        <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
+                                    </Link>
+                                </div>
+
+                                <div className="p-6 space-y-4">
+                                    {(!section.schedules || section.schedules.length === 0) ? (
+                                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 italic p-4 border border-dashed border-border/50 rounded-2xl text-center">
+                                            No time-slots allocated for this section
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {section.schedules.map((schedule: SectionSchedule, idx: number) => (
+                                                <div key={idx} className="flex flex-col gap-2 p-4 bg-muted/20 rounded-2xl border border-border/50">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-black uppercase tracking-widest text-primary">{DAY_NAMES[schedule.day]}</span>
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary/30"></div>
+                                                    </div>
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-2 text-[11px] font-bold text-foreground">
+                                                            <Clock className="w-3.5 h-3.5 text-primary/60" />
+                                                            {schedule.startTime} - {schedule.endTime}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground">
+                                                            <MapPin className="w-3.5 h-3.5 text-primary/60" />
+                                                            {schedule.room || section.room || 'Venue TBD'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}

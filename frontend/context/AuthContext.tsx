@@ -137,7 +137,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     if (user.role === Role.STUDENT) {
                         const isStudentPortal = pathSegments[1] === 'students' && pathSegments[2] === user.userName;
                         const isSupportInOrg = pathSegments[1] === 'mail';
-                        if (!isStudentPortal && !isSupportInOrg) {
+                        const isAllowedShared = ['chat', 'timetable', 'attendance'].includes(pathSegments[1]);
+                        
+                        if (!isStudentPortal && !isSupportInOrg && !isAllowedShared) {
                             dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied.', type: 'error' } });
                             router.replace(`/students/${user.userName}`);
                             return;

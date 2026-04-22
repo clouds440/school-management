@@ -131,3 +131,11 @@ export enum ThemeMode {
     DARK = 'DARK',
     SYSTEM = 'SYSTEM',
 }
+
+export enum AttendanceStatus {
+    PRESENT = 'PRESENT',
+    ABSENT = 'ABSENT',
+    LATE = 'LATE',
+    EXCUSED = 'EXCUSED',
+}
+

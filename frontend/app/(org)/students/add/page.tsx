@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { UserPlus } from 'lucide-react';
 import { Role } from '@/types';
 import StudentForm from '@/components/forms/StudentForm';
@@ -10,8 +10,6 @@ import StudentForm from '@/components/forms/StudentForm';
 export default function AddStudentPage() {
     const { user } = useAuth();
     const router = useRouter();
-    const pathname = usePathname();
-
     // Redirect if not authorized
     useEffect(() => {
         if (user && user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER && user.role !== Role.TEACHER) {

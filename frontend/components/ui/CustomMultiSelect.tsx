@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from "react";
-import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { LucideIcon, ChevronDown, X, Check } from "lucide-react";
 
@@ -48,7 +48,7 @@ export function CustomMultiSelect({
         );
     }, [options, searchTerm]);
 
-    const updateCoords = (recalculateFlip = false) => {
+    const updateCoords = useCallback((recalculateFlip = false) => {
         if (containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
             const windowHeight = window.innerHeight;
@@ -77,19 +77,23 @@ export function CustomMultiSelect({
                 });
             }
         }
-    };
+    }, [isFlipped]);
 
     useLayoutEffect(() => {
-        if (isOpen) {
-            updateCoords(true);
-            window.addEventListener('scroll', () => updateCoords(false), true);
-            window.addEventListener('resize', () => updateCoords(false));
-        }
+        if (!isOpen) return;
+
+        const syncCoords = () => updateCoords(false);
+        const frameId = window.requestAnimationFrame(() => updateCoords(true));
+
+        window.addEventListener('scroll', syncCoords, true);
+        window.addEventListener('resize', syncCoords);
+
         return () => {
-            window.removeEventListener('scroll', () => updateCoords(false), true);
-            window.removeEventListener('resize', () => updateCoords(false));
+            window.cancelAnimationFrame(frameId);
+            window.removeEventListener('scroll', syncCoords, true);
+            window.removeEventListener('resize', syncCoords);
         };
-    }, [isOpen]);
+    }, [isOpen, updateCoords]);
 
     const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 

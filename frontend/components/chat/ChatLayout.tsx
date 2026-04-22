@@ -153,12 +153,10 @@ export function ChatLayout() {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const mentionDropdownRef = useRef<HTMLDivElement>(null);
-    const readOnlyBannerRef = useRef<HTMLDivElement>(null);
     const observerRef = useRef<ResizeObserver | null>(null);
 
     const [composerHeight, setComposerHeight] = useState(0);
     const [readOnlyBannerHeight, setReadOnlyBannerHeight] = useState(0);
-    const longPressTimerRef = useRef<number | null>(null);
     const suppressCloseRef = useRef<string | null>(null);
     const pendingMessageIdRef = useRef<string | null>(null);
     const sendLockRef = useRef(false);
@@ -1041,7 +1039,7 @@ export function ChatLayout() {
             sendLockRef.current = false;
             setIsSending(false);
         }
-    }, [messageDraft, stagedFiles, replyToMessage, token, user, activeChatId, isSending, isUploading, editingMessage, dispatch, scrollToBottom, updateComposerStateForChat, emitTypingStop]);
+    }, [messageDraft, stagedFiles, replyToMessage, mentionedUsers, token, user, activeChatId, isSending, isUploading, editingMessage, dispatch, scrollToBottom, updateComposerStateForChat, emitTypingStop]);
 
     const handleDeleteMessage = useCallback((messageId: string) => {
         if (!token || !activeChatId) return;
@@ -1392,7 +1390,7 @@ export function ChatLayout() {
                 </div>
             </div>
         );
-    }), [messages, user?.id, user?.role, tappedMessageId, openDropdownId, highlightedMessageId, isDesktop, activeChat?.type, scrollToMessage, isSending, isUploading, handleReply, handleCopyText, handleEditMessage, handleDownload, handleDeleteMessage, handleSendMessage, onlineUsers]);
+    }), [messages, user, user?.id, user?.role, tappedMessageId, openDropdownId, highlightedMessageId, isDesktop, activeChat?.type, scrollToMessage, isSending, isUploading, handleReply, handleCopyText, handleEditMessage, handleDownload, handleDeleteMessage, handleSendMessage, onlineUsers]);
 
     if (!user) return null;
 

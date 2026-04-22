@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { api } from '@/lib/api';
@@ -8,6 +8,7 @@ import { Monitor, Smartphone, Laptop, Globe, Shield, Trash2, LogOut, RefreshCw, 
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Loading } from '@/components/ui/Loading';
+import { formatDistanceToNow } from "date-fns";
 
 interface Session {
     id: string;
@@ -28,7 +29,7 @@ interface SessionManagementProps {
     orgId?: string;
 }
 
-export default function SessionManagement({ userId, orgId }: SessionManagementProps) {
+export default function SessionManagement({ userId }: SessionManagementProps) {
     const { token, user } = useAuth();
     const { dispatch } = useGlobal();
     const [sessions, setSessions] = useState<Session[]>([]);
@@ -39,7 +40,7 @@ export default function SessionManagement({ userId, orgId }: SessionManagementPr
 
     const targetUserId = userId || user?.id;
 
-    const fetchSessions = async () => {
+    const fetchSessions = useCallback(async () => {
         if (!token || !targetUserId) return;
         setLoading(true);
         try {
@@ -51,18 +52,18 @@ export default function SessionManagement({ userId, orgId }: SessionManagementPr
         } finally {
             setLoading(false);
         }
-    };
+    }, [dispatch, targetUserId, token]);
 
     useEffect(() => {
-        fetchSessions();
-    }, [token, targetUserId]);
+        void fetchSessions();
+    }, [fetchSessions]);
 
     const handleRevokeSession = async (sessionId: string) => {
         if (!token) return;
         setRevoking(sessionId);
         try {
             const result = await api.auth.revokeSession(sessionId, token);
-            if (result && (result as any).shouldLogout) {
+            if (result.shouldLogout) {
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Logging out...', type: 'success' } });
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
@@ -109,21 +110,6 @@ export default function SessionManagement({ userId, orgId }: SessionManagementPr
             return <Laptop className="w-5 h-5" />;
         }
         return <Monitor className="w-5 h-5" />;
-    };
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffMs = now.getTime() - date.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-        if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-        return date.toLocaleDateString();
     };
 
     const isCurrentSession = (session: Session) => {
@@ -178,7 +164,7 @@ export default function SessionManagement({ userId, orgId }: SessionManagementPr
                                 <Globe className="w-20 h-20 text-muted-foreground/30 relative" />
                             </div>
                             <p className="text-lg font-semibold text-muted-foreground">No active sessions found</p>
-                            <p className="text-sm text-muted-foreground/60 mt-2">You're not currently logged in on any device</p>
+                            <p className="text-sm text-muted-foreground/60 mt-2">You&apos;re not currently logged in on any device</p>
                         </div>
                     ) : (
                         <>
@@ -221,15 +207,16 @@ export default function SessionManagement({ userId, orgId }: SessionManagementPr
                                                             <span className="text-muted-foreground/40">•</span>
                                                             <span className="flex items-center gap-1.5">
                                                                 <span className="w-1 h-1 bg-muted-foreground/40 rounded-full" />
-                                                                Last active: {formatDate(session.lastSeenAt)}
+                                                                Last active: {formatDistanceToNow(new Date(session.lastSeenAt), { addSuffix: true })}
                                                             </span>
                                                             {(session.ip || session.location) && (
                                                                 <>
                                                                     <span className="text-muted-foreground/40">•</span>
                                                                     <span className="flex items-center gap-1.5">
                                                                         <MapPin className="w-3 h-3" />
-                                                                        {session.location || session.ip}
+                                                                        {session.location ? session.location : "Unknown"}
                                                                     </span>
+                                                                    <span>IP: {session.ip ? session.ip : "Unknown"}</span>
                                                                 </>
                                                             )}
                                                         </div>
@@ -288,7 +275,7 @@ export default function SessionManagement({ userId, orgId }: SessionManagementPr
                 onClose={() => setShowRevokeAllDialog(false)}
                 onConfirm={handleConfirmRevokeAll}
                 title="Revoke All Other Sessions"
-                description="Are you sure you want to revoke all other sessions? This will sign you out from all devices except this one. You'll need to log in again on those devices."
+                description="Are you sure you want to revoke all other sessions? This will sign you out from all devices except this one. You&apos;ll need to log in again on those devices."
                 confirmText="Revoke All"
                 isDestructive={true}
             />

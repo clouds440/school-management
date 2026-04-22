@@ -146,7 +146,9 @@ model Section {
   enrollments Enrollment[]
   course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   teachers    Teacher[]    @relation("SectionToTeacher")
-  assessments Assessment[]
+  schedules          SectionSchedule[]
+  attendanceSessions AttendanceSession[]
+  assessments        Assessment[]
 
   @@index([courseId])
 }
@@ -192,6 +194,7 @@ model Student {
   user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   grades             Grade[]
   submissions        Submission[]
+  attendanceRecords  AttendanceRecord[]
 
   @@index([organizationId])
 }
@@ -552,4 +555,68 @@ model Announcement {
 
   @@index([organizationId])
   @@index([targetType, targetId])
+}
+
+// ─── TIMETABLE & ATTENDANCE SYSTEM ──────────────────────────────────────────
+
+model SectionSchedule {
+  id        String   @id @default(uuid())
+  sectionId String
+
+  day       Int      // 0 = Sunday, 1 = Monday ... 6 = Saturday
+  startTime String   // "09:00"
+  endTime   String   // "10:00"
+
+  room      String?  // optional override
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([sectionId])
+  @@index([day])
+
+  attendanceSessions AttendanceSession[]
+}
+
+model AttendanceSession {
+  id        String   @id @default(uuid())
+  sectionId String
+  scheduleId String?
+  isAdhoc     Boolean  @default(false)
+  date       DateTime
+  startTime  String?
+  endTime    String?
+
+  createdAt DateTime @default(now())
+
+  section  Section          @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  schedule SectionSchedule? @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  records  AttendanceRecord[]
+
+  @@unique([scheduleId, date])
+  @@index([sectionId])
+  @@index([scheduleId])
+  @@index([date])
+}
+
+model AttendanceRecord {
+  id         String   @id @default(uuid())
+  sessionId  String
+  studentId  String
+  status     AttendanceStatus
+
+  session AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, studentId])
+  @@index([studentId])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
 }

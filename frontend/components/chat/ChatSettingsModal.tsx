@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, UserPlus, UserMinus, Shield, Loader2, Save, Lock, Unlock } from 'lucide-react';
+import { UserPlus, UserMinus, Shield, Loader2, Save, Lock, Unlock } from 'lucide-react';
 import { Chat, User, Role, ChatParticipantRole, ChatType } from '@/types';
 import { api } from '@/lib/api';
 import { getUserColor } from '@/lib/utils';

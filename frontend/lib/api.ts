@@ -7,7 +7,8 @@ import {
     Assessment, Grade, Submission, CreateAssessmentRequest, UpdateAssessmentRequest,
     UpdateGradeRequest, CreateSubmissionRequest, FinalGradeResponse, MailTarget,
     Chat, ChatMessage, Notification, Announcement, TargetType, AnnouncementPriority, User,
-    ThemeMode
+    ThemeMode, SectionSchedule, TimetableEntry, AttendanceRecord, SectionAttendanceResponse,
+    RangeAttendanceResponse, DashboardInsights
 } from '@/types';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
@@ -28,6 +29,21 @@ interface RequestOptions extends RequestInit {
 
 interface QueryParams {
     [key: string]: string | number | boolean | undefined;
+}
+
+interface AuthSessionSummary {
+    id: string;
+    userId: string;
+    deviceId: string;
+    deviceName: string;
+    os: string;
+    token: string;
+    lastSeenAt: string;
+    expiresAt: string;
+    createdAt: string;
+    ip?: string | null;
+    location?: string | null;
+    shouldLogout?: boolean;
 }
 
 function buildQueryString(params: QueryParams): string {
@@ -87,8 +103,8 @@ export const api = {
             }),
         updateProfile: (data: Partial<{ themeMode?: ThemeMode; name?: string }>, token: string) =>
             request('/auth/profile', { method: 'PATCH', body: JSON.stringify(data), token }),
-        getSessions: (token: string) => request<any[]>('/auth/sessions', { token }),
-        revokeSession: (sessionId: string, token: string) => request<{ message: string }>(`/auth/sessions/${sessionId}`, { method: 'DELETE', token }),
+        getSessions: (token: string) => request<AuthSessionSummary[]>('/auth/sessions', { token }),
+        revokeSession: (sessionId: string, token: string) => request<{ message: string; shouldLogout?: boolean }>(`/auth/sessions/${sessionId}`, { method: 'DELETE', token }),
         revokeAllSessions: (token: string) => request<{ message: string }>('/auth/sessions', { method: 'DELETE', token }),
     },
 
@@ -221,6 +237,31 @@ export const api = {
             request<T>('/org/profile', { token }),
         updateProfile: <T = Student | Teacher>(data: UpdateStudentRequest | UpdateTeacherRequest, token: string) =>
             request<T>('/org/profile', { method: 'PATCH', body: JSON.stringify(data), token }),
+        getInsights: (token: string) =>
+            request<DashboardInsights>('/org/insights', { token }),
+
+        // --- Timetable & Attendance ---
+        createSchedule: (id: string, data: { day: number, startTime: string, endTime: string, room?: string }, token: string) =>
+            request<SectionSchedule>(`/org/sections/${id}/schedules`, { method: 'POST', body: JSON.stringify(data), token }),
+        getSchedules: (id: string, token: string) =>
+            request<SectionSchedule[]>(`/org/sections/${id}/schedules`, { token }),
+        updateSchedule: (sectionId: string, scheduleId: string, data: Partial<{ day: number, startTime: string, endTime: string, room?: string }>, token: string) =>
+            request<SectionSchedule>(`/org/sections/${sectionId}/schedules/${scheduleId}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+        deleteSchedule: (sectionId: string, scheduleId: string, token: string) =>
+            request<void>(`/org/sections/${sectionId}/schedules/${scheduleId}`, { method: 'DELETE', token }),
+        getTimetable: (token: string) =>
+            request<TimetableEntry[]>('/org/timetable', { token }),
+
+        createAttendanceSession: (sectionId: string, date: string, token: string, scheduleId?: string, startTime?: string, endTime?: string) =>
+            request<{ id: string }>(`/org/sections/${sectionId}/attendance/sessions`, { method: 'POST', body: JSON.stringify({ date, scheduleId, startTime, endTime }), token }),
+        markAttendance: (sessionId: string, records: { studentId: string, status: string }[], token: string) =>
+            request<AttendanceRecord[]>(`/org/attendance/${sessionId}`, { method: 'POST', body: JSON.stringify(records), token }),
+        getSectionAttendance: (sectionId: string, date: string, token: string, scheduleId?: string) =>
+            request<SectionAttendanceResponse>(`/org/sections/${sectionId}/attendance${buildQueryString({ date, scheduleId })}`, { token }),
+        getSectionAttendanceRange: (sectionId: string, start: string, end: string, token: string) =>
+            request<RangeAttendanceResponse>(`/org/sections/${sectionId}/attendance/range${buildQueryString({ start, end })}`, { token }),
+        getStudentAttendance: (studentId: string, token: string) =>
+            request<AttendanceRecord[]>(`/org/students/${studentId}/attendance`, { token }),
     },
 
     files: {

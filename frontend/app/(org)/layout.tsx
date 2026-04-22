@@ -6,7 +6,8 @@ import {
     LayoutDashboard, Users, BookOpen, GraduationCap,
     MessageSquare, Settings, LibraryBig, Trophy,
     Clock, ShieldOff, RefreshCw, Mail, CheckCircle, Book,
-    Layers
+    Layers,
+    CalendarDays
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
@@ -217,9 +218,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             overviewHref = `/students/${user.userName}`;
         }
 
+        // Common links for everyone
         orgLinks.push({ id: 'DASHBOARD', label: 'Overview', href: overviewHref, icon: LayoutDashboard });
-
-        // Add Messages/Chat
         orgLinks.push({
             id: 'CHAT',
             label: 'Messages',
@@ -228,29 +228,45 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             badge: chatStats && chatStats.unread > 0 ? `${chatStats.unread} New` : undefined
         });
 
-        if (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) {
+        const isManagement = user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER;
+        const isAcademic = user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER;
+
+        // Management View (Admins & Managers)
+        if (isManagement) {
             orgLinks.push({ id: 'COURSES', label: 'Courses', href: '/courses', icon: LibraryBig, badge: stats?.COURSES });
             orgLinks.push({ id: 'SECTIONS', label: 'Sections', href: '/sections', icon: Layers, badge: stats?.SECTIONS });
             orgLinks.push({ id: 'TEACHERS', label: 'Teachers', href: '/teachers', icon: Users, badge: stats?.TEACHERS });
             orgLinks.push({ id: 'STUDENTS', label: 'Students', href: '/students', icon: GraduationCap, badge: stats?.STUDENTS });
+            orgLinks.push({ id: 'ATTENDANCE', label: 'Attendance', href: '/attendance', icon: CheckCircle });
+            orgLinks.push({ id: 'SCHEDULES', label: 'Schedules', href: '/schedules', icon: CalendarDays });
+
             if (user?.role === Role.ORG_ADMIN) {
                 orgLinks.push({ id: 'SETTINGS', label: 'Settings', href: '/settings', icon: Settings });
             }
-            if (user?.role != Role.ORG_ADMIN) {
-                orgLinks.push({ id: 'GRADES', label: 'Grades', href: '/grades', icon: Trophy });
-                orgLinks.push({ id: 'PROFILE', label: 'Profile Settings', href: `/teachers/${user.userName}/profile`, icon: Settings });
-            }
-        } else if (user?.role === Role.TEACHER) {
+        }
+
+        // Academic/Teaching View (Teachers & Managers)
+        if (user?.role === Role.TEACHER) {
             orgLinks.push({ id: 'COURSES', label: 'My Courses', href: '/courses', icon: LibraryBig, badge: stats?.COURSES });
             orgLinks.push({ id: 'SECTIONS', label: 'My Sections', href: '/sections', icon: Layers, badge: stats?.SECTIONS });
             orgLinks.push({ id: 'STUDENTS', label: 'My Students', href: '/students', icon: GraduationCap, badge: stats?.STUDENTS });
+            orgLinks.push({ id: 'ATTENDANCE', label: 'Attendance', href: '/attendance', icon: CheckCircle });
+        }
+
+        // Shared Academic Features (Teachers and Managers, but not pure Admins unless explicitly handling classes)
+        if (isAcademic && user?.role !== Role.ORG_ADMIN) {
+            orgLinks.push({ id: 'TIMETABLE', label: 'Timetable', href: '/timetable', icon: Clock });
             orgLinks.push({ id: 'GRADES', label: 'Grades', href: '/grades', icon: Trophy });
             orgLinks.push({ id: 'PROFILE', label: 'Profile Settings', href: `/teachers/${user.userName}/profile`, icon: Settings });
-        } else if (user?.role === Role.STUDENT) {
+        }
+
+        // Student View
+        if (user?.role === Role.STUDENT) {
             orgLinks.push({ id: 'COURSES', label: 'My Courses', href: `/students/${user.userName}?tab=courses`, icon: Book, badge: stats?.SECTIONS });
             orgLinks.push({ id: 'ASSESSMENTS', label: 'Assessments', href: `/students/${user.userName}?tab=assessments`, icon: BookOpen, badge: stats?.PENDING_ASSESSMENTS });
             orgLinks.push({ id: 'GRADES', label: 'Grades', href: `/students/${user.userName}?tab=grades`, icon: Trophy });
             orgLinks.push({ id: 'ATTENDANCE', label: 'Attendance', href: `/students/${user.userName}?tab=attendance`, icon: CheckCircle });
+            orgLinks.push({ id: 'TIMETABLE', label: 'Timetable', href: '/timetable', icon: Clock });
             orgLinks.push({ id: 'PROFILE', label: 'Profile Settings', href: `/students/${user.userName}?tab=profile`, icon: Settings });
         }
 

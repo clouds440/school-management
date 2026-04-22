@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter, usePathname, useParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Loader2, UserPlus } from 'lucide-react';
 import { api } from '@/lib/api';
 import StudentForm from '@/components/forms/StudentForm';
@@ -12,7 +12,6 @@ import { Student, Role } from '@/types';
 export default function EditStudentPage() {
     const { user, token, loading: authLoading } = useAuth();
     const router = useRouter();
-    const pathname = usePathname();
     const params = useParams();
     const { state, dispatch } = useGlobal();
     const studentId = params.id as string;

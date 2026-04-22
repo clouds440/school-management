@@ -6,14 +6,12 @@ import { BookOpen, GraduationCap, ChevronRight, Search } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Section, Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
-import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Input } from '@/components/ui/Input';
 import { Loading } from '@/components/ui/Loading';
 
 export default function GradesPage() {
     const { token, user } = useAuth();
-    const params = useParams();
     const { state, dispatch } = useGlobal();
     const [sections, setSections] = useState<Section[]>([]);
     const isLoading = state.ui.isLoading;

@@ -8,8 +8,6 @@ import { Settings, UserCircle } from 'lucide-react';
 import { Loading } from '@/components/ui/Loading';
 import { useEffect } from 'react';
 
-import { useParams } from 'next/navigation';
-
 export default function TeacherProfilePage() {
     const { state } = useGlobal();
     const teacherData = state.auth.userProfile as Teacher | null;

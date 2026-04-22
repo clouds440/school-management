@@ -1,158 +1,265 @@
 'use client';
 
-import { useState } from 'react';
-import { CheckCircle, XCircle, Clock, AlertCircle, Calendar as CalendarIcon, Search } from 'lucide-react';
-import { Card, CardHeader, CardContent } from '@/components/ui/Card';
-import { SearchBar } from '@/components/ui/SearchBar';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { api } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { useGlobal } from '@/context/GlobalContext';
+import { Loading } from '@/components/ui/Loading';
+import AttendanceSheet from '@/components/sections/AttendanceSheet';
+import { ApiError, AttendanceRecord, Role, RangeAttendanceResponse, AttendanceStatus } from '@/types';
+import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 export default function Attendance() {
-    const [search, setSearch] = useState('');
-    const [attendanceData] = useState([
-        { date: '2026-03-14', course: 'Mathematics 101', status: 'present' },
-        { date: '2026-03-13', course: 'Physics 201', status: 'present' },
-        { date: '2026-03-12', course: 'English Literature', status: 'absent' },
-        { date: '2026-03-11', course: 'Mathematics 101', status: 'late' },
-        { date: '2026-03-10', course: 'Physics 201', status: 'present' },
-    ]);
+    const { token, user } = useAuth();
+    const { dispatch } = useGlobal();
 
-    const filteredAttendance = attendanceData.filter(log =>
-        log.course.toLowerCase().includes(search.toLowerCase())
-    );
+    const [records, setRecords] = useState<AttendanceRecord[]>([]);
+    const [fetching, setFetching] = useState(true);
+    const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+    const [rangeData, setRangeData] = useState<RangeAttendanceResponse | null>(null);
+    const [fetchingDetail, setFetchingDetail] = useState(false);
 
-    return (
-        <div className="max-w-7xl mx-auto space-y-12 pb-16 px-4 sm:px-6">
+    // Fetch overall student records for cards
+    const fetchAttendance = useCallback(async () => {
+        if (!token || !user || user.role !== Role.STUDENT) return;
+        setFetching(true);
+        try {
+            const data = await api.org.getStudentAttendance(user.id, token);
+            setRecords(data || []);
+        } catch (error: unknown) {
+            dispatch({
+                type: 'TOAST_ADD',
+                payload: { message: (error as ApiError)?.message || 'Failed to fetch attendance', type: 'error' }
+            });
+        } finally {
+            setFetching(false);
+        }
+    }, [token, user, dispatch]);
 
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4 mb-10">
-                <div>
-                    <h1 className="text-4xl font-black text-foreground tracking-tighter leading-none italic uppercase">Presence Audit</h1>
-                    <p className="text-muted-foreground mt-3 font-bold max-w-md tracking-tight">Systematic presence summary for the current academic session.</p>
+    // Fetch monthly range data for drill-down
+    const fetchSectionMonthly = useCallback(async (sectionId: string) => {
+        if (!token) return;
+        setFetchingDetail(true);
+        try {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+            const data = await api.org.getSectionAttendanceRange(sectionId, start, end, token);
+            setRangeData(data);
+        } catch (error: unknown) {
+            dispatch({
+                type: 'TOAST_ADD',
+                payload: { message: (error as ApiError)?.message || 'Failed to fetch section details', type: 'error' }
+            });
+        } finally {
+            setFetchingDetail(false);
+        }
+    }, [token, dispatch]);
+
+    useEffect(() => {
+        fetchAttendance();
+    }, [fetchAttendance]);
+
+    useEffect(() => {
+        if (selectedSectionId) {
+            fetchSectionMonthly(selectedSectionId);
+        } else {
+            setRangeData(null);
+        }
+    }, [selectedSectionId, fetchSectionMonthly]);
+
+    // Group records by section for overview cards
+    const sectionSummaries = useMemo(() => {
+        const groups: Record<string, {
+            id: string;
+            sectionName: string;
+            courseName: string;
+            present: number;
+            absent: number;
+            late: number;
+            excused: number;
+            total: number;
+            percentage: number;
+        }> = {};
+
+        records.forEach(record => {
+            const sectionId = record.session?.sectionId || 'unknown';
+            const isOfficial = !record.session?.isAdhoc;
+
+            if (!groups[sectionId]) {
+                groups[sectionId] = {
+                    id: sectionId,
+                    sectionName: record.session?.section?.name || 'Unknown Section',
+                    courseName: record.session?.section?.course?.name || 'Unknown Course',
+                    present: 0, absent: 0, late: 0, excused: 0, total: 0, percentage: 0
+                };
+            }
+
+            if (isOfficial) {
+                groups[sectionId].total++;
+                if (record.status === AttendanceStatus.PRESENT) groups[sectionId].present++;
+                else if (record.status === AttendanceStatus.ABSENT) groups[sectionId].absent++;
+                else if (record.status === AttendanceStatus.LATE) groups[sectionId].late++;
+                else if (record.status === AttendanceStatus.EXCUSED) groups[sectionId].excused++;
+            }
+        });
+
+        Object.values(groups).forEach(g => {
+            g.percentage = g.total > 0 ? Math.round(((g.present + g.late) / g.total) * 100) : 100;
+        });
+
+        return Object.values(groups);
+    }, [records]);
+
+    const overallPercentage = useMemo(() => {
+        const officialRecords = records.filter(r => !r.session?.isAdhoc);
+        const total = officialRecords.length;
+        const present = officialRecords.filter(r => r.status === AttendanceStatus.PRESENT || r.status === AttendanceStatus.LATE).length;
+        return total > 0 ? Math.round((present / total) * 100) : 100;
+    }, [records]);
+
+    if (fetching) {
+        return <div className="py-20 flex justify-center"><Loading size="lg" /></div>;
+    }
+
+    // --- Detailed Monthly View ---
+    if (selectedSectionId && rangeData) {
+        const summary = sectionSummaries.find(s => s.id === selectedSectionId);
+        return (
+            <div className="max-w-7xl mx-auto space-y-8 pb-16 px-4 sm:px-6">
+                <div className="flex items-center gap-4 pt-4">
+                    <Button
+                        variant="secondary"
+                        onClick={() => setSelectedSectionId(null)}
+                        icon={ChevronLeft}
+                        className="bg-card shadow-sm border-border"
+                    >
+                        Back to Overview
+                    </Button>
                 </div>
 
-                <div className="flex flex-col md:flex-row items-end gap-6">
-                    <div className="grid grid-cols-3 gap-6 w-full md:w-auto">
-                        <Card padding="md" className="flex flex-col items-center text-center shadow-xl shadow-black/5" delay={0}>
-                            <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] mb-1">Present</p>
-                            <p className="text-2xl font-black text-emerald-600 italic">94%</p>
-                        </Card>
-                        <Card padding="md" className="flex flex-col items-center text-center shadow-xl shadow-black/5" delay={100}>
-                            <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] mb-1">Delayed</p>
-                            <p className="text-2xl font-black text-amber-500 italic">2</p>
-                        </Card>
-                        <Card padding="md" className="flex flex-col items-center text-center shadow-xl shadow-black/5" delay={200}>
-                            <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] mb-1">Absent</p>
-                            <p className="text-2xl font-black text-red-500 italic">1</p>
-                        </Card>
+                <div className="bg-card/50 backdrop-blur-xl border border-border rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
+                        <CheckCircle className="w-64 h-64" />
                     </div>
 
-                    <div className="w-full md:w-64">
-                        <SearchBar
-                            placeholder="Filter ledger..."
-                            value={search}
-                            onChange={setSearch}
-                        />
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
+                        <div>
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="w-2 h-2 rounded-full bg-primary"></span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">{summary?.courseName}</span>
+                            </div>
+                            <h1 className="text-4xl font-black text-foreground tracking-tighter leading-none italic uppercase">{summary?.sectionName} Ledger</h1>
+                            <p className="text-muted-foreground mt-3 font-bold max-w-md tracking-tight uppercase text-[10px] opacity-60">Full monthly presence history for this course.</p>
+                        </div>
+                        <div className="bg-background/50 border border-border p-4 rounded-2xl flex items-center gap-6 shadow-sm">
+                            <div>
+                                <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] mb-1 text-center">Section Rate</p>
+                                <p className={`text-2xl font-black italic text-center ${summary && summary.percentage >= 85 ? 'text-emerald-500' : 'text-amber-500'}`}>{summary?.percentage}%</p>
+                            </div>
+                        </div>
                     </div>
+                </div>
+
+                {fetchingDetail ? (
+                    <div className="py-20 flex justify-center"><Loading size="md" /></div>
+                ) : (
+                    <AttendanceSheet mode="monthly" rangeData={rangeData} students={[]} readOnly={true} />
+                )}
+            </div>
+        );
+    }
+
+    // --- Overview Cards View ---
+    return (
+        <div className="max-w-7xl mx-auto space-y-10 pb-16 px-4 sm:px-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4">
+                <div>
+                    <h1 className="text-5xl font-black text-foreground tracking-tighter leading-none italic uppercase">Presence Audit</h1>
+                    <p className="text-muted-foreground mt-4 font-bold max-w-md tracking-tight uppercase text-[11px] opacity-70">
+                        Unified visualization of your academic commitment and log presence.
+                    </p>
+                </div>
+                <div className="bg-card border border-border p-8 rounded-3xl shadow-xl flex items-center gap-8 relative overflow-hidden group">
+                    <div className="absolute -right-4 -top-4 opacity-5 rotate-12 group-hover:rotate-45 transition-transform duration-1000">
+                        <CheckCircle className="w-24 h-24" />
+                    </div>
+                    <div className="relative z-10 text-center">
+                        <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2 leading-none">Global Accuracy</p>
+                        <p className={`text-4xl font-black italic tracking-tighter ${overallPercentage >= 85 ? 'text-emerald-500' : 'text-amber-500'}`}>{overallPercentage}%</p>
+                    </div>
+                    {overallPercentage < 85 && (
+                        <div className="relative z-10 flex items-center gap-2 text-amber-500 bg-amber-500/10 px-4 py-2.5 rounded-xl text-xs font-black uppercase italic border border-amber-500/20">
+                            <AlertCircle className="w-4 h-4 animate-pulse" /> Attendance Risk
+                        </div>
+                    )}
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                {/* Main Log Section */}
-                <Card accentColor="bg-indigo-500" padding="none" className="lg:col-span-2 overflow-hidden shadow-2xl border-0" delay={300}>
-                    <CardHeader className="p-8 border-b border-border flex items-center justify-between mb-0">
-                        <h3 className="text-xl font-black text-foreground italic uppercase tracking-tight">Attendance Ledger</h3>
-                        <button className="text-[10px] font-black text-primary hover:text-primary/80 uppercase tracking-[0.2em] bg-primary/10 px-4 py-2 rounded-xl border border-primary/20 transition-all active:scale-95 shadow-xs">Full History</button>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="divide-y divide-border text-left">
-                            {filteredAttendance.map((log, idx) => (
-                                <div key={idx} className="p-8 flex items-center justify-between hover:bg-muted/10 transition-colors group cursor-default">
-                                    <div className="flex items-center gap-8">
-                                        <div className="flex flex-col items-center justify-center bg-card w-16 h-16 rounded-2xl border border-border shadow-xl shadow-black/5 group-hover:scale-105 group-hover:shadow-primary/10 transition-all duration-500 text-center">
-                                            <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-tighter mb-0.5">{new Date(log.date).toLocaleDateString('en-US', { month: 'short' })}</span>
-                                            <span className="text-2xl font-black text-foreground leading-none italic">{new Date(log.date).getDate()}</span>
+            {sectionSummaries.length === 0 ? (
+                <div className="text-center py-24 bg-card border border-dashed border-border rounded-3xl shadow-sm">
+                    <CheckCircle className="w-16 h-16 text-muted-foreground/20 mx-auto mb-6" />
+                    <p className="text-muted-foreground font-black uppercase tracking-widest text-xs">No attendance footprint detected</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {sectionSummaries.map((group, idx) => (
+                        <div
+                            key={idx}
+                            onClick={() => setSelectedSectionId(group.id)}
+                            className="group bg-card border border-border rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden cursor-pointer flex flex-col p-8 relative hover:border-primary/30"
+                        >
+                            <div className="absolute -right-8 -top-8 p-16 opacity-[0.03] group-hover:opacity-[0.07] transition-all group-hover:scale-110 pointer-events-none group-hover:rotate-12 duration-700">
+                                <BookOpen className="w-48 h-48" />
+                            </div>
+
+                            <div className="relative z-10">
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-primary">{group.courseName}</span>
+                                    </div>
+                                    <div className={`text-lg font-black italic tracking-tighter ${group.percentage >= 85 ? 'text-emerald-500' : 'text-amber-500'}`}>{group.percentage}%</div>
+                                </div>
+
+                                <h3 className="text-2xl font-black italic tracking-tighter uppercase mb-2 text-foreground group-hover:text-primary transition-colors leading-none">{group.sectionName}</h3>
+                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-10">Historical Ledger Summary</p>
+
+                                <div className="space-y-6 bg-muted/20 p-6 rounded-2xl border border-border/50">
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-widest mb-1 leading-none">Total Logs</p>
+                                            <p className="text-xl font-black italic text-foreground">{group.total}</p>
                                         </div>
                                         <div>
-                                            <p className="font-black text-foreground text-lg group-hover:text-primary transition-colors italic leading-tight mb-1">{log.course}</p>
-                                            <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">{new Date(log.date).toLocaleDateString('en-US', { weekday: 'long' })}</p>
+                                            <p className="text-[9px] font-black text-emerald-500/60 uppercase tracking-widest mb-1 leading-none">Present</p>
+                                            <p className="text-xl font-black italic text-emerald-500">{group.present + group.late}</p>
                                         </div>
                                     </div>
-                                    <div>
-                                        {log.status === 'present' && (
-                                            <div className="flex items-center gap-2 bg-emerald-500/10 text-emerald-600 px-4 py-2 rounded-xl border border-emerald-500/20 shadow-xs">
-                                                <CheckCircle className="w-4 h-4" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">Present</span>
-                                            </div>
-                                        )}
-                                        {log.status === 'absent' && (
-                                            <div className="flex items-center gap-2 bg-red-500/10 text-red-600 px-4 py-2 rounded-xl border border-red-500/20 shadow-xs">
-                                                <XCircle className="w-4 h-4" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">Absent</span>
-                                            </div>
-                                        )}
-                                        {log.status === 'late' && (
-                                            <div className="flex items-center gap-2 bg-amber-500/10 text-amber-600 px-4 py-2 rounded-xl border border-amber-500/20 shadow-xs">
-                                                <Clock className="w-4 h-4" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">Delayed</span>
-                                            </div>
-                                        )}
+
+                                    <div className="h-1.5 w-full bg-background rounded-full overflow-hidden border border-border/50 p-px">
+                                        <div
+                                            className={`h-full rounded-full transition-all duration-1000 ease-out ${group.percentage >= 85 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                            style={{ width: `${group.percentage}%` }}
+                                        ></div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-[0.2em]">
+                                        <span className="text-rose-500/70">Absent: {group.absent}</span>
+                                        <span className="text-blue-500/70">Excused: {group.excused}</span>
                                     </div>
                                 </div>
-                            ))}
-                            {filteredAttendance.length === 0 && (
-                                <div className="p-20 text-center">
-                                    <Search className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
-                                    <p className="text-xs font-black text-muted-foreground/40 uppercase tracking-widest">No matching records found</p>
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
+                            </div>
 
-                {/* Sidebar Area */}
-                <div className="space-y-10">
-                    {/* Attendance Alerts */}
-                    <Card padding="lg" className="border-0 shadow-2xl bg-card/50 backdrop-blur-md" accentColor="bg-red-500" delay={400}>
-                        <h4 className="text-xs font-black text-foreground uppercase tracking-[0.2em] mb-8 italic flex items-center gap-3">
-                            <AlertCircle className="w-4 h-4 text-red-500" />
-                            Critical Alerts
-                        </h4>
-                        <div className="space-y-4">
-                            <div className="p-5 bg-red-500/5 rounded-2xl border border-red-500/20 flex items-start gap-5 text-left group/alert hover:bg-red-500/10 transition-colors">
-                                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-1 group-hover:animate-pulse" />
-                                <div>
-                                    <p className="text-[10px] font-black text-red-900 dark:text-red-400 uppercase tracking-widest leading-none mb-2">Unexcused Record</p>
-                                    <p className="text-xs text-muted-foreground leading-relaxed font-medium">English Literature (Mar 12). Institutional justification required by EOD.</p>
-                                </div>
-                            </div>
-                            <div className="p-5 bg-amber-500/5 rounded-2xl border border-amber-500/20 flex items-start gap-5 text-left group/alert hover:bg-amber-500/10 transition-colors">
-                                <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-1 group-hover:rotate-12 transition-transform" />
-                                <div>
-                                    <p className="text-[10px] font-black text-amber-900 dark:text-amber-400 uppercase tracking-widest leading-none mb-2">Performance Risk</p>
-                                    <p className="text-xs text-muted-foreground leading-relaxed font-medium">Aggregate attendance is near the 85% mandatory threshold.</p>
-                                </div>
+                            <div className="mt-8 pt-6 border-t border-border/50 flex items-center justify-between relative z-10 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-2 group-hover:translate-y-0">
+                                <span className="text-[10px] font-black text-primary uppercase tracking-widest">Audit Full Ledger</span>
+                                <ChevronRight className="w-5 h-5 text-primary" />
                             </div>
                         </div>
-                    </Card>
-
-                    {/* Policy Sidebar */}
-                    <Card className="bg-slate-950 border-0 shadow-2xl overflow-hidden relative group p-10" padding="none" delay={500}>
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] -mr-32 -mt-32 group-hover:bg-primary/20 transition-all duration-1000"></div>
-                        <div className="relative z-10 text-left">
-                            <div className="flex items-center gap-4 mb-6">
-                                <CalendarIcon className="w-6 h-6 text-primary/60" />
-                                <h4 className="text-xl font-black tracking-tight text-primary-foreground uppercase italic">Compliance</h4>
-                            </div>
-                            <p className="text-muted-foreground/60 text-sm leading-relaxed font-medium mb-10">
-                                A rigid minimum of 85% attendance is required per subject for exam qualification and academic progression.
-                            </p>
-                            <button className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] group-hover:text-primary transition-all flex items-center gap-2">
-                                Institutional Handbook
-                                <span className="group-hover:translate-x-1 transition-transform">→</span>
-                            </button>
-                        </div>
-                    </Card>
+                    ))}
                 </div>
-            </div>
+            )}
         </div>
     );
 }

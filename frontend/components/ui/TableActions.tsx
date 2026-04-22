@@ -61,7 +61,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                         e.stopPropagation();
                         onView();
                     }}
-                    className="text-primary cursor-pointer hover:text-primary hover:bg-primary/10 border border-primary/20 rounded-lg transition-all shadow-xs active:scale-95 group relative flex items-center gap-2"
+                    className="text-primary cursor-pointer hover:text-primary px-3 py-2.5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all shadow-xs active:scale-95 group relative flex items-center gap-2"
                     title="View"
                 >
                     <Eye className="w-4 h-4" />

@@ -8,7 +8,7 @@ import { Role } from '@/types';
 import TeacherForm from '@/components/forms/TeacherForm';
 
 export default function AddTeacherPage() {
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     const router = useRouter();
 
     // Redirect if not authorized

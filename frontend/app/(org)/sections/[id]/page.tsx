@@ -8,6 +8,7 @@ import { Section, Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
 import { useParams, useRouter } from 'next/navigation';
 import AssessmentList from '@/components/sections/AssessmentList';
+import SectionSchedules from '@/components/sections/SectionSchedules';
 import { Loading } from '@/components/ui/Loading';
 
 export default function SectionDetailPage() {
@@ -112,6 +113,24 @@ export default function SectionDetailPage() {
                     </div>
                     <div className="p-8 md:p-10">
                         <AssessmentList section={section} role={user?.role as Role} />
+                    </div>
+                </div>
+
+                {/* Schedules Panel */}
+                <div className="bg-card text-card-text rounded-lg shadow-2xl border border-border overflow-hidden transform transition-all hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] mt-8">
+                    <div className="p-8 border-b border-border bg-linear-to-r from-primary/10 to-transparent flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2.5 bg-primary/20 rounded-lg">
+                                <Calendar className="w-6 h-6 text-primary" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none">Class Schedule</h2>
+                                <p className="text-[10px] font-black text-card-text/40 uppercase tracking-widest mt-1">Manage weekly timetable and slots</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-8 md:p-10">
+                        <SectionSchedules section={section} role={user?.role as Role} />
                     </div>
                 </div>
             </div>
