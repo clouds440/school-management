@@ -208,7 +208,7 @@ export class MailService {
         mail,
         {
           title: 'New Mail Received',
-          body: `A new mail "${dto.subject}" has been assigned to you.`,
+          body: `New mail received: "${dto.subject}".`,
           type: 'MAIL_ASSIGNED',
         },
         user.id,

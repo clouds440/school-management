@@ -61,13 +61,19 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
   async changePassword(
-    @Request() req: { user: { id: string } },
+    @Request()
+    req: {
+      user: { id: string };
+      headers: { authorization?: string };
+    },
     @Body() body: Record<string, string>,
   ) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
     return this.authService.changePassword(
       req.user.id,
       body.oldPassword,
       body.newPassword,
+      token,
     );
   }
 

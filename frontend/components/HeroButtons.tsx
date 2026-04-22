@@ -19,7 +19,7 @@ export function HeroButtons() {
                         user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN
                             ? '/admin'
                             : user.role === Role.ORG_ADMIN
-                                ? '/admin'
+                                ? '/overview'
                                 : user.role === Role.TEACHER || user.role === Role.ORG_MANAGER
                                     ? `/teachers/${user.userName}`
                                     : `/students/${user.userName}`

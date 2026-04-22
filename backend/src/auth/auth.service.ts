@@ -260,7 +260,7 @@ export class AuthService {
     };
   }
 
-  async changePassword(userId: string, oldPass: string, newPass: string) {
+  async changePassword(userId: string, oldPass: string, newPass: string, currentToken?: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { organization: true },
@@ -284,13 +284,47 @@ export class AuthService {
       include: { organization: true, teacherProfile: true },
     });
 
-    // Revoke all sessions when password changes
-    await this.prisma.session.updateMany({
-      where: { userId },
-      data: { isActive: false },
-    });
+    // Revoke all sessions except the current one
+    if (currentToken) {
+      // First, verify the current session exists
+      const currentSession = await this.prisma.session.findFirst({
+        where: {
+          userId,
+          token: currentToken,
+          isActive: true,
+        },
+      });
 
-    return this.generateToken(updatedUser);
+      if (currentSession) {
+        // Revoke all other sessions
+        await this.prisma.session.updateMany({
+          where: {
+            userId,
+            token: { not: currentToken },
+            isActive: true,
+          },
+          data: { isActive: false },
+        });
+      } else {
+        // If current session not found, revoke all (fallback behavior)
+        await this.prisma.session.updateMany({
+          where: { userId, isActive: true },
+          data: { isActive: false },
+        });
+      }
+    } else {
+      // No token provided, revoke all sessions
+      await this.prisma.session.updateMany({
+        where: { userId, isActive: true },
+        data: { isActive: false },
+      });
+    }
+
+    // Return current token in response so frontend can re-login with it
+    return {
+      access_token: currentToken || '',
+      role: updatedUser.role,
+    };
   }
 
   async logout(userId: string, token?: string) {

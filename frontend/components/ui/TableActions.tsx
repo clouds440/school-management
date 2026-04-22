@@ -1,6 +1,5 @@
 import React from 'react';
-import { Pencil, Trash2, Eye, UserPen, Check, X, ShieldAlert, CheckCircle2, MessageSquareText, Send } from 'lucide-react';
-import { Loading } from './Loading';
+import { Pencil, Trash2, Eye, UserPen, Check, X, ShieldAlert, CheckCircle2, MessageSquareText, Send, Loader2 } from 'lucide-react';
 
 export type AdminActionVariant = 'approve' | 'reject' | 'suspend' | 'unsuspend' | 'resolve' | 'reapprove' | 'editMessage' | 'mail';
 
@@ -106,7 +105,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                         title={label}
                     >
                         {action.loading ? (
-                            <Loading size="xs" />
+                            <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                             <Icon className="w-4 h-4" />
                         )}
@@ -126,7 +125,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                     title={deleteTitle}
                 >
                     {isDeleting ? (
-                        <Loading size="xs" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                         <Trash2 className="w-4 h-4" />
                     )}
