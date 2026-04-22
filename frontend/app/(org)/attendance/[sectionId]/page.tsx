@@ -216,7 +216,7 @@ export default function SectionAttendancePage() {
                                                 setSelectedScheduleId(matches.length > 0 ? matches[0].id : null);
                                             }
                                         }}
-                                        className="bg-transparent min-w-[150px] text-xs font-bold"
+                                        className="bg-transparent min-w-37.5 text-xs font-bold"
                                     />
                                 </div>
                                 <div className="flex items-center gap-4 border-l border-border/50 pl-6 ml-6 md:ml-0 md:pl-0 md:border-l-0 lg:border-l lg:pl-6 lg:ml-6">
@@ -233,7 +233,7 @@ export default function SectionAttendancePage() {
                                             })),
                                             { value: 'adhoc', label: 'Ad-hoc Session' }
                                         ]}
-                                        className="min-w-[200px]"
+                                        className="min-w-50"
                                     />
                                 </div>
                                 {!selectedScheduleId && (
@@ -242,14 +242,14 @@ export default function SectionAttendancePage() {
                                             type="time"
                                             value={adhocTime.start}
                                             onChange={(e) => setAdhocTime(prev => ({ ...prev, start: e.target.value }))}
-                                            className="h-8 w-[100px] text-xs font-bold bg-transparent border-border"
+                                            className="h-8 w-25 text-xs font-bold bg-transparent border-border"
                                         />
                                         <span className="text-[10px] font-black opacity-30 uppercase tracking-tighter">to</span>
                                         <Input
                                             type="time"
                                             value={adhocTime.end}
                                             onChange={(e) => setAdhocTime(prev => ({ ...prev, end: e.target.value }))}
-                                            className="h-8 w-[100px] text-xs font-bold bg-transparent border-border"
+                                            className="h-8 w-25 text-xs font-bold bg-transparent border-border"
                                         />
                                     </div>
                                 )}
@@ -261,7 +261,7 @@ export default function SectionAttendancePage() {
                                 </Label>
                                 <div className="flex items-center gap-2 bg-card rounded-lg p-1 border border-border">
                                     <Button variant="secondary" icon={ChevronLeft} className="h-8 w-8" onClick={() => handleMonthChange('prev')} />
-                                    <span className="text-xs font-black uppercase tracking-tighter min-w-[100px] text-center">
+                                    <span className="text-xs font-black uppercase tracking-tighter min-w-25 text-center">
                                         {monthName} {currentYear}
                                     </span>
                                     <Button variant="secondary" icon={ChevronRight} className="h-8 w-8" onClick={() => handleMonthChange('next')} />

@@ -138,7 +138,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         const isStudentPortal = pathSegments[1] === 'students' && pathSegments[2] === user.userName;
                         const isSupportInOrg = pathSegments[1] === 'mail';
                         const isAllowedShared = ['chat', 'timetable', 'attendance'].includes(pathSegments[1]);
-                        
+                        const isSettingsPage = pathSegments.includes('settings');
+
+                        if (isSettingsPage) {
+                            // Settings page handles its own redirect, no toast needed
+                            router.replace(`/students/${user.userName}?tab=profile`);
+                            return;
+                        }
+
                         if (!isStudentPortal && !isSupportInOrg && !isAllowedShared) {
                             dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied.', type: 'error' } });
                             router.replace(`/students/${user.userName}`);

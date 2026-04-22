@@ -2912,11 +2912,17 @@ export class OrgService {
   ): Promise<DashboardInsightsResponse> {
     const student = await this.prisma.student.findUnique({
       where: { userId: user.id },
+      include: { user: { select: { name: true } } },
     });
 
     if (!student) {
       throw new NotFoundException('Student profile not found');
     }
+
+    // Convert student name to slug format
+    const studentNameSlug = student.user.name
+      ? student.user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+      : 'me';
 
     const [enrollments, grades, attendanceRecords, pendingAssessments, submissions] =
       await Promise.all([
@@ -3050,7 +3056,6 @@ export class OrgService {
 
     const nextClass = upcomingClasses[0];
     const nextDeadline = pendingAssessments.find((assessment) => assessment.dueDate);
-    const studentSlug = user.userName || 'me';
 
     const spotlight = (() => {
       if (
@@ -3062,7 +3067,7 @@ export class OrgService {
           title: `${nextDeadline.title} needs attention`,
           description: `${nextDeadline.section.name} • ${nextDeadline.type}`,
           meta: `Due ${nextDeadline.dueDate.toLocaleString()}`,
-          href: `/students/${studentSlug}?tab=assessments&assessmentId=${nextDeadline.id}`,
+          href: `/students/${studentNameSlug}?tab=assessments&assessmentId=${nextDeadline.id}`,
           badge: 'Nearest deadline',
           tone: 'warning' as const,
         };
@@ -3089,7 +3094,7 @@ export class OrgService {
         title: 'Submission recorded',
         description: `${submission.assessment.title} • ${submission.assessment.section.name}`,
         createdAt: submission.submittedAt.toISOString(),
-        href: `/students/${studentSlug}?tab=assessments&assessmentId=${submission.assessment.id}`,
+        href: `/students/${studentNameSlug}?tab=assessments&assessmentId=${submission.assessment.id}`,
         tone: 'success' as const,
       })),
       ...attendanceRecords.slice(0, 4).map((record) => ({
@@ -3097,7 +3102,7 @@ export class OrgService {
         title: 'Attendance updated',
         description: `${record.session.section.name} • ${record.status}`,
         createdAt: record.session.date.toISOString(),
-        href: `/students/${studentSlug}?tab=attendance`,
+        href: `/students/${studentNameSlug}?tab=attendance`,
         tone:
           record.status === 'ABSENT'
             ? ('danger' as const)
@@ -3121,7 +3126,7 @@ export class OrgService {
           label: 'Enrolled Sections',
           value: `${enrollments.length}`,
           detail: `${upcomingClasses.length} upcoming classes in view`,
-          href: `/students/${studentSlug}?tab=courses`,
+          href: `/students/${studentNameSlug}?tab=courses`,
           tone: 'info',
         },
         {
@@ -3129,7 +3134,7 @@ export class OrgService {
           label: 'Average Final Grade',
           value: grades.length > 0 ? this.formatPercent(averageGrade, 1) : 'No grade',
           detail: `${grades.length} graded sections`,
-          href: `/students/${studentSlug}?tab=grades`,
+          href: `/students/${studentNameSlug}?tab=grades`,
           tone:
             averageGrade >= 80
               ? 'success'
@@ -3142,7 +3147,7 @@ export class OrgService {
           label: 'Official Attendance',
           value: this.formatPercent(overallAttendancePercent),
           detail: `${attendanceRecords.length} official attendance marks`,
-          href: `/students/${studentSlug}?tab=attendance`,
+          href: `/students/${studentNameSlug}?tab=attendance`,
           tone:
             overallAttendancePercent >= 85
               ? 'success'
@@ -3155,7 +3160,7 @@ export class OrgService {
           label: 'Pending Assessments',
           value: `${pendingAssessments.length}`,
           detail: 'Awaiting your submission',
-          href: `/students/${studentSlug}?tab=assessments`,
+          href: `/students/${studentNameSlug}?tab=assessments`,
           tone: pendingAssessments.length > 0 ? 'warning' : 'success',
         },
       ],
@@ -3171,7 +3176,7 @@ export class OrgService {
               title: `${section.sectionName} attendance is low`,
               description: section.courseName,
               meta: this.formatPercent(section.percent),
-              href: `/students/${studentSlug}?tab=attendance`,
+              href: `/students/${studentNameSlug}?tab=attendance`,
               badge: 'Attendance risk',
               tone: 'danger' as const,
             })),
@@ -3180,7 +3185,7 @@ export class OrgService {
               title: `${grade.sectionName} grade is below target`,
               description: grade.courseName,
               meta: this.formatPercent(grade.finalPercentage, 1),
-              href: `/students/${studentSlug}?tab=grades`,
+              href: `/students/${studentNameSlug}?tab=grades`,
               badge: 'Grade risk',
               tone: 'warning' as const,
             })),
@@ -3198,7 +3203,7 @@ export class OrgService {
               meta: assessment.dueDate
                 ? `Due ${assessment.dueDate.toLocaleDateString()}`
                 : 'No due date',
-              href: `/students/${studentSlug}?tab=assessments&assessmentId=${assessment.id}`,
+              href: `/students/${studentNameSlug}?tab=assessments&assessmentId=${assessment.id}`,
               badge: 'Pending',
               tone: 'warning' as const,
             })),

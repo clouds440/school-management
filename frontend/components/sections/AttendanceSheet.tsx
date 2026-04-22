@@ -180,14 +180,14 @@ export default function AttendanceSheet({
                                 <th className="sticky left-0 z-30 px-3 py-4 font-black uppercase tracking-widest text-[10px] text-primary/80 bg-primary/5 w-12 text-center rounded-tl-xl">
                                     #
                                 </th>
-                                <th className="sticky left-12 z-30 px-4 py-4 font-black uppercase tracking-widest text-[10px] text-primary/80 bg-primary/5 border-l border-primary/10 min-w-[220px] rounded-tr-xl">
+                                <th className="sticky left-12 z-30 px-4 py-4 font-black uppercase tracking-widest text-[10px] text-primary/80 bg-primary/5 border-l border-primary/10 min-w-55 rounded-tr-xl">
                                     <div className="flex items-center gap-2">
                                         <User className="w-3 h-3" />
                                         <span>Student</span>
                                     </div>
                                 </th>
                                 {groupedSessionDates.map(({ dateKey, sessions }) => (
-                                    <th key={dateKey} className="px-3 py-4 font-black uppercase tracking-widest text-[10px] text-primary/80 text-center bg-primary/5 border-l border-primary/10 min-w-[160px] align-top">
+                                    <th key={dateKey} className="px-3 py-4 font-black uppercase tracking-widest text-[10px] text-primary/80 text-center bg-primary/5 border-l border-primary/10 min-w-40 align-top">
                                         <div className="flex flex-col items-center gap-1">
                                             <div className="flex items-center gap-1 text-sm font-bold text-primary">
                                                 <Calendar className="w-3 h-3" />
@@ -209,7 +209,7 @@ export default function AttendanceSheet({
                                         </div>
                                     </th>
                                 ))}
-                                <th className="px-4 py-4 font-black uppercase tracking-widest text-[10px] text-primary/80 bg-primary/5 border-l border-primary/20 text-center min-w-[140px]">
+                                <th className="px-4 py-4 font-black uppercase tracking-widest text-[10px] text-primary/80 bg-primary/5 border-l border-primary/20 text-center min-w-35">
                                     <div className="flex items-center justify-center gap-1">
                                         <Activity className="w-3 h-3" />
                                         <span>Analysis</span>
@@ -255,7 +255,7 @@ export default function AttendanceSheet({
                                         {groupedSessionDates.map(({ dateKey, sessions }) => (
                                             <td key={dateKey} className="px-3 py-3 border-l border-border/30 align-top bg-card">
                                                 {/* STACKED SESSIONS VERTICALLY */}
-                                                <div className="flex flex-col gap-2 w-full min-w-[130px]">
+                                                <div className="flex flex-col gap-2 w-full min-w-32.5">
                                                     {sessions.map((session) => {
                                                         const record = recordsBySessionId.get(session.id);
                                                         const sessionStatus = record?.status || null;
@@ -278,7 +278,7 @@ export default function AttendanceSheet({
                                                                         {getSessionTypeBadge(isAdhoc!)}
                                                                     </div>
                                                                 </div>
-                                                                <div className="flex items-center justify-center min-w-[32px]">
+                                                                <div className="flex items-center justify-center min-w-8">
                                                                     {getStatusIcon(sessionStatus, "w-4 h-4")}
                                                                 </div>
                                                             </div>
@@ -307,7 +307,7 @@ export default function AttendanceSheet({
                                                         <span className="font-mono">{overallPercentage}%</span>
                                                     </div>
                                                 )}
-                                                <div className="grid grid-cols-4 gap-2 w-full max-w-[120px] mt-1">
+                                                <div className="grid grid-cols-4 gap-2 w-full max-w-30 mt-1">
                                                     <div className="flex flex-col items-center bg-emerald-500/10 rounded-lg py-1">
                                                         <span className="text-[8px] font-black text-emerald-600 uppercase">P</span>
                                                         <span className="text-xs font-bold">{present}</span>

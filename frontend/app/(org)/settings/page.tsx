@@ -69,6 +69,9 @@ export default function SettingsPage() {
         }
 
         // Only ORG_ADMIN continues to org settings
+        if (user.role !== Role.ORG_ADMIN) {
+            return;
+        }
         dispatch({ type: 'UI_SET_LOADING', payload: true });
         api.org.getOrgData(token)
             .then((data: Organization) => {
