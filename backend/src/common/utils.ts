@@ -69,6 +69,9 @@ export const extractUpdateFields = async <T extends Record<string, unknown>>(
         value.trim() !== ''
       ) {
         userData.password = await bcrypt.hash(value, BCRYPT_ROUNDS);
+      } else if (key === 'password') {
+        // Skip empty password to preserve existing password
+        continue;
       } else if (key === 'email') {
         if (value !== existingUserEmail) {
           userData.email = value;
