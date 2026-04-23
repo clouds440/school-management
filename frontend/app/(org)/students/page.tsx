@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useGlobal } from '@/context/GlobalContext';
@@ -286,7 +286,7 @@ export default function StudentsPage() {
                         {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                             <Button
                                 onClick={() => router.push('/students/add')}
-                                icon={Plus}
+                                icon={UserPlus}
                                 className="px-8 w-full md:w-auto text-xs font-black tracking-widest"
                             >
                                 Add New Student

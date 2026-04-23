@@ -149,6 +149,7 @@ model Section {
   schedules          SectionSchedule[]
   attendanceSessions AttendanceSession[]
   assessments        Assessment[]
+  courseMaterials     CourseMaterial[]
 
   @@index([courseId])
 }
@@ -619,4 +620,19 @@ enum AttendanceStatus {
   ABSENT
   LATE
   EXCUSED
+}
+
+// ─── COURSE MATERIALS ────────────────────────────────────────────────────────
+model CourseMaterial {
+  id          String   @id @default(uuid())
+  sectionId   String
+  title       String
+  description String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([sectionId])
 }

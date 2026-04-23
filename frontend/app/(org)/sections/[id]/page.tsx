@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { BookOpen, GraduationCap, Users, Trophy, Calendar, MapPin } from 'lucide-react';
+import { BookOpen, GraduationCap, Users, Trophy, Calendar, MapPin, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Section, Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
 import { useParams, useRouter } from 'next/navigation';
 import AssessmentList from '@/components/sections/AssessmentList';
 import SectionSchedules from '@/components/sections/SectionSchedules';
+import CourseMaterials from '@/components/sections/CourseMaterials';
 import { Loading } from '@/components/ui/Loading';
 
 export default function SectionDetailPage() {
@@ -68,7 +69,7 @@ export default function SectionDetailPage() {
                                     Section ID: {section.id.substring(0, 8)}
                                 </span>
                             </div>
-                            <h1 className="text-3xl md:text-4xl font-black tracking-tighter leading-none mb-4 text-transparent bg-clip-text bg-linear-to-r from-card-text to-card-text/60">
+                            <h1 className="text-3xl md:text-4xl font-black tracking-tighter leading-none mb-4 text-foreground">
                                 {section.name}
                             </h1>
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-[11px] font-black tracking-widest text-card-text/40">
@@ -131,6 +132,24 @@ export default function SectionDetailPage() {
                     </div>
                     <div className="p-8 md:p-10">
                         <SectionSchedules section={section} role={user?.role as Role} />
+                    </div>
+                </div>
+
+                {/* Course Materials Panel */}
+                <div className="bg-card text-card-text rounded-lg shadow-2xl border border-border overflow-hidden transform transition-all hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] mt-8">
+                    <div className="p-8 border-b border-border bg-linear-to-r from-primary/10 to-transparent flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2.5 bg-primary/20 rounded-lg">
+                                <FileText className="w-6 h-6 text-primary" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-black tracking-tighter leading-none">Course Materials</h2>
+                                <p className="text-[10px] font-black text-card-text/40 tracking-widest mt-1">Upload and manage learning resources</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-8 md:p-10">
+                        <CourseMaterials sectionId={sectionId} role={user?.role as Role} />
                     </div>
                 </div>
             </div>

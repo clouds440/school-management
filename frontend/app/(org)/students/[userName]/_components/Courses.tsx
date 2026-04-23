@@ -1,13 +1,41 @@
 'use client';
 
-import { useState } from 'react';
-import { User, MapPinHouse, Book, LayoutDashboard } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { User, MapPinHouse, Book, LayoutDashboard, FileText } from 'lucide-react';
 import { Section } from '@/types';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 import { SearchBar } from '@/components/ui/SearchBar';
+import { api } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
 
 export default function Courses({ sections }: { sections: Section[] }) {
+    const router = useRouter();
+    const { token } = useAuth();
     const [search, setSearch] = useState('');
+    const [materialsCount, setMaterialsCount] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        if (!token) return;
+
+        const fetchMaterialsCount = async () => {
+            const counts: Record<string, number> = {};
+            await Promise.all(
+                sections.map(async (section) => {
+                    try {
+                        const materials = await api.courseMaterials.getMaterials(section.id, token);
+                        counts[section.id] = materials.length;
+                    } catch (error) {
+                        counts[section.id] = 0;
+                    }
+                })
+            );
+            setMaterialsCount(counts);
+        };
+
+        fetchMaterialsCount();
+    }, [sections, token]);
 
     const filteredSections = sections.filter(sec =>
         sec.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -62,7 +90,13 @@ export default function Courses({ sections }: { sections: Section[] }) {
                                     <div className="w-10 h-10 rounded-2xl bg-muted/30 flex items-center justify-center border border-border shadow-xs">
                                         <MapPinHouse className="w-5 h-5 text-muted-foreground/60" />
                                     </div>
-                                    <span className="text-left">{sec.room || 'Learning Lab C-1'}</span>
+                                    <span className="text-left">{sec.room || 'Room not specified'}</span>
+                                </div>
+                                <div className="flex items-center gap-4 text-[11px] text-muted-foreground font-bold tracking-widest">
+                                    <div className="w-10 h-10 rounded-2xl bg-muted/30 flex items-center justify-center border border-border shadow-xs">
+                                        <FileText className="w-5 h-5 text-muted-foreground/60" />
+                                    </div>
+                                    <span className="text-left">{materialsCount[sec.id] || 0} Course Materials</span>
                                 </div>
                             </div>
 
@@ -81,10 +115,14 @@ export default function Courses({ sections }: { sections: Section[] }) {
                         </CardContent>
 
                         <CardFooter className="pt-8">
-                            <button className="w-full py-4 bg-primary text-primary-foreground font-black text-[11px] tracking-[0.2em] rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all duration-500 flex items-center justify-center gap-3 active:scale-95">
-                                <LayoutDashboard className="w-5 h-5" />
-                                Enter Classroom
-                            </button>
+                            <Button
+                                onClick={() => router.push(`/course-materials/${sec.id}`)}
+                                variant="primary"
+                                icon={LayoutDashboard}
+                                className='w-full'
+                            >
+                                View Materials
+                            </Button>
                         </CardFooter>
                     </Card>
                 ))}

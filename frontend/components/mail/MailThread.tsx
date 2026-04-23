@@ -5,7 +5,7 @@ import { Send, Clock, Paperclip, X, FileText, ImageIcon, Download, MessageSquare
 import { MailDetail, MailMessage as MailMessageType, MailActionLog, Attachment, Role } from '@/types';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { MarkdownEditor, MarkdownEditorHandle } from '@/components/ui/MarkdownEditor';
-import { getPublicUrl } from '@/lib/utils';
+import { getPublicUrl, downloadFile } from '@/lib/utils';
 import Image from 'next/image';
 import { BrandIcon } from '@/components/ui/Brand';
 import { ADMIN_REPLY_TEMPLATES } from './MailTemplates';
@@ -27,12 +27,19 @@ function AttachmentPreview({ file }: { file: Attachment }) {
     const isImage = file.mimeType.startsWith('image/');
     const url = getPublicUrl(file.path);
 
+    const handleDownload = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        try {
+            await downloadFile(url, file.filename);
+        } catch (error) {
+            console.error('Failed to download file:', error);
+        }
+    };
+
     return (
-        <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 p-2 bg-card/50 border border-border/5 rounded-full hover:bg-card/60 hover:shadow-sm transition-all group max-w-sm"
+        <button
+            onClick={handleDownload}
+            className="flex items-center gap-2 p-2 bg-card/50 border border-border/5 rounded-full hover:bg-card/60 hover:shadow-sm transition-all group max-w-sm cursor-pointer"
         >
             {isImage ? (
                 <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-border/10 relative shadow-sm hover:scale-105 transition-transform duration-300">
@@ -48,7 +55,7 @@ function AttachmentPreview({ file }: { file: Attachment }) {
                 <p className="text-[9px] font-bold text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
             </div>
             <Download className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
-        </a>
+        </button>
     );
 }
 

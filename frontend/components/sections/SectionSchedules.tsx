@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { Clock, Plus, MapPin, CalendarDays, ServerCrash, Pencil, Trash2 } from 'lucide-react';
+import { Clock, Plus, MapPin, CalendarDays, Pencil, Trash2 } from 'lucide-react';
 import { Loading } from '@/components/ui/Loading';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 const DAY_OPTIONS = [
     { value: '0', label: 'Sunday' },
@@ -159,23 +160,13 @@ export default function SectionSchedules({ section, role }: SectionSchedulesProp
     }
 
     if (error) {
-        return (
-            <div className="flex flex-col items-center justify-center p-6 bg-red-500/10 border border-red-500/20 rounded-lg text-center">
-                <ServerCrash className="w-8 h-8 text-red-500 mb-2" />
-                <p className="text-red-500 font-bold">{error}</p>
-                <Button onClick={fetchSchedules} className="mt-4" variant="primary">Try Again</Button>
-            </div>
-        );
+        return <ErrorState error={error} onRetry={fetchSchedules} />;
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3">
             <div className="flex items-center justify-between">
-                <div>
-                    <h3 className="text-xl font-bold text-foreground">Weekly Timetable</h3>
-                    <p className="text-sm font-medium text-muted-foreground mt-1">Class timings and room allocations.</p>
-                </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center">
                     {isManagerOrAdmin && (
                         <Button onClick={openCreateModal} icon={Plus}>
                             Add Schedule

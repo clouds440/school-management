@@ -8,7 +8,7 @@ import { useUI } from '@/context/UIContext';
 import { useSocket } from '@/hooks/useSocket';
 import Image from 'next/image';
 import { api } from '@/lib/api';
-import { getUserColor } from '@/lib/utils';
+import { getUserColor, downloadFile } from '@/lib/utils';
 import {
     getUserChatsCached,
     insertOrUpdateChatFromMessage,
@@ -1203,15 +1203,13 @@ export function ChatLayout() {
         return activeChat.creatorId === user.id;
     }, [activeChat, user]);
 
-    const handleDownload = useCallback((e: React.MouseEvent, url: string, name: string) => {
+    const handleDownload = useCallback(async (e: React.MouseEvent, url: string, name: string) => {
         e.stopPropagation();
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = name || 'download';
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+            await downloadFile(url, name || 'download');
+        } catch (error) {
+            console.error('Failed to download file:', error);
+        }
     }, []);
 
     const renderedMessages = useMemo(() => messages.map((msg, i) => {

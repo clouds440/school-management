@@ -1,0 +1,391 @@
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { FilesService } from '../files/files.service';
+import { CreateCourseMaterialDto } from './dto/create-course-material.dto';
+import { Role } from '../common/enums';
+
+@Injectable()
+export class CourseMaterialsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+    private readonly filesService: FilesService,
+  ) {}
+
+  /**
+   * Create a new course material for a section
+   * Teacher must be assigned to the section
+   */
+  async createMaterial(
+    sectionId: string,
+    dto: CreateCourseMaterialDto,
+    userId: string,
+    userRole: string,
+    organizationId: string,
+  ) {
+    // Verify section exists and belongs to the organization
+    const section = await this.prisma.section.findUnique({
+      where: { id: sectionId },
+      include: {
+        course: true,
+        teachers: true,
+      },
+    });
+
+    if (!section) {
+      throw new NotFoundException('Section not found');
+    }
+
+    if (section.course.organizationId !== organizationId) {
+      throw new ForbiddenException('Section does not belong to your organization');
+    }
+
+    // Verify teacher is assigned to this section
+    if (userRole === Role.TEACHER) {
+      const isAssigned = section.teachers.some((t) => t.userId === userId);
+      if (!isAssigned) {
+        throw new ForbiddenException('You are not assigned to this section');
+      }
+    }
+
+    // Create the course material
+    const material = await this.prisma.courseMaterial.create({
+      data: {
+        sectionId,
+        title: dto.title,
+        description: dto.description,
+        createdBy: userId,
+      },
+    });
+
+    // Fetch enrolled students to send notifications
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { sectionId },
+      include: {
+        student: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    // If fileIds were provided, update the files to link to this material
+    if (dto.fileIds && dto.fileIds.length > 0) {
+      const updateResult = await this.prisma.file.updateMany({
+        where: {
+          id: { in: dto.fileIds },
+        },
+        data: {
+          entityId: material.id,
+          entityType: 'COURSE_MATERIAL',
+        },
+      });
+      console.log(`Updated ${updateResult.count} files for material ${material.id}`);
+    }
+
+    // Create notifications for all enrolled students
+    const notificationPromises = enrollments.map((enrollment) =>
+      this.notifications.createNotification({
+        userId: enrollment.student.userId,
+        title: `New Course Material in ${section.name}: ${dto.title}`,
+        body: dto.description || 'A new course material has been uploaded',
+        actionUrl: `/course-materials/${sectionId}`,
+        type: 'COURSE_MATERIAL',
+        metadata: {
+          materialId: material.id,
+          sectionId,
+          sectionName: section.name,
+        },
+      })
+    );
+
+    await Promise.all(notificationPromises);
+
+    return material;
+  }
+
+  /**
+   * Get all materials for a section
+   * Students must be enrolled, teachers must be assigned
+   */
+  async getSectionMaterials(
+    sectionId: string,
+    userId: string,
+    userRole: string,
+    organizationId: string,
+  ) {
+    // Verify section exists and belongs to the organization
+    const section = await this.prisma.section.findUnique({
+      where: { id: sectionId },
+      include: {
+        course: true,
+        teachers: true,
+      },
+    });
+
+    if (!section) {
+      throw new NotFoundException('Section not found');
+    }
+
+    if (section.course.organizationId !== organizationId) {
+      throw new ForbiddenException('Section does not belong to your organization');
+    }
+
+    // Check access permissions
+    if (userRole === Role.STUDENT) {
+      const enrollment = await this.prisma.enrollment.findUnique({
+        where: {
+          studentId_sectionId: {
+            studentId: (await this.prisma.student.findUnique({
+              where: { userId },
+            }))?.id || '',
+            sectionId,
+          },
+        },
+      });
+
+      if (!enrollment) {
+        throw new ForbiddenException('You are not enrolled in this section');
+      }
+    } else if (userRole === Role.TEACHER) {
+      const isAssigned = section.teachers.some((t) => t.userId === userId);
+      if (!isAssigned) {
+        throw new ForbiddenException('You are not assigned to this section');
+      }
+    }
+
+    // Fetch materials with files and creator info
+    const materials = await this.prisma.courseMaterial.findMany({
+      where: { sectionId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        section: {
+          include: {
+            course: true,
+          },
+        },
+      },
+    });
+
+    // Fetch files for each material
+    const materialIds = materials.map((m) => m.id);
+    console.log('Fetching files for material IDs:', materialIds);
+    const files = await this.prisma.file.findMany({
+      where: {
+        entityType: 'COURSE_MATERIAL',
+        entityId: { in: materialIds },
+      },
+    });
+    console.log('Found files:', files.length, 'for materials:', materialIds);
+
+    // Group files by material ID
+    const filesByMaterial = files.reduce((acc, file) => {
+      if (!acc[file.entityId]) {
+        acc[file.entityId] = [];
+      }
+      acc[file.entityId].push(file);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    // Fetch creator info
+    const creatorIds = materials.map((m) => m.createdBy);
+    const creators = await this.prisma.user.findMany({
+      where: { id: { in: creatorIds } },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    const creatorsById = creators.reduce((acc, user) => {
+      acc[user.id] = user;
+      return acc;
+    }, {} as Record<string, any>);
+
+    // Combine data
+    return materials.map((material) => ({
+      ...material,
+      files: filesByMaterial[material.id] || [],
+      creator: creatorsById[material.createdBy] || null,
+    }));
+  }
+
+  /**
+   * Delete a course material
+   * Only teachers assigned to the section can delete
+   */
+  async deleteMaterial(
+    materialId: string,
+    userId: string,
+    userRole: string,
+    organizationId: string,
+  ) {
+    const material = await this.prisma.courseMaterial.findUnique({
+      where: { id: materialId },
+      include: {
+        section: {
+          include: {
+            course: true,
+            teachers: true,
+          },
+        },
+      },
+    });
+
+    if (!material) {
+      throw new NotFoundException('Material not found');
+    }
+
+    if (material.section.course.organizationId !== organizationId) {
+      throw new ForbiddenException('Material does not belong to your organization');
+    }
+
+    // Only teachers assigned to the section can delete
+    if (userRole === Role.TEACHER) {
+      const isAssigned = material.section.teachers.some((t) => t.userId === userId);
+      if (!isAssigned) {
+        throw new ForbiddenException('You are not assigned to this section');
+      }
+    } else if (userRole !== Role.ORG_ADMIN && userRole !== Role.ORG_MANAGER) {
+      throw new ForbiddenException('Only teachers and admins can delete materials');
+    }
+
+    // Delete associated files
+    const files = await this.prisma.file.findMany({
+      where: {
+        entityType: 'COURSE_MATERIAL',
+        entityId: materialId,
+      },
+    });
+
+    // Note: Files are deleted from Cloudinary by the FilesService when we call deleteFile
+    // For now, we'll just delete the database records
+    await this.prisma.file.deleteMany({
+      where: {
+        entityType: 'COURSE_MATERIAL',
+        entityId: materialId,
+      },
+    });
+
+    // Delete the material
+    await this.prisma.courseMaterial.delete({
+      where: { id: materialId },
+    });
+
+    return { message: 'Material deleted successfully' };
+  }
+
+  /**
+   * Update a course material
+   * Only teachers assigned to the section can update
+   */
+  async updateMaterial(
+    materialId: string,
+    dto: { title?: string; description?: string; fileIds?: string[]; filesToRemove?: string[] },
+    userId: string,
+    userRole: string,
+    organizationId: string,
+  ) {
+    const material = await this.prisma.courseMaterial.findUnique({
+      where: { id: materialId },
+      include: {
+        section: {
+          include: {
+            course: true,
+            teachers: true,
+          },
+        },
+      },
+    });
+
+    if (!material) {
+      throw new NotFoundException('Material not found');
+    }
+
+    if (material.section.course.organizationId !== organizationId) {
+      throw new ForbiddenException('Material does not belong to your organization');
+    }
+
+    // Only teachers assigned to the section can update
+    if (userRole === Role.TEACHER) {
+      const isAssigned = material.section.teachers.some((t) => t.userId === userId);
+      if (!isAssigned) {
+        throw new ForbiddenException('You are not assigned to this section');
+      }
+    } else if (userRole !== Role.ORG_ADMIN && userRole !== Role.ORG_MANAGER) {
+      throw new ForbiddenException('Only teachers and admins can update materials');
+    }
+
+    // Update material fields
+    const updateData: any = {};
+    if (dto.title !== undefined) updateData.title = dto.title;
+    if (dto.description !== undefined) updateData.description = dto.description;
+
+    const updatedMaterial = await this.prisma.courseMaterial.update({
+      where: { id: materialId },
+      data: updateData,
+    });
+
+    // Remove specified files
+    if (dto.filesToRemove && dto.filesToRemove.length > 0) {
+      for (const fileId of dto.filesToRemove) {
+        try {
+          await this.filesService.deleteFile(fileId, {
+            id: userId,
+            role: userRole,
+            organizationId,
+          });
+        } catch (error) {
+          console.error(`Failed to delete file ${fileId}:`, error);
+        }
+      }
+    }
+
+    // Add new files by updating their entityId
+    if (dto.fileIds && dto.fileIds.length > 0) {
+      await this.prisma.file.updateMany({
+        where: {
+          id: { in: dto.fileIds },
+        },
+        data: {
+          entityId: materialId,
+          entityType: 'COURSE_MATERIAL',
+        },
+      });
+    }
+
+    // Fetch enrolled students to send notifications
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { sectionId: material.sectionId },
+      include: {
+        student: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    // Create notifications for all enrolled students
+    const notificationPromises = enrollments.map((enrollment) =>
+      this.notifications.createNotification({
+        userId: enrollment.student.userId,
+        title: `Course Material Updated in ${material.section.name}: ${dto.title || material.title}`,
+        body: dto.description || 'A course material has been updated',
+        actionUrl: `/course-materials/${material.sectionId}`,
+        type: 'COURSE_MATERIAL',
+        metadata: {
+          materialId: material.id,
+          sectionId: material.sectionId,
+          sectionName: material.section.name,
+        },
+      })
+    );
+
+    await Promise.all(notificationPromises);
+
+    return updatedMaterial;
+  }
+}

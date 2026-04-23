@@ -378,5 +378,16 @@ export const api = {
             request<Announcement>('/announcements', { method: 'POST', body: JSON.stringify(data), token }),
         getAnnouncements: (token: string, params: { page?: number, limit?: number } = {}) =>
             request<PaginatedResponse<Announcement>>(`/announcements${buildQueryString(params)}`, { token }),
+    },
+
+    courseMaterials: {
+        getMaterials: (sectionId: string, token: string) =>
+            request<any[]>(`/course-materials/section/${sectionId}`, { token }),
+        createMaterial: (sectionId: string, data: { title: string, description?: string, fileIds?: string[], links?: string[] }, token: string) =>
+            request<any>(`/course-materials`, { method: 'POST', body: JSON.stringify({ ...data, sectionId }), token }),
+        updateMaterial: (materialId: string, data: { title?: string, description?: string, fileIds?: string[], filesToRemove?: string[] }, token: string) =>
+            request<any>(`/course-materials/${materialId}`, { method: 'PUT', body: JSON.stringify(data), token }),
+        deleteMaterial: (materialId: string, token: string) =>
+            request<void>(`/course-materials/${materialId}`, { method: 'DELETE', token }),
     }
 };

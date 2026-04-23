@@ -90,8 +90,8 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center bg-card/30 p-4 rounded-xl border border-border shadow-inner">
+        <div className="space-y-3">
+            <div className="flex items-center">
                 {canCreate && (
                     <Button onClick={() => setIsCreateModalOpen(true)} icon={Plus}>
                         Add Assessment

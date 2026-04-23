@@ -80,3 +80,25 @@ export function getUserColor(userId: string | undefined | null): string {
 
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
+
+/**
+ * Download a file from a URL by fetching it as a blob and triggering a download
+ * This forces the browser to download the file instead of opening it
+ */
+export async function downloadFile(url: string, filename: string): Promise<void> {
+    try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(a);
+    } catch (error) {
+        console.error('Failed to download file:', error);
+        throw error;
+    }
+}

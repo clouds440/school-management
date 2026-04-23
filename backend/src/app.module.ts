@@ -15,6 +15,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ActiveOrgGuard } from './common/guards/active-org.guard';
+import { CourseMaterialsModule } from './course-materials/course-materials.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ActiveOrgGuard } from './common/guards/active-org.guard';
     ChatModule,
     NotificationsModule,
     AnnouncementsModule,
+    CourseMaterialsModule,
   ],
   providers: [
     {
