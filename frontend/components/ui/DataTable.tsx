@@ -125,7 +125,7 @@ export function DataTable<T>({
                     className="w-full text-left text-xs sm:text-sm text-foreground table-fixed min-w-full"
                     style={{ minWidth: '100%', width: columnWidths.reduce((a, b) => a + b, 0) }}
                 >
-                    <thead className="bg-primary/10 text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold opacity-95 border-b border-border/50 select-none sticky top-0 z-100 backdrop-blur-xl shadow-md">
+                    <thead className="bg-primary/10 text-[10px] sm:text-[11px] tracking-wider font-semibold opacity-95 border-b border-border/50 select-none sticky top-0 z-100 backdrop-blur-xl shadow-md">
                         <tr>
                             {columns.map((col, index) => {
                                 const key = col.sortKey || (typeof col.accessor === 'string' ? col.accessor : '');
@@ -222,7 +222,7 @@ export function DataTable<T>({
                             <div className="bg-primary shadow-lg p-3 rounded-full animate-bounce">
                                 <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-white animate-spin" />
                             </div>
-                            <span className="text-primary font-semibold text-[10px] sm:text-xs uppercase tracking-[0.2em]">Refreshing Data...</span>
+                            <span className="text-primary font-semibold text-[10px] sm:text-xs tracking-[0.2em]">Refreshing Data...</span>
                         </div>
                     </div>
                 )}

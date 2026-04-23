@@ -48,9 +48,9 @@ const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayl
                     <ShieldOff className="w-20 h-20 text-red-500" />
                     <div className="absolute inset-0 bg-red-400 rounded-full animate-ping opacity-10"></div>
                 </div>
-                <h2 className="text-4xl font-black text-card-foreground mb-4 tracking-tight uppercase italic">Application Denied</h2>
+                <h2 className="text-4xl font-black text-card-foreground mb-4 tracking-tight italic">Application Denied</h2>
                 <div className="bg-red-50 border border-red-100 p-8 rounded-lg mb-8 text-left w-full shadow-inner">
-                    <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.3em] mb-4">Official Rejection Reason</p>
+                    <p className="text-[10px] font-black text-red-400 tracking-[0.3em] mb-4">Official Rejection Reason</p>
                     <MarkdownRenderer
                         content={orgData.statusHistory && orgData.statusHistory.length > 0
                             ? orgData.statusHistory[orgData.statusHistory.length - 1].message
@@ -64,7 +64,7 @@ const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayl
                 {user?.role === Role.ORG_ADMIN && (
                     <Link
                         href="/settings"
-                        className="inline-flex items-center gap-4 bg-red-600 hover:bg-red-700 text-red-50 px-12 py-6 rounded-lg font-black text-xl shadow-[0_20px_50px_rgba(220,38,38,0.3)] transition-all hover:-translate-y-1 active:scale-95 group uppercase italic tracking-tighter"
+                        className="inline-flex items-center gap-4 bg-red-600 hover:bg-red-700 text-red-50 px-12 py-6 rounded-lg font-black text-xl shadow-[0_20px_50px_rgba(220,38,38,0.3)] transition-all hover:-translate-y-1 active:scale-95 group tracking-tighter"
                     >
                         <RefreshCw className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
                         Status: RE-APPLY NOW
@@ -81,12 +81,12 @@ const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayl
                     <ShieldOff className="w-20 h-20 text-orange-500" />
                     <div className="absolute inset-0 bg-orange-400 rounded-full animate-ping opacity-10"></div>
                 </div>
-                <h2 className="text-4xl font-black text-card-foreground mb-4 tracking-tight uppercase italic">Access Suspended</h2>
+                <h2 className="text-4xl font-black text-card-foreground mb-4 tracking-tight italic">Access Suspended</h2>
                 <p className="text-muted-foreground text-lg mb-8 font-medium">
                     Your institutional access has been temporarily restricted by the platform administrators.
                 </p>
                 <div className="bg-orange-50 text-orange-800 p-8 rounded-lg border border-orange-100 w-full mb-10 text-left shadow-inner">
-                    <h3 className="font-black mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-orange-900/60"><ShieldOff className="w-4 h-4" /> Official Suspension Reason</h3>
+                    <h3 className="font-black mb-4 flex items-center gap-2 text-[10px] tracking-[0.3em] text-orange-900/60"><ShieldOff className="w-4 h-4" /> Official Suspension Reason</h3>
                     <MarkdownRenderer
                         content={orgData.statusHistory && orgData.statusHistory.length > 0
                             ? orgData.statusHistory[orgData.statusHistory.length - 1].message
@@ -96,7 +96,7 @@ const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayl
                 </div>
                 <Link
                     href="/contact"
-                    className="inline-flex items-center gap-4 bg-card hover:bg-muted text-foreground px-12 py-6 rounded-lg font-black text-xl shadow-2xl transition-all hover:-translate-y-1 group uppercase italic tracking-tighter border border-border"
+                    className="inline-flex items-center gap-4 bg-card hover:bg-muted text-foreground px-12 py-6 rounded-lg font-black text-xl shadow-2xl transition-all hover:-translate-y-1 group tracking-tighter border border-border"
                 >
                     <Mail className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                     Contact Platform Support

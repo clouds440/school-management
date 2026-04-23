@@ -206,7 +206,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
             <form onSubmit={handleSubmit} className="space-y-8">
                 {mode === 'CREATE' && (
                     <div className="bg-card -mx-6 px-6 py-4 border-b border-border">
-                        <Label className="text-[10px] uppercase font-black tracking-widest text-primary/70 mb-3 block">Conversation Type</Label>
+                        <Label className="text-[10px] font-black tracking-widest text-primary/70 mb-3 block">Conversation Type</Label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             <button
                                 type="button"
@@ -260,7 +260,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
 
                                 {/* Quick group presets */}
                                 <div className="mt-4 pt-4 border-t border-border">
-                                    <Label className="text-[10px] uppercase font-black text-foreground mb-3 block">Quick Templates</Label>
+                                    <Label className="text-[10px] font-black text-foreground mb-3 block">Quick Templates</Label>
                                     <div className="flex flex-col gap-2">
                                         {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                                             <>
@@ -300,7 +300,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
 
                             {type === 'GROUP' && user?.role === Role.TEACHER && sections.length > 0 && (
                                 <div className="mb-4 p-3 bg-primary/5 rounded-xl border border-primary/10">
-                                    <Label className="text-[10px] text-primary font-black uppercase mb-2 flex items-center">
+                                    <Label className="text-[10px] text-primary font-black mb-2 flex items-center">
                                         <Users className="w-3 h-3 mr-1.5" />
                                         Smart Add
                                     </Label>
@@ -337,7 +337,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
                                     />
                                 )}
                             </div>
-                            <div className="mt-4 p-4 bg-accent rounded-xl border border-border italic text-[11px] text-foreground font-medium leading-relaxed">
+                            <div className="mt-4 p-4 bg-accent rounded-xl border border-border text-[11px] text-foreground font-medium leading-relaxed">
                                 {mode === 'ADD_PARTICIPANTS'
                                     ? "Add more members to current group. Newly added members will see all future messages."
                                     : type === 'DIRECT'

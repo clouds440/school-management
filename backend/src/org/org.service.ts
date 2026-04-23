@@ -167,19 +167,38 @@ export class OrgService {
     );
 
     // Update org with new logo URL and bump cache-buster timestamp
-    return this.prisma.organization.update({
-      where: { id: orgId },
-      data: {
-        logoUrl: publicUrl,
-        avatarUpdatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        name: true,
-        logoUrl: true,
-        avatarUpdatedAt: true,
-      },
+    // Also update the org admin's avatarUrl with the same logo URL
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updatedOrg = await tx.organization.update({
+        where: { id: orgId },
+        data: {
+          logoUrl: publicUrl,
+          avatarUpdatedAt: new Date(),
+        },
+        select: {
+          id: true,
+          name: true,
+          logoUrl: true,
+          avatarUpdatedAt: true,
+        },
+      });
+
+      // Update the org admin's avatarUrl with the organization logo
+      await tx.user.updateMany({
+        where: {
+          organizationId: orgId,
+          role: Role.ORG_ADMIN,
+        },
+        data: {
+          avatarUrl: publicUrl,
+          avatarUpdatedAt: new Date(),
+        },
+      });
+
+      return updatedOrg;
     });
+
+    return result;
   }
 
   async updateUserAvatar(
@@ -592,7 +611,7 @@ export class OrgService {
         title: 'Role Updated',
         body: `Your administrative role has been updated to ${data.isManager ? 'Manager' : 'Teacher'}.`,
         type: 'USER_ROLE_CHANGE',
-        actionUrl: '/profile',
+        actionUrl: '#',
         metadata: {
           oldRole: teacher.user.role,
           newRole: data.isManager ? Role.ORG_MANAGER : Role.TEACHER,

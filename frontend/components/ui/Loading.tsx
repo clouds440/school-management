@@ -61,7 +61,7 @@ export function Loading({
             </div>
             
             {text && (
-                <p className={`mt-4 md:mt-6 font-semibold uppercase tracking-[0.2em] text-foreground/70 animate-pulse ${textSize}`}>
+                <p className={`mt-4 md:mt-6 font-semibold tracking-[0.2em] text-foreground/70 animate-pulse ${textSize}`}>
                     {text}
                 </p>
             )}

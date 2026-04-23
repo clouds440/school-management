@@ -216,7 +216,7 @@ export default function TeachersPage() {
                         <Button
                             onClick={() => router.push('/teachers/add')}
                             icon={UserPlus}
-                            className="px-8 w-full md:w-auto text-xs font-black uppercase tracking-widest"
+                            className="px-8 w-full md:w-auto text-xs font-black tracking-widest"
                         >
                             Add Teacher
                         </Button>

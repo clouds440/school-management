@@ -218,7 +218,7 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
                                 required
                             />
                         )}
-                        <p className="text-[10px] text-card-header font-bold uppercase tracking-widest mt-2 ml-1">
+                        <p className="text-[10px] text-card-header font-bold tracking-widest mt-2 ml-1">
                             This announcement will only be visible to members of the selected {targetType.toLowerCase().replace('_', ' ')}.
                         </p>
                     </div>

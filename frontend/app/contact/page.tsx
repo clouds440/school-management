@@ -82,7 +82,7 @@ export default function ContactPage() {
         <div className="lg:col-span-2 space-y-6 md:space-y-8 animate-fade-in-up">
           <div className="space-y-4">
             <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
-              Get in <span className="text-primary italic">Touch</span>
+              Get in <span className="text-primary">Touch</span>
             </h1>
               <p className="text-muted-foreground leading-relaxed text-base md:text-lg font-medium">
               Have a question about the platform or need technical assistance?
@@ -176,7 +176,7 @@ export default function ContactPage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in-up" noValidate>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 opacity-70">Subject</label>
+                  <label className="text-xs font-semibold tracking-wider text-muted-foreground ml-1 opacity-70">Subject</label>
                   <input
                     type="text"
                     required
@@ -188,7 +188,7 @@ export default function ContactPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-foreground ml-1 opacity-70">Message</label>
+                  <label className="text-xs font-semibold tracking-wider text-foreground ml-1 opacity-70">Message</label>
                   <MarkdownEditor
                     value={message}
                     onChange={setMessage}

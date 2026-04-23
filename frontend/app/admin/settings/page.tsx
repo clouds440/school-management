@@ -50,7 +50,7 @@ export default function AdminSettingsPage() {
                     </div>
                     <div>
                         <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight">Admin Settings</h1>
-                        <p className="text-muted-foreground font-semibold opacity-70 mt-1 uppercase tracking-wider text-xs md:text-sm">Platform Administration & Security</p>
+                        <p className="text-muted-foreground font-semibold opacity-70 mt-1 tracking-wider text-xs md:text-sm">Platform Administration & Security</p>
                     </div>
                 </div>
             </div>

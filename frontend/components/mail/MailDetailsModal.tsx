@@ -140,7 +140,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
             subtitle={
                 mail ? (
                     <div className="block md:flex items-center justify-between w-full pr-12 text-sm sm:text-base md:text-xl">
-                        <div className="flex items-center gap-3 flex-wrap text-[10px] text-indigo-50/60 font-bold uppercase tracking-widest">
+                        <div className="flex items-center gap-3 flex-wrap text-[10px] text-indigo-50/60 font-bold tracking-widest">
                             <span className="flex items-center gap-1"><Tag className="w-3 h-3" />{mail.category.replace('_', ' ')}</span>
                             <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{mail.id.slice(0, 8)}</span>
                             <span className="flex items-center gap-1"><User className="w-3 h-3" />{mail.creator.name}</span>
@@ -156,7 +156,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
                                             loadingId="status-progress"
                                             px='px-3'
                                             py='py-1.5'
-                                            className="text-[9px] uppercase"
+                                            className="text-[9px]"
                                         >
                                             Start Progress
                                         </Button>
@@ -168,7 +168,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
                                         loadingId="status-resolve"
                                         px='px-3'
                                         py='py-1.5'
-                                        className="text-[9px] uppercase"
+                                        className="text-[9px]"
                                     >
                                         Resolve
                                     </Button>
@@ -179,7 +179,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
                                         loadingId="status-close"
                                         px='px-3'
                                         py='py-1.5'
-                                        className="text-[9px] uppercase"
+                                        className="text-[9px]"
                                     >
                                         Close Thread
                                     </Button>
@@ -201,12 +201,12 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
                                     variant="primary"
                                     px='px-6'
                                     py='py-2.5'
-                                    className="text-[10px] uppercase"
+                                    className="text-[10px]"
                                 >
                                     Reply to Thread
                                 </Button>
                             ) : (
-                                <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                <div className="text-[10px] font-black text-muted-foreground tracking-widest">
                                     Thread is {mail.status}
                                 </div>
                             )}
@@ -217,7 +217,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
                             variant='secondary'
                             px='px-6'
                             py='py-2.5'
-                            className="text-[10px] uppercase"
+                            className="text-[10px]"
                         >
                             Close Window
                         </Button>

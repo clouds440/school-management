@@ -196,7 +196,7 @@ export default function SessionManagement({ userId }: SessionManagementProps) {
                                                                 {session.deviceName || 'Unknown Device'}
                                                             </p>
                                                             {isCurrentSession(session) && (
-                                                                <span className="inline-flex items-center text-[10px] sm:text-xs font-black uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
+                                                                <span className="inline-flex items-center text-[10px] sm:text-xs font-black tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
                                                                     <span className="w-1.5 h-1.5 bg-primary rounded-full mr-1.5 animate-pulse" />
                                                                     Current
                                                                 </span>

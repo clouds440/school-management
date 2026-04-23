@@ -28,7 +28,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, totalResults
                     
                     {onPageSizeChange && (
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] sm:text-xs font-semibold uppercase text-muted-foreground/70 tracking-wider">Rows:</span>
+                            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground/70 tracking-wider">Rows:</span>
                             <select 
                                 value={pageSize}
                                 onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -52,7 +52,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, totalResults
                         className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg hover:bg-primary/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all group text-foreground font-semibold border border-transparent hover:border-primary/20 bg-card/30"
                     >
                         <ChevronLeft className="w-4 h-4 text-primary transition-transform group-hover:-translate-x-0.5" />
-                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider hidden sm:inline">Previous</span>
+                        <span className="text-[10px] sm:text-xs font-semibold tracking-wider hidden sm:inline">Previous</span>
                     </button>
 
                     <div className="flex items-center gap-1 px-1 sm:px-2">
@@ -84,7 +84,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, totalResults
                         disabled={currentPage === totalPages || isDisabled}
                         className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg hover:bg-primary/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all group text-foreground font-semibold border border-transparent hover:border-primary/20 bg-card/30"
                     >
-                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider hidden sm:inline">Next</span>
+                        <span className="text-[10px] sm:text-xs font-semibold tracking-wider hidden sm:inline">Next</span>
                         <ChevronRight className="w-4 h-4 text-primary transition-transform group-hover:translate-x-0.5" />
                     </button>
                 </div>

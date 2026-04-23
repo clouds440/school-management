@@ -14,7 +14,7 @@ export default function CareersPage() {
         </div>
         <div className="container mx-auto px-6 text-center max-w-4xl space-y-6 relative z-10">
           <Reveal>
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary-foreground text-xs font-bold mb-4 tracking-wide uppercase border border-primary/20 backdrop-blur-md">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary-foreground text-xs font-bold mb-4 tracking-wide border border-primary/20 backdrop-blur-md">
               Join the Mission
             </div>
           </Reveal>
@@ -35,7 +35,7 @@ export default function CareersPage() {
         <div className="container mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
             <Reveal>
-              <h2 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter uppercase">Why {PLATFORM_NAME}?</h2>
+              <h2 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter">Why {PLATFORM_NAME}?</h2>
             </Reveal>
             <Reveal delay={200}>
               <p className="text-muted-foreground text-lg font-medium">Life is better when you build something that matters.</p>
@@ -68,7 +68,7 @@ export default function CareersPage() {
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
                 <div className="space-y-4 max-w-xl">
               <Reveal>
-                <h2 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter uppercase">Open Roles</h2>
+                <h2 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter">Open Roles</h2>
               </Reveal>
               <Reveal delay={200}>
                 <p className="text-muted-foreground text-lg font-medium">Join us in our mission to revolutionize academic management.</p>
@@ -95,7 +95,7 @@ export default function CareersPage() {
               <Reveal key={i} delay={i * 100}>
                 <div className="group bg-card p-6 md:p-8 rounded-3xl border border-border hover:border-primary/30 transition-all hover:shadow-xl hover:shadow-primary/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                   <div className="space-y-2">
-                    <div className="flex items-center space-x-3 text-xs font-black text-primary uppercase tracking-widest">
+                    <div className="flex items-center space-x-3 text-xs font-black text-primary tracking-widest">
                       <Briefcase className="w-3 h-3" />
                       <span>{job.dept}</span>
                       <span className="text-muted-foreground">•</span>
@@ -118,7 +118,7 @@ export default function CareersPage() {
           <div className="mt-20 text-center">
             <Reveal delay={500}>
               <p className="text-muted-foreground font-medium mb-8">Don&apos;t see a role that fits? We&apos;re always looking for talent.</p>
-              <Link href="/contact" className="inline-flex items-center text-primary font-black text-sm uppercase tracking-widest hover:translate-x-2 transition-transform">
+              <Link href="/contact" className="inline-flex items-center text-primary font-black text-sm tracking-widest hover:translate-x-2 transition-transform">
                 Send an Open Application <ArrowRight className="ml-2 w-4 h-4" />
               </Link>
             </Reveal>

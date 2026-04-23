@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { PLATFORM_NAME } from '@/lib/constants';
-import { Brand, BrandLogoIcon } from '@/components/ui/Brand';
+import { Brand } from '@/components/ui/Brand';
 import Image from 'next/image';
 import { getDeviceId, getDeviceInfo } from '@/lib/deviceUtils';
 
@@ -73,7 +73,7 @@ export default function LoginPage() {
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
               <h1 className="relative text-4xl xl:text-5xl font-black text-foreground leading-tight tracking-tight">
-                The <span className="text-primary italic animate-pulse group-hover:scale-110 transition-transform inline-block">Verse</span> <br />
+                The <span className="text-primary animate-pulse group-hover:scale-110 transition-transform inline-block">Verse</span> <br />
                 of Modern Education.
               </h1>
             </div>
@@ -96,7 +96,7 @@ export default function LoginPage() {
 
         {/* Footer branding */}
         <div className="absolute bottom-8 left-12 z-10 flex items-center space-x-2 opacity-40 hover:opacity-100 transition-opacity duration-300">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">&copy; 2026 {PLATFORM_NAME} Global Inc.</p>
+          <p className="text-xs font-semibold text-muted-foreground tracking-wider">&copy; 2026 {PLATFORM_NAME} Global Inc.</p>
         </div>
       </div>
 
@@ -111,13 +111,12 @@ export default function LoginPage() {
           <div className="lg:hidden text-center mb-8">
             <div className="relative mx-auto w-20 h-20 rounded-2xl flex items-center justify-center mb-4 bg-linear-to-br from-primary/10 to-secondary/10 border border-primary/20 shadow-xl">
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-              <BrandLogoIcon />
             </div>
             <Brand showLogo={false} size="lg" />
           </div>
 
           <div className="space-y-3">
-            <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight italic">
+            <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
               Welcome back.
             </h2>
             <p className="text-sm md:text-base text-muted-foreground font-medium tracking-tight">
@@ -128,12 +127,13 @@ export default function LoginPage() {
           <form className="space-y-6 md:space-y-8" onSubmit={handleSubmit}>
             <div className="space-y-5 md:space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email-address" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 opacity-70">Email</Label>
+                <Label htmlFor="email-address" className="text-xs font-semibold tracking-wider text-muted-foreground ml-1 opacity-70">Email</Label>
                 <Input
                   id="email-address"
                   name="email"
                   type="email"
                   required
+                  tabIndex={1}
                   icon={Mail}
                   placeholder="admin@school.edu"
                   value={formData.email}
@@ -144,14 +144,15 @@ export default function LoginPage() {
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center ml-1">
-                  <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Password</Label>
-                  <Link href="#" className="text-xs font-semibold uppercase tracking-wider text-primary hover:text-primary/80 transition-colors">Forgot?</Link>
+                  <Label htmlFor="password" className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Password</Label>
+                  <Link href="#" className="text-xs font-semibold tracking-wider text-primary hover:text-primary/80 transition-colors">Forgot?</Link>
                 </div>
                 <Input
                   id="password"
                   name="password"
                   type="password"
                   required
+                  tabIndex={2}
                   icon={Lock}
                   placeholder="••••••••"
                   value={formData.password}
@@ -184,7 +185,7 @@ export default function LoginPage() {
                     </svg>
                   </div>
                 </div>
-                <span className="ml-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors">
+                <span className="ml-3 text-xs font-semibold tracking-wider text-muted-foreground group-hover:text-foreground transition-colors">
                   Remember Session
                 </span>
               </label>

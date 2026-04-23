@@ -64,21 +64,21 @@ export default function SectionDetailPage() {
                         </div>
                         <div>
                             <div className="flex items-center gap-3 justify-center md:justify-start mb-2">
-                                <span className="px-3 py-1 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-[0.2em] italic rounded-lg shadow-lg shadow-primary/20">
-                                    SECTION ID: {section.id.substring(0, 8).toUpperCase()}
+                                <span className="px-3 py-1 bg-primary text-primary-foreground text-[10px] font-black tracking-[0.2em] rounded-lg shadow-lg shadow-primary/20">
+                                    Section ID: {section.id.substring(0, 8)}
                                 </span>
                             </div>
-                            <h1 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase leading-none mb-4 text-transparent bg-clip-text bg-linear-to-r from-card-text to-card-text/60">
+                            <h1 className="text-3xl md:text-4xl font-black tracking-tighter leading-none mb-4 text-transparent bg-clip-text bg-linear-to-r from-card-text to-card-text/60">
                                 {section.name}
                             </h1>
-                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-[11px] font-black uppercase tracking-widest text-card-text/40">
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-[11px] font-black tracking-widest text-card-text/40">
                                 <span className="flex items-center gap-2 group/item">
                                     <GraduationCap className="w-4 h-4 text-primary group-hover/item:scale-110 transition-transform" />
                                     {section.course?.name || 'COURSE'}
                                 </span>
                                 <span className="flex items-center gap-2 group/item">
                                     <Users className="w-4 h-4 text-primary group-hover/item:scale-110 transition-transform" />
-                                    {section.students?.length || 0} ENROLLED STUDENTS
+                                    {section.students?.length || 0} Enrolled Students
                                 </span>
                                 <span className="flex items-center gap-2 group/item">
                                     <Calendar className="w-4 h-4 text-primary group-hover/item:scale-110 transition-transform" />
@@ -87,7 +87,7 @@ export default function SectionDetailPage() {
                                 {section.room && (
                                     <span className="flex items-center gap-2 group/item">
                                         <MapPin className="w-4 h-4 text-primary group-hover/item:scale-110 transition-transform" />
-                                        VENUE: {section.room}
+                                        Venue: {section.room}
                                     </span>
                                 )}
                             </div>
@@ -106,8 +106,8 @@ export default function SectionDetailPage() {
                                 <Trophy className="w-6 h-6 text-primary" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none">Course Evaluations</h2>
-                                <p className="text-[10px] font-black text-card-text/40 uppercase tracking-widest mt-1">Manage assessments, quizzes & final grades</p>
+                                <h2 className="text-2xl font-black tracking-tighter leading-none">Course Evaluations</h2>
+                                <p className="text-[10px] font-black text-card-text/40 tracking-widest mt-1">Manage assessments, quizzes & final grades</p>
                             </div>
                         </div>
                     </div>
@@ -124,8 +124,8 @@ export default function SectionDetailPage() {
                                 <Calendar className="w-6 h-6 text-primary" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none">Class Schedule</h2>
-                                <p className="text-[10px] font-black text-card-text/40 uppercase tracking-widest mt-1">Manage weekly timetable and slots</p>
+                                <h2 className="text-2xl font-black tracking-tighter leading-none">Class Schedule</h2>
+                                <p className="text-[10px] font-black text-card-text/40 tracking-widest mt-1">Manage weekly timetable and slots</p>
                             </div>
                         </div>
                     </div>

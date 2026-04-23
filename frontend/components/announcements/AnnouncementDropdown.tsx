@@ -192,16 +192,16 @@ export function AnnouncementDropdown() {
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div className="text-xs font-black text-foreground truncate">{creator?.name || 'Unknown User'}</div>
                                                         {(lastSeen === 0 || new Date(announcement.createdAt).getTime() > lastSeen + 1000) && (
-                                                            <span className="shrink-0 text-[8px] font-black bg-blue-500 text-white px-1.5 py-0.5 rounded-full animate-pulse uppercase tracking-[0.2em] shadow-sm">
+                                                            <span className="shrink-0 text-[8px] font-black bg-blue-500 text-white px-1.5 py-0.5 rounded-full animate-pulse tracking-[0.2em] shadow-sm">
                                                                 New
                                                             </span>
                                                         )}
                                                     </div>
                                                     <div className="flex items-center justify-between mt-0.5">
-                                                        <span className="text-[9px] font-black text-blue-600/70 uppercase tracking-widest bg-blue-50/50 border border-blue-100/30 px-1.5 py-0.5 rounded-lg">
+                                                        <span className="text-[9px] font-black text-blue-600/70 tracking-widest bg-blue-50/50 border border-blue-100/30 px-1.5 py-0.5 rounded-lg">
                                                             {creator?.role?.replace('_', ' ') || 'SYSTEM'}
                                                         </span>
-                                                        <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">
+                                                        <div className="text-[9px] text-muted-foreground font-bold tracking-wider">
                                                             {formatDistanceToNow(new Date(announcement.createdAt), { addSuffix: true })}
                                                         </div>
                                                     </div>
@@ -217,7 +217,7 @@ export function AnnouncementDropdown() {
                                                         {announcement.title}
                                                     </h4>
                                                 </div>
-                                                <div className="shrink-0 flex items-center gap-1.5 text-[9px] font-black text-muted-foreground uppercase tracking-widest bg-card border border-border px-2 py-1 rounded-lg shadow-sm group-hover:border-blue-100 group-hover:text-blue-500 transition-colors">
+                                                <div className="shrink-0 flex items-center gap-1.5 text-[9px] font-black text-muted-foreground tracking-widest bg-card border border-border px-2 py-1 rounded-lg shadow-sm group-hover:border-blue-100 group-hover:text-blue-500 transition-colors">
                                                     {targetIcons[announcement.targetType] || <Megaphone className="w-3 h-3" />}
                                                     <span>{announcement.targetType}</span>
                                                 </div>
@@ -231,7 +231,7 @@ export function AnnouncementDropdown() {
                                                 <div className="mt-4 pt-3 border-t border-border flex justify-end">
                                                     <Link
                                                         href={announcement.actionUrl}
-                                                        className="text-[10px] font-black text-blue-600 hover:text-blue-800 uppercase tracking-widest flex items-center gap-1 group/link"
+                                                        className="text-[10px] font-black text-blue-600 hover:text-blue-800 tracking-widest flex items-center gap-1 group/link"
                                                     >
                                                         <span>View Full Details</span>
                                                         <Plus className="w-3 h-3 group-hover/link:rotate-90 transition-transform" />

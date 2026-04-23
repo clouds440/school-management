@@ -15,6 +15,9 @@ export function getPublicUrl(path: string | null | undefined, updatedAt?: string
     // If it's already a full URL (http/https), return as is
     if (path.startsWith('http')) return path;
 
+    // Frontend static assets (like /assets/) should be returned as-is
+    if (path.startsWith('/assets/')) return path;
+
     // Get API URL from env and strip /api to get the base server URL
     const apiUrl = (process.env.NEXT_PUBLIC_API_URL!).replace(/\/+$/, '');
     const baseUrl = apiUrl.replace(/\/api$/, '');

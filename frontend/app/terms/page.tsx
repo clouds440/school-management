@@ -12,7 +12,7 @@ export default function TermsPage() {
         <div className="container mx-auto px-6 text-center max-w-4xl space-y-6">
           <Reveal>
             <CheckCircle className="w-16 h-16 text-primary mx-auto mb-8 bg-card p-4 rounded-3xl shadow-sm border border-border" />
-            <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight leading-tight uppercase">Terms of Service</h1>
+            <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight leading-tight">Terms of Service</h1>
           </Reveal>
           <Reveal delay={200}>
             <p className="text-xl text-muted-foreground font-medium leading-relaxed max-w-2xl mx-auto">
@@ -20,7 +20,7 @@ export default function TermsPage() {
             </p>
           </Reveal>
           <Reveal delay={400}>
-            <div className="flex items-center justify-center space-x-2 text-xs font-black text-muted-foreground uppercase tracking-widest">
+            <div className="flex items-center justify-center space-x-2 text-xs font-black text-muted-foreground tracking-widest">
               <Clock className="w-4 h-4" />
               <span>Last Updated: April 01, 2026</span>
             </div>
@@ -54,7 +54,7 @@ export default function TermsPage() {
 
           <div className="pt-20 text-center">
             <Reveal delay={400}>
-              <Link href="/" className="inline-flex items-center text-primary font-black text-sm uppercase tracking-widest hover:translate-x-2 transition-transform">
+              <Link href="/" className="inline-flex items-center text-primary font-black text-sm tracking-widest hover:translate-x-2 transition-transform">
                 Return to Home <ArrowLeft className="ml-2 w-4 h-4" />
               </Link>
             </Reveal>

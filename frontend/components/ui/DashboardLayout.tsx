@@ -166,11 +166,11 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                     {user && (
                         <div className={`flex items-center ${!effectiveExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
                             <div className={`w-9 h-9 flex items-center justify-center shrink-0 shadow-inner relative`}>
-                                <BrandIcon variant="user" size="sm" className="w-9 h-9" />
+                                <BrandIcon variant="user" user={user} size="sm" className="w-9 h-9" />
                             </div>
                             <div className={`overflow-hidden transition-all ml-2 ${!effectiveExpanded ? 'lg:hidden lg:w-0' : 'w-auto'}`}>
                                 <div className="text-xs font-black text-sidebar-text truncate max-w-30">{user.name || user.email}</div>
-                                <div className="text-[9px] font-bold text-sidebar-text/60 uppercase tracking-tighter leading-none mt-0.5">{user.designation || user.role?.replace('_', ' ')}</div>
+                                <div className="text-[9px] font-bold text-sidebar-text/60 tracking-tighter leading-none mt-0.5">{user.designation || user.role?.replace('_', ' ')}</div>
                             </div>
                         </div>
                     )}
@@ -188,7 +188,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     title="Mail"
                                 >
                                     <Mail className="w-4 h-4 shrink-0 text-primary/80" />
-                                    {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Mail</span>}
+                                    {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Mail</span>}
                                     {/* Always show a mail count; gray when zero */}
                                     <span className={`ml-auto ${mailCount.unread > 0 ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground'} ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
                                         {mailCount.unread > 99 ? '99+' : mailCount.unread}
@@ -205,7 +205,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     title="Contact Us"
                                 >
                                         <MessageCircleQuestionMark className="w-4 h-4 shrink-0 text-primary/80" />
-                                    {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Contact Us</span>}
+                                    {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Contact Us</span>}
                                 </Link>
                             </>
                         )}
@@ -220,7 +220,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                 title="Change Password"
                             >
                                 <Key className="w-4 h-4 shrink-0 text-primary/80" />
-                                {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Change Password</span>}
+                                {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Change Password</span>}
                             </Link>
 
 
@@ -233,7 +233,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                             title="Log out"
                         >
                             <LogOut className="w-4 h-4 shrink-0 text-red-500/80" />
-                            {effectiveExpanded && <span className="ml-2 font-bold text-[10px] uppercase tracking-wider">Log out</span>}
+                            {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Log out</span>}
                         </button>
                     </div>
                 </div>

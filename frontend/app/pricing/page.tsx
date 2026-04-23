@@ -79,7 +79,7 @@ function PricingCard({ tier, price, description, features, highlighted = false, 
     <Reveal delay={delay}>
       <div className={`p-8 rounded-3xl border ${highlighted ? 'border-primary ring-4 ring-primary/5 bg-primary/60  shadow-2xl' : 'border-border bg-card'} space-y-8 h-full flex flex-col`}>
         <div className="space-y-4">
-          <h3 className="text-sm font-black text-primary uppercase tracking-widest">{tier}</h3>
+          <h3 className="text-sm font-black text-primary tracking-widest">{tier}</h3>
           <div className="flex items-baseline space-x-1">
             <span className="text-5xl font-black text-foreground">{price}</span>
             {price !== 'Custom' && <span className="text-muted-foreground font-bold">/mo</span>}

@@ -164,7 +164,7 @@ export function ChatSettingsModal({
 
                     <div className="space-y-3 sm:space-y-4">
                         <div>
-                            <label className="text-[11px] font-black text-muted-foreground uppercase tracking-widest mb-1.5 block ml-1">Group Name</label>
+                            <label className="text-[11px] font-black text-muted-foreground tracking-widest mb-1.5 block ml-1">Group Name</label>
                             <Input
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
@@ -202,7 +202,7 @@ export function ChatSettingsModal({
                 {/* Participants Section */}
                 <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center justify-between">
-                        <label className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block ml-1">Participants</label>
+                        <label className="text-[11px] font-black text-muted-foreground tracking-widest block ml-1">Participants</label>
                         {isGroupAdmin && (
                             <button
                                 onClick={() => { onClose(); onAddParticipants(); }}
@@ -227,7 +227,7 @@ export function ChatSettingsModal({
                                                 {p.user?.name} {p.userId === currentUser.id && '(You)'}
                                             </p>
                                             <div className="flex items-center space-x-1.5 sm:space-x-2">
-                                                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">
+                                                <p className="text-[10px] text-muted-foreground font-bold tracking-tighter">
                                                     {p.user?.role?.toLowerCase().replace('_', ' ')}
                                                 </p>
                                                 {isCreator && (

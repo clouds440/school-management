@@ -101,8 +101,8 @@ export default function TimetablePage() {
 
     if (error) return (
         <div className="bg-destructive/10 border border-destructive/20 p-8 rounded-3xl text-destructive text-center">
-            <h2 className="text-2xl font-black italic tracking-tighter uppercase mb-2">System Error</h2>
-            <p className="font-bold opacity-70 uppercase tracking-widest text-sm">{error}</p>
+            <h2 className="text-2xl font-black italic tracking-tighter mb-2">System Error</h2>
+            <p className="font-bold opacity-70 tracking-widest text-sm">{error}</p>
         </div>
     );
 
@@ -118,27 +118,27 @@ export default function TimetablePage() {
     };
 
     return (
-        <div className="flex flex-col h-full w-full space-y-8 pb-12">
-            <div className="bg-card/80 backdrop-blur-2xl rounded-3xl shadow-2xl border border-border p-8 md:p-10 overflow-hidden flex flex-col flex-1 min-h-0">
-                <div className="mb-10 border-b border-border/50 pb-8">
-                    <div className="flex items-center gap-3 mb-3">
-                        <span className="w-8 h-1 bg-primary rounded-full"></span>
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary italic">Academic Schedule</span>
+        <div className="flex flex-col h-full w-full space-y-6 pb-6">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-xl shadow-xl border border-border p-4 md:p-6 overflow-hidden flex flex-col flex-1 min-h-0">
+                <div className="mb-6 border-b border-border/50 pb-4">
+                    <div className="flex items-center gap-3 mb-2">
+                        <span className="w-6 h-1 bg-primary rounded-full"></span>
+                        <span className="text-[10px] font-black tracking-[0.3em] text-primary">Academic Schedule</span>
                     </div>
-                    <h1 className="text-5xl font-black uppercase italic tracking-tighter text-foreground leading-none">Weekly Timetable</h1>
-                    <p className="text-muted-foreground mt-3 text-sm font-bold uppercase tracking-widest max-w-md">Comprehensive visualization of instructional hours and room allocations.</p>
+                    <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-foreground leading-none">Weekly Timetable</h1>
+                    <p className="text-muted-foreground mt-2 text-sm font-bold tracking-widest max-w-md">Comprehensive visualization of instructional hours and room allocations.</p>
                 </div>
 
-                <div className="flex-1 overflow-auto pr-2 scrollbar-hide border border-border/50 rounded-2xl bg-muted/5 p-4">
-                    <div className="min-w-[800px]">
+                <div className="flex-1 overflow-auto pr-2 scrollbar-hide border border-border/50 rounded-xl bg-muted/5 p-4">
+                    <div className="min-w-200">
                         {/* Header */}
-                        <div className="grid grid-cols-[100px_repeat(5,1fr)] mb-4">
+                        <div className="grid grid-cols-[80px_repeat(5,1fr)] mb-4">
                             <div className="p-2 border-r border-border/50 flex items-center justify-center">
-                                <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Time</span>
+                                <span className="text-[10px] font-black tracking-widest opacity-40">Time</span>
                             </div>
                             {ACADEMIC_DAYS.map(dayIdx => (
-                                <div key={dayIdx} className="p-4 flex flex-col items-center justify-center border-b-2 border-primary/20 bg-primary/5 rounded-t-xl mx-1 shadow-xs">
-                                    <span className="text-sm font-black uppercase tracking-widest italic">{DAY_NAMES[dayIdx]}</span>
+                                <div key={dayIdx} className="p-3 flex flex-col items-center justify-center border-b-2 border-primary/20 bg-primary/5 rounded-t-lg mx-1">
+                                    <span className="text-xs md:text-sm font-black tracking-widest">{DAY_NAMES[dayIdx]}</span>
                                     <div className="mt-1 w-4 h-0.5 bg-primary/40 rounded-full"></div>
                                 </div>
                             ))}
@@ -146,11 +146,11 @@ export default function TimetablePage() {
 
                         {/* Body */}
                         {timeSlots.map(hour => (
-                            <div key={hour} className="grid grid-cols-[100px_repeat(5,1fr)] border-b border-border/30 last:border-b-0 min-h-[100px]">
+                            <div key={hour} className="grid grid-cols-[80px_repeat(5,1fr)] border-b border-border/30 last:border-b-0 min-h-20">
                                 {/* Time Cell */}
-                                <div className="flex flex-col items-center justify-center border-r border-border/50 pr-4 bg-muted/5">
-                                    <span className="text-xl font-black italic tracking-tighter leading-none">{hour > 12 ? hour - 12 : hour}</span>
-                                    <span className="text-[9px] font-black uppercase opacity-40 mt-1 tracking-widest">{hour >= 12 ? 'PM' : 'AM'}</span>
+                                <div className="flex flex-col items-center justify-center border-r border-border/50 pr-2 md:pr-4 bg-muted/5">
+                                    <span className="text-lg md:text-xl font-black tracking-tighter leading-none">{hour > 12 ? hour - 12 : hour}</span>
+                                    <span className="text-[9px] font-black opacity-40 mt-1 tracking-widest">{hour >= 12 ? 'PM' : 'AM'}</span>
                                 </div>
 
                                 {/* Day Cells */}
@@ -167,21 +167,21 @@ export default function TimetablePage() {
                                                             router.push(`/attendance/${entry.sectionId}?scheduleId=${entry.scheduleId}&date=${closestDate}`);
                                                         }
                                                     }}
-                                                    className={`flex-1 p-3 rounded-xl border ${colorClass} shadow-sm group hover:scale-[1.02] transition-all duration-300 flex flex-col justify-between overflow-hidden relative cursor-pointer`}
+                                                    className={`flex-1 p-2 md:p-3 rounded-lg border ${colorClass} shadow-sm group hover:scale-[1.02] transition-all duration-300 flex flex-col justify-between overflow-hidden relative cursor-pointer`}
                                                 >
                                                     <div className="absolute -right-2 -top-2 opacity-5 scale-150 rotate-12">
-                                                        <Clock className="w-16 h-16" />
+                                                        <Clock className="w-12 h-12 md:w-16 md:h-16" />
                                                     </div>
                                                     <div>
-                                                        <div className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-1">{entry.sectionName}</div>
-                                                        <div className="text-xs font-black uppercase italic tracking-tighter leading-tight wrap-break-word">{entry.courseName}</div>
+                                                        <div className="text-[9px] font-black tracking-widest opacity-60 mb-1">{entry.sectionName}</div>
+                                                        <div className="text-xs font-black tracking-tighter leading-tight wrap-break-word">{entry.courseName}</div>
                                                     </div>
-                                                    <div className="mt-3 flex items-center justify-between gap-2 border-t border-current/10 pt-2">
+                                                    <div className="mt-2 md:mt-3 flex items-center justify-between gap-2 border-t border-current/10 pt-2">
                                                         <div className="flex items-center gap-1 opacity-70">
                                                             <MapPin className="w-2.5 h-2.5" />
-                                                            <span className="text-[9px] font-black uppercase tracking-widest truncate max-w-[60px]">{entry.room || 'TBD'}</span>
+                                                            <span className="text-[9px] font-black tracking-widest truncate max-w-15">{entry.room || 'TBD'}</span>
                                                         </div>
-                                                        <span className="text-[9px] font-black opacity-40 italic">{entry.startTime}</span>
+                                                        <span className="text-[9px] font-black opacity-40">{entry.startTime}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -190,8 +190,8 @@ export default function TimetablePage() {
 
                                     return (
                                         <div key={`${hour}-${dayIdx}`} className="p-2 h-full group">
-                                            <div className="flex-1 rounded-xl border border-dashed border-border/30 flex items-center justify-center opacity-20 group-hover:opacity-40 transition-opacity bg-muted/2 shadow-inner">
-                                                <span className="text-[10px] font-black uppercase tracking-[0.2em] italic">BREAK</span>
+                                            <div className="flex-1 rounded-lg border border-dashed border-border/30 flex items-center justify-center opacity-20 group-hover:opacity-40 transition-opacity bg-muted/2 shadow-inner">
+                                                <span className="text-[10px] font-black tracking-[0.2em] italic">Unallotted slot</span>
                                             </div>
                                         </div>
                                     );

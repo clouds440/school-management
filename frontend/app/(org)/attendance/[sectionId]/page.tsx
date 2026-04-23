@@ -163,7 +163,7 @@ export default function SectionAttendancePage() {
     return (
         <div className="flex flex-col h-full w-full space-y-6 pb-12">
             <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-6 overflow-hidden">
-                <Link href="/attendance" className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors mb-6">
+                <Link href="/attendance" className="inline-flex items-center gap-2 text-[10px] font-black tracking-widest text-muted-foreground hover:text-primary transition-colors mb-6">
                     <ArrowLeft className="w-4 h-4" /> Back to Sections
                 </Link>
 
@@ -171,16 +171,16 @@ export default function SectionAttendancePage() {
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-primary">{section?.course?.name || 'COURSE'}</span>
+                            <span className="text-[10px] font-black tracking-widest text-primary">{section?.course?.name || 'Course'}</span>
                         </div>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-foreground">{section?.name || 'Loading Section...'}</h1>
+                        <h1 className="text-3xl font-black tracking-tighter text-foreground">{section?.name || 'Loading Section...'}</h1>
                         <div className="flex items-center gap-2 mt-2">
                             {!isStudent && (
                                 <Button
                                     variant={viewMode === 'daily' ? 'primary' : 'secondary'}
                                     icon={Edit3}
                                     onClick={() => setViewMode('daily')}
-                                    className="text-[10px] font-black uppercase"
+                                    className="text-[10px] font-black"
                                 >
                                     Marking Mode
                                 </Button>
@@ -189,7 +189,7 @@ export default function SectionAttendancePage() {
                                 variant={viewMode === 'monthly' ? 'primary' : 'secondary'}
                                 icon={BarChart3}
                                 onClick={() => setViewMode('monthly')}
-                                className="text-[10px] font-black uppercase"
+                                className="text-[10px] font-black"
                             >
                                 Overview Mode
                             </Button>
@@ -200,7 +200,7 @@ export default function SectionAttendancePage() {
                         {viewMode === 'daily' ? (
                             <>
                                 <div className="flex items-center gap-4">
-                                    <Label htmlFor="datePicker" className="whitespace-nowrap font-black uppercase text-[10px] tracking-widest flex items-center gap-2">
+                                    <Label htmlFor="datePicker" className="whitespace-nowrap font-black text-[10px] tracking-widest flex items-center gap-2">
                                         <CalendarDays className="w-4 h-4 text-primary" /> Target Date:
                                     </Label>
                                     <Input
@@ -220,7 +220,7 @@ export default function SectionAttendancePage() {
                                     />
                                 </div>
                                 <div className="flex items-center gap-4 border-l border-border/50 pl-6 ml-6 md:ml-0 md:pl-0 md:border-l-0 lg:border-l lg:pl-6 lg:ml-6">
-                                    <Label className="whitespace-nowrap font-black uppercase text-[10px] tracking-widest flex items-center gap-2">
+                                    <Label className="whitespace-nowrap font-black text-[10px] tracking-widest flex items-center gap-2">
                                         <Clock className="w-4 h-4 text-primary" /> Time Slot:
                                     </Label>
                                     <CustomSelect
@@ -244,7 +244,7 @@ export default function SectionAttendancePage() {
                                             onChange={(e) => setAdhocTime(prev => ({ ...prev, start: e.target.value }))}
                                             className="h-8 w-25 text-xs font-bold bg-transparent border-border"
                                         />
-                                        <span className="text-[10px] font-black opacity-30 uppercase tracking-tighter">to</span>
+                                        <span className="text-[10px] font-black opacity-30 tracking-tighter">to</span>
                                         <Input
                                             type="time"
                                             value={adhocTime.end}
@@ -256,12 +256,12 @@ export default function SectionAttendancePage() {
                             </>
                         ) : (
                             <div className="flex items-center gap-4">
-                                <Label className="whitespace-nowrap font-black uppercase text-[10px] tracking-widest flex items-center gap-2">
+                                <Label className="whitespace-nowrap font-black text-[10px] tracking-widest flex items-center gap-2">
                                     <CalendarDays className="w-4 h-4 text-primary" /> Display Month:
                                 </Label>
                                 <div className="flex items-center gap-2 bg-card rounded-lg p-1 border border-border">
                                     <Button variant="secondary" icon={ChevronLeft} className="h-8 w-8" onClick={() => handleMonthChange('prev')} />
-                                    <span className="text-xs font-black uppercase tracking-tighter min-w-25 text-center">
+                                    <span className="text-xs font-black tracking-tighter min-w-25 text-center">
                                         {monthName} {currentYear}
                                     </span>
                                     <Button variant="secondary" icon={ChevronRight} className="h-8 w-8" onClick={() => handleMonthChange('next')} />

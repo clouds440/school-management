@@ -85,7 +85,7 @@ function BlogCard({ title, excerpt, author, date, category, delay }: { title: st
     <Reveal delay={delay}>
       <div className="group cursor-pointer space-y-6 h-full flex flex-col">
         <div className="aspect-video bg-accent rounded-3xl overflow-hidden relative border border-border shadow-sm transition-all duration-500 group-hover:shadow-xl group-hover:scale-[1.02]">
-          <div className="absolute top-4 left-4 bg-card/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-black text-primary uppercase tracking-widest border border-border shadow-sm">
+          <div className="absolute top-4 left-4 bg-card/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-black text-primary tracking-widest border border-border shadow-sm">
             {category}
           </div>
           <div className="w-full h-full bg-linear-to-br from-primary/5 to-secondary/10 flex items-center justify-center">
@@ -93,7 +93,7 @@ function BlogCard({ title, excerpt, author, date, category, delay }: { title: st
           </div>
         </div>
         <div className="space-y-4 flex-1 flex flex-col">
-          <div className="flex items-center space-x-4 text-xs font-black text-muted-foreground uppercase tracking-widest">
+          <div className="flex items-center space-x-4 text-xs font-black text-muted-foreground tracking-widest">
             <span className="flex items-center"><Clock className="w-3 h-3 mr-1" /> {date}</span>
             <span className="hidden sm:block text-muted-foreground">•</span>
             <span>By {author}</span>
@@ -101,7 +101,7 @@ function BlogCard({ title, excerpt, author, date, category, delay }: { title: st
           <h3 className="text-2xl font-black text-foreground leading-tight group-hover:text-primary transition-colors">{title}</h3>
           <p className="text-muted-foreground font-medium leading-relaxed flex-1">{excerpt}</p>
           <div className="pt-2">
-            <div className="inline-flex items-center text-primary font-black text-xs uppercase tracking-widest group-hover:translate-x-2 transition-transform">
+            <div className="inline-flex items-center text-primary font-black text-xs tracking-widest group-hover:translate-x-2 transition-transform">
               Read Entire Article <ArrowRight className="ml-2 w-4 h-4" />
             </div>
           </div>

@@ -64,7 +64,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                     title="View"
                 >
                     <Eye className="w-4 h-4" />
-                    {showLabels && <span className="text-[10px] font-black uppercase tracking-wider text-inherit">View</span>}
+                    {showLabels && <span className="text-[10px] font-black tracking-wider text-inherit">View</span>}
                 </button>
             )}
 
@@ -85,7 +85,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                         }
                         <EditIcon className="w-4 h-4" />
                     </div>
-                    {showLabels && <span className="text-[10px] font-black uppercase tracking-wider">{editTitle}</span>}
+                    {showLabels && <span className="text-[10px] font-black tracking-wider">{editTitle}</span>}
                 </button>
             )}
 
@@ -109,7 +109,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                         ) : (
                             <Icon className="w-4 h-4" />
                         )}
-                        {showLabels && !action.loading && <span className="text-[10px] font-black uppercase tracking-wider">{label}</span>}
+                        {showLabels && !action.loading && <span className="text-[10px] font-black tracking-wider">{label}</span>}
                     </button>
                 );
             })}
@@ -129,7 +129,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                     ) : (
                         <Trash2 className="w-4 h-4" />
                     )}
-                    {showLabels && !isDeleting && <span className="text-[10px] font-black uppercase tracking-wider">{deleteTitle}</span>}
+                    {showLabels && !isDeleting && <span className="text-[10px] font-black tracking-wider">{deleteTitle}</span>}
                 </button>
             )}
         </div>

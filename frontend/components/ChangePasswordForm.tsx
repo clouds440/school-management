@@ -80,7 +80,7 @@ export default function ChangePasswordForm({
             <form className="mt-8 space-y-5 md:space-y-6" onSubmit={handleSubmit}>
                 <div className="space-y-4 md:space-y-5">
                     <div className="space-y-2">
-                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Current Password</Label>
+                        <Label className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Current Password</Label>
                         <Input
                             name="oldPassword"
                             type="password"
@@ -94,7 +94,7 @@ export default function ChangePasswordForm({
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">New Password</Label>
+                        <Label className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">New Password</Label>
                         <Input
                             name="newPassword"
                             type="password"
@@ -108,7 +108,7 @@ export default function ChangePasswordForm({
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Confirm New Password</Label>
+                        <Label className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Confirm New Password</Label>
                         <Input
                             name="confirmPassword"
                             type="password"

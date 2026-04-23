@@ -166,7 +166,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                 <button
                     type="button"
                     onClick={() => setPreviewMode(!previewMode)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all border ${previewMode
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black tracking-widest rounded-lg transition-all border ${previewMode
                         ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
                         : 'text-muted-foreground border-border hover:bg-card'
                         }`}
@@ -193,7 +193,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                         ) : (
                             <div className="flex flex-col items-center justify-center py-10 opacity-30 select-none">
                                 <Eye className="w-12 h-12 mb-2" />
-                                <p className="font-black uppercase tracking-widest text-xs">Nothing to preview</p>
+                                <p className="font-black tracking-widest text-xs">Nothing to preview</p>
                             </div>
                         )}
                     </div>

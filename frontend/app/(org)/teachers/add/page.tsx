@@ -26,8 +26,8 @@ export default function AddTeacherPage() {
                         <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-black uppercase tracking-tight text-foreground mb-2">Add Faculty Member</h1>
-                        <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Create a new teacher account for your organization</p>
+                        <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">Add Faculty Member</h1>
+                        <p className="text-sm font-bold text-muted-foreground tracking-widest">Create a new teacher account for your organization</p>
                     </div>
                 </div>
             </div>

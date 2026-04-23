@@ -113,9 +113,9 @@ export default function RegisterPage() {
                     <div className="space-y-6">
                         <div className="relative inline-block">
                             <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-                            <h1 className="relative text-4xl xl:text-5xl font-black text-foreground leading-[1.1] tracking-tight italic">
+                            <h1 className="relative text-4xl xl:text-5xl font-black text-foreground leading-[1.1] tracking-tight">
                                 Grow your <br />
-                                <span className="text-primary not-italic">Community.</span>
+                                <span className="text-primary">Community.</span>
                             </h1>
                         </div>
                         <p className="text-base text-muted-foreground font-medium leading-relaxed">
@@ -145,7 +145,7 @@ export default function RegisterPage() {
 
                 <div className="w-full max-w-2xl relative h-full z-10">
                     <div className="flex flex-col space-y-3 mb-10">
-                        <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight italic">
+                        <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
                             Register Organization
                         </h2>
                         <p className="text-sm md:text-base text-muted-foreground font-medium tracking-tight">
@@ -160,7 +160,7 @@ export default function RegisterPage() {
                         {/* Logo & Core Info Section */}
                         <div className="bg-linear-to-br from-muted/50 via-muted/30 to-muted/50 backdrop-blur-xl p-6 md:p-8 rounded-2xl border border-border/50 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-10 shadow-lg">
                             <div className="flex flex-col items-center shrink-0">
-                                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4 block">Organization Logo</Label>
+                                <Label className="text-xs font-semibold tracking-wider text-muted-foreground mb-4 block">Organization Logo</Label>
                                 <PhotoUploadPicker
                                     onFileReady={handleLogoReady}
                                     type="org"
@@ -170,7 +170,7 @@ export default function RegisterPage() {
 
                             <div className="flex-1 w-full space-y-4 md:space-y-6">
                                 <div className="space-y-2">
-                                    <Label htmlFor="name" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 opacity-70">Official School Name</Label>
+                                    <Label htmlFor="name" className="text-xs font-semibold tracking-wider text-muted-foreground ml-1 opacity-70">Official School Name</Label>
                                     <Input
                                         id="name"
                                         {...register('name')}
@@ -183,7 +183,7 @@ export default function RegisterPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="adminName" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 opacity-70">Administrator Full Name</Label>
+                                    <Label htmlFor="adminName" className="text-xs font-semibold tracking-wider text-muted-foreground ml-1 opacity-70">Administrator Full Name</Label>
                                     <Input
                                         id="adminName"
                                         {...register('adminName')}
@@ -199,11 +199,11 @@ export default function RegisterPage() {
 
                         {/* Metadata Grid */}
                         <div className="space-y-6 md:space-y-8 px-2 md:px-4">
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground italic border-l-4 border-primary/50 pl-4">Metadata & Location</h3>
+                            <h3 className="text-xs font-semibold tracking-wider text-muted-foreground border-l-4 border-primary/50 pl-4">Metadata & Location</h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                                 <div className="space-y-2">
-                                    <Label htmlFor="type" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 opacity-70">Category</Label>
+                                    <Label htmlFor="type" className="text-xs font-semibold tracking-wider text-muted-foreground ml-1 opacity-70">Category</Label>
                                     <CustomSelect
                                         options={[
                                             { value: OrganizationType.KINDERGARTEN, label: 'Kindergarten', icon: Pencil },
@@ -232,7 +232,7 @@ export default function RegisterPage() {
                                     {errors.type && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{errors.type.message}</p>}
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="location" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 opacity-70">Location</Label>
+                                    <Label htmlFor="location" className="text-xs font-semibold tracking-wider text-muted-foreground ml-1 opacity-70">Location</Label>
                                     <Input
                                         id="location"
                                         {...register('location')}
@@ -248,11 +248,11 @@ export default function RegisterPage() {
 
                         {/* Security & Access Section */}
                         <div className="space-y-6 md:space-y-8 px-2 md:px-4">
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground italic border-l-4 border-primary/50 pl-4">Security & Access</h3>
+                            <h3 className="text-xs font-semibold tracking-wider text-muted-foreground border-l-4 border-primary/50 pl-4">Security & Access</h3>
 
                             <div className="space-y-4 md:space-y-8">
                                 <div className="space-y-2">
-                                    <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 opacity-70">Admin Login Email</Label>
+                                    <Label htmlFor="email" className="text-xs font-semibold tracking-wider text-muted-foreground ml-1 opacity-70">Admin Login Email</Label>
                                     <Input
                                         id="email"
                                         type="email"
@@ -263,14 +263,14 @@ export default function RegisterPage() {
                                         className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                                     />
                                     {errors.email && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{errors.email.message}</p>}
-                                    <p className="mt-3 text-xs text-muted-foreground font-medium uppercase tracking-wider ml-1 italic opacity-60">
+                                    <p className="mt-3 text-xs text-muted-foreground font-medium tracking-wider ml-1 opacity-60">
                                         Primary credentials used for administrator console access.
                                     </p>
                                 </div>
 
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between ml-1">
-                                        <Label htmlFor="contactEmail" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Public Contact Email</Label>
+                                        <Label htmlFor="contactEmail" className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Public Contact Email</Label>
                                         <button
                                             type="button"
                                             onClick={() => {
@@ -281,7 +281,7 @@ export default function RegisterPage() {
                                                     trigger('contactEmail');
                                                 }
                                             }}
-                                            className="text-xs font-semibold uppercase tracking-wider text-primary hover:text-primary/80 italic transition-all"
+                                            className="text-xs font-semibold tracking-wider text-primary hover:text-primary/80 transition-all"
                                         >
                                             {sameAsLoginEmail ? 'Different email' : 'Sync with Login'}
                                         </button>
@@ -303,7 +303,7 @@ export default function RegisterPage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                                     <div className="space-y-2">
-                                        <Label htmlFor="phone" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 opacity-70">Phone Number</Label>
+                                        <Label htmlFor="phone" className="text-xs font-semibold tracking-wider text-muted-foreground ml-1 opacity-70">Phone Number</Label>
                                         <Input
                                             id="phone"
                                             {...register('phone')}
@@ -315,7 +315,7 @@ export default function RegisterPage() {
                                         {errors.phone && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{errors.phone.message}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 opacity-70">Login Password</Label>
+                                        <Label htmlFor="password" className="text-xs font-semibold tracking-wider text-muted-foreground ml-1 opacity-70">Login Password</Label>
                                         <Input
                                             id="password"
                                             type="password"
@@ -339,8 +339,8 @@ export default function RegisterPage() {
                             >
                                 Create Organization Account
                             </Button>
-                            <p className="mt-6 text-center text-xs text-muted-foreground font-medium uppercase tracking-wider leading-relaxed max-w-sm mx-auto">
-                                By registering, you agree to our <Link href="/terms" className="text-muted-foreground hover:text-primary underline italic">Terms of Service</Link> and <Link href="/privacy" className="text-muted-foreground hover:text-primary underline italic">Privacy Policy</Link>.
+                            <p className="mt-6 text-center text-xs text-muted-foreground font-medium tracking-wider leading-relaxed max-w-sm mx-auto">
+                                By registering, you agree to our <Link href="/terms" className="text-muted-foreground hover:text-primary underline">Terms of Service</Link> and <Link href="/privacy" className="text-muted-foreground hover:text-primary underline">Privacy Policy</Link>.
                             </p>
                         </div>
                     </form>

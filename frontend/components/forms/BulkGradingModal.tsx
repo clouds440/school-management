@@ -121,7 +121,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                             <span className="text-muted-foreground mt-1 text-xs md:text-sm">Total Marks: {assessment.totalMarks}</span>
                         </div>
                         <div className="flex items-center gap-3 bg-card/80 backdrop-blur-sm p-2 md:p-3 rounded-xl border border-border/50 shadow-lg w-full md:w-auto">
-                            <span className="text-xs uppercase tracking-wider text-muted-foreground whitespace-nowrap font-semibold">Apply to all:</span>
+                            <span className="text-xs tracking-wider text-muted-foreground whitespace-nowrap font-semibold">Apply to all:</span>
                             <div className="w-36 md:w-40">
                                 <CustomSelect<GradeStatus>
                                     value={(globalStatus as GradeStatus) || GradeStatus.DRAFT}
@@ -142,10 +142,10 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                     <table className="w-full text-left border-collapse">
                         <thead className="sticky top-0 bg-card/95 backdrop-blur-sm z-10 shadow-sm">
                             <tr className="bg-muted/30 border-y border-border/50">
-                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-black uppercase tracking-wider text-muted-foreground">Student Name</th>
-                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-black uppercase tracking-wider text-muted-foreground">Reg #</th>
-                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-black uppercase tracking-wider text-muted-foreground">Marks Obtained</th>
-                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-black uppercase tracking-wider text-muted-foreground">Grade Status</th>
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-black tracking-wider text-muted-foreground">Student Name</th>
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-black tracking-wider text-muted-foreground">Reg #</th>
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-black tracking-wider text-muted-foreground">Marks Obtained</th>
+                                <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-black tracking-wider text-muted-foreground">Grade Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border/50">
@@ -157,7 +157,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                                             <span className="font-semibold text-sm md:text-base text-foreground truncate max-w-37.5">{student.user.name}</span>
                                         </div>
                                     </td>
-                                    <td className="px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm text-muted-foreground uppercase">{student.registrationNumber || 'N/A'}</td>
+                                    <td className="px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm text-muted-foreground">{student.registrationNumber || 'N/A'}</td>
                                     <td className="px-4 md:px-6 py-3 md:py-4">
                                         <input
                                             type="number"

@@ -9,7 +9,7 @@ export default function AboutPage() {
       <section className="pt-24 pb-16 md:pt-32 md:pb-40 bg-theme-bg border-b border-border">
         <div className="container mx-auto px-6 text-center max-w-4xl space-y-6">
           <Reveal>
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-bold mb-4 tracking-wide uppercase">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-bold mb-4 tracking-wide">
               Our Identity
             </div>
           </Reveal>
@@ -62,7 +62,7 @@ export default function AboutPage() {
         <div className="container mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
             <Reveal>
-              <h2 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter uppercase">Core Values</h2>
+              <h2 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter">Core Values</h2>
             </Reveal>
             <Reveal delay={200}>
               <p className="text-muted-foreground text-lg font-medium">The principles that guide every feature we build.</p>

@@ -352,12 +352,12 @@ export function NewMailModal({
                 error ? (
                         <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 animate-shake">
                         <AlertCircle className="w-4 h-4 shrink-0" />
-                        <p className="text-[11px] font-bold uppercase tracking-wider">{error}</p>
+                        <p className="text-[11px] font-bold tracking-wider">{error}</p>
                     </div>
                 ) : info ? (
                     <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg text-blue-600 animate-in fade-in slide-in-from-top-1">
                         <AlertCircle className="w-4 h-4 shrink-0 opacity-70" />
-                        <p className="text-[11px] font-bold uppercase tracking-wider">{info}</p>
+                        <p className="text-[11px] font-bold tracking-wider">{info}</p>
                     </div>
                 ) : null
             }
@@ -367,7 +367,7 @@ export function NewMailModal({
                     {/* Left Column: Basic Info */}
                     <div className="space-y-3">
                         <div>
-                            <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">Subject</label>
+                            <label className="block text-xs font-black text-muted-foreground tracking-widest mb-3">Subject</label>
                             <input
                                 type="text"
                                 value={subject}
@@ -378,7 +378,7 @@ export function NewMailModal({
                         </div>
 
                         <div>
-                            <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">Recipients</label>
+                            <label className="block text-xs font-black text-muted-foreground tracking-widest mb-3">Recipients</label>
                             <CustomMultiSelect
                                 values={targetIds}
                                 onChange={handleTargetChange}
@@ -393,7 +393,7 @@ export function NewMailModal({
                             {targetIds.length > 0 && (
                                         <div className="mt-3 space-y-2">
                                     {selectedTargets.map(t => (
-                                        <div key={t.id} className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-lg uppercase tracking-wider block">
+                                        <div key={t.id} className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-lg tracking-wider block">
                                             {t.type === 'USER'
                                                 ? `User: ${t.email} - ${t.role?.replace('_', ' ')} - ${t.description}`
                                                 : `Group: ${t.label} - ${t.description}`
@@ -406,7 +406,7 @@ export function NewMailModal({
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">Category</label>
+                                <label className="block text-xs font-black text-muted-foreground tracking-widest mb-3">Category</label>
                                 <CustomSelect
                                     value={category}
                                     onChange={(val) => setCategory(val)}
@@ -416,7 +416,7 @@ export function NewMailModal({
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">Priority</label>
+                                <label className="block text-xs font-black text-muted-foreground tracking-widest mb-3">Priority</label>
                                 <CustomSelect
                                     value={priority}
                                     onChange={(val) => setPriority(val)}
@@ -444,11 +444,11 @@ export function NewMailModal({
                                                 className="w-5 h-5 sm:w-4 sm:h-4 text-indigo-600 border-border rounded focus:ring-indigo-500 cursor-pointer"
                                             />
                                         </div>
-                                        <span className="text-xs sm:text-[11px] font-bold text-indigo-900 uppercase tracking-widest cursor-pointer select-none">
+                                        <span className="text-xs sm:text-[11px] font-bold text-indigo-900 tracking-widest cursor-pointer select-none">
                                             No Reply Needed (Broadcast)
                                         </span>
                                     </div>
-                                    <p className="text-[10px] text-indigo-600/70 italic font-medium group-hover:text-indigo-700 transition-colors">Recipient won&apos;t be able to reply</p>
+                                    <p className="text-[10px] text-indigo-600/70 font-medium group-hover:text-indigo-700 transition-colors">Recipient won&apos;t be able to reply</p>
                                 </div>
                             )}
                         </div>
@@ -458,7 +458,7 @@ export function NewMailModal({
                     <div className="space-y-6 flex flex-col h-full">
                         <div className="pt-2">
                             <div className="flex items-center justify-between mb-3">
-                                <label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Attachments</label>
+                                <label className="text-xs font-black text-muted-foreground tracking-widest">Attachments</label>
                                 <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">{selectedFiles.length} / 5</span>
                             </div>
 
@@ -482,7 +482,7 @@ export function NewMailModal({
                                         className="h-8.5 flex items-center gap-2 px-4 border border-dashed border-border rounded-lg text-muted-foreground hover:border-indigo-500 hover:text-indigo-600 hover:bg-card/80 transition-all group"
                                     >
                                         <Paperclip className="w-3.5 h-3.5" />
-                                        <span className="text-[10px] font-black uppercase tracking-wider">Add File</span>
+                                        <span className="text-[10px] font-black tracking-wider">Add File</span>
                                     </button>
                                 )}
                             </div>
@@ -498,7 +498,7 @@ export function NewMailModal({
                         </div>
 
                         <div className="flex-1">
-                            <label className="block text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">Detailed Message</label>
+                            <label className="block text-xs font-black text-muted-foreground tracking-widest mb-3">Detailed Message</label>
                             <MarkdownEditor
                                 value={message}
                                 onChange={setMessage}

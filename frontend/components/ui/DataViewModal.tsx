@@ -27,8 +27,8 @@ export function DataViewModal({ isOpen, onClose, title, subtitle, fields, action
             {/* Header */}
             <div className="px-8 py-5 border-b border-card-text/10 bg-card-text/5 flex items-center justify-between shrink-0">
                 <div>
-                    <h2 className="text-3xl font-black tracking-tight uppercase leading-none">{title}</h2>
-                    {subtitle && <p className="text-xs font-bold opacity-40 mt-2 uppercase tracking-[0.2em]">{subtitle}</p>}
+                    <h2 className="text-3xl font-black tracking-tight leading-none">{title}</h2>
+                    {subtitle && <p className="text-xs font-bold opacity-40 mt-2 tracking-[0.2em]">{subtitle}</p>}
                 </div>
                 <button
                     onClick={onClose}
@@ -43,12 +43,12 @@ export function DataViewModal({ isOpen, onClose, title, subtitle, fields, action
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-10">
                     {fields.map((field, idx) => (
                         <div key={idx} className={`${field.fullWidth ? 'col-span-1 md:col-span-2' : ''} space-y-3`}>
-                            <div className="flex items-center gap-2 text-[11px] font-black opacity-80 uppercase tracking-[0.25em]">
+                            <div className="flex items-center gap-2 text-[11px] font-black opacity-80 tracking-[0.25em]">
                                 {field.icon && (typeof field.icon === 'string' ? <Image src={getPublicUrl(field.icon)} alt="Org Logo/Icon" width={24} height={24} className="w-6 h-6 rounded-full object-contain" unoptimized /> : <field.icon className="w-3.5 h-3.5" />)}
                                 {field.label}
                             </div>
                             <div className="text-base font-bold wrap-break-word leading-relaxed">
-                                {field.value || <span className="opacity-20 italic font-medium">Not available</span>}
+                                {field.value || <span className="opacity-20 font-medium">Not available</span>}
                             </div>
                         </div>
                     ))}
@@ -60,7 +60,7 @@ export function DataViewModal({ isOpen, onClose, title, subtitle, fields, action
                 {actions}
                 <button
                     onClick={onClose}
-                    className="px-8 py-3.5 rounded-lg border border-card-text/20 text-xs font-black uppercase tracking-widest hover:bg-card-text/10 transition-all active:scale-95"
+                    className="px-8 py-3.5 rounded-lg border border-card-text/20 text-xs font-black tracking-widest hover:bg-card-text/10 transition-all active:scale-95"
                 >
                     Close
                 </button>

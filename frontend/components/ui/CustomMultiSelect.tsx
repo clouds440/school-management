@@ -217,7 +217,7 @@ export function CustomMultiSelect({
 
                     <div className="max-h-56 sm:max-h-64 overflow-y-auto custom-scrollbar">
                         {filteredOptions.length === 0 ? (
-                            <div className="px-4 py-3 sm:py-4 text-sm sm:text-base text-muted-foreground italic text-center">No options found</div>
+                            <div className="px-4 py-3 sm:py-4 text-sm sm:text-base text-muted-foreground text-center">No options found</div>
                         ) : (
                             filteredOptions.map((option) => {
                                 const isSelected = values.includes(option.value);

@@ -63,7 +63,7 @@ export default function EditTeacherPage() {
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="flex flex-col items-center gap-4 text-primary-foreground/60">
                     <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                    <p className="font-bold text-sm uppercase tracking-widest">Loading Teacher Data...</p>
+                    <p className="font-bold text-sm tracking-widest">Loading Teacher Data...</p>
                 </div>
             </div>
         );
@@ -80,7 +80,7 @@ export default function EditTeacherPage() {
                     </div>
                     <div>
                         <h1 className="text-3xl md:text-5xl font-black text-primary/90 tracking-tight drop-shadow-lg text-left">Edit Teacher</h1>
-                        <p className="text-muted-foreground font-bold opacity-80 mt-1 text-sm md:text-base text-left uppercase tracking-widest text-[10px]">UPDATE FACULTY RECORDS</p>
+                        <p className="text-muted-foreground font-bold opacity-80 mt-1 text-sm md:text-base text-left tracking-widest text-[10px]">Update Faculty Records</p>
                     </div>
                 </div>
             </div>

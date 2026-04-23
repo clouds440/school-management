@@ -157,7 +157,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4 mb-10">
                 <div>
-                    <h1 className="text-4xl font-black text-foreground tracking-tighter leading-none italic uppercase">
+                    <h1 className="text-4xl font-black text-foreground tracking-tighter leading-none">
                         {selectedSectionId ? sections.find(s => s.id === selectedSectionId)?.course?.name || sections.find(s => s.id === selectedSectionId)?.name : 'Assessments'}
                     </h1>
                     <p className="text-muted-foreground mt-3 font-bold max-w-md tracking-tight">
@@ -193,7 +193,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                 delay={index * 100}
                             >
                                 <CardHeader>
-                                    <span className="text-[10px] font-black uppercase text-primary bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20 shadow-xs tracking-[0.15em]">
+                                    <span className="text-[10px] font-black text-primary bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20 shadow-xs tracking-[0.15em]">
                                         {courseAssessments.length} Modules
                                     </span>
                                     <div className="p-2.5 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors border border-primary/20 shadow-xs">
@@ -201,26 +201,26 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <h3 className="text-xl font-black text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-2 tracking-tight italic">
+                                    <h3 className="text-xl font-black text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-2 tracking-tight">
                                         {sec.course?.name || sec.name}
                                     </h3>
-                                    <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest leading-none mt-2">{teacherName}</p>
+                                    <p className="text-[10px] font-black text-muted-foreground/60 tracking-widest leading-none mt-2">{teacherName}</p>
                                 </CardContent>
                                 <CardFooter className="flex-col gap-4 items-stretch border-border">
-                                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                    <div className="flex justify-between items-center text-[10px] font-black tracking-widest">
                                         <span className="text-muted-foreground/60">Total Progress</span>
-                                        <span className="text-emerald-600 px-2 py-0.5 bg-emerald-500/10 rounded border border-emerald-500/20 uppercase tracking-tighter">
+                                        <span className="text-emerald-600 px-2 py-0.5 bg-emerald-500/10 rounded border border-emerald-500/20 tracking-tighter">
                                             {doneCount} / {courseAssessments.length} Done
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2 pt-1 overflow-x-auto pb-1 no-scrollbar">
                                         {quizzesCount > 0 && (
-                                            <span className="whitespace-nowrap px-2 py-1 bg-muted text-muted-foreground text-[9px] font-black uppercase rounded-lg border border-border tracking-wider transition-all group-hover:border-primary/20 group-hover:text-primary shadow-xs">
+                                            <span className="whitespace-nowrap px-2 py-1 bg-muted text-muted-foreground text-[9px] font-black rounded-lg border border-border tracking-wider transition-all group-hover:border-primary/20 group-hover:text-primary shadow-xs">
                                                 {quizzesCount} Quizzes
                                             </span>
                                         )}
                                         {assignmentsCount > 0 && (
-                                            <span className="whitespace-nowrap px-2 py-1 bg-muted text-muted-foreground text-[9px] font-black uppercase rounded-lg border border-border tracking-wider transition-all group-hover:border-primary/20 group-hover:text-primary shadow-xs">
+                                            <span className="whitespace-nowrap px-2 py-1 bg-muted text-muted-foreground text-[9px] font-black rounded-lg border border-border tracking-wider transition-all group-hover:border-primary/20 group-hover:text-primary shadow-xs">
                                                 {assignmentsCount} Labs
                                             </span>
                                         )}
@@ -257,7 +257,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                 delay={index * 50}
                             >
                                 <CardHeader>
-                                    <span className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-lg tracking-widest border border-border/50 shadow-sm ${isDone ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                                    <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg tracking-widest border border-border/50 shadow-sm ${isDone ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
                                         {isDone ? 'Completed' : 'Pending'}
                                     </span>
                                     <div className="p-2.5 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors border border-primary/20 shadow-xs">
@@ -269,16 +269,16 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                     <h3 className="text-xl font-black text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-2 tracking-tight">
                                         {ann.title}
                                     </h3>
-                                    <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest">{ann.section?.name}</p>
+                                    <p className="text-xs font-bold text-muted-foreground/60 tracking-widest">{ann.section?.name}</p>
                                 </CardContent>
 
                                 <CardFooter className="flex-col gap-4 items-stretch border-border">
                                     <div className="space-y-3">
-                                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                        <div className="flex items-center justify-between text-[10px] font-black tracking-widest">
                                             <span className="text-muted-foreground/60">Type</span>
                                             <span className="text-foreground px-2 py-0.5 bg-muted rounded border border-border">{ann.type}</span>
                                         </div>
-                                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                        <div className="flex items-center justify-between text-[10px] font-black tracking-widest">
                                             <span className="text-muted-foreground/60 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-primary/50" /> Due Date</span>
                                             <span className={`px-2 py-0.5 rounded border ${!ann.dueDate ? 'text-muted-foreground/60 bg-muted border-border' : 'text-foreground bg-muted border-border'}`}>
                                                 {ann.dueDate ? new Date(ann.dueDate).toLocaleDateString() : 'None'}
@@ -288,8 +288,8 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                     {(ann.grades && ann.grades.length > 0 && (ann.grades[0].status === GradeStatus.PUBLISHED || ann.grades[0].status === GradeStatus.FINALIZED)) && (() => {
                                         const colors = getGradeColors(ann.grades[0].marksObtained, ann.totalMarks);
                                         return (
-                                            <div className={`flex items-center justify-between text-[10px] mt-1 p-3 ${colors.bg} rounded-xl border-2 ${colors.border} shadow-sm italic`}>
-                                                <span className={`${colors.text} font-black uppercase tracking-widest`}>Your Score</span>
+                                            <div className={`flex items-center justify-between text-[10px] mt-1 p-3 ${colors.bg} rounded-xl border-2 ${colors.border} shadow-sm`}>
+                                                <span className={`${colors.text} font-black tracking-widest`}>Your Score</span>
                                                 <span className={`text-sm font-black ${colors.accent}`}>{ann.grades[0].marksObtained} <span className="text-[10px] opacity-60">/ {ann.totalMarks}</span></span>
                                             </div>
                                         );
@@ -318,26 +318,26 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                 <h2 className="text-2xl font-black text-foreground tracking-tight">{selectedAssessment.title}</h2>
                                 <p className="text-muted-foreground font-medium mt-1">{selectedAssessment.section?.name}</p>
                             </div>
-                            <span className={`self-start text-xs font-bold uppercase px-3 py-1.5 rounded-lg tracking-wider ${(selectedAssessment._count?.submissions || 0) > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                            <span className={`self-start text-xs font-bold px-3 py-1.5 rounded-lg tracking-wider ${(selectedAssessment._count?.submissions || 0) > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
                                 {(selectedAssessment._count?.submissions || 0) > 0 ? 'Completed' : 'Pending'}
                             </span>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-xl border border-border">
                             <div>
-                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">Type</p>
+                                <p className="text-[10px] font-bold text-muted-foreground/60 tracking-widest mb-1">Type</p>
                                 <p className="text-sm font-bold text-foreground">{selectedAssessment.type}</p>
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">Total Marks</p>
+                                <p className="text-[10px] font-bold text-muted-foreground/60 tracking-widest mb-1">Total Marks</p>
                                 <p className="text-sm font-bold text-foreground">{selectedAssessment.totalMarks}</p>
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">Weightage</p>
+                                <p className="text-[10px] font-bold text-muted-foreground/60 tracking-widest mb-1">Weightage</p>
                                 <p className="text-sm font-bold text-foreground">{selectedAssessment.weightage}%</p>
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">Due Date</p>
+                                <p className="text-[10px] font-bold text-muted-foreground/60 tracking-widest mb-1">Due Date</p>
                                 <p className="text-sm font-bold text-foreground">{selectedAssessment.dueDate ? new Date(selectedAssessment.dueDate).toLocaleDateString() : 'None'}</p>
                             </div>
                         </div>
@@ -347,20 +347,20 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                             return (
                                 <div className={`space-y-4 p-6 ${colors.bg} rounded-2xl border ${colors.border} shadow-inner`}>
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                        <h3 className={`text-lg font-black ${colors.dark} tracking-tight uppercase italic flex items-center gap-2`}>
+                                        <h3 className={`text-lg font-black ${colors.dark} tracking-tight flex items-center gap-2`}>
                                             <Check className={`w-6 h-6 ${colors.fill}`} />
                                             Your Result
                                         </h3>
                                         <div className="flex items-center gap-3">
                                             <div className="text-right">
-                                                <p className={`text-[10px] font-black ${colors.muted} uppercase tracking-widest mb-0.5`}>Obtained Marks</p>
-                                                <p className={`text-3xl font-black ${colors.accent} italic leading-none`}>{selectedAssessment.grades[0].marksObtained} <span className={`text-sm ${colors.light}`}>/ {selectedAssessment.totalMarks}</span></p>
+                                                <p className={`text-[10px] font-black ${colors.muted} tracking-widest mb-0.5`}>Obtained Marks</p>
+                                                <p className={`text-3xl font-black ${colors.accent} leading-none`}>{selectedAssessment.grades[0].marksObtained} <span className={`text-sm ${colors.light}`}>/ {selectedAssessment.totalMarks}</span></p>
                                             </div>
                                         </div>
                                     </div>
                                     {selectedAssessment.grades[0].feedback && (
-                                        <div className={`pt-4 border-t ${colors.borderDark || colors.border} italic`}>
-                                            <p className={`text-[10px] font-bold ${colors.muted} uppercase tracking-widest mb-2`}>Teacher Remarks</p>
+                                        <div className={`pt-4 border-t ${colors.borderDark || colors.border}`}>
+                                            <p className={`text-[10px] font-bold ${colors.muted} tracking-widest mb-2`}>Teacher Remarks</p>
                                             <p className="text-foreground font-medium leading-relaxed bg-card/60 p-4 rounded-xl shadow-xs">
                                                 &quot;{selectedAssessment.grades[0].feedback}&quot;
                                             </p>
@@ -372,7 +372,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
 
                         {(selectedAssessment.files && selectedAssessment.files.length > 0) && (
                             <div className="space-y-3">
-                                <h3 className="text-sm font-bold text-foreground uppercase tracking-widest">Attachments</h3>
+                                <h3 className="text-sm font-bold text-foreground tracking-widest">Attachments</h3>
                                 {selectedAssessment.files.map((file: Attachment) => (
                                     <a key={file.id} href={getPublicUrl(file.path)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl hover:border-primary/50 hover:shadow-sm transition-all group">
                                         <div className="p-2 bg-primary/10 text-primary rounded-lg group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
@@ -389,7 +389,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
 
                         {selectedAssessment.externalLink && (
                             <div className="space-y-3">
-                                <h3 className="text-sm font-bold text-foreground uppercase tracking-widest">External Resource</h3>
+                                <h3 className="text-sm font-bold text-foreground tracking-widest">External Resource</h3>
                                 {selectedAssessment.isVideoLink ? (
                                     <div className="w-full aspect-video rounded-xl overflow-hidden border border-border shadow-inner bg-black">
                                         <iframe
@@ -410,7 +410,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
 
                         {selectedAssessment._count?.submissions === 0 && (
                             <form onSubmit={handleSubmission} className="space-y-4 pt-6 border-t border-border">
-                                <h3 className="text-sm font-bold text-foreground uppercase tracking-widest">Submit Work</h3>
+                                <h3 className="text-sm font-bold text-foreground tracking-widest">Submit Work</h3>
 
                                 {selectedAssessment.allowSubmissions && (
                                     <div className="relative flex items-center gap-2">

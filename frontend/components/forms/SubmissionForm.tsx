@@ -76,7 +76,7 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
 
             {/* URL Input */}
             <div className="space-y-3">
-                <label className="text-xs md:text-sm font-semibold uppercase tracking-wider text-muted-foreground ml-1">Submission URL</label>
+                <label className="text-xs md:text-sm font-semibold tracking-wider text-muted-foreground ml-1">Submission URL</label>
                 <Input
                     placeholder="https://github.com/your-repo or https://drive.google.com/..."
                     error={!!errors.fileUrl}

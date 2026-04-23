@@ -90,7 +90,7 @@ export default function GradingForm({
                 <div className="relative flex items-center gap-4">
                     <div className="relative">
                         <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-                        <div className="relative w-14 h-14 rounded-full bg-linear-to-br from-primary/20 to-primary/5 border border-primary/30 shadow-lg flex items-center justify-center text-primary font-black text-xl uppercase tracking-tighter">
+                        <div className="relative w-14 h-14 rounded-full bg-linear-to-br from-primary/20 to-primary/5 border border-primary/30 shadow-lg flex items-center justify-center text-primary font-black text-xl tracking-tighter">
                             {student.user.name.charAt(0)}
                         </div>
                     </div>

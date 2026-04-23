@@ -218,7 +218,7 @@ export default function SectionsPage() {
                             </span>
                         ))
                     ) : (
-                        <span className="text-muted-foreground/50 italic text-sm">No teachers</span>
+                        <span className="text-muted-foreground/50 text-sm italic">No teachers</span>
                     )}
                 </div>
             )
@@ -335,7 +335,7 @@ export default function SectionsPage() {
                                         className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${showOnlyMySections ? 'translate-x-6' : 'translate-x-1'}`}
                                     />
                                 </button>
-                                <span className="text-xs font-bold text-card-foreground uppercase tracking-wider">My Sections</span>
+                                <span className="text-xs font-bold text-card-foreground tracking-wider">My Sections</span>
                             </div>
                         )}
 
@@ -343,7 +343,7 @@ export default function SectionsPage() {
                             <Button
                                 onClick={() => router.push('/sections/create')}
                                 icon={Plus}
-                                className="px-8 w-full md:w-auto text-xs font-black uppercase tracking-widest"
+                                className="px-8 w-full md:w-auto text-xs font-black tracking-widest"
                             >
                                 Create Section
                             </Button>

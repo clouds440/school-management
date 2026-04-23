@@ -50,13 +50,13 @@ export default function AttendanceLandingPage() {
     return (
         <div className="flex flex-col h-full w-full">
             <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-4 md:p-6 overflow-hidden flex flex-col flex-1 min-h-0">
-                <div className="mb-6 flex items-center gap-4">
-                    <div className="p-3 bg-primary/10 rounded-lg">
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="p-3 bg-primary/10 rounded-lg w-fit">
                         <CheckCircle className="w-8 h-8 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black uppercase italic tracking-tighter text-foreground">Attendance Portal</h1>
-                        <p className="text-muted-foreground mt-1 text-sm font-bold uppercase tracking-widest">Select a class to manage daily attendance</p>
+                        <h1 className="text-xl md:text-2xl font-black tracking-tighter text-foreground">Attendance Portal</h1>
+                        <p className="text-muted-foreground mt-1 text-sm font-bold tracking-widest">Select a class to manage daily attendance</p>
                     </div>
                 </div>
 
@@ -68,59 +68,53 @@ export default function AttendanceLandingPage() {
                             <p className="text-muted-foreground font-medium">No active sections assigned to you.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                             {sections.map((section) => {
-                                // Mock stats for "overview" as requested
                                 const studentCount = section.studentsCount || section.students?.length || 0;
-                                const attendanceRate = studentCount > 0 ? 85 + (section.name.length % 15) : 100; // Semi-random but consistent mock rate
+                                const attendanceRate = studentCount > 0 ? 85 + (section.name.length % 15) : 100;
                                 
                                 return (
                                     <Link
                                         key={section.id}
                                         href={`/attendance/${section.id}`}
-                                        className="group p-8 bg-card border border-border rounded-2xl shadow-xl hover:shadow-2xl hover:border-primary/50 transition-all duration-500 relative overflow-hidden flex flex-col justify-between"
+                                        className="group p-4 md:p-6 bg-card border border-border rounded-xl shadow-lg hover:shadow-xl hover:border-primary/50 transition-all duration-300 relative overflow-hidden flex flex-col justify-between"
                                     >
-                                        <div className="absolute -right-8 -top-8 p-12 opacity-[0.03] group-hover:opacity-[0.08] transition-all group-hover:scale-110 pointer-events-none group-hover:rotate-12 duration-700">
-                                            <CheckCircle className="w-40 h-40" />
-                                        </div>
-
                                         <div className="relative z-10">
-                                            <div className="flex items-center justify-between mb-6">
-                                                <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div className="flex items-center gap-2 px-2 py-1 bg-primary/10 rounded-full border border-primary/20">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-primary">{section.course?.name || 'COURSE'}</span>
+                                                    <span className="text-[9px] font-black tracking-widest text-primary">{section.course?.name || 'Course'}</span>
                                                 </div>
-                                                <div className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter bg-emerald-500/10 px-2 py-1 rounded-md">Active</div>
+                                                <div className="text-[10px] font-black text-emerald-500 tracking-tighter bg-emerald-500/10 px-2 py-1 rounded-md">Active</div>
                                             </div>
 
-                                            <h3 className="text-2xl font-black italic tracking-tighter uppercase mb-4 text-foreground group-hover:text-primary transition-colors leading-none decoration-primary/30 group-hover:underline underline-offset-8 decoration-2 underline-transparent duration-500">{section.name}</h3>
+                                            <h3 className="text-lg md:text-xl font-black tracking-tighter mb-3 text-foreground group-hover:text-primary transition-colors leading-tight">{section.name}</h3>
                                             
-                                            <div className="space-y-4">
+                                            <div className="space-y-3">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2 text-muted-foreground">
                                                         <Users className="w-4 h-4 text-primary/70" />
-                                                        <p className="text-[10px] font-black uppercase tracking-widest">{studentCount} Students</p>
+                                                        <p className="text-[10px] font-black tracking-widest">{studentCount} Students</p>
                                                     </div>
                                                     <p className="text-[10px] font-black text-primary italic">{attendanceRate}% Avg</p>
                                                 </div>
                                                 
-                                                {/* Sparkline-style progress bar for overview */}
                                                 <div className="h-1 w-full bg-muted/30 rounded-full overflow-hidden">
                                                     <div 
-                                                        className="h-full bg-primary group-hover:bg-primary/80 transition-all duration-1000 ease-out" 
+                                                        className="h-full bg-primary group-hover:bg-primary/80 transition-all duration-500 ease-out" 
                                                         style={{ width: `${attendanceRate}%` }}
                                                     ></div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="mt-10 pt-6 border-t border-border/50 flex items-center justify-between relative z-10">
+                                        <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between relative z-10">
                                             <div className="flex flex-col">
-                                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 leading-none mb-1">Session Management</p>
-                                                <p className="text-[10px] font-black text-primary uppercase">Open Ledger</p>
+                                                <p className="text-[9px] font-black tracking-[0.2em] text-muted-foreground/60 leading-none mb-1">Session Management</p>
+                                                <p className="text-[10px] font-black text-primary">Open Ledger</p>
                                             </div>
-                                            <div className="w-10 h-10 rounded-2xl bg-primary/5 flex items-center justify-center group-hover:bg-primary transition-all duration-500 border border-primary/10 group-hover:rotate-12 group-hover:scale-110 shadow-sm shadow-primary/0 group-hover:shadow-primary/20">
-                                                <ChevronRight className="w-5 h-5 text-primary group-hover:text-primary-foreground" />
+                                            <div className="w-8 h-8 rounded-xl bg-primary/5 flex items-center justify-center group-hover:bg-primary transition-all duration-300 border border-primary/10 group-hover:scale-110 shadow-sm">
+                                                <ChevronRight className="w-4 h-4 text-primary group-hover:text-primary-foreground" />
                                             </div>
                                         </div>
                                     </Link>

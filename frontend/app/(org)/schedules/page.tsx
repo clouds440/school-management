@@ -56,59 +56,59 @@ export default function SchedulesPage() {
     if (loading) return <Loading fullScreen text="Synchronizing Time-slots..." size="lg" />;
 
     return (
-        <div className="flex flex-col h-full w-full space-y-8 pb-12">
-            <div className="bg-card/80 backdrop-blur-2xl rounded-3xl shadow-2xl border border-border p-8 md:p-10 overflow-hidden">
-                <div className="mb-10 flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-8 border-b border-border/50">
+        <div className="flex flex-col h-full w-full space-y-6 pb-6">
+            <div className="bg-card/80 backdrop-blur-2xl rounded-xl shadow-xl border border-border p-4 md:p-6 overflow-hidden">
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-border/50">
                     <div>
-                        <div className="flex items-center gap-3 mb-3">
-                            <span className="w-8 h-1 bg-primary rounded-full"></span>
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary italic">Organization Control</span>
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className="w-6 h-1 bg-primary rounded-full"></span>
+                            <span className="text-[10px] font-black tracking-[0.3em] text-primary">Organization Control</span>
                         </div>
-                        <h1 className="text-5xl font-black uppercase italic tracking-tighter text-foreground leading-none">Global Schedules</h1>
-                        <p className="text-muted-foreground mt-3 text-sm font-bold uppercase tracking-widest max-w-md">Unified overview of all instructional timelines across the institution.</p>
+                        <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-foreground leading-none">Global Schedules</h1>
+                        <p className="text-muted-foreground mt-2 text-sm font-bold tracking-widest max-w-md">Unified overview of all instructional timelines across the institution.</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                     {sections.length === 0 ? (
-                        <div className="col-span-full text-center py-24 bg-muted/10 border border-border/30 rounded-3xl border-dashed">
-                            <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <Layers className="w-8 h-8 text-muted-foreground/30" />
+                        <div className="col-span-full text-center py-16 bg-muted/10 border border-border/30 rounded-xl border-dashed">
+                            <div className="w-12 h-12 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Layers className="w-6 h-6 text-muted-foreground/30" />
                             </div>
-                            <p className="text-sm font-black uppercase tracking-widest opacity-40">No active academic sections detected.</p>
+                            <p className="text-sm font-black tracking-widest opacity-40">No active academic sections detected.</p>
                         </div>
                     ) : (
                         sections.map((section) => (
-                            <div key={section.id} className="group bg-card border border-border/50 rounded-3xl overflow-hidden hover:border-primary/50 transition-all duration-500 shadow-lg hover:shadow-primary/5">
-                                <div className="p-6 bg-linear-to-br from-primary/5 via-transparent to-transparent border-b border-border/50 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-500">
-                                            <CalendarDays className="w-6 h-6 text-primary" />
+                            <div key={section.id} className="group bg-card border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300 shadow-lg hover:shadow-primary/5">
+                                <div className="p-4 md:p-6 bg-linear-to-br from-primary/5 via-transparent to-transparent border-b border-border/50 flex items-center justify-between">
+                                    <div className="flex items-center gap-3 md:gap-4">
+                                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-300">
+                                            <CalendarDays className="w-5 h-5 md:w-6 md:h-6 text-primary" />
                                         </div>
                                         <div>
-                                            <h3 className="text-xl font-black uppercase italic tracking-tighter">{section.name}</h3>
-                                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{section.course?.name}</p>
+                                            <h3 className="text-lg md:text-xl font-black tracking-tighter">{section.name}</h3>
+                                            <p className="text-[10px] font-black text-muted-foreground tracking-widest">{section.course?.name}</p>
                                         </div>
                                     </div>
                                     <Link 
                                         href={`/sections/${section.id}`}
-                                        className="p-3 rounded-xl bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-all group/btn"
+                                        className="p-2 md:p-3 rounded-lg bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-all group/btn"
                                     >
-                                        <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
+                                        <ChevronRight className="w-4 h-4 md:w-5 md:h-5 group-hover/btn:translate-x-1 transition-transform" />
                                     </Link>
                                 </div>
 
-                                <div className="p-6 space-y-4">
+                                <div className="p-4 md:p-6 space-y-3 md:space-y-4">
                                     {(!section.schedules || section.schedules.length === 0) ? (
-                                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 italic p-4 border border-dashed border-border/50 rounded-2xl text-center">
+                                        <div className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/40 italic p-3 md:p-4 border border-dashed border-border/50 rounded-xl text-center">
                                             No time-slots allocated for this section
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                                             {section.schedules.map((schedule: SectionSchedule, idx: number) => (
-                                                <div key={idx} className="flex flex-col gap-2 p-4 bg-muted/20 rounded-2xl border border-border/50">
+                                                <div key={idx} className="flex flex-col gap-2 p-3 md:p-4 bg-muted/20 rounded-xl border border-border/50">
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-xs font-black uppercase tracking-widest text-primary">{DAY_NAMES[schedule.day]}</span>
+                                                        <span className="text-xs font-black tracking-widest text-primary">{DAY_NAMES[schedule.day]}</span>
                                                         <div className="w-1.5 h-1.5 rounded-full bg-primary/30"></div>
                                                     </div>
                                                     <div className="flex flex-col gap-1">

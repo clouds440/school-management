@@ -77,7 +77,7 @@ export default function CreateSectionPage() {
                     </div>
                     <div>
                         <h1 className="text-4xl font-black text-primary tracking-tight drop-shadow-lg" > Create Section </h1>
-                        < p className="text-muted-foreground font-bold opacity-80 mt-1 uppercase tracking-widest text-[10px]" > ADD A NEW COURSE OFFERING </p>
+                        < p className="text-muted-foreground font-bold opacity-80 mt-1 tracking-widest text-[10px]" > Add a New Course Offering </p>
                     </div>
                 </div>
             </div>

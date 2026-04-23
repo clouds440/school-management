@@ -46,6 +46,7 @@ async function bootstrap() {
           email: adminEmail,
           password: hashedPassword,
           role: Role.SUPER_ADMIN,
+          avatarUrl: '/assets/eduverse-icon.png',
           isFirstLogin: true,
         },
       });

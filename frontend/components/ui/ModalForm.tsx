@@ -42,7 +42,7 @@ export function ModalForm({
                     type="button"
                     variant="secondary"
                     onClick={onClose}
-                    className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold uppercase tracking-wider"
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold tracking-wider"
                 >
                     Cancel
                 </Button>
@@ -53,7 +53,7 @@ export function ModalForm({
                     form="modal-form"
                     isLoading={isSubmitting}
                     loadingId={loadingId}
-                    className={`w-full sm:w-auto px-6 sm:px-10 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold uppercase tracking-wider text-primary-foreground border-none shadow-lg hover:scale-105 active:scale-95 ${
+                    className={`w-full sm:w-auto px-6 sm:px-10 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold tracking-wider text-primary-foreground border-none shadow-lg hover:scale-105 active:scale-95 ${
                         variant === 'danger' ? 'bg-destructive hover:bg-destructive/90 shadow-destructive/20' :
                         variant === 'warning' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' :
                         variant === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20' :

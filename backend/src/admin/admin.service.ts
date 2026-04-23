@@ -431,6 +431,7 @@ export class AdminService {
         name: data.name,
         phone: data.phone,
         role: Role.PLATFORM_ADMIN,
+        avatarUrl: '/assets/eduverse-icon.png',
       },
       select: {
         id: true,

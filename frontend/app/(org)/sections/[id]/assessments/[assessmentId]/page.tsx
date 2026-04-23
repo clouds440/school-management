@@ -86,30 +86,30 @@ export default function AssessmentDetailPage() {
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-3">
-                            <span className="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-[10px] font-black uppercase tracking-widest italic rounded-lg">
+                            <span className="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-[10px] font-black tracking-widest rounded-lg">
                                 {assessment.type}
                             </span>
-                            <span className="text-[10px] font-bold text-card-text/40 uppercase tracking-widest leading-none">
+                            <span className="text-[10px] font-bold text-card-text/40 tracking-widest leading-none">
                                 {section.name} • {section.course?.name}
                             </span>
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none text-card-text">
+                        <h1 className="text-4xl md:text-5xl font-black tracking-tighter leading-none text-card-text">
                             {assessment.title}
                         </h1>
                     </div>
 
                     <div className="flex flex-wrap gap-6 text-center md:text-right">
                         <div>
-                            <p className="text-[10px] font-black text-card-text/30 uppercase tracking-widest mb-1">TOTAL MARKS</p>
-                            <p className="text-3xl font-black italic text-primary">{assessment.totalMarks}</p>
+                            <p className="text-[10px] font-black text-card-text/30 tracking-widest mb-1">Total Marks</p>
+                            <p className="text-3xl font-black text-primary">{assessment.totalMarks}</p>
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-card-text/30 uppercase tracking-widest mb-1">WEIGHTAGE</p>
-                            <p className="text-3xl font-black italic text-card-text">{assessment.weightage}%</p>
+                            <p className="text-[10px] font-black text-card-text/30 tracking-widest mb-1">Weightage</p>
+                            <p className="text-3xl font-black text-card-text">{assessment.weightage}%</p>
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-card-text/30 uppercase tracking-widest mb-1">DUE DATE</p>
-                            <p className="text-lg font-black italic text-card-text/70">{assessment.dueDate ? formatDate(assessment.dueDate) : 'NO DUE DATE'}</p>
+                            <p className="text-[10px] font-black text-card-text/30 tracking-widest mb-1">Due Date</p>
+                            <p className="text-lg font-black text-card-text/70">{assessment.dueDate ? formatDate(assessment.dueDate) : 'No Due Date'}</p>
                         </div>
                     </div>
                 </div>
@@ -139,7 +139,7 @@ export default function AssessmentDetailPage() {
                                 <Download className="w-4 h-4" />
                                 <div className="flex flex-col text-left leading-none">
                                     <span className="truncate max-w-50">{file.filename || 'Download File'}</span>
-                                    {file.size && <span className="text-[9px] opacity-70 mt-1 uppercase tracking-widest leading-none">{(file.size / 1024 / 1024).toFixed(2)} MB</span>}
+                                    {file.size && <span className="text-[9px] opacity-70 mt-1 tracking-widest leading-none">{(file.size / 1024 / 1024).toFixed(2)} MB</span>}
                                 </div>
                             </a>
                         ))}
@@ -153,12 +153,12 @@ export default function AssessmentDetailPage() {
                     <div className="p-6 border-b border-border bg-primary/5 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Users className="w-5 h-5 text-primary" />
-                            <h2 className="text-xl font-black text-foreground uppercase italic tracking-wider">Student Performance & Grading</h2>
+                            <h2 className="text-xl font-black text-foreground tracking-wider">Student Performance & Grading</h2>
                         </div>
                         {canGrade && (
                             <button
                                 onClick={() => setShowBulkGrading(true)}
-                                className="px-4 py-2 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground text-[10px] font-black uppercase tracking-widest italic rounded-lg transition-colors shadow-sm active:scale-95"
+                                className="px-4 py-2 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground text-[10px] font-black tracking-widest italic rounded-lg transition-colors shadow-sm active:scale-95"
                             >
                                 Grade All
                             </button>
@@ -169,12 +169,12 @@ export default function AssessmentDetailPage() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-muted/20 border-b border-border">
-                                    <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-card-text/40">Student Name</th>
-                                    <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-card-text/40">Reg #</th>
-                                    <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-card-text/40">Status</th>
-                                    <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-card-text/40">Submission</th>
-                                    <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-card-text/40 text-center">Marks</th>
-                                    <th className="px-6 py-4 text-[11px] font-black uppercase tracking-widest text-card-text/40 text-right">Actions</th>
+                                    <th className="px-6 py-4 text-[11px] font-black tracking-widest text-card-text/40">Student Name</th>
+                                    <th className="px-6 py-4 text-[11px] font-black tracking-widest text-card-text/40">Reg #</th>
+                                    <th className="px-6 py-4 text-[11px] font-black tracking-widest text-card-text/40">Status</th>
+                                    <th className="px-6 py-4 text-[11px] font-black tracking-widest text-card-text/40">Submission</th>
+                                    <th className="px-6 py-4 text-[11px] font-black tracking-widest text-card-text/40 text-center">Marks</th>
+                                    <th className="px-6 py-4 text-[11px] font-black tracking-widest text-card-text/40 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
@@ -202,10 +202,10 @@ export default function AssessmentDetailPage() {
                                                     <div className="font-bold text-sm text-card-text">{student.user.name}</div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-xs font-bold text-card-text/40 uppercase tabular-nums">
+                                            <td className="px-6 py-4 text-xs font-bold text-card-text/40 tabular-nums">
                                                 {student.registrationNumber || 'N/A'}
                                             </td>
-                                            <td className="px-6 py-4 text-xs font-black italic uppercase tracking-widest tabular-nums">
+                                            <td className="px-6 py-4 text-xs font-black italic tracking-widest tabular-nums">
                                                 {grade ? (
                                                     <span className="flex items-center gap-1.5 text-emerald-500">
                                                         <CheckCircle2 className="w-3.5 h-3.5" /> Graded
@@ -224,7 +224,7 @@ export default function AssessmentDetailPage() {
                                                             href={getPublicUrl(submission.files[0].path)}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="text-primary hover:text-primary-light flex items-center gap-1.5 underline-offset-2 hover:underline font-black italic uppercase tracking-widest"
+                                                            className="text-primary hover:text-primary-light flex items-center gap-1.5 underline-offset-2 hover:underline font-black italic tracking-widest"
                                                         >
                                                             <LinkIcon className="w-3 h-3" /> View Work
                                                         </a>
@@ -233,22 +233,22 @@ export default function AssessmentDetailPage() {
                                                             href={submission.fileUrl}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="text-primary hover:text-primary-light flex items-center gap-1.5 underline-offset-2 hover:underline font-black italic uppercase tracking-widest"
+                                                            className="text-primary hover:text-primary-light flex items-center gap-1.5 underline-offset-2 hover:underline font-black italic tracking-widest"
                                                         >
                                                             <LinkIcon className="w-3 h-3" /> View Link
                                                         </a>
                                                     ) : (
-                                                        <span className="text-emerald-500 italic flex items-center gap-1.5 font-black uppercase tracking-widest"><CheckCircle2 className="w-3 h-3" /> Done</span>
+                                                        <span className="text-emerald-500 italic flex items-center gap-1.5 font-black tracking-widest"><CheckCircle2 className="w-3 h-3" /> Done</span>
                                                     )
                                                 ) : (
-                                                    <span className="text-card-text/20 italic font-black uppercase tracking-widest">No Submission</span>
+                                                    <span className="text-card-text/20 italic font-black tracking-widest">No Submission</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 {grade ? (
                                                     <span className="text-lg font-black italic text-primary">{grade.marksObtained}<span className="text-xs text-card-text/30 ml-1">/ {assessment.totalMarks}</span></span>
                                                 ) : (
-                                                    <span className="text-xs font-black text-card-text/20 italic uppercase tracking-tighter">Not Assigned</span>
+                                                    <span className="text-xs font-black text-card-text/20 italic tracking-tighter">Not Assigned</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 text-right">
@@ -258,7 +258,7 @@ export default function AssessmentDetailPage() {
                                                             e.stopPropagation();
                                                             setSelectedStudentId(student.id);
                                                         }}
-                                                        className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-[10px] font-black uppercase tracking-widest italic rounded-lg border border-primary/20 transition-all shadow-sm active:scale-95 z-10 relative"
+                                                        className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-[10px] font-black tracking-widest italic rounded-lg border border-primary/20 transition-all shadow-sm active:scale-95 z-10 relative"
                                                     >
                                                         {grade ? 'Update Grade' : 'Assign Grade'}
                                                     </button>
@@ -276,7 +276,7 @@ export default function AssessmentDetailPage() {
             {/* Student View: My Performance */}
             {!isTeacherOrAdmin && (
                 <div className="bg-card border border-border rounded-lg shadow-xl p-8 mt-4">
-                    <h2 className="text-xl font-black uppercase italic tracking-wider mb-6 flex items-center gap-3">
+                    <h2 className="text-xl font-black tracking-wider mb-6 flex items-center gap-3">
                         <Trophy className="w-5 h-5 text-primary" /> My Performance
                     </h2>
                     {(() => {
@@ -289,7 +289,7 @@ export default function AssessmentDetailPage() {
                         return (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="bg-card/40 border border-border p-6 rounded-lg">
-                                    <p className="text-[10px] font-black text-card-text/40 uppercase tracking-widest mb-2">Grade</p>
+                                    <p className="text-[10px] font-black text-card-text/40 tracking-widest mb-2">Grade</p>
                                     <p className="text-3xl font-black italic text-primary">
                                         {myGrade ? `${myGrade.marksObtained} / ${assessment.totalMarks}` : 'Pending'}
                                     </p>
@@ -300,7 +300,7 @@ export default function AssessmentDetailPage() {
                                     )}
                                 </div>
                                 <div className="bg-card/40 border border-border p-6 rounded-lg">
-                                    <p className="text-[10px] font-black text-card-text/40 uppercase tracking-widest mb-3">Submission Status</p>
+                                    <p className="text-[10px] font-black text-card-text/40 tracking-widest mb-3">Submission Status</p>
                                     {mySubmission ? (
                                         <div>
                                             <span className="text-lg font-black italic text-emerald-500 flex items-center gap-2 mb-2">

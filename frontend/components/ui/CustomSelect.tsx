@@ -195,7 +195,7 @@ export function CustomSelect<T extends string = string>({
 
                     <div className="overflow-y-auto flex-1 custom-scrollbar">
                         {filteredOptions.length === 0 ? (
-                            <div className="px-4 py-3 sm:py-4 text-sm sm:text-base text-muted-foreground italic text-center text-balance">{searchable ? `No results found for "${searchTerm}"` : 'No options available'}</div>
+                            <div className="px-4 py-3 sm:py-4 text-sm sm:text-base text-muted-foreground text-center text-balance">{searchable ? `No results found for "${searchTerm}"` : 'No options available'}</div>
                         ) : (
                             filteredOptions.map((option) => (
                                 <button

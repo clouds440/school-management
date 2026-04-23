@@ -65,7 +65,7 @@ export default function CreateCoursePage() {
                     </div>
                     <div>
                         <h1 className="text-4xl font-black text-primary tracking-tight drop-shadow-lg">Create Course</h1>
-                        <p className="text-muted-foreground font-bold opacity-80 mt-1 uppercase tracking-widest text-[10px]">ADD A NEW SUBJECT TO CATALOG</p>
+                        <p className="text-muted-foreground font-bold opacity-80 mt-1 tracking-widest text-[10px]">Add a New Subject to Catalog</p>
                     </div>
                 </div>
             </div>

@@ -106,7 +106,7 @@ function StudentPortalContent() {
                 </p>
                 <Link
                     href={`/${orgName}/mail`}
-                    className="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all"
+                    className="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-black tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all"
                 >
                     Contact Support
                 </Link>

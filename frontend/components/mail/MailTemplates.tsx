@@ -77,7 +77,7 @@ interface MailTemplatesProps {
 export function MailTemplates({ onSelect, className = '' }: MailTemplatesProps) {
     return (
         <div className={`space-y-3 ${className}`}>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Quick Templates</p>
+            <p className="text-[10px] font-black text-muted-foreground tracking-widest mb-2">Quick Templates</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {ADMIN_REPLY_TEMPLATES.map((template) => {
                     const Icon = template.icon;
@@ -97,7 +97,7 @@ export function MailTemplates({ onSelect, className = '' }: MailTemplatesProps) 
                             </div>
                             <div className="min-w-0">
                                 <p className="text-[11px] font-black text-foreground truncate">{template.name}</p>
-                                <p className="text-[9px] font-bold text-muted-foreground uppercase truncate">Click to insert</p>
+                                <p className="text-[9px] font-bold text-muted-foreground truncate">Click to insert</p>
                             </div>
                         </button>
                     );

@@ -10,7 +10,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { MailStatusBadge, MailPriorityBadge, getMailRowClassName } from '@/components/mail/MailStatusBadge';
+import { MailStatusBadge, MailPriorityBadge, useMailRowClassName } from '@/components/mail/MailStatusBadge';
 import { MailDetailsModal } from '@/components/mail/MailDetailsModal';
 import notificationsStore from '@/lib/notificationsStore';
 import { NewMailModal } from '@/components/mail/NewMailModal';
@@ -25,6 +25,7 @@ export default function MailPage() {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const getRowClassName = useMailRowClassName();
 
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<MailItem> | null>(null);
     const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
@@ -165,7 +166,7 @@ export default function MailPage() {
                     <div className="min-w-0 flex-1">
                         <h4 className="text-sm font-black text-foreground leading-tight truncate">{row.subject}</h4>
                         <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] uppercase font-bold text-muted-foreground bg-card/5 px-1.5 py-0.5 rounded-sm">{row.category.replace('_', ' ')}</span>
+                            <span className="text-[10px] font-bold text-muted-foreground bg-card/5 px-1.5 py-0.5 rounded-sm">{row.category.replace('_', ' ')}</span>
                             <span className="text-[10px] items-center gap-1 text-muted-foreground font-bold hidden sm:flex">
                                 <Hash className="w-2.5 h-2.5" />
                                 {row.id.slice(0, 8)}
@@ -180,34 +181,15 @@ export default function MailPage() {
             accessor: (row: MailItem) => {
                 return (
                     <div className="flex items-center gap-3">
-                        {row.organization ? (
-                            <div className="relative">
-                                <BrandIcon
-                                    variant="brand"
-                                    size="sm"
-                                    user={{ ...row.creator, orgLogoUrl: row.organization.logoUrl, orgName: row.organization.name }}
-                                    className="w-8 h-8 border border-border/10"
-                                />
-                                    <div className="absolute bottom-0 -right-1 w-4 h-4 rounded-full bg-card border border-border/10 flex items-center justify-center overflow-hidden">
-                                    <BrandIcon
-                                        variant="user"
-                                        size="sm"
-                                        user={row.creator}
-                                        className="w-full h-full"
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                            <BrandIcon
-                                variant="user"
-                                size="sm"
-                                user={row.creator}
-                                className="w-8 h-8"
-                            />
-                        )}
+                        <BrandIcon
+                            variant="user"
+                            size="sm"
+                            user={row.creator}
+                            className="w-8 h-8 rounded-full shadow-sm"
+                        />
                         <div className="min-w-0">
                             <p className="text-xs font-black text-foreground truncate max-w-30">{row.creator?.name || row.creator?.email || 'Unknown'}</p>
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase">{row.creatorRole?.replace('_', ' ') || 'N/A'}</p>
+                            <p className="text-[10px] font-bold text-muted-foreground">{row.creatorRole?.replace('_', ' ') || 'N/A'}</p>
                         </div>
                     </div>
                 );
@@ -232,21 +214,21 @@ export default function MailPage() {
                                         ? `${row.assignees[0].name || row.assignees[0].email} +${row.assignees.length - 1}`
                                         : (row.assignees[0].name || row.assignees[0].email)}
                                 </p>
-                                <p className="text-[10px] font-bold text-primary/80 uppercase">
+                                <p className="text-[10px] font-bold text-primary/80">
                                     {row.assignees.length > 1 ? 'Multiple' : 'Personal'}
                                 </p>
                             </div>
                         </>
                     ) : (
                         <>
-                            <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-[10px] font-black uppercase text-center leading-none shadow-sm">
+                            <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-[10px] font-black text-center leading-none shadow-sm">
                                 <span className="scale-75">GRP</span>
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-foreground truncate max-w-30">
                                     {row.targetRole ? row.targetRole.replace('_', ' ') : 'Platform Support'}
                                 </p>
-                                <p className="text-[10px] font-bold text-orange-400 uppercase">Team</p>
+                                <p className="text-[10px] font-bold text-orange-400">Team</p>
                             </div>
                         </>
                     )}
@@ -347,7 +329,7 @@ export default function MailPage() {
                         onPageSizeChange={handlePageSizeChange}
                         sortConfig={{ key: sortBy, direction: sortOrder }}
                         onSort={(key, direction) => updateQueryParams({ sortBy: key, sortOrder: direction })}
-                        getRowClassName={(row: MailItem) => getMailRowClassName(row.status)}
+                        getRowClassName={(row: MailItem) => getRowClassName(row.status)}
                         maxHeight="100%"
                     />
                 </div>

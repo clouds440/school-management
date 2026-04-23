@@ -102,7 +102,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
             {assessments.length === 0 ? (
                 <div className="bg-primary/5 border border-dashed border-border rounded-xl p-12 text-center">
                     <FileText className="w-12 h-12 text-card-text/20 mx-auto mb-4" />
-                    <p className="text-card-text/40 font-bold italic uppercase tracking-widest text-xs">No assessments created for this section yet.</p>
+                    <p className="text-card-text/40 font-bold tracking-widest text-xs">No assessments created for this section yet.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
@@ -117,7 +117,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                                 padding="lg"
                             >
                                 <CardHeader>
-                                    <div className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] border-2 shadow-sm ${assessment.type === AssessmentType.FINAL ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                                    <div className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-[0.15em] border-2 shadow-sm ${assessment.type === AssessmentType.FINAL ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
                                         assessment.type === AssessmentType.MIDTERM ? 'bg-orange-50 text-orange-700 border-orange-100' :
                                             'bg-primary/5 text-primary border-primary/10'
                                         }`}>
@@ -152,7 +152,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                                 <CardContent>
                                     <h4 className="text-xl font-black text-foreground leading-tight tracking-tight group-hover:text-primary transition-colors duration-300">{assessment.title}</h4>
 
-                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-500 font-bold uppercase tracking-widest pt-2">
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-500 font-bold tracking-widest pt-2">
                                         <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 rounded-full border border-primary">
                                             <Trophy className="w-4 h-4 text-primary/70" />
                                             <span>{assessment.totalMarks} Marks</span>
@@ -166,12 +166,12 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
 
                                 <CardFooter>
                                     <div className="flex flex-col gap-1">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Weightage</span>
-                                        <span className="text-xl font-black text-primary italic leading-none">{assessment.weightage}%</span>
+                                        <span className="text-[10px] font-black tracking-[0.2em] text-slate-400">Weightage</span>
+                                        <span className="text-xl font-black text-primary leading-none">{assessment.weightage}%</span>
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                        <div className="h-10 px-6 text-[11px] uppercase font-black tracking-widest gap-2 flex items-center justify-center bg-background text-foreground group-hover:text-white rounded-xl shadow-lg group-hover:bg-primary group-hover:shadow-primary/50 transition-all duration-300">
+                                        <div className="h-10 px-6 text-[11px] font-black tracking-widest gap-2 flex items-center justify-center bg-background text-foreground group-hover:text-white rounded-xl shadow-lg group-hover:bg-primary group-hover:shadow-primary/50 transition-all duration-300">
                                             {canView ? (
                                                 <><Users className="w-4 h-4" /> View Grades</>
                                             ) : (
@@ -183,7 +183,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                                             assessment.allowSubmissions ? (
                                                 <Button
                                                     variant="primary"
-                                                    className="h-10 px-6 text-[11px] uppercase font-black gap-2 rounded-xl shadow-lg"
+                                                    className="h-10 px-6 text-[11px] font-black gap-2 rounded-xl shadow-lg"
                                                     disabled={!!(assessment.dueDate && new Date(assessment.dueDate) < new Date())}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -196,7 +196,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                                             ) : (
                                                 <Button
                                                     variant="secondary"
-                                                    className="h-10 px-6 text-[11px] uppercase font-black gap-2 rounded-xl shadow-md"
+                                                    className="h-10 px-6 text-[11px] font-black gap-2 rounded-xl shadow-md"
                                                     disabled={!!(assessment.dueDate && new Date(assessment.dueDate) < new Date())}
                                                     onClick={async (e) => {
                                                         e.stopPropagation();

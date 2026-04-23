@@ -5,7 +5,7 @@ import { MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Tag, Calendar, Filt
 import { api } from '@/lib/api';
 import { MailItem, MailStatus, PaginatedResponse } from '@/types';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { MailStatusBadge, MailPriorityBadge, getMailRowClassName } from '@/components/mail/MailStatusBadge';
+import { MailStatusBadge, MailPriorityBadge, useMailRowClassName } from '@/components/mail/MailStatusBadge';
 import { MailDetailsModal } from '@/components/mail/MailDetailsModal';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -24,6 +24,7 @@ export default function OrgMailPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
+    const getRowClassName = useMailRowClassName();
 
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<MailItem> | null>(null);
     const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
@@ -146,7 +147,7 @@ export default function OrgMailPage() {
             accessor: (row: MailItem) => (
                 <div className="flex flex-col">
                     <span className="font-black text-foreground group-hover:text-primary transition-colors">{row.subject}</span>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">#{row.id.slice(0, 8)}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground tracking-widest mt-0.5">#{row.id.slice(0, 8)}</span>
                 </div>
             )
         },
@@ -163,7 +164,7 @@ export default function OrgMailPage() {
                         />
                         <div className="min-w-0">
                             <p className="text-xs font-black text-foreground truncate max-w-30">{row.creator?.name || row.creator?.email || 'Unknown'}</p>
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase">{row.creatorRole?.replace('_', ' ') || 'N/A'}</p>
+                            <p className="text-[10px] font-bold text-muted-foreground">{row.creatorRole?.replace('_', ' ') || 'N/A'}</p>
                         </div>
                     </div>
                 );
@@ -172,7 +173,7 @@ export default function OrgMailPage() {
         {
             header: 'Category',
             accessor: (row: MailItem) => (
-                <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100/50">
+                <span className="flex items-center gap-2 text-[10px] font-black tracking-widest text-primary bg-card/50 px-2 py-1 rounded-lg border border-primary">
                     <Tag className="w-3 h-3" />
                     {row.category.replace('_', ' ')}
                 </span>
@@ -245,7 +246,7 @@ export default function OrgMailPage() {
                         <Button
                             onClick={() => setNewMailOpen(true)}
                             icon={MailPlus}
-                            className="flex items-center w-full justify-center gap-2 px-8 bg-primary text-primary-text rounded-lg text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 shrink-0 border-none"
+                            className="flex items-center w-full justify-center gap-2 px-8 bg-primary text-primary-text rounded-lg text-xs font-black tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 shrink-0 border-none"
                         >
                             New Mail
                         </Button>
@@ -265,7 +266,7 @@ export default function OrgMailPage() {
                         pageSize={pageSize}
                         onPageChange={(p: number) => updateFilters('page', p.toString())}
                         onPageSizeChange={handlePageSizeChange}
-                        getRowClassName={(row: MailItem) => getMailRowClassName(row.status)}
+                        getRowClassName={(row: MailItem) => getRowClassName(row.status)}
                         maxHeight="100%"
                     />
                 </div>

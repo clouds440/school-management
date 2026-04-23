@@ -1293,7 +1293,6 @@ export class MailService {
         name: 'EduVerse Team',
         email:
           user.role === Role.SUPER_ADMIN ? 'System Admin' : 'Platform Admin',
-        avatarUrl: null,
       };
     }
     return user;

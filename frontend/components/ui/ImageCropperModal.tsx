@@ -88,7 +88,7 @@ export function ImageCropperModal({
     <ModalOverlay isOpen={true} maxWidth="max-w-2xl" className="bg-card rounded-lg flex flex-col p-0">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
-        <h3 className="text-base font-bold text-foreground uppercase tracking-tight leading-none">Crop Logo Image</h3>
+        <h3 className="text-base font-bold text-foreground tracking-tight leading-none">Crop Logo Image</h3>
         <button
           type="button"
           onClick={onCancel}
@@ -118,7 +118,7 @@ export function ImageCropperModal({
       <div className="px-5 py-4 space-y-4 border-t border-border bg-muted/50 shrink-0">
         {/* Zoom */}
         <div className="flex items-center gap-4">
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground w-12">Zoom</span>
+          <span className="text-[10px] font-black tracking-widest text-muted-foreground w-12">Zoom</span>
           <ZoomOut className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             type="range"
@@ -134,7 +134,7 @@ export function ImageCropperModal({
 
         {/* Rotation */}
         <div className="flex items-center gap-4">
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground w-12">Rotate</span>
+          <span className="text-[10px] font-black tracking-widest text-muted-foreground w-12">Rotate</span>
           <RotateCw className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             type="range"
@@ -155,7 +155,7 @@ export function ImageCropperModal({
           type="button"
           variant="secondary"
           onClick={onCancel}
-          className="flex-1 uppercase tracking-widest"
+          className="flex-1 tracking-widest"
         >
           Cancel
         </Button>
@@ -165,7 +165,7 @@ export function ImageCropperModal({
           onClick={handleConfirm}
           disabled={confirming}
           icon={Check}
-          className="flex-1 uppercase tracking-widest btn-haptic"
+          className="flex-1 tracking-widest btn-haptic"
         >
           {confirming ? "Processing..." : "Use This Crop"}
         </Button>

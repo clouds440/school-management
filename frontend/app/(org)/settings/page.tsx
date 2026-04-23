@@ -185,7 +185,7 @@ export default function SettingsPage() {
                     </div>
                     <div>
                         <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight">Settings</h1>
-                        <p className="text-muted-foreground font-semibold opacity-70 mt-1 uppercase tracking-wider text-xs md:text-sm">Organization Profile & Configuration</p>
+                        <p className="text-muted-foreground font-semibold opacity-70 mt-1 tracking-wider text-xs md:text-sm">Organization Profile & Configuration</p>
                     </div>
                 </div>
             </div>
@@ -219,7 +219,7 @@ export default function SettingsPage() {
                             ) : (
                                 <RefreshCw className="w-4 h-4" />
                             )}
-                            RE-SUBMIT FOR REVIEW
+                            Re-submit for Review
                         </button>
                     </div>
                 )}
@@ -228,7 +228,7 @@ export default function SettingsPage() {
                 <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
                     {/* Logo section */}
                     <div className="flex flex-col items-center gap-2 pb-6 border-b border-border/50">
-                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Organization Logo</Label>
+                        <Label className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Organization Logo</Label>
                         <PhotoUploadPicker
                             currentImageUrl={orgData?.logoUrl}
                             onFileReady={handleLogoReady}
@@ -245,7 +245,7 @@ export default function SettingsPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 pt-6">
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Organization Name</Label>
+                            <Label className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Organization Name</Label>
                             <Input
                                 type="text"
                                 name="name"
@@ -259,7 +259,7 @@ export default function SettingsPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Primary Accent Color</Label>
+                            <Label className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Primary Accent Color</Label>
                             <div className="flex items-center gap-2">
                                 <div className="flex-1">
                                     <input
@@ -273,7 +273,7 @@ export default function SettingsPage() {
                                         }}
                                         className="w-full h-12 rounded-xl border border-border/50 cursor-pointer"
                                     />
-                                    <p className="text-[10px] text-muted-foreground mt-1 font-semibold uppercase tracking-wider leading-none">HEX: {formData.accentColor.primary}</p>
+                                    <p className="text-[10px] text-muted-foreground mt-1 font-semibold tracking-wider leading-none">HEX: {formData.accentColor.primary}</p>
                                 </div>
                             </div>
                             <p className="text-xs text-muted-foreground mt-2 leading-relaxed font-medium">
@@ -281,7 +281,7 @@ export default function SettingsPage() {
                             </p>
 
                             <div className="mt-4 space-y-2">
-                                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Theme Mode</Label>
+                                <Label className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Theme Mode</Label>
                                 <ThemeDropdown
                                     currentMode={themeMode}
                                     onModeChange={(mode) => {
@@ -293,7 +293,7 @@ export default function SettingsPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Location</Label>
+                            <Label className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Location</Label>
                             <Input
                                 type="text"
                                 name="location"
@@ -307,7 +307,7 @@ export default function SettingsPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Contact Email</Label>
+                            <Label className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Contact Email</Label>
                             <Input
                                 type="email"
                                 name="contactEmail"
@@ -320,7 +320,7 @@ export default function SettingsPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground opacity-70">Phone Number</Label>
+                            <Label className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Phone Number</Label>
                             <Input
                                 type="text"
                                 name="phone"

@@ -128,7 +128,7 @@ export default function StudentsPage() {
             accessor: (row: Student) => (
                 <div className="flex flex-col">
                     <span className="font-semibold text-card-foreground">{row.registrationNumber || '-'}</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 leading-none mt-1">
+                    <span className="text-[10px] font-black tracking-widest text-muted-foreground/40 leading-none mt-1">
                         Roll: {row.rollNumber || '-'}
                     </span>
                 </div>
@@ -253,7 +253,7 @@ export default function StudentsPage() {
                     <div className="flex flex-wrap items-center gap-2 md:gap-3">
                         {(user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER) && (
                             <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-muted-foreground/40 uppercase tracking-wider whitespace-nowrap">Section:</span>
+                                <span className="text-xs font-bold text-muted-foreground/40 tracking-wider whitespace-nowrap">Section:</span>
                                 <CustomSelect
                                     value={sectionId}
                                     onChange={(val) => updateQueryParams({ sectionId: val, page: 1 })}
@@ -279,7 +279,7 @@ export default function StudentsPage() {
                                         className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${showOnlyMyStudents ? 'translate-x-6' : 'translate-x-1'}`}
                                     />
                                 </button>
-                                <span className="text-xs font-bold text-card-foreground uppercase tracking-wider">My Students</span>
+                                <span className="text-xs font-bold text-card-foreground tracking-wider">My Students</span>
                             </div>
                         )}
 
@@ -287,7 +287,7 @@ export default function StudentsPage() {
                             <Button
                                 onClick={() => router.push('/students/add')}
                                 icon={Plus}
-                                className="px-8 w-full md:w-auto text-xs font-black uppercase tracking-widest"
+                                className="px-8 w-full md:w-auto text-xs font-black tracking-widest"
                             >
                                 Add New Student
                             </Button>

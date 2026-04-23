@@ -166,8 +166,8 @@ export default function AttendanceSheet({
     // Helper to get readable session type badge
     const getSessionTypeBadge = (isAdhoc: boolean) => {
         return isAdhoc 
-            ? <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-full">adhoc</span>
-            : <span className="text-[9px] font-black uppercase tracking-wider bg-primary/15 text-primary/80 px-1.5 py-0.5 rounded-full">scheduled</span>;
+            ? <span className="text-[9px] font-black tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-full">adhoc</span>
+            : <span className="text-[9px] font-black tracking-wider bg-primary/15 text-primary/80 px-1.5 py-0.5 rounded-full">scheduled</span>;
     };
 
     if (mode === 'monthly' && rangeData) {
@@ -177,17 +177,17 @@ export default function AttendanceSheet({
                     <table className="w-full text-left text-sm border-separate border-spacing-0">
                         <thead className="sticky top-0 z-20">
                             <tr className="bg-primary/5 border-b border-border">
-                                <th className="sticky left-0 z-30 px-3 py-4 font-black uppercase tracking-widest text-[10px] text-primary/80 bg-primary/5 w-12 text-center rounded-tl-xl">
+                                <th className="sticky left-0 z-30 px-3 py-4 font-black tracking-widest text-[10px] text-primary/80 bg-primary/5 w-12 text-center rounded-tl-xl">
                                     #
                                 </th>
-                                <th className="sticky left-12 z-30 px-4 py-4 font-black uppercase tracking-widest text-[10px] text-primary/80 bg-primary/5 border-l border-primary/10 min-w-55 rounded-tr-xl">
+                                <th className="sticky left-12 z-30 px-4 py-4 font-black tracking-widest text-[10px] text-primary/80 bg-primary/5 border-l border-primary/10 min-w-55 rounded-tr-xl">
                                     <div className="flex items-center gap-2">
                                         <User className="w-3 h-3" />
                                         <span>Student</span>
                                     </div>
                                 </th>
                                 {groupedSessionDates.map(({ dateKey, sessions }) => (
-                                    <th key={dateKey} className="px-3 py-4 font-black uppercase tracking-widest text-[10px] text-primary/80 text-center bg-primary/5 border-l border-primary/10 min-w-40 align-top">
+                                    <th key={dateKey} className="px-3 py-4 font-black tracking-widest text-[10px] text-primary/80 text-center bg-primary/5 border-l border-primary/10 min-w-40 align-top">
                                         <div className="flex flex-col items-center gap-1">
                                             <div className="flex items-center gap-1 text-sm font-bold text-primary">
                                                 <Calendar className="w-3 h-3" />
@@ -209,7 +209,7 @@ export default function AttendanceSheet({
                                         </div>
                                     </th>
                                 ))}
-                                <th className="px-4 py-4 font-black uppercase tracking-widest text-[10px] text-primary/80 bg-primary/5 border-l border-primary/20 text-center min-w-35">
+                                <th className="px-4 py-4 font-black tracking-widest text-[10px] text-primary/80 bg-primary/5 border-l border-primary/20 text-center min-w-35">
                                     <div className="flex items-center justify-center gap-1">
                                         <Activity className="w-3 h-3" />
                                         <span>Analysis</span>
@@ -250,7 +250,7 @@ export default function AttendanceSheet({
                                         </td>
                                         <td className="sticky left-12 z-10 px-4 py-4 border-l border-border/50 bg-card group-hover:bg-muted/5">
                                             <div className="font-bold text-foreground line-clamp-1">{student.name}</div>
-                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-mono mt-0.5">Roll: {student.rollNumber || student.registrationNumber}</div>
+                                            <div className="text-[10px] text-muted-foreground tracking-wider font-mono mt-0.5">Roll: {student.rollNumber || student.registrationNumber}</div>
                                         </td>
                                         {groupedSessionDates.map(({ dateKey, sessions }) => (
                                             <td key={dateKey} className="px-3 py-3 border-l border-border/30 align-top bg-card">
@@ -285,7 +285,7 @@ export default function AttendanceSheet({
                                                         );
                                                     })}
                                                     {sessions.length === 0 && (
-                                                        <div className="text-center text-muted-foreground/40 text-[10px] py-2 italic">No sessions</div>
+                                                        <div className="text-center text-muted-foreground/40 text-[10px] py-2">No sessions</div>
                                                     )}
                                                 </div>
                                             </td>
@@ -294,7 +294,7 @@ export default function AttendanceSheet({
                                             <div className="flex flex-col items-center gap-2">
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex flex-col items-center px-2 py-1 rounded-lg bg-background/80 shadow-sm" title="Official sessions (scheduled)">
-                                                        <span className="text-[8px] font-black text-muted-foreground/60 uppercase">Official</span>
+                                                        <span className="text-[8px] font-black text-muted-foreground/60">Official</span>
                                                         <span className="text-sm font-black">{officialTotal}</span>
                                                     </div>
                                                     <div className="flex flex-col items-center justify-center px-3 py-1 rounded-full bg-primary text-primary-foreground text-sm font-black shadow-md">
@@ -309,19 +309,19 @@ export default function AttendanceSheet({
                                                 )}
                                                 <div className="grid grid-cols-4 gap-2 w-full max-w-30 mt-1">
                                                     <div className="flex flex-col items-center bg-emerald-500/10 rounded-lg py-1">
-                                                        <span className="text-[8px] font-black text-emerald-600 uppercase">P</span>
+                                                        <span className="text-[8px] font-black text-emerald-600">P</span>
                                                         <span className="text-xs font-bold">{present}</span>
                                                     </div>
                                                     <div className="flex flex-col items-center bg-red-500/10 rounded-lg py-1">
-                                                        <span className="text-[8px] font-black text-red-600 uppercase">A</span>
+                                                        <span className="text-[8px] font-black text-red-600">A</span>
                                                         <span className="text-xs font-bold">{absent}</span>
                                                     </div>
                                                     <div className="flex flex-col items-center bg-amber-500/10 rounded-lg py-1">
-                                                        <span className="text-[8px] font-black text-amber-600 uppercase">L</span>
+                                                        <span className="text-[8px] font-black text-amber-600">L</span>
                                                         <span className="text-xs font-bold">{late}</span>
                                                     </div>
                                                     <div className="flex flex-col items-center bg-blue-500/10 rounded-lg py-1">
-                                                        <span className="text-[8px] font-black text-blue-600 uppercase">E</span>
+                                                        <span className="text-[8px] font-black text-blue-600">E</span>
                                                         <span className="text-xs font-bold">{excused}</span>
                                                     </div>
                                                 </div>
@@ -332,7 +332,7 @@ export default function AttendanceSheet({
                             })}
                             {rangeData.students.length === 0 && (
                                 <tr>
-                                    <td colSpan={groupedSessionDates.length + 3} className="px-6 py-16 text-center text-muted-foreground italic bg-muted/10">
+                                    <td colSpan={groupedSessionDates.length + 3} className="px-6 py-16 text-center text-muted-foreground bg-muted/10">
                                         <div className="flex flex-col items-center gap-2">
                                             <User className="w-8 h-8 opacity-20" />
                                             <span>No enrollment data available for this period.</span>
@@ -357,7 +357,7 @@ export default function AttendanceSheet({
                             <CheckSquare className="w-4 h-4 text-primary" />
                             Mark Attendance
                         </h3>
-                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5">
+                        <p className="text-[10px] text-muted-foreground font-medium tracking-wider mt-0.5">
                             {date ? new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Select a date'}
                         </p>
                     </div>
@@ -388,11 +388,11 @@ export default function AttendanceSheet({
                 <table className="w-full text-left text-sm">
                     <thead>
                         <tr className="bg-primary/5 border-b border-border">
-                            <th className="px-4 py-4 font-black uppercase tracking-widest text-[10px] text-primary/70 w-12 text-center">#</th>
-                            <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px] text-primary/70 border-l border-primary/10">
+                            <th className="px-4 py-4 font-black tracking-widest text-[10px] text-primary/70 w-12 text-center">#</th>
+                            <th className="px-6 py-4 font-black tracking-widest text-[10px] text-primary/70 border-l border-primary/10">
                                 Student
                             </th>
-                            <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px] text-primary/70 text-center border-l border-primary/10">
+                            <th className="px-6 py-4 font-black tracking-widest text-[10px] text-primary/70 text-center border-l border-primary/10">
                                 Status
                             </th>
                         </tr>
@@ -400,7 +400,7 @@ export default function AttendanceSheet({
                     <tbody className="divide-y divide-border/60">
                         {students.length === 0 ? (
                             <tr>
-                                <td colSpan={3} className="px-6 py-16 text-center text-muted-foreground italic">
+                                <td colSpan={3} className="px-6 py-16 text-center text-muted-foreground">
                                     <div className="flex flex-col items-center gap-2">
                                         <User className="w-8 h-8 opacity-20" />
                                         <span>No students enrolled in this section.</span>
@@ -417,7 +417,7 @@ export default function AttendanceSheet({
                                         </td>
                                         <td className="px-6 py-4 border-l border-border/30">
                                             <div className="font-bold text-foreground">{student.name}</div>
-                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wide font-mono mt-0.5">
+                                            <div className="text-[10px] text-muted-foreground tracking-wide font-mono mt-0.5">
                                                 Roll: {student.rollNumber || student.registrationNumber}
                                             </div>
                                         </td>

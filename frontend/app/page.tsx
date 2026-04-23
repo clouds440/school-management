@@ -57,7 +57,7 @@ export default function HomePage() {
             <Reveal delay={300}>
               <div className="pt-4 flex flex-col items-center gap-6">
                 <HeroButtons />
-                <div className="flex flex-wrap justify-center items-center gap-4 text-[10px] md:text-xs text-foreground/80 font-bold uppercase tracking-widest">
+                <div className="flex flex-wrap justify-center items-center gap-4 text-[10px] md:text-xs text-foreground/80 font-bold tracking-widest">
                   <span className="flex items-center"><ShieldCheck className="w-4 h-4 mr-1 text-emerald-500" /> No Card Required</span>
                   <span className="flex items-center"><Zap className="w-4 h-4 mr-1 text-amber-500" /> 14-Day Free Trial</span>
                 </div>
@@ -80,7 +80,7 @@ export default function HomePage() {
               <Reveal key={i} delay={i * 100}>
                 <div className="space-y-2 text-center group cursor-default">
                   <p className="text-4xl md:text-5xl font-black text-foreground group-hover:text-primary transition-colors">{stat.val}</p>
-                  <p className="text-[10px] md:text-xs font-black text-muted-foreground/50 uppercase tracking-widest">{stat.label}</p>
+                  <p className="text-[10px] md:text-xs font-black text-muted-foreground/50 tracking-widest">{stat.label}</p>
                 </div>
               </Reveal>
             ))}
@@ -126,7 +126,7 @@ export default function HomePage() {
               </ul>
 
               <Reveal delay={700}>
-                <Link href="/docs" className="group inline-flex items-center text-primary font-black text-sm uppercase tracking-wider hover:translate-x-2 transition-transform">
+                <Link href="/docs" className="group inline-flex items-center text-primary font-black text-sm tracking-wider hover:translate-x-2 transition-transform">
                   Read Documentation <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
               </Reveal>
@@ -287,7 +287,7 @@ export default function HomePage() {
 
             {/* Links */}
             <div>
-              <h4 className="text-sm font-bold text-foreground uppercase tracking-wider mb-6">Product</h4>
+              <h4 className="text-sm font-bold text-foreground tracking-wider mb-6">Product</h4>
               <ul className="space-y-4">
                 <li><Link href="/docs" className="text-muted-foreground hover:text-primary transition-colors text-sm font-medium">Documentation</Link></li>
                 <li><Link href="/pricing" className="text-muted-foreground hover:text-primary transition-colors text-sm font-medium">Pricing</Link></li>
@@ -296,7 +296,7 @@ export default function HomePage() {
             </div>
 
             <div>
-              <h4 className="text-sm font-bold text-foreground uppercase tracking-wider mb-6">Company</h4>
+              <h4 className="text-sm font-bold text-foreground tracking-wider mb-6">Company</h4>
               <ul className="space-y-4">
                 <li><Link href="/about" className="text-muted-foreground hover:text-primary transition-colors text-sm font-medium">About Us</Link></li>
                 <li><Link href="/blog" className="text-muted-foreground hover:text-primary transition-colors text-sm font-medium">Blog</Link></li>
@@ -305,7 +305,7 @@ export default function HomePage() {
             </div>
 
             <div>
-              <h4 className="text-sm font-bold text-foreground uppercase tracking-wider mb-6">Legal</h4>
+              <h4 className="text-sm font-bold text-foreground tracking-wider mb-6">Legal</h4>
               <ul className="space-y-4">
                 <li><Link href="/privacy" className="text-muted-foreground hover:text-primary transition-colors text-sm font-medium">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="text-muted-foreground hover:text-primary transition-colors text-sm font-medium">Terms of Service</Link></li>

@@ -26,7 +26,7 @@ export default function AddStudentPage() {
                     </div>
                     <div>
                         <h1 className="text-3xl md:text-4xl font-black text-primary tracking-tight drop-shadow-lg">Admit Student</h1>
-                        <p className="text-muted-foreground font-bold opacity-80 mt-1 text-sm md:text-base uppercase tracking-widest text-[10px]">REGISTER NEW LEARNER ACCOUNT</p>
+                        <p className="text-muted-foreground font-bold opacity-80 mt-1 text-sm md:text-base tracking-widest text-[10px]">Register New Learner Account</p>
                     </div>
                 </div>
             </div>

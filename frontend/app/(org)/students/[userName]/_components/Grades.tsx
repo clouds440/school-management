@@ -24,7 +24,7 @@ export default function Grades({ grades }: { grades: FinalGradeResponse[] }) {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4 mb-10">
                 <div>
-                    <h1 className="text-4xl font-black text-foreground tracking-tighter leading-none italic uppercase">
+                    <h1 className="text-4xl font-black text-foreground tracking-tighter leading-none">
                         Academic Transcript
                     </h1>
                     <p className="text-muted-foreground mt-3 font-bold max-w-md tracking-tight">Your verified semester performance and official grade audit.</p>
@@ -47,14 +47,14 @@ export default function Grades({ grades }: { grades: FinalGradeResponse[] }) {
                     <Card padding="lg" accentColor="bg-indigo-600" className="bg-card border-border shadow-2xl relative overflow-hidden group" delay={0}>
                         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
                         <div className="relative z-10 text-left">
-                            <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4">Cumulative Average</p>
+                            <p className="text-[10px] font-black text-primary tracking-[0.2em] mb-4">Cumulative Average</p>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-5xl font-black text-foreground italic leading-none">{averageGrade}</span>
-                                <span className="text-xl font-black text-primary italic">%</span>
+                                <span className="text-5xl font-black text-foreground leading-none">{averageGrade}</span>
+                                <span className="text-xl font-black text-primary">%</span>
                             </div>
                             <div className="mt-8 pt-6 border-t border-border">
-                                <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest mb-1 font-sans not-italic">Institutional Rank</p>
-                                <p className="text-sm font-black text-foreground italic flex items-center gap-2">
+                                <p className="text-[10px] font-black text-muted-foreground/60 tracking-widest mb-1 font-sans">Institutional Rank</p>
+                                <p className="text-sm font-black text-foreground flex items-center gap-2">
                                     <Trophy className="w-4 h-4 text-amber-500" />
                                     Dean&apos;s Distinction List
                                 </p>
@@ -68,13 +68,13 @@ export default function Grades({ grades }: { grades: FinalGradeResponse[] }) {
                                 <Award className="w-6 h-6 text-emerald-600" />
                             </div>
                             <div>
-                                <h3 className="text-sm font-black text-foreground italic uppercase">Honor Roll</h3>
-                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mt-0.5">Verified Status</p>
+                                <h3 className="text-sm font-black text-foreground">Honor Roll</h3>
+                                <p className="text-[10px] font-bold text-muted-foreground/60 tracking-widest mt-0.5">Verified Status</p>
                             </div>
                         </div>
                     </Card>
 
-                    <button className="w-full py-4 bg-card border border-border text-foreground rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-muted/30 hover:border-primary/50 transition-all shadow-sm active:scale-95 group flex items-center justify-center gap-2">
+                    <button className="w-full py-4 bg-card border border-border text-foreground rounded-2xl font-black text-[10px] tracking-[0.2em] hover:bg-muted/30 hover:border-primary/50 transition-all shadow-sm active:scale-95 group flex items-center justify-center gap-2">
                         Download Report
                         <span className="text-muted-foreground/40 group-hover:text-primary transition-colors">↓</span>
                     </button>
@@ -93,18 +93,18 @@ export default function Grades({ grades }: { grades: FinalGradeResponse[] }) {
                             >
                                 <div className="flex items-center justify-between gap-6">
                                     <div className="flex items-center gap-4 flex-1 text-left">
-                                        <div className="w-14 h-14 rounded-2xl bg-muted/30 border border-border flex items-center justify-center font-black text-foreground italic text-xl shadow-xs group-hover:bg-primary/5 group-hover:border-primary/20 transition-all">
+                                        <div className="w-14 h-14 rounded-2xl bg-muted/30 border border-border flex items-center justify-center font-black text-foreground text-xl shadow-xs group-hover:bg-primary/5 group-hover:border-primary/20 transition-all">
                                             {grade.letterGrade || 'A'}
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] mb-1">{grade.courseName}</p>
-                                            <h3 className="text-lg font-black text-foreground italic tracking-tight leading-tight group-hover:text-primary transition-colors line-clamp-1">{grade.sectionName}</h3>
+                                            <p className="text-[10px] font-black text-muted-foreground/60 tracking-[0.2em] mb-1">{grade.courseName}</p>
+                                            <h3 className="text-lg font-black text-foreground tracking-tight leading-tight group-hover:text-primary transition-colors line-clamp-1">{grade.sectionName}</h3>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <div className="flex items-baseline gap-1 justify-end">
-                                            <span className="text-2xl font-black text-foreground italic leading-none">{grade.finalPercentage}</span>
-                                            <span className="text-[10px] font-black text-muted-foreground/60 uppercase italic">%</span>
+                                            <span className="text-2xl font-black text-foreground leading-none">{grade.finalPercentage}</span>
+                                            <span className="text-[10px] font-black text-muted-foreground/60">%</span>
                                         </div>
                                         <div className="w-16 h-1 bg-muted rounded-full mt-2 overflow-hidden ml-auto">
                                             <div className="h-full bg-primary" style={{ width: `${grade.finalPercentage}%` }}></div>
@@ -118,7 +118,7 @@ export default function Grades({ grades }: { grades: FinalGradeResponse[] }) {
                     {filteredGrades.length === 0 && (
                         <div className="p-20 bg-muted/10 rounded-3xl border-2 border-dashed border-border text-center">
                             <TrendingUp className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
-                            <p className="text-xs font-black text-muted-foreground/40 uppercase tracking-widest">No matching records found</p>
+                            <p className="text-xs font-black text-muted-foreground/40 tracking-widest italic">No matching records found</p>
                         </div>
                     )}
 
@@ -130,13 +130,13 @@ export default function Grades({ grades }: { grades: FinalGradeResponse[] }) {
                                     <TrendingUp className="w-5 h-5" />
                                 </div>
                                 <div className="max-w-md">
-                                    <h4 className="text-sm font-black text-foreground uppercase italic tracking-tight">Performance Summary</h4>
-                                    <p className="text-xs text-muted-foreground font-medium leading-relaxed mt-2 italic">
-                                        Your academic trajectory is currently <span className="text-primary font-bold uppercase tracking-widest">Positive</span>. Maintain consistent presence in all sections to secure final honors.
+                                    <h4 className="text-sm font-black text-foreground tracking-tight">Performance Summary</h4>
+                                    <p className="text-xs text-muted-foreground font-medium leading-relaxed mt-2">
+                                        Your academic trajectory is currently <span className="text-primary font-bold tracking-widest">Positive</span>. Maintain consistent presence in all sections to secure final honors.
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">
+                            <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground/60 tracking-widest">
                                 <Calendar className="w-4 h-4 text-primary/40" />
                                 Authentic Transcript v2.0
                             </div>

@@ -72,7 +72,7 @@ export default function EditStudentPage() {
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="flex flex-col items-center gap-4 text-primary-foreground/60">
                     <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                    <p className="font-bold text-sm uppercase tracking-widest">Loading Student Data...</p>
+                    <p className="font-bold text-sm tracking-widest">Loading Student Data...</p>
                 </div>
             </div>
         );
@@ -93,8 +93,8 @@ export default function EditStudentPage() {
                         <h1 className="text-3xl md:text-4xl font-black text-primary tracking-tight drop-shadow-lg">
                             {isWatchMode ? 'View Student' : 'Edit Student'}
                         </h1>
-                        <p className="text-muted-foreground font-bold opacity-80 mt-1 text-sm md:text-base uppercase tracking-widest text-[10px]">
-                            {isWatchMode ? 'READ-ONLY LEARNER RECORDS' : 'UPDATE LEARNER RECORDS'}
+                        <p className="text-muted-foreground font-bold opacity-80 mt-1 text-sm md:text-base tracking-widest text-[10px]">
+                            {isWatchMode ? 'Read-only Learner Records' : 'Update Learner Records'}
                         </p>
                     </div>
                 </div>

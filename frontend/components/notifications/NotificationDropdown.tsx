@@ -142,7 +142,7 @@ export function NotificationDropdown() {
                                                         {notif.body}
                                                     </p>
                                                 )}
-                                                <p className="text-[10px] text-muted-foreground mt-2 font-medium uppercase tracking-wider">
+                                                <p className="text-[10px] text-muted-foreground mt-2 font-medium tracking-wider">
                                                     {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
                                                 </p>
                                             </div>

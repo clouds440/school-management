@@ -234,14 +234,14 @@ export default function CoursesPage() {
                                         className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${showOnlyMyCourses ? 'translate-x-6' : 'translate-x-1'}`}
                                     />
                                 </button>
-                                <span className="text-xs font-bold text-card-foreground uppercase tracking-wider">My Courses</span>
+                                <span className="text-xs font-bold text-card-foreground tracking-wider">My Courses</span>
                             </div>
                         )}
                         {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                             <Button
                                 onClick={() => router.push(`/courses/create`)}
                                 icon={Plus}
-                                className="px-8 w-full md:w-auto text-xs font-black uppercase tracking-widest"
+                                className="px-8 w-full md:w-auto text-xs font-black tracking-widest"
                             >
                                 Create Course
                             </Button>

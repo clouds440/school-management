@@ -148,14 +148,14 @@ export default function Attendance() {
                         <div>
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="w-2 h-2 rounded-full bg-primary"></span>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">{summary?.courseName}</span>
+                                <span className="text-[10px] font-black tracking-widest text-primary">{summary?.courseName}</span>
                             </div>
-                            <h1 className="text-4xl font-black text-foreground tracking-tighter leading-none italic uppercase">{summary?.sectionName} Ledger</h1>
-                            <p className="text-muted-foreground mt-3 font-bold max-w-md tracking-tight uppercase text-[10px] opacity-60">Full monthly presence history for this course.</p>
+                            <h1 className="text-4xl font-black text-foreground tracking-tighter leading-none">{summary?.sectionName} Ledger</h1>
+                            <p className="text-muted-foreground mt-3 font-bold max-w-md tracking-tight text-[10px] opacity-60">Full monthly presence history for this course.</p>
                         </div>
                         <div className="bg-background/50 border border-border p-4 rounded-2xl flex items-center gap-6 shadow-sm">
                             <div>
-                                <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] mb-1 text-center">Section Rate</p>
+                                <p className="text-[9px] font-black text-muted-foreground/60 tracking-[0.2em] mb-1 text-center">Section Rate</p>
                                 <p className={`text-2xl font-black italic text-center ${summary && summary.percentage >= 85 ? 'text-emerald-500' : 'text-amber-500'}`}>{summary?.percentage}%</p>
                             </div>
                         </div>
@@ -176,8 +176,8 @@ export default function Attendance() {
         <div className="max-w-7xl mx-auto space-y-10 pb-16 px-4 sm:px-6">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4">
                 <div>
-                    <h1 className="text-5xl font-black text-foreground tracking-tighter leading-none italic uppercase">Presence Audit</h1>
-                    <p className="text-muted-foreground mt-4 font-bold max-w-md tracking-tight uppercase text-[11px] opacity-70">
+                    <h1 className="text-5xl font-black text-foreground tracking-tighter leading-none">Presence Audit</h1>
+                    <p className="text-muted-foreground mt-4 font-bold max-w-md tracking-tight text-[11px] opacity-70">
                         Unified visualization of your academic commitment and log presence.
                     </p>
                 </div>
@@ -186,11 +186,11 @@ export default function Attendance() {
                         <CheckCircle className="w-24 h-24" />
                     </div>
                     <div className="relative z-10 text-center">
-                        <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] mb-2 leading-none">Global Accuracy</p>
+                        <p className="text-[10px] font-black text-muted-foreground/60 tracking-[0.3em] mb-2 leading-none">Global Accuracy</p>
                         <p className={`text-4xl font-black italic tracking-tighter ${overallPercentage >= 85 ? 'text-emerald-500' : 'text-amber-500'}`}>{overallPercentage}%</p>
                     </div>
                     {overallPercentage < 85 && (
-                        <div className="relative z-10 flex items-center gap-2 text-amber-500 bg-amber-500/10 px-4 py-2.5 rounded-xl text-xs font-black uppercase italic border border-amber-500/20">
+                        <div className="relative z-10 flex items-center gap-2 text-amber-500 bg-amber-500/10 px-4 py-2.5 rounded-xl text-xs font-black italic border border-amber-500/20">
                             <AlertCircle className="w-4 h-4 animate-pulse" /> Attendance Risk
                         </div>
                     )}
@@ -200,7 +200,7 @@ export default function Attendance() {
             {sectionSummaries.length === 0 ? (
                 <div className="text-center py-24 bg-card border border-dashed border-border rounded-3xl shadow-sm">
                     <CheckCircle className="w-16 h-16 text-muted-foreground/20 mx-auto mb-6" />
-                    <p className="text-muted-foreground font-black uppercase tracking-widest text-xs">No attendance footprint detected</p>
+                    <p className="text-muted-foreground font-black tracking-widest text-xs">No attendance footprint detected</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -218,23 +218,23 @@ export default function Attendance() {
                                 <div className="flex items-center justify-between mb-8">
                                     <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
                                         <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-primary">{group.courseName}</span>
+                                        <span className="text-[9px] font-black tracking-widest text-primary">{group.courseName}</span>
                                     </div>
-                                    <div className={`text-lg font-black italic tracking-tighter ${group.percentage >= 85 ? 'text-emerald-500' : 'text-amber-500'}`}>{group.percentage}%</div>
+                                    <div className={`text-lg font-black tracking-tighter ${group.percentage >= 85 ? 'text-emerald-500' : 'text-amber-500'}`}>{group.percentage}%</div>
                                 </div>
 
-                                <h3 className="text-2xl font-black italic tracking-tighter uppercase mb-2 text-foreground group-hover:text-primary transition-colors leading-none">{group.sectionName}</h3>
-                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-10">Historical Ledger Summary</p>
+                                <h3 className="text-2xl font-black tracking-tighter mb-2 text-foreground group-hover:text-primary transition-colors leading-none">{group.sectionName}</h3>
+                                <p className="text-[10px] font-bold text-muted-foreground/60 tracking-widest mb-10">Historical Ledger Summary</p>
 
                                 <div className="space-y-6 bg-muted/20 p-6 rounded-2xl border border-border/50">
                                     <div className="grid grid-cols-2 gap-6">
                                         <div>
-                                            <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-widest mb-1 leading-none">Total Logs</p>
-                                            <p className="text-xl font-black italic text-foreground">{group.total}</p>
+                                            <p className="text-[9px] font-black text-muted-foreground/60 tracking-widest mb-1 leading-none">Total Logs</p>
+                                            <p className="text-xl font-black text-foreground">{group.total}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-black text-emerald-500/60 uppercase tracking-widest mb-1 leading-none">Present</p>
-                                            <p className="text-xl font-black italic text-emerald-500">{group.present + group.late}</p>
+                                            <p className="text-[9px] font-black text-emerald-500/60 tracking-widest mb-1 leading-none">Present</p>
+                                            <p className="text-xl font-black text-emerald-500">{group.present + group.late}</p>
                                         </div>
                                     </div>
 
@@ -245,7 +245,7 @@ export default function Attendance() {
                                         ></div>
                                     </div>
 
-                                    <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-[0.2em]">
+                                    <div className="flex items-center justify-between text-[8px] font-black tracking-[0.2em]">
                                         <span className="text-rose-500/70">Absent: {group.absent}</span>
                                         <span className="text-blue-500/70">Excused: {group.excused}</span>
                                     </div>
@@ -253,7 +253,7 @@ export default function Attendance() {
                             </div>
 
                             <div className="mt-8 pt-6 border-t border-border/50 flex items-center justify-between relative z-10 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-2 group-hover:translate-y-0">
-                                <span className="text-[10px] font-black text-primary uppercase tracking-widest">Audit Full Ledger</span>
+                                <span className="text-[10px] font-black text-primary tracking-widest">Audit Full Ledger</span>
                                 <ChevronRight className="w-5 h-5 text-primary" />
                             </div>
                         </div>

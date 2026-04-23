@@ -206,8 +206,8 @@ export default function OrganizationsPage() {
                     <div className="min-w-0 flex-1">
                         <h4 className="text-sm font-black text-foreground leading-tight">{row.name.slice(0, 20)}{row.name.length > 20 ? '...' : ''}</h4>
                         <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{row.type.replace('_', ' ')}</span>
-                            <span className={`text-[9px] font-black uppercase px-2 rounded-full ${
+                            <span className="text-[10px] font-bold text-muted-foreground tracking-widest">{row.type.replace('_', ' ')}</span>
+                            <span className={`text-[9px] font-black px-2 rounded-full ${
                                 row.status === OrgStatus.APPROVED ? 'bg-green-500/10 text-green-600 border border-green-500/20' :
                                 row.status === OrgStatus.PENDING ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' :
                                 row.status === OrgStatus.REJECTED ? 'bg-red-500/10 text-red-600 border border-red-500/20' :
@@ -352,22 +352,22 @@ export default function OrganizationsPage() {
                                 <div className="bg-card-text/5 rounded-lg p-6 border border-card-text/10 shadow-sm relative transition-all hover:bg-card-text/[0.07]">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                                         <div className="flex items-center gap-3">
-                                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-lg shadow-sm ${entry.status === 'APPROVED' ? 'bg-green-500 text-white' :
+                                            <span className={`text-[10px] font-black tracking-[0.2em] px-3 py-1 rounded-lg shadow-sm ${entry.status === 'APPROVED' ? 'bg-green-500 text-white' :
                                                 entry.status === 'REJECTED' ? 'bg-red-500 text-white' :
                                                     'bg-amber-600 text-white'
                                                 }`}>
                                                 {entry.status}
                                             </span>
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-black opacity-30 uppercase tracking-widest leading-none mb-1">Date & Time</span>
+                                                <span className="text-[10px] font-black opacity-30 tracking-widest leading-none mb-1">Date & Time</span>
                                                 <span className="text-[11px] font-black opacity-60">
                                                     {new Date(entry.createdAt).toLocaleString()}
                                                 </span>
                                             </div>
                                         </div>
                                         <div className="flex flex-col sm:items-end">
-                                            <span className="text-[10px] font-black opacity-30 uppercase tracking-widest leading-none mb-1 text-left sm:text-right">Action By</span>
-                                            <span className="text-[11px] font-black opacity-80 uppercase tracking-tighter">
+                                            <span className="text-[10px] font-black opacity-30 tracking-widest leading-none mb-1 text-left sm:text-right">Action By</span>
+                                            <span className="text-[11px] font-black opacity-80 tracking-tighter">
                                                 {entry.adminName} <span className="opacity-40 ml-1">({entry.adminRole})</span>
                                             </span>
                                         </div>
@@ -386,7 +386,7 @@ export default function OrganizationsPage() {
                 ) : (
                     <div className="p-8 border-2 border-dashed border-card-text/5 rounded-lg flex flex-col items-center justify-center text-center">
                         <Info className="w-8 h-8 opacity-20 mb-3" />
-                        <p className="text-xs font-black opacity-30 uppercase tracking-widest italic">No history details available</p>
+                        <p className="text-xs font-black opacity-30 tracking-widest">No history details available</p>
                     </div>
                 ),
                 icon: Clock,

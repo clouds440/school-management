@@ -199,7 +199,7 @@ export default function AssessmentForm({
                     <div className="space-y-2 md:space-y-3">
                         <div className="flex justify-between items-center mb-1">
                             <Label htmlFor="externalLink">External Link (Optional)</Label>
-                            <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground font-semibold uppercase hover:text-foreground transition-colors">
+                            <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground font-semibold hover:text-foreground transition-colors">
                                 <span className={watch('isVideoLink') ? 'text-primary' : 'text-muted-foreground'}>Embed as Video</span>
                                 <div className="relative inline-flex items-center">
                                     <input type="checkbox" className="sr-only peer" {...register('isVideoLink')} />

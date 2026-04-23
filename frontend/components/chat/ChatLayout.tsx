@@ -1272,14 +1272,14 @@ export function ChatLayout() {
                                                 {msg.replyTo.sender?.name || 'Someone'}
                                             </p>
                                             <div className="truncate line-clamp-1 opacity-95">
-                                                <MarkdownRenderer content={getTruncatedMessagePreview(msg.replyTo.deletedAt ? 'Message deleted' : msg.replyTo.content, isDesktop ? 70 : 35)} className={`${msg.replyTo.deletedAt ? 'italic text-muted-foreground!' : 'text-foreground!'}`} />
+                                                <MarkdownRenderer content={getTruncatedMessagePreview(msg.replyTo.deletedAt ? 'Message deleted' : msg.replyTo.content, isDesktop ? 70 : 35)} className={`${msg.replyTo.deletedAt ? 'text-muted-foreground!' : 'text-foreground!'}`} />
                                             </div>
                                         </div>
                                     );
                                 })()}
                                 {isDeleted ? (
                                     <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed my-1 bg-card text-muted-foreground border border-border ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
-                                        <div className="flex items-center space-x-1.5 italic">
+                                        <div className="flex items-center space-x-1.5">
                                             <Trash2 size={13} className="opacity-50 text-red-500" />
                                             <span>Message deleted {msg.deletedBy?.name ? <span>by {msg.deletedBy.name} </span> : null} <sub className='opacity-70'>{formatChatTimestamp(msg.createdAt!)}</sub></span>
                                         </div>
@@ -1351,7 +1351,7 @@ export function ChatLayout() {
                                                             </div>
                                                             <span className="text-[12px] text-foreground font-medium flex items-center my-1.5 justify-end space-x-1">
                                                                 {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
-                                                                    <sub className="text-[10px] text-foreground font-medium italic opacity-85">Edited</sub>
+                                                                    <sub className="text-[10px] text-foreground font-medium opacity-85">Edited</sub>
                                                                 )}
                                                                 <sub className='text-[11px] text-foreground/80'>{formatChatTimestamp(msg.createdAt)}</sub>
                                                                 {isMine && (
@@ -1517,7 +1517,7 @@ export function ChatLayout() {
                                                         <>
                                                             <span className="text-muted-foreground">{lastMsg.senderId === user.id ? 'You: ' : <span>{lastMsg.sender?.name}: </span>}</span>
                                                             {lastMsg.deletedAt ? (
-                                                                <span className="italic text-muted-foreground">Message deleted</span>
+                                                                <span className="text-muted-foreground">Message deleted</span>
                                                             ) : (
                                                                 (() => {
                                                                     const content = lastMsg.content || '';
@@ -1530,7 +1530,7 @@ export function ChatLayout() {
                                                             )}
                                                         </>
                                                     ) : (
-                                                        <span className="italic text-muted-foreground">Tap to start chatting</span>
+                                                        <span className="text-muted-foreground">Tap to start chatting</span>
                                                     );
                                                 })()}
                                             </p>
@@ -1992,7 +1992,7 @@ export function ChatLayout() {
                                                     {showMentionDropdown && filteredMembers.length > 0 && (
                                                         <div className="absolute bottom-full left-0 mb-2 w-56 sm:w-64 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
                                                             <div className="p-1.5 sm:p-2 border-b border-border">
-                                                                <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-2">Group Members</p>
+                                                                <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground tracking-wider px-2">Group Members</p>
                                                             </div>
                                                             <div
                                                                 ref={mentionDropdownRef}

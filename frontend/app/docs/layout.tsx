@@ -76,7 +76,7 @@ export default function DocsLayout({
         <nav className="space-y-8">
           {sections.map((section) => (
             <div key={section.title} className="space-y-3">
-              <h4 className="flex items-center text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              <h4 className="flex items-center text-xs font-bold text-muted-foreground tracking-wider">
                 <span className="mr-2 opacity-70">{section.icon}</span>
                 {section.title}
               </h4>

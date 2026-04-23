@@ -45,7 +45,7 @@ function AttachmentPreview({ file }: { file: Attachment }) {
             )}
             <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-black text-foreground truncate">{file.filename}</p>
-                <p className="text-[9px] font-bold text-muted-foreground uppercase">{(file.size / 1024).toFixed(1)} KB</p>
+                <p className="text-[9px] font-bold text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
             </div>
             <Download className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
         </a>
@@ -62,12 +62,12 @@ function MessageBubble({ message, isOwn }: { message: MailMessageType; isOwn: bo
                         {message.sender?.name || message.sender?.email}
                     </span>
                     {message.sender?.role && (
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                        <span className="text-[9px] font-bold text-muted-foreground tracking-widest">
                             {message.sender.role.replace('_', ' ')}
                         </span>
                     )}
                     {isOwn && (
-                        <span className="text-[8px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">You</span>
+                        <span className="text-[8px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded-full tracking-tighter">You</span>
                     )}
                 </div>
                 <div className={`inline-block text-foreground! p-4 rounded-lg shadow-sm ${isOwn ? 'bg-primary/10 border border-border/50' : 'bg-card border border-border'} text-left w-full`}>
@@ -83,7 +83,7 @@ function MessageBubble({ message, isOwn }: { message: MailMessageType; isOwn: bo
                 </div>
                 <div className="flex items-center gap-1 mt-1">
                     <Clock className="w-3 h-3 text-muted-foreground" />
-                    <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter">
+                    <span className="text-[9px] text-muted-foreground font-bold tracking-tighter">
                         {new Date(message.createdAt).toLocaleString()}
                     </span>
                 </div>
@@ -112,10 +112,10 @@ function ActionLogItem({ log }: { log: MailActionLog }) {
         <div className="flex items-center gap-2 py-2 px-4 bg-card/50 rounded-lg border border-border/50 mx-8">
             <div className="w-1.5 h-1.5 rounded-full bg-border shrink-0" />
             <span className="text-[10px] text-muted-foreground font-medium">
-                <span className="font-black uppercase text-foreground">{log.performer?.name || 'System'}</span>
+                <span className="font-black text-foreground">{log.performer?.name || 'System'}</span>
                 {' '}{getActionLabel(log.action)}
             </span>
-            <span className="text-[9px] text-muted-foreground ml-auto font-bold uppercase">
+            <span className="text-[9px] text-muted-foreground ml-auto font-bold">
                 {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
         </div>
@@ -197,13 +197,13 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                                     <BrandIcon key={a.id} variant="user" size="sm" user={a} className="border-2 border-white/80 shadow-sm" />
                                 ))
                             ) : (
-                                <div className="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-orange-600 text-[10px] font-black uppercase shadow-sm font-mono">
+                                <div className="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-orange-600 text-[10px] font-black shadow-sm font-mono">
                                     {mail.targetRole ? 'GRP' : 'ALL'}
                                 </div>
                             )}
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Conversation Between</p>
+                            <p className="text-[10px] font-black text-muted-foreground tracking-widest leading-none mb-1">Conversation Between</p>
                             <p className="text-sm font-bold text-foreground">
                                 {mail.creator.name || mail.creator.email}
                                 <span className="mx-2 text-muted-foreground">→</span>
@@ -218,8 +218,8 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                         </div>
                     </div>
                     <div className="text-right">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Priority</p>
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${mail.priority === 'URGENT' ? 'bg-red-100 text-red-600' :
+                        <p className="text-[10px] font-black text-muted-foreground tracking-widest leading-none mb-1">Priority</p>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${mail.priority === 'URGENT' ? 'bg-red-100 text-red-600' :
                             mail.priority === 'HIGH' ? 'bg-orange-100 text-orange-600' :
                                 'bg-blue-100 text-blue-600'
                             }`}>
@@ -249,7 +249,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
 
                     {!isClosed && <div ref={replyAreaRef} className="pt-4 mt-8 border-t border-border">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Post a Reply</h3>
+                            <h3 className="text-xs font-black text-muted-foreground tracking-widest">Post a Reply</h3>
 
                             <div className="flex items-center gap-4">
                                 <button
@@ -258,7 +258,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                                     className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors p-1"
                                 >
                                     <Paperclip className="w-4 h-4" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Attach Files</span>
+                                    <span className="text-[10px] font-black tracking-widest">Attach Files</span>
                                 </button>
                                 <input
                                     type="file"
@@ -300,7 +300,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                                 onClick={handleSend}
                                 isLoading={sending}
                                 loadingId="reply-submit"
-                                className="flex items-center gap-2 px-8 py-2.5 bg-primary text-foreground rounded-lg font-black text-xs uppercase tracking-widest hover:bg-primary/80 transition-all border-none shadow-lg shadow-primary/20"
+                                className="flex items-center gap-2 px-8 py-2.5 bg-primary text-foreground rounded-lg font-black text-xs tracking-widest hover:bg-primary/80 transition-all border-none shadow-lg shadow-primary/20"
                                 icon={Send}
                             >
                                 SEND REPLY
@@ -309,7 +309,7 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                     </div>}
 
                     {isClosed && (
-                        <div className="border-t border-border py-6 text-center bg-card/5 rounded-b-lg font-black text-muted-foreground uppercase text-[10px] tracking-widest">
+                        <div className="border-t border-border py-6 text-center bg-card/5 rounded-b-lg font-black text-muted-foreground text-[10px] tracking-widest">
                             This mail is closed — no further replies
                         </div>
                     )}

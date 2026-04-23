@@ -162,7 +162,7 @@ export default function PlatformAdminsPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                         <h4 className="text-sm font-black text-foreground leading-tight wrap-break-word">{row.name}</h4>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mt-0.5">{row.role.replace('_', ' ')}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground tracking-widest block mt-0.5">{row.role.replace('_', ' ')}</span>
                     </div>
                 </div>
             )
@@ -201,7 +201,7 @@ export default function PlatformAdminsPage() {
             header: 'Actions',
             width: 150,
             accessor: (row) => {
-                if (row.id === user?.id) return <span className="text-xs text-muted-foreground italic">Current User</span>;
+                if (row.id === user?.id) return <span className="text-xs text-muted-foreground">Current User</span>;
                 return (
                     <TableActions
                         onEdit={() => handleOpenAdminModal('EDIT', row)}
@@ -279,7 +279,7 @@ export default function PlatformAdminsPage() {
             >
                 <div className="space-y-4 py-2">
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block ml-1">Full Name</label>
+                        <label className="text-xs font-bold text-muted-foreground tracking-wider block ml-1">Full Name</label>
                         <input
                             type="text"
                             required
@@ -291,7 +291,7 @@ export default function PlatformAdminsPage() {
                     </div>
                     {adminModalMode === 'CREATE' && (
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block ml-1">Email Address</label>
+                            <label className="text-xs font-bold text-muted-foreground tracking-wider block ml-1">Email Address</label>
                             <input
                                 type="email"
                                 required
@@ -303,7 +303,7 @@ export default function PlatformAdminsPage() {
                         </div>
                     )}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block ml-1">Phone (Optional)</label>
+                        <label className="text-xs font-bold text-muted-foreground tracking-wider block ml-1">Phone (Optional)</label>
                         <input
                             type="tel"
                             autoComplete='off'
@@ -314,7 +314,7 @@ export default function PlatformAdminsPage() {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block ml-1">
+                        <label className="text-xs font-bold text-muted-foreground tracking-wider block ml-1">
                             {adminModalMode === 'CREATE' ? 'Password' : 'New Password (Optional)'}
                         </label>
                         <input

@@ -169,7 +169,7 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
                                 type="user"
                                 currentImageUrl={initialData?.user?.avatarUrl}
                             />
-                            <p className="mt-3 text-xs text-center font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-primary transition-colors">
+                            <p className="mt-3 text-xs text-center font-semibold tracking-wider text-muted-foreground group-hover:text-primary transition-colors">
                                 {teacherId ? 'Update Photo' : 'Upload Photo'}
                             </p>
                         </div>
@@ -378,7 +378,7 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
                         </div>
                         {formData.isManager && (
                             <div className="px-4 py-2 bg-primary/20 rounded-xl border border-primary/30 animate-in fade-in zoom-in w-full sm:w-auto text-center sm:text-left">
-                                <span className="text-xs font-semibold text-primary uppercase tracking-wider">Manager Mode Active</span>
+                                <span className="text-xs font-semibold text-primary tracking-wider">Manager Mode Active</span>
                             </div>
                         )}
                     </div>

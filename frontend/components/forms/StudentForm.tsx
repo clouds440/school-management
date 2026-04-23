@@ -182,7 +182,7 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
                                 disabled={isWatchMode}
                             />
                             {!isWatchMode && (
-                                <p className="mt-3 text-xs text-center font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-primary transition-colors">
+                                <p className="mt-3 text-xs text-center font-semibold tracking-wider text-muted-foreground group-hover:text-primary transition-colors">
                                     {studentId ? 'Update Photo' : 'Upload Photo'}
                                 </p>
                             )}
