@@ -23,12 +23,15 @@ import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateAssessmentDto } from './dto/update-assessment.dto';
 import * as bcrypt from 'bcrypt';
 import { FilesService } from '../files/files.service';
+import { StudentService } from '../students/student.service';
 import {
   getPaginationOptions,
   formatPaginatedResponse,
   extractUpdateFields,
   BCRYPT_ROUNDS,
   PaginationOptions,
+  TimetableSection,
+  extractTimetableEntries,
 } from '../common/utils';
 import { UpdateGradeDto } from './dto/update-grade.dto';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
@@ -100,6 +103,7 @@ export class OrgService {
     private readonly filesService: FilesService,
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly studentService: StudentService,
   ) {}
 
   // --- Settings ---
@@ -908,23 +912,7 @@ export class OrgService {
     sectionId: string,
     studentIds: string[],
   ) {
-    if (studentIds.length === 0) return;
-
-    const enrollments = await this.prisma.enrollment.findMany({
-      where: {
-        sectionId,
-        studentId: { in: studentIds },
-      },
-      select: { studentId: true },
-    });
-
-    const enrolledIds = new Set(enrollments.map((enrollment) => enrollment.studentId));
-    const invalidStudentId = studentIds.find((studentId) => !enrolledIds.has(studentId));
-    if (invalidStudentId) {
-      throw new BadRequestException(
-        'Attendance can only be marked for students enrolled in this section.',
-      );
-    }
+    return this.studentService.assertStudentsBelongToSection(sectionId, studentIds);
   }
 
   async getSection(orgId: string, id: string, user: JwtPayload) {
@@ -1010,140 +998,11 @@ export class OrgService {
 
   // --- Students ---
   async getStudents(orgId: string, options: PaginationOptions) {
-    const { skip, take, sortBy, sortOrder } = getPaginationOptions(options);
-
-    const where: Prisma.StudentWhereInput = {
-      organizationId: orgId,
-      status: { not: StudentStatus.DELETED },
-      ...(options.sectionId
-        ? {
-            enrollments: {
-              some: { sectionId: options.sectionId },
-            },
-          }
-        : {}),
-      ...(options.my && options.userId
-        ? {
-            enrollments: {
-              some: {
-                section: {
-                  teachers: {
-                    some: { userId: options.userId },
-                  },
-                },
-              },
-            },
-          }
-        : {}),
-      ...(options.search
-        ? {
-            OR: [
-              {
-                user: {
-                  name: { contains: options.search, mode: 'insensitive' },
-                },
-              },
-              {
-                user: {
-                  email: { contains: options.search, mode: 'insensitive' },
-                },
-              },
-              {
-                registrationNumber: {
-                  contains: options.search,
-                  mode: 'insensitive',
-                },
-              },
-              { rollNumber: { contains: options.search, mode: 'insensitive' } },
-              { major: { contains: options.search, mode: 'insensitive' } },
-              { department: { contains: options.search, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
-    };
-
-    // Handle nested sorting for user fields
-    let orderBy: Prisma.StudentOrderByWithRelationInput = {};
-    const userFields = ['name', 'email', 'phone'];
-
-    if (sortBy.startsWith('user.')) {
-      const field = sortBy.split('.')[1];
-      orderBy = { user: { [field]: sortOrder } };
-    } else if (userFields.includes(sortBy)) {
-      orderBy = { user: { [sortBy]: sortOrder } };
-    } else {
-      orderBy = { [sortBy]: sortOrder };
-    }
-
-    const [students, totalRecords] = await Promise.all([
-      this.prisma.student.findMany({
-        where,
-        skip,
-        take,
-        orderBy,
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              phone: true,
-              avatarUrl: true,
-              avatarUpdatedAt: true,
-            },
-          },
-          enrollments: {
-            include: {
-              section: {
-                include: { course: true },
-              },
-            },
-          },
-        },
-      }),
-      this.prisma.student.count({ where }),
-    ]);
-
-    return formatPaginatedResponse(
-      students,
-      totalRecords,
-      options.page,
-      options.limit,
-    );
+    return this.studentService.getStudents(orgId, options);
   }
 
   async getStudent(orgId: string, id: string) {
-    const student = await this.prisma.student.findFirst({
-      where: {
-        id,
-        organizationId: orgId,
-        status: { not: StudentStatus.DELETED },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            phone: true,
-            avatarUrl: true,
-            avatarUpdatedAt: true,
-          },
-        },
-        enrollments: {
-          include: {
-            section: {
-              include: {
-                course: true,
-                teachers: { include: { user: true } },
-              },
-            },
-          },
-        },
-      },
-    });
-    if (!student) throw new NotFoundException('Student not found');
-    return student;
+    return this.studentService.getStudent(orgId, id);
   }
 
   async createStudent(
@@ -1151,112 +1010,7 @@ export class OrgService {
     data: CreateStudentDto,
     userContext: { name?: string | null; email: string },
   ) {
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: data.email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException(
-        'A user with this email address already exists in the system',
-      );
-    }
-
-    const existingRegNum = await this.prisma.student.findFirst({
-      where: {
-        organizationId: orgId,
-        registrationNumber: data.registrationNumber,
-      },
-    });
-
-    if (existingRegNum) {
-      throw new ConflictException(
-        `Registration number "${data.registrationNumber}" is already assigned to another student in this organization`,
-      );
-    }
-
-    const existingRollNum = await this.prisma.student.findFirst({
-      where: { organizationId: orgId, rollNumber: data.rollNumber },
-    });
-
-    if (existingRollNum) {
-      throw new ConflictException(
-        `Roll number "${data.rollNumber}" is already assigned to another student in this organization`,
-      );
-    }
-
-    const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
-
-    try {
-      return await this.prisma.$transaction(async (prisma) => {
-        const user = await prisma.user.create({
-          data: {
-            email: data.email,
-            password: hashedPassword,
-            role: Role.STUDENT,
-            organizationId: orgId,
-            name: data.name,
-            phone: data.phone,
-          },
-        });
-
-        const student = await prisma.student.create({
-          data: {
-            userId: user.id,
-            organizationId: orgId,
-            registrationNumber: data.registrationNumber,
-            rollNumber: data.rollNumber,
-            fatherName: data.fatherName,
-            fee: data.fee,
-            age: data.age,
-            address: data.address,
-            major: data.major,
-            department: data.department,
-            admissionDate: data.admissionDate
-              ? new Date(data.admissionDate)
-              : undefined,
-            graduationDate: data.graduationDate
-              ? new Date(data.graduationDate)
-              : undefined,
-            emergencyContact: data.emergencyContact,
-            bloodGroup: data.bloodGroup,
-            gender: data.gender,
-            feePlan: data.feePlan,
-            status: data.status,
-            enrollments: data.sectionIds
-              ? { create: data.sectionIds.map((sectionId) => ({ sectionId })) }
-              : undefined,
-            updatedBy: userContext.name || userContext.email,
-          },
-          include: {
-            user: { select: { email: true, name: true, phone: true } },
-            enrollments: { include: { section: true } },
-          },
-        });
-
-        return student;
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
-          const target = (error.meta?.target as string[]) || [];
-          if (target.includes('email'))
-            throw new ConflictException('Email address already in use');
-          if (target.includes('registrationNumber'))
-            throw new ConflictException('Registration number already in use');
-          if (target.includes('rollNumber'))
-            throw new ConflictException('Roll number already in use');
-        }
-      }
-      if (
-        error instanceof ConflictException ||
-        error instanceof BadRequestException
-      )
-        throw error;
-      console.error('[CreateStudent Error]:', error);
-      throw new InternalServerErrorException(
-        'An unexpected error occurred while creating the student record',
-      );
-    }
+    return this.studentService.createStudent(orgId, data, userContext);
   }
 
   async updateStudent(
@@ -1265,171 +1019,15 @@ export class OrgService {
     data: UpdateStudentDto,
     userContext: { role: Role; name?: string | null; email: string },
   ) {
-    const student = await this.prisma.student.findFirst({
-      where: { id, organizationId: orgId },
-      include: { user: true },
-    });
-
-    if (!student) throw new NotFoundException('Student not found');
-
-    const userFields = ['name', 'email', 'phone', 'password'];
-    const studentFields = [
-      'registrationNumber',
-      'rollNumber',
-      'fatherName',
-      'fee',
-      'age',
-      'address',
-      'major',
-      'department',
-      'admissionDate',
-      'graduationDate',
-      'emergencyContact',
-      'bloodGroup',
-      'gender',
-      'feePlan',
-      'status',
-    ];
-
-    const { userData, entityData: studentData } = await extractUpdateFields(
-      data as unknown as Record<string, unknown>,
-      userFields,
-      studentFields,
-      student.user.email,
-    );
-
-    // --- Role-based Field Locking ---
-    const isOrgAdmin = userContext.role === Role.ORG_ADMIN;
-    if (!isOrgAdmin) {
-      delete studentData.registrationNumber;
-      delete studentData.rollNumber;
-    }
-
-    if (
-      studentData.registrationNumber &&
-      studentData.registrationNumber !== student.registrationNumber
-    ) {
-      const existing = await this.prisma.student.findFirst({
-        where: {
-          organizationId: orgId,
-          registrationNumber: studentData.registrationNumber,
-          id: { not: id },
-        },
-      });
-      if (existing)
-        throw new BadRequestException('Registration number already in use');
-    }
-
-    if (
-      studentData.rollNumber &&
-      studentData.rollNumber !== student.rollNumber
-    ) {
-      const existing = await this.prisma.student.findFirst({
-        where: {
-          organizationId: orgId,
-          rollNumber: studentData.rollNumber,
-          id: { not: id },
-        },
-      });
-      if (existing) throw new BadRequestException('Roll number already in use');
-    }
-
-    if (data.admissionDate) {
-      const date = new Date(data.admissionDate);
-      if (!isNaN(date.getTime())) {
-        studentData.admissionDate = date;
-      }
-    }
-
-    if (data.graduationDate !== undefined) {
-      if (data.graduationDate) {
-        const date = new Date(data.graduationDate);
-        if (!isNaN(date.getTime())) {
-          studentData.graduationDate = date;
-        }
-      } else {
-        studentData.graduationDate = null;
-      }
-    }
-
-    const updatedStudent = await this.prisma.$transaction(async (tx) => {
-      if (Object.keys(userData).length > 0) {
-        await tx.user.update({
-          where: { id: student.userId },
-          data: userData,
-        });
-      }
-
-      if (Object.keys(studentData).length > 0) {
-        studentData.updatedBy = userContext.name || userContext.email;
-        await tx.student.update({
-          where: { id },
-          data: studentData,
-        });
-      }
-
-      if (data.sectionIds !== undefined) {
-        await tx.enrollment.deleteMany({ where: { studentId: id } });
-        if (data.sectionIds.length > 0) {
-          await tx.enrollment.createMany({
-            data: data.sectionIds.map((sectionId) => ({
-              studentId: id,
-              sectionId,
-            })),
-          });
-        }
-      }
-
-      return tx.student.findUnique({
-        where: { id },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              phone: true,
-              avatarUrl: true,
-              avatarUpdatedAt: true,
-            },
-          },
-          enrollments: { include: { section: true } },
-        },
-      });
-    });
-
-    // --- Persistent Notifications ---
-    if (data.status && data.status !== student.status) {
-      await this.notifications.createNotification({
-        userId: student.userId,
-        title: 'Account Status Updated',
-        body: `Your account status has been changed to ${data.status.toLowerCase()}.`,
-        type: 'USER_STATUS_CHANGE',
-        actionUrl: '/profile',
-        metadata: { oldStatus: student.status, newStatus: data.status },
-      });
-    }
-
-    return updatedStudent;
+    return this.studentService.updateStudent(orgId, id, data, userContext);
   }
 
   async deleteStudent(orgId: string, id: string) {
-    const student = await this.prisma.student.findFirst({
-      where: { id, organizationId: orgId },
-    });
-
-    if (!student) throw new NotFoundException('Student not found');
-
-    await this.prisma.student.update({
-      where: { id },
-      data: { status: StudentStatus.DELETED },
-    });
-
-    return { message: 'Student deleted successfully' };
+    return this.studentService.deleteStudent(orgId, id);
   }
 
   async getStudentByUserId(userId: string) {
-    return this.prisma.student.findUnique({ where: { userId } });
+    return this.studentService.getStudentByUserId(userId);
   }
 
   async getTeacherByUserId(userId: string) {
@@ -1608,7 +1206,7 @@ export class OrgService {
         userId: e.student.userId,
         title: 'New Assessment Created',
         body: `A new assessment "${assessment.title}" has been added.`,
-        actionUrl: `/sections/${data.sectionId}/assessments/${assessment.id}`,
+        actionUrl: `/students/${e.student.userId}?tab=assessments&sectionId=${data.sectionId}`,
         type: 'ASSESSMENT_CREATED',
       });
     }
@@ -2018,61 +1616,7 @@ export class OrgService {
 
   // --- Grade Calculation ---
   async calculateFinalGrade(studentId: string, sectionId?: string) {
-    // If sectionId is provided, calculate for that section.
-    // Otherwise, calculate for all sections the student is enrolled in.
-    const enrollments = await this.prisma.enrollment.findMany({
-      where: {
-        studentId,
-        ...(sectionId ? { sectionId } : {}),
-      },
-      include: {
-        section: {
-          include: {
-            course: true,
-            assessments: {
-              include: {
-                grades: {
-                  where: {
-                    studentId,
-                    status: { in: ['PUBLISHED', 'FINALIZED'] },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return enrollments.map((enrollment) => {
-      const section = enrollment.section;
-      let totalPercentage = 0;
-      const assessmentGrades = section.assessments.map((a) => {
-        const grade = a.grades[0];
-        const percentage = grade
-          ? (grade.marksObtained / a.totalMarks) * a.weightage
-          : 0;
-        totalPercentage += percentage;
-        return {
-          assessmentId: a.id,
-          title: a.title,
-          type: a.type,
-          weightage: a.weightage,
-          marksObtained: grade?.marksObtained || 0,
-          totalMarks: a.totalMarks,
-          status: grade?.status || 'NOT_GRADED',
-          percentage: percentage.toFixed(2),
-        };
-      });
-
-      return {
-        sectionId: section.id,
-        sectionName: section.name,
-        courseName: section.course.name,
-        finalPercentage: parseFloat(totalPercentage.toFixed(2)),
-        assessments: assessmentGrades,
-      };
-    });
+    return this.studentService.calculateFinalGrade(studentId, sectionId);
   }
 
   async reapply(orgId: string) {
@@ -3262,11 +2806,7 @@ export class OrgService {
   }
 
   async getStudentFinalGrades(orgId: string, userId: string) {
-    const student = await this.getStudentByUserId(userId);
-    if (!student) return [];
-
-    const results = await this.calculateFinalGrade(student.id);
-    return results;
+    return this.studentService.getStudentFinalGrades(orgId, userId);
   }
 
   // --- Timetable & Attendance ---
@@ -3396,60 +2936,8 @@ export class OrgService {
     });
   }
 
-  private extractTimetableEntries(
-    sections: {
-      id: string;
-      name: string;
-      room: string | null;
-      course: { name: string };
-      schedules: { id: string; day: number; startTime: string; endTime: string; room: string | null }[];
-    }[]
-  ) {
-    const timetable: {
-      scheduleId: string;
-      sectionId: string;
-      sectionName: string;
-      courseName: string;
-      day: number;
-      startTime: string;
-      endTime: string;
-      room: string | null;
-    }[] = [];
-
-    for (const section of sections) {
-      for (const schedule of section.schedules) {
-        timetable.push({
-          scheduleId: schedule.id,
-          sectionId: section.id,
-          sectionName: section.name,
-          courseName: section.course.name,
-          day: schedule.day,
-          startTime: schedule.startTime,
-          endTime: schedule.endTime,
-          room: schedule.room || section.room,
-        });
-      }
-    }
-    return timetable;
-  }
-
   async getStudentTimetable(orgId: string, userId: string) {
-    const student = await this.getStudentByUserId(userId);
-    if (!student) return [];
-    
-    const enrollments = await this.prisma.enrollment.findMany({
-      where: { studentId: student.id, section: { course: { organizationId: orgId } } },
-      include: {
-        section: {
-          include: {
-            course: { select: { name: true } },
-            schedules: { select: { id: true, day: true, startTime: true, endTime: true, room: true } },
-          },
-        },
-      },
-    });
-
-    return this.extractTimetableEntries(enrollments.map((e) => e.section));
+    return this.studentService.getStudentTimetable(orgId, userId);
   }
 
   async getTeacherTimetable(orgId: string, userId: string) {
@@ -3466,7 +2954,7 @@ export class OrgService {
       },
     });
 
-    return this.extractTimetableEntries(sections);
+    return extractTimetableEntries(sections);
   }
 
   async createAttendanceSession(
@@ -3687,44 +3175,6 @@ export class OrgService {
     userId: string,
     requester: JwtPayload,
   ) {
-    if (requester.role === Role.STUDENT && requester.id !== userId) {
-      throw new ForbiddenException(
-        'Students can only view their own attendance.',
-      );
-    }
-
-    const student = await this.getStudentByUserId(userId);
-    if (!student) return [];
-
-    if (requester.role === Role.TEACHER) {
-      const canAccess = await this.prisma.enrollment.findFirst({
-        where: {
-          studentId: student.id,
-          section: {
-            course: { organizationId: orgId },
-            teachers: { some: { userId: requester.id } },
-          },
-        },
-        select: { id: true },
-      });
-
-      if (!canAccess) {
-        throw new ForbiddenException(
-          'You are not assigned to this student section.',
-        );
-      }
-    }
-    
-    return this.prisma.attendanceRecord.findMany({
-      where: { studentId: student.id, session: { section: { course: { organizationId: orgId } } } },
-      include: {
-        session: {
-          include: {
-            section: { select: { id: true, name: true, course: { select: { name: true } } } },
-          },
-        },
-      },
-      orderBy: { session: { date: 'desc' } },
-    });
+    return this.studentService.getStudentAttendance(orgId, userId, requester);
   }
 }

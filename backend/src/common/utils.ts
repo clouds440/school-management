@@ -21,6 +21,64 @@ export interface PaginatedResult<T> {
   currentPage: number;
 }
 
+export interface TimetableSection {
+  id: string;
+  name: string;
+  room: string | null;
+  course: { name: string };
+  schedules: { id: string; day: number; startTime: string; endTime: string; room: string | null }[];
+}
+
+export interface TimetableEntry {
+  scheduleId: string;
+  sectionId: string;
+  sectionName: string;
+  courseName: string;
+  day: number;
+  startTime: string;
+  endTime: string;
+  room: string | null;
+}
+
+export interface GroupedTimetableEntry {
+  day: number;
+  dayOrder: number;
+  startTime: string;
+  endTime: string;
+  sections: {
+    id: string;
+    name: string;
+    room: string | null;
+    course: { name: string };
+  }[];
+}
+
+export const extractTimetableEntries = (sections: TimetableSection[]): TimetableEntry[] => {
+  const timetable: TimetableEntry[] = [];
+
+  for (const section of sections) {
+    for (const schedule of section.schedules) {
+      timetable.push({
+        scheduleId: schedule.id,
+        sectionId: section.id,
+        sectionName: section.name,
+        courseName: section.course.name,
+        day: schedule.day,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        room: schedule.room || section.room,
+      });
+    }
+  }
+
+  timetable.sort((a, b) => {
+    if (a.day !== b.day) return a.day - b.day;
+    return a.startTime.localeCompare(b.startTime);
+  });
+
+  return timetable;
+};
+
 export const getPaginationOptions = (options: PaginationOptions) => {
   const {
     page = 1,
