@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
+import { TeacherService } from '../teacher/teacher.service';
 import { CreateDirectChatDto } from './dto/create-direct-chat.dto';
 import { CreateGroupChatDto } from './dto/create-group.dto';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -32,6 +33,7 @@ export class ChatService {
     private readonly prisma: PrismaService,
     private readonly events: EventsGateway,
     private readonly notifications: NotificationsService,
+    private readonly teacherService: TeacherService,
   ) {}
 
   async searchUsers(query: string, user: CurrentUser) {

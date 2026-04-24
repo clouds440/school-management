@@ -4,10 +4,12 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Prisma, User as UserEntity, Organization } from '@prisma/client';
-import { OrgStatus, Role, MailStatus, MailCategory } from '../common/enums';
+import { OrgStatus, Role, MailCategory } from '../common/enums';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { UserService } from '../users/user.service';
+import { OrgService } from '../org/org.service';
 import {
   getPaginationOptions,
   formatPaginatedResponse,
@@ -27,6 +29,8 @@ export class AdminService {
     private readonly authService: AuthService,
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
+    private readonly userService: UserService,
+    private readonly orgService: OrgService,
   ) {}
 
   private orgWithAdminInclude = Prisma.validator<Prisma.OrganizationInclude>()({
@@ -142,33 +146,11 @@ export class AdminService {
       throw new NotFoundException('Organization not found');
     }
 
-    const history = (org.statusHistory as Prisma.JsonArray) || [];
-    const newEntry = {
-      status: OrgStatus.APPROVED,
-      message: 'Organization approved.',
-      adminName: admin.name || admin.email,
-      adminRole: admin.role,
-      createdAt: new Date(),
-    };
-
-    const result = await this.prisma.organization.update({
-      where: { id },
-      data: {
-        status: OrgStatus.APPROVED,
-        statusHistory: [...history, newEntry] as Prisma.InputJsonValue,
-      },
-    });
-
-    // Instant Revocation: Revoke all sessions for organization users
-    await this.prisma.session.updateMany({
-      where: { user: { organizationId: id } },
-      data: { isActive: false },
-    });
+    const result = await this.orgService.approveOrganization(id, admin);
 
     // Find the admin user to send the welcome/re-approval mail
-    const orgAdmin = await this.prisma.user.findFirst({
-      where: { organizationId: id, role: Role.ORG_ADMIN },
-    });
+    const orgAdmins = await this.userService.getUsersByOrgAndRole(id, Role.ORG_ADMIN);
+    const orgAdmin = orgAdmins[0];
 
     if (orgAdmin) {
       let subject = `Welcome to EduVerse: ${org.name}`;
@@ -189,6 +171,7 @@ export class AdminService {
           category: MailCategory.PLATFORM_NOTICE,
           priority: 'NORMAL',
           message,
+          noReply: true,
           assigneeIds: [orgAdmin.id],
         },
         {
@@ -210,71 +193,31 @@ export class AdminService {
       throw new NotFoundException('Organization not found');
     }
 
-    const history = (org.statusHistory as Prisma.JsonArray) || [];
-    const newEntry = {
-      status: OrgStatus.REJECTED,
-      message: reason,
-      adminName: admin.name || admin.email,
-      adminRole: admin.role,
-      createdAt: new Date(),
-    };
+    const result = await this.orgService.rejectOrganization(id, reason, admin);
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Update status and history
-      const updatedOrg = await tx.organization.update({
-        where: { id },
-        data: {
-          status: OrgStatus.REJECTED,
-          statusHistory: [...history, newEntry] as Prisma.InputJsonValue,
-        },
-      });
+    // Find any admin user of this organization to be the target of the mail
+    const orgAdmins = await this.userService.getUsersByOrgAndRole(id, Role.ORG_ADMIN);
+    const orgAdmin = orgAdmins[0];
 
-      // 2. Instant Revocation for all Org users
-      await tx.session.updateMany({
-        where: { user: { organizationId: id } },
-        data: { isActive: false },
-      });
-
-      // 3. Find any admin user of this organization to be the target of the mail
-      const orgAdmin = await tx.user.findFirst({
-        where: { organizationId: id, role: Role.ORG_ADMIN },
-      });
-
-      // 4. Create a Mail thread (Notice) - No Reply
-      const mail = await tx.mail.create({
-        data: {
-          subject: 'Application Status Update: REJECTED',
-          category: 'System Notice',
-          priority: 'URGENT',
-          status: MailStatus.NO_REPLY,
-          creatorId: admin.id,
-          creatorRole: admin.role,
-          organizationId: id,
-          targetRole: Role.ORG_ADMIN,
-          assigneeId: orgAdmin?.id,
-        },
-      });
-
-      // 5. Initial Message
-      await tx.mailMessage.create({
-        data: {
-          mailId: mail.id,
-          senderId: admin.id,
-          content: reason,
-        },
-      });
-
-      // 6. Mark as read for the admin (sender)
-      await tx.mailUserView.create({
-        data: {
-          userId: admin.id,
-          mailId: mail.id,
-          lastViewedAt: new Date(),
-        },
-      });
-
-      return updatedOrg;
-    });
+    // Create a Mail thread (Notice) - No Reply
+    await this.mailService.createMail(
+      {
+        subject: 'Application Status Update: REJECTED',
+        category: 'System Notice',
+        priority: 'URGENT',
+        message: reason,
+        noReply: true,
+        assigneeIds: orgAdmin ? [orgAdmin.id] : [],
+        targetRole: Role.ORG_ADMIN,
+      },
+      {
+        id: admin.id,
+        role: admin.role,
+        name: admin.name || null,
+        email: admin.email,
+        organizationId: id,
+      },
+    );
 
     return result;
   }
@@ -285,71 +228,31 @@ export class AdminService {
       throw new NotFoundException('Organization not found');
     }
 
-    const history = (org.statusHistory as Prisma.JsonArray) || [];
-    const newEntry = {
-      status: OrgStatus.SUSPENDED,
-      message: reason,
-      adminName: admin.name || admin.email,
-      adminRole: admin.role,
-      createdAt: new Date(),
-    };
+    const result = await this.orgService.suspendOrganization(id, reason, admin);
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Update status and history
-      const updatedOrg = await tx.organization.update({
-        where: { id },
-        data: {
-          status: OrgStatus.SUSPENDED,
-          statusHistory: [...history, newEntry] as Prisma.InputJsonValue,
-        },
-      });
+    // Find any admin user of this organization to be the target of the mail
+    const orgAdmins = await this.userService.getUsersByOrgAndRole(id, Role.ORG_ADMIN);
+    const orgAdmin = orgAdmins[0];
 
-      // 2. Instant Revocation for all Org users
-      await tx.session.updateMany({
-        where: { user: { organizationId: id } },
-        data: { isActive: false },
-      });
-
-      // 3. Find any admin user of this organization to be the target of the mail
-      const orgAdmin = await tx.user.findFirst({
-        where: { organizationId: id, role: Role.ORG_ADMIN },
-      });
-
-      // 4. Create a Mail thread (Notice) - No Reply
-      const mail = await tx.mail.create({
-        data: {
-          subject: 'Organization Status Update: SUSPENDED',
-          category: 'Security/Admin Notice',
-          priority: 'URGENT',
-          status: MailStatus.NO_REPLY,
-          creatorId: admin.id,
-          creatorRole: admin.role,
-          organizationId: id,
-          targetRole: Role.ORG_ADMIN,
-          assigneeId: orgAdmin?.id,
-        },
-      });
-
-      // 5. Initial Message
-      await tx.mailMessage.create({
-        data: {
-          mailId: mail.id,
-          senderId: admin.id,
-          content: reason,
-        },
-      });
-
-      // 6. Mark as read for the admin (sender)
-      await tx.mailUserView.create({
-        data: {
-          userId: admin.id,
-          mailId: mail.id,
-          lastViewedAt: new Date(),
-        },
-      });
-
-      return updatedOrg;
-    });
+    // Create a Mail thread (Notice) - No Reply
+    await this.mailService.createMail(
+      {
+        subject: 'Organization Status Update: SUSPENDED',
+        category: 'Security/Admin Notice',
+        priority: 'URGENT',
+        message: reason,
+        noReply: true,
+        assigneeIds: orgAdmin ? [orgAdmin.id] : [],
+        targetRole: Role.ORG_ADMIN,
+      },
+      {
+        id: admin.id,
+        role: admin.role,
+        name: admin.name || null,
+        email: admin.email,
+        organizationId: id,
+      },
+    );
 
     return result;
   }
@@ -418,37 +321,19 @@ export class AdminService {
   }
 
   async createPlatformAdmin(data: CreatePlatformAdminDto) {
-    const existing = await this.prisma.user.findUnique({
-      where: { email: data.email },
-    });
-    if (existing) throw new UnauthorizedException('Email already in use');
-
-    const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
-    return this.prisma.user.create({
-      data: {
-        email: data.email,
-        password: hashedPassword,
-        name: data.name,
-        phone: data.phone,
-        role: Role.PLATFORM_ADMIN,
-        avatarUrl: '/assets/eduverse-icon.png',
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        phone: true,
-        role: true,
-        createdAt: true,
-      },
+    return this.userService.createUser({
+      email: data.email,
+      password: data.password,
+      role: Role.PLATFORM_ADMIN,
+      name: data.name,
+      phone: data.phone,
+      avatarUrl: '/assets/eduverse-icon.png',
     });
   }
 
   async updatePlatformAdmin(id: string, data: UpdatePlatformAdminDto) {
-    const admin = await this.prisma.user.findUnique({
-      where: { id, role: Role.PLATFORM_ADMIN },
-    });
-    if (!admin) throw new NotFoundException('Platform admin not found');
+    const admin = await this.userService.getUserById(id);
+    if (admin.role !== Role.PLATFORM_ADMIN) throw new NotFoundException('Platform admin not found');
 
     const updateData: Prisma.UserUpdateInput = {};
     if (data.name) updateData.name = data.name;
@@ -458,53 +343,26 @@ export class AdminService {
       updateData.password = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
     }
 
-    return this.prisma.user.update({
-      where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        phone: true,
-        role: true,
-        createdAt: true,
-      },
-    });
+    return this.userService.updateUser(id, updateData);
   }
 
   async deletePlatformAdmin(id: string) {
-    const admin = await this.prisma.user.findUnique({
-      where: { id, role: Role.PLATFORM_ADMIN },
-    });
-    if (!admin) throw new NotFoundException('Platform admin not found');
+    const admin = await this.userService.getUserById(id);
+    if (admin.role !== Role.PLATFORM_ADMIN) throw new NotFoundException('Platform admin not found');
 
-    await this.prisma.user.delete({ where: { id } });
-    return { message: 'Platform admin deleted successfully' };
+    return this.userService.deleteUser(id);
   }
 
   async changeAdminPassword(userId: string, oldPass: string, newPass: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.userService.getUserById(userId);
     if (
-      !user ||
-      (user.role !== Role.SUPER_ADMIN && user.role !== Role.PLATFORM_ADMIN)
+      user.role !== Role.SUPER_ADMIN &&
+      user.role !== Role.PLATFORM_ADMIN
     ) {
       throw new UnauthorizedException('Admin not found');
     }
 
-    const isMatch = await bcrypt.compare(oldPass, user.password);
-    if (!isMatch) {
-      throw new UnauthorizedException('Incorrect old password');
-    }
-
-    const hashedNew = await bcrypt.hash(newPass, BCRYPT_ROUNDS);
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        password: hashedNew,
-        isFirstLogin: false,
-      },
-    });
-
+    const updatedUser = await this.userService.changePassword(userId, oldPass, newPass);
     return this.authService.generateToken(updatedUser);
   }
 }

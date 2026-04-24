@@ -9,35 +9,42 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { FilesService } from '../files/files.service';
+import { UserService } from '../users/user.service';
 
 @Injectable()
 export class OrgService {
   constructor(
     private readonly filesService: FilesService,
     private readonly prisma: PrismaService,
+    private readonly userService: UserService,
   ) {}
 
-  // --- Settings ---
-  async getSettings(orgId: string) {
+  private async getOrganizationById(orgId: string) {
     const org = await this.prisma.organization.findUnique({
       where: { id: orgId },
-      select: {
-        id: true,
-        name: true,
-        location: true,
-        type: true,
-        contactEmail: true,
-        phone: true,
-        logoUrl: true,
-        avatarUpdatedAt: true,
-        accentColor: true,
-        status: true,
-        statusHistory: true,
-        createdAt: true,
-      },
     });
     if (!org) throw new NotFoundException('Organization not found');
     return org;
+  }
+
+  // --- Settings ---
+  async getSettings(orgId: string) {
+    const org = await this.getOrganizationById(orgId);
+
+    return {
+      id: org.id,
+      name: org.name,
+      location: org.location,
+      type: org.type,
+      contactEmail: org.contactEmail,
+      phone: org.phone,
+      logoUrl: org.logoUrl,
+      avatarUpdatedAt: org.avatarUpdatedAt,
+      accentColor: org.accentColor,
+      status: org.status,
+      statusHistory: org.statusHistory,
+      createdAt: org.createdAt,
+    };
   }
 
   async updateSettings(orgId: string, data: UpdateSettingsDto) {
@@ -66,11 +73,7 @@ export class OrgService {
     file: Express.Multer.File,
     uploadedBy: string,
   ) {
-    const org = await this.prisma.organization.findUnique({
-      where: { id: orgId },
-      select: { id: true, logoUrl: true },
-    });
-    if (!org) throw new NotFoundException('Organization not found');
+    const org = await this.getOrganizationById(orgId);
 
     const publicUrl = await this.filesService.replaceFile(org.logoUrl, file);
 
@@ -121,11 +124,7 @@ export class OrgService {
     file: Express.Multer.File,
     uploadedBy: string,
   ) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, avatarUrl: true, organizationId: true },
-    });
-    if (!user) throw new NotFoundException('User not found');
+    const user = await this.userService.getUserById(userId);
 
     const publicUrl = await this.filesService.replaceFile(user.avatarUrl, file);
 
@@ -141,30 +140,15 @@ export class OrgService {
     );
 
     // Update user with new avatar URL and bump cache-buster timestamp
-    return this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        avatarUrl: publicUrl,
-        avatarUpdatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        name: true,
-        avatarUrl: true,
-        avatarUpdatedAt: true,
-      },
-    });
+    return this.userService.updateUser(userId, { avatarUrl: publicUrl });
   }
 
 
 
 
   async reapply(orgId: string) {
-    const org = await this.prisma.organization.findUnique({
-      where: { id: orgId },
-    });
+    const org = await this.getOrganizationById(orgId);
 
-    if (!org) throw new NotFoundException('Organization not found');
     if (org.status !== OrgStatus.REJECTED) {
       throw new BadRequestException('Only rejected organizations can re-apply');
     }
@@ -188,6 +172,105 @@ export class OrgService {
         statusHistory: newHistory,
       },
     });
+  }
+
+  async approveOrganization(orgId: string, admin: { name: string | null; email: string; role: string; id: string }) {
+    const org = await this.getOrganizationById(orgId);
+
+    const history = (org.statusHistory as Prisma.JsonArray) || [];
+    const newEntry = {
+      status: OrgStatus.APPROVED,
+      message: 'Organization approved.',
+      adminName: admin.name || admin.email,
+      adminRole: admin.role,
+      createdAt: new Date(),
+    };
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updatedOrg = await tx.organization.update({
+        where: { id: orgId },
+        data: {
+          status: OrgStatus.APPROVED,
+          statusHistory: [...history, newEntry] as Prisma.InputJsonValue,
+        },
+      });
+
+      // Instant Revocation: Revoke all sessions for organization users
+      await tx.session.updateMany({
+        where: { user: { organizationId: orgId } },
+        data: { isActive: false },
+      });
+
+      return updatedOrg;
+    });
+
+    return result;
+  }
+
+  async rejectOrganization(orgId: string, reason: string, admin: { name: string | null; email: string; role: string; id: string }) {
+    const org = await this.getOrganizationById(orgId);
+
+    const history = (org.statusHistory as Prisma.JsonArray) || [];
+    const newEntry = {
+      status: OrgStatus.REJECTED,
+      message: reason,
+      adminName: admin.name || admin.email,
+      adminRole: admin.role,
+      createdAt: new Date(),
+    };
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updatedOrg = await tx.organization.update({
+        where: { id: orgId },
+        data: {
+          status: OrgStatus.REJECTED,
+          statusHistory: [...history, newEntry] as Prisma.InputJsonValue,
+        },
+      });
+
+      // Instant Revocation for all Org users
+      await tx.session.updateMany({
+        where: { user: { organizationId: orgId } },
+        data: { isActive: false },
+      });
+
+      return updatedOrg;
+    });
+
+    return result;
+  }
+
+  async suspendOrganization(orgId: string, reason: string, admin: { name: string | null; email: string; role: string; id: string }) {
+    const org = await this.getOrganizationById(orgId);
+
+    const history = (org.statusHistory as Prisma.JsonArray) || [];
+    const newEntry = {
+      status: OrgStatus.SUSPENDED,
+      message: reason,
+      adminName: admin.name || admin.email,
+      adminRole: admin.role,
+      createdAt: new Date(),
+    };
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updatedOrg = await tx.organization.update({
+        where: { id: orgId },
+        data: {
+          status: OrgStatus.SUSPENDED,
+          statusHistory: [...history, newEntry] as Prisma.InputJsonValue,
+        },
+      });
+
+      // Instant Revocation for all Org users
+      await tx.session.updateMany({
+        where: { user: { organizationId: orgId } },
+        data: { isActive: false },
+      });
+
+      return updatedOrg;
+    });
+
+    return result;
   }
 
   async getStats(orgId: string, user: { id: string; role: string }) {

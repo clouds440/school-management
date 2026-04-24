@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -153,5 +154,46 @@ export class SectionsService {
 
     await this.prisma.section.delete({ where: { id } });
     return { message: 'Section deleted successfully' };
+  }
+
+  async getSectionById(id: string) {
+    const section = await this.prisma.section.findUnique({
+      where: { id },
+    });
+    if (!section) throw new NotFoundException('Section not found');
+    return section;
+  }
+
+  async getSectionsByTeacherId(teacherId: string) {
+    return this.prisma.section.findMany({
+      where: { teachers: { some: { id: teacherId } } },
+    });
+  }
+
+  async isTeacherAssignedToSection(sectionId: string, teacherUserId: string) {
+    const section = await this.prisma.section.findFirst({
+      where: {
+        id: sectionId,
+        teachers: { some: { userId: teacherUserId } },
+      },
+    });
+    return !!section;
+  }
+
+  async validateSectionBelongsToOrg(sectionId: string, organizationId: string) {
+    const section = await this.prisma.section.findUnique({
+      where: { id: sectionId },
+      include: { course: true },
+    });
+
+    if (!section) {
+      throw new NotFoundException('Section not found');
+    }
+
+    if (section.course.organizationId !== organizationId) {
+      throw new ForbiddenException('Section does not belong to your organization');
+    }
+
+    return section;
   }
 }

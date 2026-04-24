@@ -1,0 +1,133 @@
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { Role } from '../common/enums';
+import * as bcrypt from 'bcrypt';
+import { BCRYPT_ROUNDS } from '../common/utils';
+import { Prisma } from '@prisma/client';
+
+interface CreateUserInput {
+  email: string;
+  password: string;
+  role: Role;
+  organizationId?: string;
+  name: string;
+  phone?: string;
+  avatarUrl?: string;
+}
+
+@Injectable()
+export class UserService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async createUser(data: CreateUserInput) {
+    const existingUser = await this.getUserByEmail(data.email);
+
+    if (existingUser) {
+      throw new ConflictException(
+        'A user with this email address already exists in the system',
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
+
+    return this.prisma.user.create({
+      data: {
+        email: data.email,
+        password: hashedPassword,
+        role: data.role,
+        organizationId: data.organizationId,
+        name: data.name,
+        phone: data.phone,
+      },
+    });
+  }
+
+  async updateUser(userId: string, data: Prisma.UserUpdateInput) {
+    const user = await this.getUserById(userId);
+
+    const updateData: Prisma.UserUpdateInput = {};
+
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.role !== undefined) updateData.role = data.role;
+
+    if (data.email !== undefined && data.email !== user.email) {
+      const existingUser = await this.getUserByEmail(data.email as string);
+
+      if (existingUser) {
+        throw new ConflictException('Email address already in use');
+      }
+
+      updateData.email = data.email;
+    }
+
+    if (data.password !== undefined) {
+      updateData.password = await bcrypt.hash(data.password as string, BCRYPT_ROUNDS);
+    }
+
+    if (data.avatarUrl !== undefined) {
+      updateData.avatarUrl = data.avatarUrl;
+      updateData.avatarUpdatedAt = new Date();
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+  }
+
+
+  async getUserById(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  async getUserByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: { email },
+    });
+  }
+
+  async getUsersByOrgAndRole(organizationId: string, role: Role) {
+    return this.prisma.user.findMany({
+      where: { organizationId, role },
+    });
+  }
+
+  async deleteUser(userId: string) {
+    await this.getUserById(userId);
+
+    await this.prisma.user.delete({ where: { id: userId } });
+    return { message: 'User deleted successfully' };
+  }
+
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ) {
+    const user = await this.getUserById(userId);
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Incorrect old password');
+    }
+
+    const hashedNew = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedNew,
+        isFirstLogin: false,
+      },
+    });
+  }
+}

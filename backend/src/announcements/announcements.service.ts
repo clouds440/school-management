@@ -1,6 +1,8 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
+import { StudentService } from '../students/student.service';
+import { TeacherService } from '../teacher/teacher.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { Prisma, Role, TargetType } from '@prisma/client';
 
@@ -15,6 +17,8 @@ export class AnnouncementsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventsGateway,
+    private readonly studentService: StudentService,
+    private readonly teacherService: TeacherService,
   ) {}
 
   async createAnnouncement(dto: CreateAnnouncementDto, user: CurrentUser) {
@@ -73,15 +77,20 @@ export class AnnouncementsService {
       }
     } else if (dto.targetType === TargetType.SECTION) {
       if (user.role === Role.TEACHER) {
-        const teacher = await this.prisma.teacher.findUnique({
-          where: { userId: user.id },
-          include: { sections: true },
-        });
-        const sectionIds = teacher?.sections.map((s) => s.id) || [];
-        if (!dto.targetId || !sectionIds.includes(dto.targetId)) {
-          throw new ForbiddenException(
-            'You can only send announcements to your assigned sections.',
-          );
+        const teacher = await this.teacherService.getTeacherByUserId(user.id);
+        if (teacher) {
+          const teacherWithSections = await this.prisma.teacher.findUnique({
+            where: { userId: user.id },
+            include: { sections: true },
+          });
+          const sectionIds = teacherWithSections?.sections.map((s) => s.id) || [];
+          if (!dto.targetId || !sectionIds.includes(dto.targetId)) {
+            throw new ForbiddenException(
+              'You can only send announcements to your assigned sections.',
+            );
+          }
+        } else {
+          throw new ForbiddenException('Teacher profile not found');
         }
       }
     }
@@ -163,26 +172,32 @@ export class AnnouncementsService {
 
     // If User is Teacher/Student, fetch their sections
     if (user.role === Role.TEACHER) {
-      const profile = await this.prisma.teacher.findUnique({
-        where: { userId: user.id },
-        include: { sections: true },
-      });
-      if (profile && profile.sections.length > 0) {
-        conditions.push({
-          targetType: TargetType.SECTION,
-          targetId: { in: profile.sections.map((s) => s.id) },
+      const teacher = await this.teacherService.getTeacherByUserId(user.id);
+      if (teacher) {
+        const profile = await this.prisma.teacher.findUnique({
+          where: { userId: user.id },
+          include: { sections: true },
         });
+        if (profile && profile.sections.length > 0) {
+          conditions.push({
+            targetType: TargetType.SECTION,
+            targetId: { in: profile.sections.map((s) => s.id) },
+          });
+        }
       }
     } else if (user.role === Role.STUDENT) {
-      const profile = await this.prisma.student.findUnique({
-        where: { userId: user.id },
-        include: { enrollments: true },
-      });
-      if (profile && profile.enrollments.length > 0) {
-        conditions.push({
-          targetType: TargetType.SECTION,
-          targetId: { in: profile.enrollments.map((e) => e.sectionId) },
+      const student = await this.studentService.getStudentByUserId(user.id);
+      if (student) {
+        const profile = await this.prisma.student.findUnique({
+          where: { userId: user.id },
+          include: { enrollments: true },
         });
+        if (profile && profile.enrollments.length > 0) {
+          conditions.push({
+            targetType: TargetType.SECTION,
+            targetId: { in: profile.enrollments.map((e) => e.sectionId) },
+          });
+        }
       }
     }
 

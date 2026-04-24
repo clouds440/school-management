@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { UserService } from '../users/user.service';
+import { SectionsService } from '../sections/sections.service';
 import { Role, TeacherStatus } from '../common/enums';
 import { CreateTeacherDto } from '../org/dto/create-teacher.dto';
 import { UpdateTeacherDto } from '../org/dto/update-teacher.dto';
 import { PaginationOptions, getPaginationOptions, formatPaginatedResponse, extractUpdateFields } from '../common/utils';
-import * as bcrypt from 'bcrypt';
-import { BCRYPT_ROUNDS } from '../common/utils';
 import { Prisma } from '@prisma/client';
 import { extractTimetableEntries } from '../common/utils';
 
@@ -24,7 +24,21 @@ export class TeacherService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly userService: UserService,
+    private readonly sectionsService: SectionsService,
   ) {}
+
+  private async getTeacherById(orgId: string, id: string) {
+    const teacher = await this.prisma.teacher.findFirst({
+      where: {
+        id,
+        organizationId: orgId,
+        status: { not: TeacherStatus.DELETED },
+      },
+    });
+    if (!teacher) throw new NotFoundException('Teacher not found');
+    return teacher;
+  }
 
   async getTeachers(orgId: string, options: PaginationOptions) {
     const { skip, take, sortBy, sortOrder } = getPaginationOptions(options);
@@ -205,37 +219,21 @@ export class TeacherService {
     data: CreateTeacherDto,
     userContext: { id: string; role: string },
   ) {
-    // 1. Check if user exists
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: data.email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException(
-        'A user with this email address already exists in the system',
-      );
-    }
-
     if (data.isManager && userContext.role === Role.ORG_MANAGER) {
       throw new ForbiddenException(
         'Only Organization Admins can create Managers',
       );
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
-
-    // 2. Create User and Teacher in transaction
     try {
       const result = await this.prisma.$transaction(async (prisma) => {
-        const user = await prisma.user.create({
-          data: {
-            email: data.email,
-            password: hashedPassword,
-            role: data.isManager ? Role.ORG_MANAGER : Role.TEACHER,
-            organizationId: orgId,
-            name: data.name,
-            phone: data.phone,
-          },
+        const user = await this.userService.createUser({
+          email: data.email,
+          password: data.password,
+          role: data.isManager ? Role.ORG_MANAGER : Role.TEACHER,
+          organizationId: orgId,
+          name: data.name,
+          phone: data.phone,
         });
 
         const teacher = await prisma.teacher.create({
@@ -351,10 +349,7 @@ export class TeacherService {
 
     const updatedTeacher = await this.prisma.$transaction(async (tx) => {
       if (Object.keys(userData).length > 0) {
-        await tx.user.update({
-          where: { id: teacher.userId },
-          data: userData,
-        });
+        await this.userService.updateUser(teacher.userId, userData);
       }
 
       if (Object.keys(teacherData).length > 0) {
@@ -477,15 +472,18 @@ export class TeacherService {
       where: { userId, organizationId: orgId },
     });
     if (!teacher) return [];
+
+    const sections = await this.sectionsService.getSectionsByTeacherId(teacher.id);
+    const sectionIds = sections.map(s => s.id);
     
-    const sections = await this.prisma.section.findMany({
-      where: { teachers: { some: { id: teacher.id } } },
+    const sectionsWithDetails = await this.prisma.section.findMany({
+      where: { id: { in: sectionIds } },
       include: {
         course: { select: { name: true } },
         schedules: { select: { id: true, day: true, startTime: true, endTime: true, room: true } },
       },
     });
 
-    return extractTimetableEntries(sections);
+    return extractTimetableEntries(sectionsWithDetails);
   }
 }

@@ -10,6 +10,7 @@ import { Prisma } from '@prisma/client';
 import { Role, StudentStatus } from '../common/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { UserService } from '../users/user.service';
 import { CreateStudentDto } from '../org/dto/create-student.dto';
 import { UpdateStudentDto } from '../org/dto/update-student.dto';
 import * as bcrypt from 'bcrypt';
@@ -36,7 +37,38 @@ export class StudentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly userService: UserService,
   ) {}
+
+  private async getStudentById(orgId: string, id: string) {
+    const student = await this.prisma.student.findFirst({
+      where: {
+        id,
+        organizationId: orgId,
+        status: { not: StudentStatus.DELETED },
+      },
+    });
+    if (!student) throw new NotFoundException('Student not found');
+    return student;
+  }
+
+  private async getStudentByRegistrationNumber(orgId: string, registrationNumber: string) {
+    return this.prisma.student.findFirst({
+      where: {
+        organizationId: orgId,
+        registrationNumber,
+      },
+    });
+  }
+
+  private async getStudentByRollNumber(orgId: string, rollNumber: string) {
+    return this.prisma.student.findFirst({
+      where: {
+        organizationId: orgId,
+        rollNumber,
+      },
+    });
+  }
 
   async assertStudentsBelongToSection(
     sectionId: string,
@@ -203,22 +235,7 @@ export class StudentService {
     data: CreateStudentDto,
     userContext: { name?: string | null; email: string },
   ) {
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: data.email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException(
-        'A user with this email address already exists in the system',
-      );
-    }
-
-    const existingRegNum = await this.prisma.student.findFirst({
-      where: {
-        organizationId: orgId,
-        registrationNumber: data.registrationNumber,
-      },
-    });
+    const existingRegNum = await this.getStudentByRegistrationNumber(orgId, data.registrationNumber);
 
     if (existingRegNum) {
       throw new ConflictException(
@@ -226,9 +243,7 @@ export class StudentService {
       );
     }
 
-    const existingRollNum = await this.prisma.student.findFirst({
-      where: { organizationId: orgId, rollNumber: data.rollNumber },
-    });
+    const existingRollNum = await this.getStudentByRollNumber(orgId, data.rollNumber);
 
     if (existingRollNum) {
       throw new ConflictException(
@@ -236,19 +251,15 @@ export class StudentService {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
-
     try {
       return await this.prisma.$transaction(async (prisma) => {
-        const user = await prisma.user.create({
-          data: {
-            email: data.email,
-            password: hashedPassword,
-            role: Role.STUDENT,
-            organizationId: orgId,
-            name: data.name,
-            phone: data.phone,
-          },
+        const user = await this.userService.createUser({
+          email: data.email,
+          password: data.password,
+          role: Role.STUDENT,
+          organizationId: orgId,
+          name: data.name,
+          phone: data.phone,
         });
 
         const student = await prisma.student.create({
@@ -291,8 +302,6 @@ export class StudentService {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           const target = (error.meta?.target as string[]) || [];
-          if (target.includes('email'))
-            throw new ConflictException('Email address already in use');
           if (target.includes('registrationNumber'))
             throw new ConflictException('Registration number already in use');
           if (target.includes('rollNumber'))
@@ -361,14 +370,8 @@ export class StudentService {
       studentData.registrationNumber &&
       studentData.registrationNumber !== student.registrationNumber
     ) {
-      const existing = await this.prisma.student.findFirst({
-        where: {
-          organizationId: orgId,
-          registrationNumber: studentData.registrationNumber,
-          id: { not: id },
-        },
-      });
-      if (existing)
+      const existing = await this.getStudentByRegistrationNumber(orgId, studentData.registrationNumber as string);
+      if (existing && existing.id !== id)
         throw new BadRequestException('Registration number already in use');
     }
 
@@ -376,14 +379,8 @@ export class StudentService {
       studentData.rollNumber &&
       studentData.rollNumber !== student.rollNumber
     ) {
-      const existing = await this.prisma.student.findFirst({
-        where: {
-          organizationId: orgId,
-          rollNumber: studentData.rollNumber,
-          id: { not: id },
-        },
-      });
-      if (existing) throw new BadRequestException('Roll number already in use');
+      const existing = await this.getStudentByRollNumber(orgId, studentData.rollNumber as string);
+      if (existing && existing.id !== id) throw new BadRequestException('Roll number already in use');
     }
 
     if (data.admissionDate) {
@@ -406,10 +403,7 @@ export class StudentService {
 
     const updatedStudent = await this.prisma.$transaction(async (tx) => {
       if (Object.keys(userData).length > 0) {
-        await tx.user.update({
-          where: { id: student.userId },
-          data: userData,
-        });
+        await this.userService.updateUser(student.userId, userData);
       }
 
       if (Object.keys(studentData).length > 0) {
@@ -466,17 +460,11 @@ export class StudentService {
   }
 
   async deleteStudent(orgId: string, id: string) {
-    const student = await this.prisma.student.findFirst({
-      where: { id, organizationId: orgId },
-    });
-
-    if (!student) throw new NotFoundException('Student not found');
-
+    const student = await this.getStudentById(orgId, id);
     await this.prisma.student.update({
       where: { id },
       data: { status: StudentStatus.DELETED },
     });
-
     return { message: 'Student deleted successfully' };
   }
 

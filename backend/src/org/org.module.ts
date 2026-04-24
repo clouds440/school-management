@@ -11,9 +11,10 @@ import { AssessmentsModule } from '../assessments/assessments.module';
 import { AttendanceModule } from '../attendance/attendance.module';
 import { CoursesModule } from '../courses/courses.module';
 import { SectionsModule } from '../sections/sections.module';
+import { UserModule } from '../users/user.module';
 
 @Module({
-  imports: [FilesModule, NotificationsModule, StudentModule, TeacherModule, InsightsModule, AssessmentsModule, AttendanceModule, CoursesModule, SectionsModule],
+  imports: [FilesModule, NotificationsModule, StudentModule, TeacherModule, InsightsModule, AssessmentsModule, AttendanceModule, CoursesModule, SectionsModule, UserModule],
   controllers: [OrgController],
   providers: [OrgService, RemindersService],
   exports: [StudentModule, TeacherModule, InsightsModule, AssessmentsModule, AttendanceModule, CoursesModule, SectionsModule],

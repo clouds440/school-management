@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { FilesService } from '../files/files.service';
+import { StudentService } from '../students/student.service';
+import { SectionsService } from '../sections/sections.service';
 import { CreateCourseMaterialDto } from './dto/create-course-material.dto';
 import { Role } from '../common/enums';
 
@@ -11,6 +13,8 @@ export class CourseMaterialsService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly filesService: FilesService,
+    private readonly studentService: StudentService,
+    private readonly sectionsService: SectionsService,
   ) {}
 
   /**
@@ -25,25 +29,11 @@ export class CourseMaterialsService {
     organizationId: string,
   ) {
     // Verify section exists and belongs to the organization
-    const section = await this.prisma.section.findUnique({
-      where: { id: sectionId },
-      include: {
-        course: true,
-        teachers: true,
-      },
-    });
-
-    if (!section) {
-      throw new NotFoundException('Section not found');
-    }
-
-    if (section.course.organizationId !== organizationId) {
-      throw new ForbiddenException('Section does not belong to your organization');
-    }
+    const section = await this.sectionsService.validateSectionBelongsToOrg(sectionId, organizationId);
 
     // Verify teacher is assigned to this section
-    if (userRole === Role.TEACHER) {
-      const isAssigned = section.teachers.some((t) => t.userId === userId);
+    if (userRole === Role.TEACHER || userRole === Role.ORG_MANAGER) {
+      const isAssigned = await this.sectionsService.isTeacherAssignedToSection(sectionId, userId);
       if (!isAssigned) {
         throw new ForbiddenException('You are not assigned to this section');
       }
@@ -117,30 +107,18 @@ export class CourseMaterialsService {
     organizationId: string,
   ) {
     // Verify section exists and belongs to the organization
-    const section = await this.prisma.section.findUnique({
-      where: { id: sectionId },
-      include: {
-        course: true,
-        teachers: true,
-      },
-    });
-
-    if (!section) {
-      throw new NotFoundException('Section not found');
-    }
-
-    if (section.course.organizationId !== organizationId) {
-      throw new ForbiddenException('Section does not belong to your organization');
-    }
+    await this.sectionsService.validateSectionBelongsToOrg(sectionId, organizationId);
 
     // Check access permissions
     if (userRole === Role.STUDENT) {
+      const student = await this.studentService.getStudentByUserId(userId);
+      if (!student) {
+        throw new ForbiddenException('Student profile not found');
+      }
       const enrollment = await this.prisma.enrollment.findUnique({
         where: {
           studentId_sectionId: {
-            studentId: (await this.prisma.student.findUnique({
-              where: { userId },
-            }))?.id || '',
+            studentId: student.id,
             sectionId,
           },
         },
@@ -150,7 +128,7 @@ export class CourseMaterialsService {
         throw new ForbiddenException('You are not enrolled in this section');
       }
     } else if (userRole === Role.TEACHER) {
-      const isAssigned = section.teachers.some((t) => t.userId === userId);
+      const isAssigned = await this.sectionsService.isTeacherAssignedToSection(sectionId, userId);
       if (!isAssigned) {
         throw new ForbiddenException('You are not assigned to this section');
       }

@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { StudentService } from '../students/student.service';
 import { TeacherService } from '../teacher/teacher.service';
+import { SectionsService } from '../sections/sections.service';
 import { Role } from '../common/enums';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
@@ -28,6 +29,7 @@ export class AttendanceService {
     private readonly prisma: PrismaService,
     private readonly studentService: StudentService,
     private readonly teacherService: TeacherService,
+    private readonly sectionsService: SectionsService,
   ) {}
 
   private async getAuthorizedSection(

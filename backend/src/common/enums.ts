@@ -95,3 +95,9 @@ export enum AttendanceStatus {
   LATE = 'LATE',
   EXCUSED = 'EXCUSED',
 }
+
+export enum GradeStatus {
+  DRAFT = 'DRAFT',
+  PUBLISHED = 'PUBLISHED',
+  FINALIZED = 'FINALIZED',
+}
