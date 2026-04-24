@@ -38,8 +38,8 @@ export default function OrganizationChangePasswordPage() {
                         const target = user.role === Role.ORG_ADMIN
                             ? '/settings'
                             : user.role === Role.STUDENT
-                                ? `/students/${user.userName}`
-                                : `/teachers/${user.userName}`;
+                                ? `/students/${user.id}`
+                                : `/teachers/${user.id}`;
                         router.push(target);
                     }}
                 />

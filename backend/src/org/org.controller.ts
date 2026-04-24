@@ -18,35 +18,50 @@ import {
 import { Role } from '../common/enums';
 
 import { OrgService } from './org.service';
+import { CoursesService } from '../courses/courses.service';
+import { SectionsService } from '../sections/sections.service';
+import { StudentService } from '../students/student.service';
+import { TeacherService } from '../teacher/teacher.service';
+import { InsightsService } from '../insights/insights.service';
+import { AssessmentsService } from '../assessments/assessments.service';
+import { AttendanceService } from '../attendance/attendance.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
-import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
-import { CreateCourseDto } from './dto/create-course.dto';
-import { UpdateCourseDto } from './dto/update-course.dto';
-import { CreateSectionDto } from './dto/create-section.dto';
-import { UpdateSectionDto } from './dto/update-section.dto';
+import { CreateCourseDto } from '../courses/dto/create-course.dto';
+import { UpdateCourseDto } from '../courses/dto/update-course.dto';
+import { CreateSectionDto } from '../sections/dto/create-section.dto';
+import { UpdateSectionDto } from '../sections/dto/update-section.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import { OrgId } from '../common/decorators/org-id.decorator';
-import { CreateAssessmentDto } from './dto/create-assessment.dto';
-import { UpdateAssessmentDto } from './dto/update-assessment.dto';
-import { UpdateGradeDto } from './dto/update-grade.dto';
-import { CreateSubmissionDto } from './dto/create-submission.dto';
-import { CreateScheduleDto } from './dto/create-schedule.dto';
-import { UpdateScheduleDto } from './dto/update-schedule.dto';
-import { AttendanceRecordDto } from './dto/mark-attendance.dto';
+import { CreateAssessmentDto } from '../assessments/dto/create-assessment.dto';
+import { UpdateAssessmentDto } from '../assessments/dto/update-assessment.dto';
+import { UpdateGradeDto } from '../assessments/dto/update-grade.dto';
+import { CreateSubmissionDto } from '../assessments/dto/create-submission.dto';
+import { CreateScheduleDto } from '../attendance/dto/create-schedule.dto';
+import { UpdateScheduleDto } from '../attendance/dto/update-schedule.dto';
+import { AttendanceRecordDto } from '../attendance/dto/mark-attendance.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('org')
 export class OrgController {
-  constructor(private readonly orgService: OrgService) { }
+  constructor(
+    private readonly orgService: OrgService,
+    private readonly coursesService: CoursesService,
+    private readonly sectionsService: SectionsService,
+    private readonly studentService: StudentService,
+    private readonly teacherService: TeacherService,
+    private readonly insightsService: InsightsService,
+    private readonly assessmentsService: AssessmentsService,
+    private readonly attendanceService: AttendanceService,
+  ) { }
 
   @Get('stats')
   getStats(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
@@ -56,7 +71,7 @@ export class OrgController {
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
   @Get('insights')
   getInsights(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
-    return this.orgService.getInsights(orgId, req.user);
+    return this.insightsService.getInsights(orgId, req.user);
   }
 
   // --- Settings ---
@@ -129,82 +144,6 @@ export class OrgController {
     return this.orgService.reapply(orgId);
   }
 
-  // --- Teachers ---
-  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
-  @Get('teachers')
-  async getTeachers(
-    @OrgId() orgId: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('search') search?: string,
-    @Query('sortBy') sortBy?: string,
-    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
-  ) {
-    return this.orgService.getTeachers(orgId, {
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 10,
-      search,
-      sortBy,
-      sortOrder,
-    });
-  }
-
-  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
-  @Get('managers')
-  async getManagers(
-    @OrgId() orgId: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('search') search?: string,
-    @Query('sortBy') sortBy?: string,
-    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
-  ) {
-    return this.orgService.getManagers(orgId, {
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 10,
-      search,
-      sortBy: sortBy || 'user.name',
-      sortOrder,
-    });
-  }
-
-  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
-  @Get('teachers/:id')
-  getTeacher(@OrgId() orgId: string, @Param('id') id: string) {
-    return this.orgService.getTeacher(orgId, id);
-  }
-
-  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
-  @Post('teachers')
-  createTeacher(
-    @OrgId() orgId: string,
-    @Body() createTeacherDto: CreateTeacherDto,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.orgService.createTeacher(orgId, createTeacherDto, req.user);
-  }
-
-  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
-  @Patch('teachers/:id')
-  updateTeacher(
-    @OrgId() orgId: string,
-    @Param('id') id: string,
-    @Body() updateTeacherDto: UpdateTeacherDto,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.orgService.updateTeacher(orgId, id, updateTeacherDto, req.user);
-  }
-
-  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
-  @Delete('teachers/:id')
-  deleteTeacher(
-    @OrgId() orgId: string,
-    @Param('id') id: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.orgService.deleteTeacher(orgId, id, req.user);
-  }
-
   // --- Courses ---
   @Get('courses')
   async getCourses(
@@ -217,7 +156,7 @@ export class OrgController {
     @Query('my') my?: string,
     @Request() req?: AuthenticatedRequest,
   ) {
-    return this.orgService.getCourses(orgId, {
+    return this.coursesService.getCourses(orgId, {
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 10,
       search,
@@ -236,7 +175,7 @@ export class OrgController {
     @Request() req: AuthenticatedRequest,
   ) {
     createCourseDto.updatedBy = req.user.name || req.user.email;
-    return this.orgService.createCourse(orgId, createCourseDto);
+    return this.coursesService.createCourse(orgId, createCourseDto);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
@@ -248,13 +187,13 @@ export class OrgController {
     @Request() req: AuthenticatedRequest,
   ) {
     updateCourseDto.updatedBy = req.user.name || req.user.email;
-    return this.orgService.updateCourse(orgId, id, updateCourseDto);
+    return this.coursesService.updateCourse(orgId, id, updateCourseDto);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
   @Delete('courses/:id')
   deleteCourse(@OrgId() orgId: string, @Param('id') id: string) {
-    return this.orgService.deleteCourse(orgId, id);
+    return this.coursesService.deleteCourse(orgId, id);
   }
 
   // --- Sections ---
@@ -269,7 +208,7 @@ export class OrgController {
     @Query('my') my?: string,
     @Request() req?: AuthenticatedRequest,
   ) {
-    return this.orgService.getSections(orgId, {
+    return this.sectionsService.getSections(orgId, {
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 10,
       search,
@@ -287,7 +226,7 @@ export class OrgController {
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.orgService.getSection(orgId, id, req.user);
+    return this.sectionsService.getSection(orgId, id, req.user);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
@@ -296,7 +235,7 @@ export class OrgController {
     @OrgId() orgId: string,
     @Body() createSectionDto: CreateSectionDto,
   ) {
-    return this.orgService.createSection(orgId, createSectionDto);
+    return this.sectionsService.createSection(orgId, createSectionDto);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
@@ -306,13 +245,13 @@ export class OrgController {
     @Param('id') id: string,
     @Body() updateSectionDto: UpdateSectionDto,
   ) {
-    return this.orgService.updateSection(orgId, id, updateSectionDto);
+    return this.sectionsService.updateSection(orgId, id, updateSectionDto);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
   @Delete('sections/:id')
   deleteSection(@OrgId() orgId: string, @Param('id') id: string) {
-    return this.orgService.deleteSection(orgId, id);
+    return this.sectionsService.deleteSection(orgId, id);
   }
 
   // --- Students ---
@@ -328,7 +267,7 @@ export class OrgController {
     @Query('sectionId') sectionId?: string,
     @Request() req?: AuthenticatedRequest,
   ) {
-    return this.orgService.getStudents(orgId, {
+    return this.studentService.getStudents(orgId, {
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 10,
       search,
@@ -343,7 +282,7 @@ export class OrgController {
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
   @Get('students/:id')
   getStudent(@OrgId() orgId: string, @Param('id') id: string) {
-    return this.orgService.getStudent(orgId, id);
+    return this.studentService.getStudent(orgId, id);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
@@ -353,7 +292,7 @@ export class OrgController {
     @Body() createStudentDto: CreateStudentDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.orgService.createStudent(orgId, createStudentDto, {
+    return this.studentService.createStudent(orgId, createStudentDto, {
       name: req.user.name,
       email: req.user.email,
     });
@@ -367,7 +306,7 @@ export class OrgController {
     @Body() updateStudentDto: UpdateStudentDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.orgService.updateStudent(orgId, id, updateStudentDto, {
+    return this.studentService.updateStudent(orgId, id, updateStudentDto, {
       role: req.user.role.toString() as Role,
       name: req.user.name,
       email: req.user.email,
@@ -376,18 +315,82 @@ export class OrgController {
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
   @Get('profile')
-  getProfile(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
-    return this.orgService.getProfile(orgId, req.user);
+  async getProfile(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
+    if (req.user.role === Role.STUDENT) {
+      const student = await this.studentService.getStudentByUserId(req.user.id);
+      if (!student) throw new NotFoundException('Student profile not found');
+      return student;
+    }
+
+    if (req.user.role === Role.TEACHER || req.user.role === Role.ORG_MANAGER) {
+      const teacher = await this.teacherService.getTeacherByUserId(req.user.id);
+      if (!teacher) throw new NotFoundException('Teacher profile not found');
+      return teacher;
+    }
+
+    throw new ForbiddenException('Profile access not allowed for this role');
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
   @Patch('profile')
-  updateProfile(
+  async updateProfile(
     @OrgId() orgId: string,
-    @Body() updateDto: UpdateStudentDto | UpdateTeacherDto,
     @Request() req: AuthenticatedRequest,
+    @Body() updateDto: UpdateStudentDto | UpdateTeacherDto,
   ) {
-    return this.orgService.updateProfile(orgId, req.user, updateDto);
+    if (req.user.role === Role.STUDENT) {
+      const student = await this.studentService.getStudentByUserId(req.user.id);
+      if (!student) throw new NotFoundException('Student profile not found');
+
+      // Strictly Allow only these fields for students
+      const allowedFields = [
+        'phone',
+        'fatherName',
+        'age',
+        'address',
+        'emergencyContact',
+        'bloodGroup',
+        'password',
+      ];
+      const filteredData = Object.keys(updateDto)
+        .filter((key) => allowedFields.includes(key))
+        .reduce((obj, key) => {
+          obj[key] = updateDto[key];
+          return obj;
+        }, {});
+
+      return this.studentService.updateStudent(orgId, student.id, filteredData, {
+        role: Role.STUDENT,
+        name: req.user.name,
+        email: req.user.email!,
+      });
+    }
+
+    if (req.user.role === Role.TEACHER || req.user.role === Role.ORG_MANAGER) {
+      const teacher = await this.teacherService.getTeacherByUserId(req.user.id);
+      if (!teacher) throw new NotFoundException('Teacher profile not found');
+
+      // Standard protection for teachers updating their own profile
+      const allowedFields = [
+        'emergencyContact',
+        'bloodGroup',
+        'address',
+        'password',
+      ];
+      const filteredData = Object.keys(updateDto)
+        .filter((key) => allowedFields.includes(key))
+        .reduce((obj, key) => {
+          obj[key] = updateDto[key];
+          return obj;
+        }, {});
+
+      return this.teacherService.updateTeacher(orgId, teacher.id, filteredData, {
+        id: req.user.id,
+        role: req.user.role,
+      });
+    }
+
+    throw new ForbiddenException('Profile update not allowed for this role');
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
@@ -456,7 +459,7 @@ export class OrgController {
     @Body() dto: CreateAssessmentDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.orgService.createAssessment(orgId, dto, req.user);
+    return this.assessmentsService.createAssessment(orgId, dto, req.user);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
@@ -467,7 +470,7 @@ export class OrgController {
     @Query('sectionId') sectionId?: string,
     @Query('courseId') courseId?: string,
   ) {
-    return this.orgService.getAssessments(orgId, req.user, {
+    return this.assessmentsService.getAssessments(orgId, req.user, {
       sectionId,
       courseId,
     });
@@ -481,13 +484,13 @@ export class OrgController {
     @Body() dto: UpdateAssessmentDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.orgService.updateAssessment(orgId, id, dto, req.user);
+    return this.assessmentsService.updateAssessment(orgId, id, dto, req.user);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
   @Get('assessments/:id')
   getAssessment(@OrgId() orgId: string, @Param('id') id: string) {
-    return this.orgService.getAssessment(orgId, id);
+    return this.assessmentsService.getAssessment(orgId, id);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
@@ -497,7 +500,7 @@ export class OrgController {
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.orgService.deleteAssessment(orgId, id, req.user);
+    return this.assessmentsService.deleteAssessment(orgId, id, req.user);
   }
 
   @Get('grades/final')
@@ -505,7 +508,7 @@ export class OrgController {
     @OrgId() orgId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.orgService.getStudentFinalGrades(orgId, req.user.id);
+    return this.assessmentsService.getStudentFinalGrades(orgId, req.user.id);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
@@ -515,7 +518,7 @@ export class OrgController {
     @Param('id') assessmentId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.orgService.getGrades(orgId, assessmentId, req.user);
+    return this.assessmentsService.getGrades(orgId, assessmentId, req.user);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
@@ -527,7 +530,7 @@ export class OrgController {
     @Body() dto: UpdateGradeDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.orgService.updateGrade(
+    return this.assessmentsService.updateGrade(
       orgId,
       assessmentId,
       studentId,
@@ -540,13 +543,13 @@ export class OrgController {
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
   @Patch('assessments/:id/publish')
   publishGrades(@OrgId() orgId: string, @Param('id') id: string) {
-    return this.orgService.publishGrades(orgId, id);
+    return this.assessmentsService.publishGrades(orgId, id);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
   @Patch('assessments/:id/finalize')
   finalizeGrades(@OrgId() orgId: string, @Param('id') id: string) {
-    return this.orgService.finalizeGrades(orgId, id);
+    return this.assessmentsService.finalizeGrades(orgId, id);
   }
 
   // --- Submissions ---
@@ -559,9 +562,9 @@ export class OrgController {
     @Request() req: AuthenticatedRequest,
   ) {
     // Find student profile for the current user
-    return this.orgService.getStudentByUserId(req.user.id).then((student) => {
+    return this.studentService.getStudentByUserId(req.user.id).then((student) => {
       if (!student) throw new NotFoundException('Student profile not found');
-      return this.orgService.createSubmission(orgId, student.id, {
+      return this.assessmentsService.createSubmission(orgId, student.id, {
         ...dto,
         assessmentId,
       });
@@ -575,7 +578,7 @@ export class OrgController {
     @Param('id') assessmentId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.orgService.getSubmissions(orgId, assessmentId, req.user);
+    return this.assessmentsService.getSubmissions(orgId, assessmentId, req.user);
   }
 
   // --- Final Results ---
@@ -585,7 +588,7 @@ export class OrgController {
     @Param('id') studentId: string,
     @Query('sectionId') sectionId?: string,
   ) {
-    return this.orgService.calculateFinalGrade(studentId, sectionId);
+    return this.assessmentsService.calculateFinalGrade(studentId, sectionId);
   }
 
   // --- Timetable & Schedules ---
@@ -596,7 +599,7 @@ export class OrgController {
     @Param('id') id: string,
     @Body() dto: CreateScheduleDto,
   ) {
-    return this.orgService.createSchedule(orgId, id, dto);
+    return this.attendanceService.createSchedule(orgId, id, dto);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
@@ -607,7 +610,7 @@ export class OrgController {
     @Param('scheduleId') scheduleId: string,
     @Body() dto: UpdateScheduleDto,
   ) {
-    return this.orgService.updateSchedule(orgId, scheduleId, dto);
+    return this.attendanceService.updateSchedule(orgId, scheduleId, dto);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
@@ -617,23 +620,23 @@ export class OrgController {
     @Param('id') id: string,
     @Param('scheduleId') scheduleId: string,
   ) {
-    return this.orgService.deleteSchedule(orgId, scheduleId);
+    return this.attendanceService.deleteSchedule(orgId, scheduleId);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
   @Get('sections/:id/schedules')
   getSchedules(@OrgId() orgId: string, @Param('id') id: string) {
-    return this.orgService.getSchedules(orgId, id);
+    return this.attendanceService.getSchedules(orgId, id);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
   @Get('timetable')
   getTimetable(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
     if (req.user.role === Role.STUDENT) {
-      return this.orgService.getStudentTimetable(orgId, req.user.id);
+      return this.studentService.getStudentTimetable(orgId, req.user.id);
     }
     // For Teacher, Manager - show teaching schedule if they have a teacher record
-    return this.orgService.getTeacherTimetable(orgId, req.user.id);
+    return this.teacherService.getTeacherTimetable(orgId, req.user.id);
   }
 
   // --- Attendance ---
@@ -648,7 +651,7 @@ export class OrgController {
     @Body('startTime') startTime?: string,
     @Body('endTime') endTime?: string,
   ) {
-    return this.orgService.createAttendanceSession(
+    return this.attendanceService.createAttendanceSession(
       orgId,
       id,
       req.user,
@@ -667,7 +670,7 @@ export class OrgController {
     @Request() req: AuthenticatedRequest,
     @Body() records: AttendanceRecordDto[],
   ) {
-    return this.orgService.markAttendance(orgId, sessionId, req.user, records);
+    return this.attendanceService.markAttendance(orgId, sessionId, req.user, records);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
@@ -680,7 +683,7 @@ export class OrgController {
     @Query('scheduleId') scheduleId?: string,
   ) {
     if (!date) throw new BadRequestException('Query parameter "date" is required');
-    return this.orgService.getSectionAttendance(orgId, id, req.user, date, scheduleId);
+    return this.attendanceService.getSectionAttendance(orgId, id, req.user, date, scheduleId);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
@@ -693,7 +696,7 @@ export class OrgController {
     @Query('end') end: string,
   ) {
     if (!start || !end) throw new BadRequestException('Query parameters "start" and "end" are required');
-    return this.orgService.getSectionAttendanceRange(orgId, id, req.user, start, end);
+    return this.attendanceService.getSectionAttendanceRange(orgId, id, req.user, start, end);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
@@ -703,7 +706,7 @@ export class OrgController {
     @Param('id') studentId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.orgService.getStudentAttendance(orgId, studentId, req.user);
+    return this.attendanceService.getStudentAttendance(orgId, studentId, req.user);
   }
 }
 

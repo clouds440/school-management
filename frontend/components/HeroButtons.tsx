@@ -21,8 +21,8 @@ export function HeroButtons() {
                             : user.role === Role.ORG_ADMIN
                                 ? '/overview'
                                 : user.role === Role.TEACHER || user.role === Role.ORG_MANAGER
-                                    ? `/teachers/${user.userName}`
-                                    : `/students/${user.userName}`
+                                    ? `/teachers/${user.id}`
+                                    : `/students/${user.id}`
                     }
                     className="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-lg"
                 >

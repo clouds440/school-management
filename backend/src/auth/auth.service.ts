@@ -97,6 +97,7 @@ export class AuthService {
     ip: string = 'unknown',
   ) {
     const payload = {
+      id: user.id,
       sub: user.id,
       email: user.email,
       name: user.name, // Include name in JWT payload

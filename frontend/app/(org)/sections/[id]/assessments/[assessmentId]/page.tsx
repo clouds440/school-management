@@ -158,7 +158,7 @@ export default function AssessmentDetailPage() {
                         {canGrade && (
                             <button
                                 onClick={() => setShowBulkGrading(true)}
-                                className="px-4 py-2 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground text-[10px] font-black tracking-widest italic rounded-lg transition-colors shadow-sm active:scale-95"
+                                className="px-4 py-2 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground text-[10px] font-black tracking-widest rounded-lg transition-colors shadow-sm active:scale-95"
                             >
                                 Grade All
                             </button>
@@ -241,14 +241,14 @@ export default function AssessmentDetailPage() {
                                                         <span className="text-emerald-500 italic flex items-center gap-1.5 font-black tracking-widest"><CheckCircle2 className="w-3 h-3" /> Done</span>
                                                     )
                                                 ) : (
-                                                    <span className="text-card-text/20 italic font-black tracking-widest">No Submission</span>
+                                                    <span className="text-muted-foreground italic font-black tracking-widest">No Submission</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 {grade ? (
                                                     <span className="text-lg font-black italic text-primary">{grade.marksObtained}<span className="text-xs text-card-text/30 ml-1">/ {assessment.totalMarks}</span></span>
                                                 ) : (
-                                                    <span className="text-xs font-black text-card-text/20 italic tracking-tighter">Not Assigned</span>
+                                                    <span className="text-xs font-black text-muted-foreground italic tracking-tighter">Not Assigned</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 text-right">
@@ -258,7 +258,7 @@ export default function AssessmentDetailPage() {
                                                             e.stopPropagation();
                                                             setSelectedStudentId(student.id);
                                                         }}
-                                                        className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-[10px] font-black tracking-widest italic rounded-lg border border-primary/20 transition-all shadow-sm active:scale-95 z-10 relative"
+                                                        className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-[10px] font-black tracking-widest rounded-lg border border-primary/20 transition-all shadow-sm active:scale-95 z-10 relative"
                                                     >
                                                         {grade ? 'Update Grade' : 'Assign Grade'}
                                                     </button>
@@ -270,61 +270,6 @@ export default function AssessmentDetailPage() {
                             </tbody>
                         </table>
                     </div>
-                </div>
-            )}
-
-            {/* Student View: My Performance */}
-            {!isTeacherOrAdmin && (
-                <div className="bg-card border border-border rounded-lg shadow-xl p-8 mt-4">
-                    <h2 className="text-xl font-black tracking-wider mb-6 flex items-center gap-3">
-                        <Trophy className="w-5 h-5 text-primary" /> My Performance
-                    </h2>
-                    {(() => {
-                        const myStudent = section.students?.find(s => s.user.email === user?.email);
-                        if (!myStudent) return <p className="opacity-50 text-sm font-bold">You are not enrolled in this section.</p>;
-
-                        const myGrade = grades.find(g => g.studentId === myStudent.id);
-                        const mySubmission = submissions.find(s => s.studentId === myStudent.id);
-
-                        return (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="bg-card/40 border border-border p-6 rounded-lg">
-                                    <p className="text-[10px] font-black text-card-text/40 tracking-widest mb-2">Grade</p>
-                                    <p className="text-3xl font-black italic text-primary">
-                                        {myGrade ? `${myGrade.marksObtained} / ${assessment.totalMarks}` : 'Pending'}
-                                    </p>
-                                    {myGrade && myGrade.feedback && (
-                                        <p className="text-sm text-card-text/60 mt-4 font-medium border-t border-border pt-4 italic">
-                                            &quot;{myGrade.feedback}&quot;
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="bg-card/40 border border-border p-6 rounded-lg">
-                                    <p className="text-[10px] font-black text-card-text/40 tracking-widest mb-3">Submission Status</p>
-                                    {mySubmission ? (
-                                        <div>
-                                            <span className="text-lg font-black italic text-emerald-500 flex items-center gap-2 mb-2">
-                                                <CheckCircle2 className="w-5 h-5" /> Submitted
-                                            </span>
-                                            {mySubmission.files && mySubmission.files.length > 0 ? (
-                                                <a href={getPublicUrl(mySubmission.files[0].path)} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-primary hover:text-primary-light flex items-center gap-1.5 underline-offset-2 hover:underline">
-                                                    <LinkIcon className="w-3.5 h-3.5" /> View Submitted Work
-                                                </a>
-                                            ) : mySubmission.fileUrl && (
-                                                <a href={mySubmission.fileUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-primary hover:text-primary-light flex items-center gap-1.5 underline-offset-2 hover:underline">
-                                                    <LinkIcon className="w-3.5 h-3.5" /> View Submitted Link
-                                                </a>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <span className="text-lg font-black italic text-orange-500 flex items-center gap-2">
-                                            <Calendar className="w-5 h-5" /> Pending
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })()}
                 </div>
             )}
 

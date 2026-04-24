@@ -144,7 +144,7 @@ export default function InsightsOverview({ insights }: InsightsOverviewProps) {
                                 href={insights.spotlight.href}
                                 className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black tracking-[0.18em] text-primary-foreground shadow-lg transition hover:bg-primary/90"
                             >
-                                Open Insight
+                                Take Attendance
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                         )}

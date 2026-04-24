@@ -111,8 +111,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     if (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) {
                         router.replace('/admin');
                     } else {
-                        if (user.role === Role.STUDENT) router.replace(`/students/${user.userName}`);
-                        else if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) router.replace(`/teachers/${user.userName}`);
+                        if (user.role === Role.STUDENT) router.replace(`/students/${user.id}`);
+                        else if (user.role === Role.TEACHER || user.role === Role.ORG_MANAGER) router.replace(`/teachers/${user.id}`);
                         else if (user.role === Role.ORG_ADMIN) router.replace('/overview');
                         else router.replace('/');
                     }
@@ -136,27 +136,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     const pathSegments = pathname.split('/');
 
                     if (user.role === Role.STUDENT) {
-                        const isStudentPortal = pathSegments[1] === 'students' && pathSegments[2] === user.userName;
+                        const isStudentPortal = pathSegments[1] === 'students' && pathSegments[2] === user.id;
                         const isSupportInOrg = pathSegments[1] === 'mail';
                         const isAllowedShared = ['chat', 'timetable', 'attendance'].includes(pathSegments[1]);
                         const isSettingsPage = pathSegments.includes('settings');
 
                         if (isSettingsPage) {
                             // Settings page handles its own redirect, no toast needed
-                            router.replace(`/students/${user.userName}?tab=profile`);
+                            router.replace(`/students/${user.id}?tab=profile`);
                             return;
                         }
 
                         if (!isStudentPortal && !isSupportInOrg && !isAllowedShared) {
                             dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied.', type: 'error' } });
-                            router.replace(`/students/${user.userName}`);
+                            router.replace(`/students/${user.id}`);
                             return;
                         }
                     } else if (user.role === Role.ORG_MANAGER) {
                         const isSettingsPage = pathSegments.includes('settings');
                         if (isSettingsPage) {
                             // Settings page handles its own redirect, no toast needed
-                            router.replace(`/teachers/${user.userName}/profile`);
+                            router.replace(`/teachers/${user.id}/profile`);
                             return;
                         }
                     } else if (user.role === Role.TEACHER) {
@@ -164,12 +164,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         const isSettingsPage = pathSegments.includes('settings');
                         if (isSettingsPage) {
                             // Settings page handles its own redirect, no toast needed
-                            router.replace(`/teachers/${user.userName}/profile`);
+                            router.replace(`/teachers/${user.id}/profile`);
                             return;
                         }
                         if (isTeacherList) {
                             dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied.', type: 'error' } });
-                            router.replace(`/teachers/${user.userName}`);
+                            router.replace(`/teachers/${user.id}`);
                             return;
                         }
                     }

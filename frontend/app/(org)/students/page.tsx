@@ -77,7 +77,7 @@ export default function StudentsPage() {
 
     useEffect(() => {
         if (user && user.role === Role.STUDENT) {
-            router.replace(`/students/${user.userName}`);
+            router.replace(`/students/${user.id}`);
         }
     }, [user, router]);
 

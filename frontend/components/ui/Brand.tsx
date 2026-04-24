@@ -178,8 +178,8 @@ export const Brand = React.memo(function Brand({
       ? activeUser.role === Role.ORG_ADMIN
         ? '/overview'
         : activeUser.role === Role.TEACHER || activeUser.role === Role.ORG_MANAGER
-          ? `/teachers/${activeUser.userName}`
-          : `/students/${activeUser.userName}`
+          ? `/teachers/${activeUser.id}`
+          : `/students/${activeUser.id}`
       : '/'
     : '/';
 

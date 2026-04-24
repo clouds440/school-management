@@ -69,9 +69,9 @@ export default function TeachersPage() {
     useEffect(() => {
         if (user && user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER) {
             if (user.role === Role.TEACHER) {
-                router.replace(`/teachers/${user.userName}`);
+                router.replace(`/teachers/${user.id}`);
             } else if (user.role === Role.STUDENT) {
-                router.replace(`/students/${user.userName}`);
+                router.replace(`/students/${user.id}`);
             } else {
                 router.replace('/');
             }

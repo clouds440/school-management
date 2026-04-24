@@ -14,7 +14,7 @@ export default function AddTeacherPage() {
     // Redirect if not authorized
     useEffect(() => {
         if (user && user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER) {
-            router.push(`/teachers/${user.userName}`);
+            router.push(`/teachers/${user.id}`);
         }
     }, [user, router]);
 

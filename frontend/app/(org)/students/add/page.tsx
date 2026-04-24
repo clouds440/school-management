@@ -12,8 +12,8 @@ export default function AddStudentPage() {
     const router = useRouter();
     // Redirect if not authorized
     useEffect(() => {
-        if (user && user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER && user.role !== Role.TEACHER) {
-            router.push(`/students/${user.userName}`);
+        if (user && user.role === Role.STUDENT) {
+            router.push(`/students/${user.id}`);
         }
     }, [user, router]);
 

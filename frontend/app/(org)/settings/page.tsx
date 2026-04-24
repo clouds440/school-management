@@ -61,10 +61,10 @@ export default function SettingsPage() {
             router.push(`/admin/settings${hash}`);
             return;
         } else if (user.role === Role.ORG_MANAGER || user.role === Role.TEACHER) {
-            router.push(`/teachers/${user.userName}/profile${hash}`);
+            router.push(`/teachers/${user.id}/profile${hash}`);
             return;
         } else if (user.role === Role.STUDENT) {
-            router.push(`/students/${user.userName}?tab=profile${hash}`);
+            router.push(`/students/${user.id}?tab=profile${hash}`);
             return;
         }
 

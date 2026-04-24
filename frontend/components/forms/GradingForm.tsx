@@ -13,6 +13,7 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { gradeSchema, GradeFormData } from '@/lib/schemas';
+import { BrandIcon } from '../ui/Brand';
 
 interface GradingFormProps {
     assessmentId: string;
@@ -90,8 +91,8 @@ export default function GradingForm({
                 <div className="relative flex items-center gap-4">
                     <div className="relative">
                         <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-                        <div className="relative w-14 h-14 rounded-full bg-linear-to-br from-primary/20 to-primary/5 border border-primary/30 shadow-lg flex items-center justify-center text-primary font-black text-xl tracking-tighter">
-                            {student.user.name.charAt(0)}
+                        <div className="relative rounded-full">
+                            <BrandIcon variant='user' user={student.user} size='xl'/>
                         </div>
                     </div>
                     <div>
@@ -152,8 +153,12 @@ export default function GradingForm({
                 <Button type="button" variant="secondary" onClick={onCancel} className="w-full sm:w-auto h-12 font-semibold">
                     Cancel
                 </Button>
-                <Button type="submit" loadingId="grading-submit" loadingText="Saving..." className="w-full sm:w-auto h-12 font-semibold flex items-center justify-center gap-2">
-                    <Check className="w-4 h-4" />
+                <Button 
+                    type="submit" 
+                    loadingId="grading-submit" 
+                    loadingText="Saving..." 
+                    icon={Check}
+                >
                     Save Grade
                 </Button>
             </div>

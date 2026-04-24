@@ -25,8 +25,6 @@ function StudentPortalContent() {
     const { user, token } = useAuth();
     const { state, dispatch } = useGlobal();
 
-    const orgName = (params?.orgName as string) || '';
-
     const [sections, setSections] = useState<Section[]>([]);
     const [grades, setGrades] = useState<FinalGradeResponse[]>([]);
     const [assessments, setAssessments] = useState<Assessment[]>([]);
@@ -53,14 +51,13 @@ function StudentPortalContent() {
         const isAuthorized =
             user.role === Role.ORG_ADMIN ||
             user.role === Role.ORG_MANAGER ||
-            (user.role === Role.STUDENT && user.userName === params.userName);
+            (user.role === Role.STUDENT && user.id === params.userId);
 
         if (!isAuthorized) {
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied. You are not authorized to view this portal.', type: 'error' } });
-            const nameSlug = user.name ? user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : 'dashboard';
             const redirectPath = user.role === Role.STUDENT
-                ? `/${orgName}/students/${user.userName}`
-                : `/${orgName}/${user.role === Role.ORG_ADMIN ? 'admin' : `teachers/${nameSlug}`}`;
+                ? `/students/${user.id}`
+                : `/${user.role === Role.ORG_ADMIN ? 'admin' : `teachers/${user.id}`}`;
 
             router.replace(redirectPath);
             return;
@@ -92,7 +89,7 @@ function StudentPortalContent() {
         };
 
         fetchData();
-    }, [token, dispatch, orgName, user, params.userName, router]);
+    }, [token, dispatch, user, params.userId, router]);
 
     if (!user) return null;
 
@@ -105,7 +102,7 @@ function StudentPortalContent() {
                     Your account has been temporarily suspended by the administration. Please contact the office for details.
                 </p>
                 <Link
-                    href={`/${orgName}/mail`}
+                    href={`/mail`}
                     className="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-black tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all"
                 >
                     Contact Support

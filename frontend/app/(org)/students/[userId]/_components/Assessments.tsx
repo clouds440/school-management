@@ -68,6 +68,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
     const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
     const isSubmitting = state.ui.isProcessing;
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [submittedAssessmentIds, setSubmittedAssessmentIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (assessmentIdFromUrl && assessments.length > 0) {
@@ -126,6 +127,9 @@ export default function Assessments({ sections, assessments }: { sections: Secti
             }
 
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Assessment submitted successfully', type: 'success' } });
+            if (selectedAssessment) {
+                setSubmittedAssessmentIds(prev => new Set(prev).add(selectedAssessment.id));
+            }
             setSelectedAssessment(null);
             setSelectedFile(null);
             handleCloseModal();
@@ -242,7 +246,8 @@ export default function Assessments({ sections, assessments }: { sections: Secti
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-1">
                     {filteredAssessments.map((ann, index) => {
-                        const isDone = (ann._count?.submissions || 0) > 0;
+                        const hasGrade = ann.grades && ann.grades.length > 0 && (ann.grades[0].status === GradeStatus.PUBLISHED || ann.grades[0].status === GradeStatus.FINALIZED);
+                        const isSubmitted = (ann._count?.submissions || 0) > 0 || submittedAssessmentIds.has(ann.id);
                         return (
                             <Card
                                 key={ann.id}
@@ -257,8 +262,8 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                 delay={index * 50}
                             >
                                 <CardHeader>
-                                    <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg tracking-widest border border-border/50 shadow-sm ${isDone ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
-                                        {isDone ? 'Completed' : 'Pending'}
+                                    <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg tracking-widest border border-border/50 shadow-sm ${hasGrade ? 'bg-emerald-500/10 text-emerald-600' : isSubmitted ? 'bg-blue-500/10 text-blue-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                                        {hasGrade ? 'Graded' : isSubmitted ? 'Work submitted' : 'Pending'}
                                     </span>
                                     <div className="p-2.5 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors border border-primary/20 shadow-xs">
                                         <BookOpen className="w-5 h-5 text-primary" />
@@ -318,9 +323,15 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                 <h2 className="text-2xl font-black text-foreground tracking-tight">{selectedAssessment.title}</h2>
                                 <p className="text-muted-foreground font-medium mt-1">{selectedAssessment.section?.name}</p>
                             </div>
-                            <span className={`self-start text-xs font-bold px-3 py-1.5 rounded-lg tracking-wider ${(selectedAssessment._count?.submissions || 0) > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
-                                {(selectedAssessment._count?.submissions || 0) > 0 ? 'Completed' : 'Pending'}
-                            </span>
+                            {(() => {
+                                const hasGrade = selectedAssessment.grades && selectedAssessment.grades.length > 0 && (selectedAssessment.grades[0].status === GradeStatus.PUBLISHED || selectedAssessment.grades[0].status === GradeStatus.FINALIZED);
+                                const isSubmitted = (selectedAssessment._count?.submissions || 0) > 0 || submittedAssessmentIds.has(selectedAssessment.id);
+                                return (
+                                    <span className={`self-start text-xs font-bold px-3 py-1.5 rounded-lg tracking-wider ${hasGrade ? 'bg-emerald-500/10 text-emerald-600' : isSubmitted ? 'bg-blue-500/10 text-blue-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                                        {hasGrade ? 'Graded' : isSubmitted ? 'Work submitted' : 'Pending'}
+                                    </span>
+                                );
+                            })()}
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-xl border border-border">

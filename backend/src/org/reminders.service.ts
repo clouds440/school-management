@@ -82,4 +82,127 @@ export class RemindersService {
       }
     }
   }
+
+  /**
+   * Runs every hour to check for assessments that are overdue (due date has passed).
+   * Notifies students who haven't submitted and teachers about missing submissions.
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async checkOverdueAssessments() {
+    const now = new Date();
+
+    // Find assessments where due date has passed
+    const assessments = await this.prisma.assessment.findMany({
+      where: {
+        dueDate: {
+          lt: now,
+        },
+      },
+      include: {
+        section: {
+          include: {
+            enrollments: {
+              include: {
+                student: {
+                  include: {
+                    user: {
+                      select: { id: true, name: true },
+                    },
+                  },
+                },
+              },
+            },
+            teachers: {
+              include: {
+                user: {
+                  select: { id: true, name: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    for (const assessment of assessments) {
+      const enrollments = assessment.section.enrollments;
+
+      // Find students who haven't submitted this assessment
+      const submissions = await this.prisma.submission.findMany({
+        where: { assessmentId: assessment.id },
+        select: { studentId: true },
+      });
+
+      const submittedStudentIds = new Set(submissions.map(s => s.studentId));
+      const missingSubmissions = enrollments.filter(
+        e => !submittedStudentIds.has(e.studentId)
+      );
+
+      // Notify students who haven't submitted
+      for (const enrollment of missingSubmissions) {
+        const studentUser = enrollment.student.user;
+
+        // Avoid duplicate notifications (idempotency check)
+        const existing = await this.prisma.notification.findFirst({
+          where: {
+            userId: studentUser.id,
+            type: 'ASSESSMENT_OVERDUE',
+            createdAt: {
+              gte: new Date(now.getTime() - 24 * 60 * 60 * 1000), // within last 24h
+            },
+            metadata: {
+              path: ['assessmentId'],
+              equals: assessment.id,
+            },
+          },
+        });
+
+        if (!existing) {
+          await this.notifications.createNotification({
+            userId: studentUser.id,
+            title: 'Assessment Overdue',
+            body: `Your assessment "${assessment.title}" is overdue. Please provide an excuse or submit your work as soon as possible.`,
+            type: 'ASSESSMENT_OVERDUE',
+            actionUrl: `/students/${studentUser.id}?tab=assessments&assessmentId=${assessment.id}`,
+            metadata: { assessmentId: assessment.id },
+          });
+        }
+      }
+
+      // Notify teachers about missing submissions (only if there are missing submissions)
+      if (missingSubmissions.length > 0) {
+        for (const teacher of assessment.section.teachers) {
+          // Avoid duplicate notifications (idempotency check)
+          const existing = await this.prisma.notification.findFirst({
+            where: {
+              userId: teacher.user.id,
+              type: 'ASSESSMENT_OVERDUE_TEACHER',
+              createdAt: {
+                gte: new Date(now.getTime() - 24 * 60 * 60 * 1000), // within last 24h
+              },
+              metadata: {
+                path: ['assessmentId'],
+                equals: assessment.id,
+              },
+            },
+          });
+
+          if (!existing) {
+            const studentNames = missingSubmissions
+              .map(e => e.student.user.name)
+              .join(', ');
+
+            await this.notifications.createNotification({
+              userId: teacher.user.id,
+              title: 'Assessment Overdue - Missing Submissions',
+              body: `${missingSubmissions.length} student(s) have not submitted "${assessment.title}": ${studentNames}`,
+              type: 'ASSESSMENT_OVERDUE_TEACHER',
+              actionUrl: `/sections/${assessment.sectionId}/assessments/${assessment.id}`,
+              metadata: { assessmentId: assessment.id },
+            });
+          }
+        }
+      }
+    }
+  }
 }

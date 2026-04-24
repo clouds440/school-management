@@ -80,3 +80,18 @@ export enum MailCategory {
   GENERAL_INQUIRY = 'GENERAL_INQUIRY',
   OTHER = 'OTHER',
 }
+
+export enum InsightTone {
+  DEFAULT = 'default',
+  INFO = 'info',
+  SUCCESS = 'success',
+  WARNING = 'warning',
+  DANGER = 'danger',
+}
+
+export enum AttendanceStatus {
+  PRESENT = 'PRESENT',
+  ABSENT = 'ABSENT',
+  LATE = 'LATE',
+  EXCUSED = 'EXCUSED',
+}

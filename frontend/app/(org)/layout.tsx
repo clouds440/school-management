@@ -213,9 +213,9 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
         // Landing page link based on role
         let overviewHref = '/overview';
         if (user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER) {
-            overviewHref = `/teachers/${user.userName}`;
+            overviewHref = `/teachers/${user.id}`;
         } else if (user?.role === Role.STUDENT) {
-            overviewHref = `/students/${user.userName}`;
+            overviewHref = `/students/${user.id}`;
         }
 
         // Common links for everyone
@@ -257,17 +257,17 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
         if (isAcademic && user?.role !== Role.ORG_ADMIN) {
             orgLinks.push({ id: 'TIMETABLE', label: 'Timetable', href: '/timetable', icon: Clock });
             orgLinks.push({ id: 'GRADES', label: 'Grades', href: '/grades', icon: Trophy });
-            orgLinks.push({ id: 'PROFILE', label: 'Profile Settings', href: `/teachers/${user.userName}/profile`, icon: Settings });
+            orgLinks.push({ id: 'PROFILE', label: 'Profile Settings', href: `/teachers/${user.id}/profile`, icon: Settings });
         }
 
         // Student View
         if (user?.role === Role.STUDENT) {
-            orgLinks.push({ id: 'COURSES', label: 'My Courses', href: `/students/${user.userName}?tab=courses`, icon: Book, badge: stats?.SECTIONS });
-            orgLinks.push({ id: 'ASSESSMENTS', label: 'Assessments', href: `/students/${user.userName}?tab=assessments`, icon: BookOpen, badge: stats?.PENDING_ASSESSMENTS });
-            orgLinks.push({ id: 'GRADES', label: 'Grades', href: `/students/${user.userName}?tab=grades`, icon: Trophy });
-            orgLinks.push({ id: 'ATTENDANCE', label: 'Attendance', href: `/students/${user.userName}?tab=attendance`, icon: CheckCircle });
+            orgLinks.push({ id: 'COURSES', label: 'My Courses', href: `/students/${user.id}?tab=courses`, icon: Book, badge: stats?.SECTIONS });
+            orgLinks.push({ id: 'ASSESSMENTS', label: 'Assessments', href: `/students/${user.id}?tab=assessments`, icon: BookOpen, badge: stats?.PENDING_ASSESSMENTS });
+            orgLinks.push({ id: 'GRADES', label: 'Grades', href: `/students/${user.id}?tab=grades`, icon: Trophy });
+            orgLinks.push({ id: 'ATTENDANCE', label: 'Attendance', href: `/students/${user.id}?tab=attendance`, icon: CheckCircle });
             orgLinks.push({ id: 'TIMETABLE', label: 'Timetable', href: '/timetable', icon: Clock });
-            orgLinks.push({ id: 'PROFILE', label: 'Profile Settings', href: `/students/${user.userName}?tab=profile`, icon: Settings });
+            orgLinks.push({ id: 'PROFILE', label: 'Profile Settings', href: `/students/${user.id}?tab=profile`, icon: Settings });
         }
 
         return orgLinks;
@@ -289,9 +289,9 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
 
     let overviewHref = '/settings';
     if (user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER) {
-        overviewHref = `/teachers/${user.userName}`;
+        overviewHref = `/teachers/${user.id}`;
     } else if (user?.role === Role.STUDENT) {
-        overviewHref = `/students/${user.userName}`;
+        overviewHref = `/students/${user.id}`;
     }
     const isOverview = pathname === overviewHref;
 

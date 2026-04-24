@@ -216,7 +216,7 @@ export const api = {
         getGrades: (assessmentId: string, token: string) =>
             request<Grade[]>(`/org/assessments/${assessmentId}/grades`, { token }),
         updateGrade: (assessmentId: string, studentId: string, data: UpdateGradeRequest, token: string) =>
-            request<Grade>(`/org/grades/${assessmentId}/${studentId}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+            request<Grade>(`/org/assessments/${assessmentId}/grades/${studentId}`, { method: 'PATCH', body: JSON.stringify(data), token }),
         getOwnFinalGrades: (token: string) =>
             request<FinalGradeResponse[]>('/org/grades/final', { token }),
         publishGrades: (assessmentId: string, token: string) =>

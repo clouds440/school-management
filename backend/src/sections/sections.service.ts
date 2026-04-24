@@ -1,0 +1,157 @@
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { AttendanceService } from '../attendance/attendance.service';
+import { CreateSectionDto } from './dto/create-section.dto';
+import { UpdateSectionDto } from './dto/update-section.dto';
+import {
+  getPaginationOptions,
+  formatPaginatedResponse,
+  PaginationOptions,
+} from '../common/utils';
+
+interface JwtPayload {
+  name: string | null | undefined;
+  id: string;
+  role?: string;
+  email?: string;
+  organizationId?: string | null;
+  userName?: string;
+}
+
+@Injectable()
+export class SectionsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly attendanceService: AttendanceService,
+  ) {}
+
+  async getSections(orgId: string, options: PaginationOptions) {
+    const { skip, take, sortBy, sortOrder } = getPaginationOptions({
+      ...options,
+      sortBy: options.sortBy || 'createdAt',
+      sortOrder: options.sortOrder || 'desc',
+    });
+
+    const where: Prisma.SectionWhereInput = {
+      course: { organizationId: orgId },
+      ...(options.my && options.userId
+        ? {
+            OR: [
+              { teachers: { some: { userId: options.userId } } },
+              {
+                enrollments: { some: { student: { userId: options.userId } } },
+              },
+            ],
+          }
+        : {}),
+      ...(options.search
+        ? {
+            OR: [
+              { name: { contains: options.search, mode: 'insensitive' } },
+              { semester: { contains: options.search, mode: 'insensitive' } },
+              { year: { contains: options.search, mode: 'insensitive' } },
+              { room: { contains: options.search, mode: 'insensitive' } },
+              {
+                course: {
+                  name: { contains: options.search, mode: 'insensitive' },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    // Handle nested sorting for course name
+    let orderBy: Prisma.SectionOrderByWithRelationInput = {};
+    if (sortBy === 'courseName') {
+      orderBy = { course: { name: sortOrder } };
+    } else {
+      orderBy = { [sortBy]: sortOrder };
+    }
+
+    const [sections, totalRecords] = await Promise.all([
+      this.prisma.section.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          course: true,
+          teachers: {
+            include: { user: { select: { email: true, name: true } } },
+          },
+          enrollments: {
+            include: {
+              student: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          _count: { select: { enrollments: true } },
+        },
+        orderBy,
+      }),
+      this.prisma.section.count({ where }),
+    ]);
+
+    const formattedSections = sections.map((s) => ({
+      ...s,
+      students: s.enrollments.map((e) => ({
+        ...e.student,
+        user: e.student.user,
+      })),
+      studentsCount: s._count?.enrollments || 0,
+    }));
+
+    return formatPaginatedResponse(
+      formattedSections,
+      totalRecords,
+      options.page,
+      options.limit,
+    );
+  }
+
+  async getSection(orgId: string, id: string, user: JwtPayload) {
+    return this.attendanceService.getSection(orgId, id, user);
+  }
+
+  async createSection(orgId: string, data: CreateSectionDto) {
+    return this.prisma.section.create({
+      data: {
+        name: data.name,
+        semester: data.semester,
+        year: data.year,
+        room: data.room,
+        courseId: data.courseId,
+      },
+    });
+  }
+
+  async updateSection(orgId: string, id: string, data: UpdateSectionDto) {
+    return this.prisma.section.update({
+      where: { id, course: { organizationId: orgId } },
+      data,
+    });
+  }
+
+  async deleteSection(orgId: string, id: string) {
+    const section = await this.prisma.section.findFirst({
+      where: { id, course: { organizationId: orgId } },
+    });
+    if (!section) throw new NotFoundException('Section not found');
+
+    await this.prisma.section.delete({ where: { id } });
+    return { message: 'Section deleted successfully' };
+  }
+}
