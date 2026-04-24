@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { SectionsService } from './sections.service';
 import { PrismaModule } from '../prisma/prisma.module';
-import { AttendanceModule } from '../attendance/attendance.module';
+import { CoursesModule } from '../courses/courses.module';
 
 @Module({
-  imports: [PrismaModule, AttendanceModule],
+  imports: [PrismaModule, CoursesModule],
   providers: [SectionsService],
   exports: [SectionsService],
 })

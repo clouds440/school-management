@@ -17,6 +17,6 @@ import { UserModule } from '../users/user.module';
   imports: [FilesModule, NotificationsModule, StudentModule, TeacherModule, InsightsModule, AssessmentsModule, AttendanceModule, CoursesModule, SectionsModule, UserModule],
   controllers: [OrgController],
   providers: [OrgService, RemindersService],
-  exports: [StudentModule, TeacherModule, InsightsModule, AssessmentsModule, AttendanceModule, CoursesModule, SectionsModule],
+  exports: [OrgService, StudentModule, TeacherModule, InsightsModule, AssessmentsModule, AttendanceModule, CoursesModule, SectionsModule],
 })
 export class OrgModule {}

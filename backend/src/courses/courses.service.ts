@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -102,5 +103,29 @@ export class CoursesService {
       );
     }
     return this.prisma.course.delete({ where: { id } });
+  }
+
+  async getCourseById(id: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+    return course;
+  }
+
+  async validateCourseBelongsToOrg(courseId: string, organizationId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    if (course.organizationId !== organizationId) {
+      throw new ForbiddenException('Course does not belong to your organization');
+    }
+
+    return course;
   }
 }

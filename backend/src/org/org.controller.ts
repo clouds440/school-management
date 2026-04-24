@@ -226,7 +226,7 @@ export class OrgController {
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.sectionsService.getSection(orgId, id, req.user);
+    return this.attendanceService.getSection(orgId, id, req.user);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)

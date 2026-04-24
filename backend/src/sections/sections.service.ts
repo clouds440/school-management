@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { AttendanceService } from '../attendance/attendance.service';
+import { CoursesService } from '../courses/courses.service';
 import { CreateSectionDto } from './dto/create-section.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
 import {
@@ -27,7 +27,7 @@ interface JwtPayload {
 export class SectionsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly attendanceService: AttendanceService,
+    private readonly coursesService: CoursesService,
   ) {}
 
   async getSections(orgId: string, options: PaginationOptions) {
@@ -123,11 +123,18 @@ export class SectionsService {
     );
   }
 
-  async getSection(orgId: string, id: string, user: JwtPayload) {
-    return this.attendanceService.getSection(orgId, id, user);
+  async getSectionById(id: string) {
+    const section = await this.prisma.section.findUnique({
+      where: { id },
+    });
+    if (!section) throw new NotFoundException('Section not found');
+    return section;
   }
 
   async createSection(orgId: string, data: CreateSectionDto) {
+    // Verify course belongs to the organization
+    await this.coursesService.validateCourseBelongsToOrg(data.courseId, orgId);
+
     return this.prisma.section.create({
       data: {
         name: data.name,
@@ -154,14 +161,6 @@ export class SectionsService {
 
     await this.prisma.section.delete({ where: { id } });
     return { message: 'Section deleted successfully' };
-  }
-
-  async getSectionById(id: string) {
-    const section = await this.prisma.section.findUnique({
-      where: { id },
-    });
-    if (!section) throw new NotFoundException('Section not found');
-    return section;
   }
 
   async getSectionsByTeacherId(teacherId: string) {
