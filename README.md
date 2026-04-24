@@ -65,8 +65,8 @@ The system encompasses:
 ### High-Level System Architecture
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        CLIENT LAYER                              │
-│                   Next.js 16 (React 19) SPA                      │
+│                        CLIENT LAYER                             │
+│                   Next.js 16 (React 19) SPA                     │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────────┐ │
 │  │  App Router  │ │   Context    │ │    Resource Stores       │ │
 │  │  (Pages)     │ │   Providers  │ │    (Caching Layer)       │ │
@@ -74,28 +74,28 @@ The system encompasses:
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTP/REST + WebSocket
 ┌────────────────────────────▼────────────────────────────────────┐
-│                        API LAYER                                 │
-│                    NestJS Application                            │
+│                        API LAYER                                │
+│                    NestJS Application                           │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────────┐ │
 │  │   Guards     │ │ Interceptors │ │     Rate Limiting        │ │
 │  │  (Auth/RBAC) │ │  (Transform) │ │     (Throttler)          │ │
 │  └──────────────┘ └──────────────┘ └──────────────────────────┘ │
 ├─────────────────────────────────────────────────────────────────┤
-│                      SERVICE LAYER                               │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────────┐ │
-│  │  Auth   │ │  Admin  │ │   Org   │ │  Chat   │ │   Mail    │ │
-│  │ Service │ │ Service │ │ Service │ │ Service │ │  Service  │ │
-│  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └───────────┘ │
+│                      SERVICE LAYER                              │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────────┐  │
+│  │  Auth   │ │  Admin  │ │   Org   │ │  Chat   │ │   Mail    │  │
+│  │ Service │ │ Service │ │ Service │ │ Service │ │  Service  │  │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └───────────┘  │
 │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────────────────┐│
 │  │ Events  │ │  Files  │ │ Notify  │ │     Announcements       ││
 │  │ Gateway │ │ Service │ │ Service │ │        Service          ││
 │  └─────────┘ └─────────┘ └─────────┘ └─────────────────────────┘│
 ├─────────────────────────────────────────────────────────────────┤
-│                    DATA ACCESS LAYER                             │
-│                      Prisma ORM                                  │
+│                    DATA ACCESS LAYER                            │
+│                      Prisma ORM                                 │
 ├─────────────────────────────────────────────────────────────────┤
-│                    DATABASE LAYER                                │
-│                    PostgreSQL                                    │
+│                    DATABASE LAYER                               │
+│                    PostgreSQL                                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 ### Backend Module Structure
@@ -612,24 +612,34 @@ backend/
     - PostgreSQL 15+
     - Cloudinary account
 
-2. **Backend Setup**:cd backend
+2. **Backend Setup:**
+```bash
+cd backend
 npm install
 cp .env.example .env
 # Configure DATABASE_URL, JWT_SECRET, CLOUDINARY_*
 npx prisma migrate dev
 npm run start:dev
-3. **Frontend Setup**:cd frontend
+```
+
+3. **Frontend Setup:**
+```bash
+cd frontend
 npm install
 cp .env.example .env.local
 # Configure NEXT_PUBLIC_API_URL
 npm run dev
+```
+
 ### Phase 2: Staging Environment
 1. **Infrastructure**:
     - PostgreSQL managed database
     - Node.js hosting (Railway, Render, AWS ECS)
     - CDN for static assets
 
-2. **Environment Variables**:# Backend
+2. **Environment Variables**:
+```bash
+# Backend
 DATABASE_URL=postgresql://...
 JWT_SECRET=<secure-random-string>
 JWT_EXPIRATION=1d
@@ -641,15 +651,27 @@ CLOUDINARY_API_SECRET=...
 
 # Frontend
 NEXT_PUBLIC_API_URL=https://api.staging.example.com
-3. **Database Migration**:npx prisma migrate deploy
-4. **Build & Deploy**:# Backend
+```
+
+3. **Database Migration:**
+
+```bash
+npx prisma migrate deploy
+```
+
+4. **Build & Deploy**:
+```bash
+# Backend
 npm run build
 npm run start:prod
 
 # Frontend
 npm run build
 npm start
+```
+
 ### Phase 3: Production Environment
+
 1. **Infrastructure Requirements**:
     - Load balancer with SSL termination
     - PostgreSQL with connection pooling
@@ -658,12 +680,12 @@ npm start
     - Monitoring (APM, logging)
 
 2. **Security Checklist**:
-    - [ ] SSL/TLS certificates configured
-    - [ ] Environment variables secured
-    - [ ] Database credentials rotated
-    - [ ] Rate limiting configured
-    - [ ] CORS origins restricted
-    - [ ] Backup strategy implemented
+    - [x] SSL/TLS certificates configured
+    - [x] Environment variables secured
+    - [x] Database credentials rotated
+    - [x] Rate limiting configured
+    - [x] CORS origins restricted
+    - [x] Backup strategy implemented
 
 3. **Monitoring Setup**:
     - Application performance monitoring
@@ -678,6 +700,7 @@ npm start
     - Feature flags for gradual rollout
 
 ### Phase 4: Post-Launch
+
 1. **Performance Optimization**:
     - Database query optimization
     - Caching strategy implementation
