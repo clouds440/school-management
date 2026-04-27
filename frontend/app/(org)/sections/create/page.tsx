@@ -51,7 +51,7 @@ export default function CreateSectionPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'section-create' });
 
         try {
             if (!token) return;
@@ -64,7 +64,7 @@ export default function CreateSectionPage() {
         } catch (error: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to create section', type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'section-create' });
         }
     };
 
@@ -160,6 +160,7 @@ export default function CreateSectionPage() {
                         </Link>
                         < Button
                             type="submit"
+                            loadingId="section-create"
                             className="px-10 h-12"
                         >
                             Create Section

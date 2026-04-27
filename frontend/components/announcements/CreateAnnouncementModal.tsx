@@ -108,6 +108,7 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
         if (!token) return;
 
         try {
+            dispatch({ type: 'UI_START_PROCESSING', payload: 'announcement-submit' });
             await api.announcements.createAnnouncement({
                 title,
                 body,
@@ -116,7 +117,6 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
                 actionUrl: actionUrl || undefined,
                 priority
             }, token);
-            dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'announcement-submit' } });
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Announcement created successfully', type: 'success' } });
 
             // Reset state
@@ -132,7 +132,7 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
         } catch (error: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: getErrorMessage(error), type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'announcement-submit' });
         }
     };
 

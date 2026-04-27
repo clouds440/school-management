@@ -6,35 +6,36 @@ import { BookOpen, GraduationCap, Users, Calendar, MapPin, FileText, ArrowLeft }
 import { api } from '@/lib/api';
 import { Section, Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import CourseMaterials from '@/components/sections/CourseMaterials';
 import { Loading } from '@/components/ui/Loading';
 import { Button } from '@/components/ui/Button';
+import { NotFound } from '@/components/NotFound';
 
 export default function CourseMaterialsPage() {
     const { token, user } = useAuth();
     const params = useParams();
-    const router = useRouter();
-    const { state, dispatch } = useGlobal();
+    const { dispatch } = useGlobal();
     const [section, setSection] = useState<Section | null>(null);
-    const isLoading = state.ui.isLoading;
+    const [isLoading, setIsLoading] = useState(false);
+    const [sectionExists, setSectionExists] = useState<boolean | null>(null);
 
     const sectionId = params.id as string;
 
     const fetchSection = useCallback(async () => {
         if (!token || !sectionId) return;
-        dispatch({ type: 'UI_SET_LOADING', payload: true });
+        setIsLoading(true);
         try {
             const data = await api.org.getSection(sectionId, token);
             setSection(data);
+            setSectionExists(true);
         } catch (error) {
-            console.error('Failed to fetch section:', error);
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load section details', type: 'error' } });
-            router.push('/students');
+            console.warn('Failed to fetch section:', error);
+            setSectionExists(false);
         } finally {
-            dispatch({ type: 'UI_SET_LOADING', payload: false });
+            setIsLoading(false);
         }
-    }, [token, sectionId, dispatch, router]);
+    }, [token, sectionId]);
 
     useEffect(() => {
         fetchSection();
@@ -46,6 +47,10 @@ export default function CourseMaterialsPage() {
                 <Loading size="lg" />
             </div>
         );
+    }
+
+    if (sectionExists === false) {
+        return <NotFound page="Section" />;
     }
 
     if (!section) return null;

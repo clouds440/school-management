@@ -90,7 +90,7 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
     const formData = watch();
 
     const onSubmit: SubmitHandler<StudentCreateFormData | StudentUpdateFormData | StudentProfileFormData> = async (data) => {
-        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'student-submit' } });
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'student-submit' });
         try {
             const { password, fee, age, ...rest } = data;
             const payload: CreateStudentRequest | UpdateStudentRequest = {
@@ -152,7 +152,7 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
                 dispatch({ type: 'TOAST_ADD', payload: { message: message, type: 'error' } });
             }
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'student-submit' });
         }
     };
 

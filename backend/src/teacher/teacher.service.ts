@@ -234,7 +234,7 @@ export class TeacherService {
           organizationId: orgId,
           name: data.name,
           phone: data.phone,
-        });
+        }, prisma);
 
         const teacher = await prisma.teacher.create({
           data: {
@@ -349,7 +349,7 @@ export class TeacherService {
 
     const updatedTeacher = await this.prisma.$transaction(async (tx) => {
       if (Object.keys(userData).length > 0) {
-        await this.userService.updateUser(teacher.userId, userData);
+        await this.userService.updateUser(teacher.userId, userData, tx);
       }
 
       if (Object.keys(teacherData).length > 0) {

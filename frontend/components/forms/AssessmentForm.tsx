@@ -13,6 +13,7 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { assessmentSchema, AssessmentFormData } from '@/lib/schemas';
+import { Toggle } from '@/components/ui/Toggle';
 
 interface AssessmentFormProps {
     sectionId: string;
@@ -33,7 +34,7 @@ export default function AssessmentForm({
 }: AssessmentFormProps) {
     const { token } = useAuth();
     const { state, dispatch } = useGlobal();
-    const isProcessing = state.ui.isProcessing;
+    const isProcessing = state.ui.processing['assessment-submit'];
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -69,7 +70,7 @@ export default function AssessmentForm({
     const formData = watch();
 
     const onSubmit = async (data: AssessmentFormData) => {
-        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'assessment-submit' } });
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'assessment-submit' });
         try {
             const payload: CreateAssessmentRequest = {
                 ...data,
@@ -111,7 +112,7 @@ export default function AssessmentForm({
             const message = apiError?.response?.data?.message || 'Failed to save assessment';
             dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'assessment-submit' });
         }
     };
 
@@ -266,14 +267,12 @@ export default function AssessmentForm({
                 <div className="flex items-center justify-between p-4 md:p-5 bg-linear-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-2xl relative overflow-hidden">
                     <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-transparent opacity-50" />
                     <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
-                        <div className="space-y-1">
-                            <Label className="text-sm md:text-base font-semibold text-foreground">Allow Submissions</Label>
-                            <p className="text-xs text-muted-foreground font-medium">Enable students to upload work for this assessment</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                            <input type="checkbox" className="sr-only peer" {...register('allowSubmissions')} />
-                            <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-card after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
+                        <Toggle
+                            checked={watch('allowSubmissions')}
+                            onCheckedChange={(checked) => setValue('allowSubmissions', checked)}
+                            label="Allow Submissions"
+                            description="Enable students to upload work for this assessment"
+                        />
                     </div>
                 </div>
             </div>

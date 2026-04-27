@@ -14,12 +14,12 @@ export default function GradesPage() {
     const { token, user } = useAuth();
     const { state, dispatch } = useGlobal();
     const [sections, setSections] = useState<Section[]>([]);
-    const isLoading = state.ui.isLoading;
+    const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
     const fetchGradesData = useCallback(async () => {
         if (!token || !user) return;
-        dispatch({ type: 'UI_SET_LOADING', payload: true });
+        setIsLoading(true);
         try {
             // Admins/Teachers see sections to manage
             const params = user.role === Role.TEACHER ? { my: true } : {};
@@ -29,7 +29,7 @@ export default function GradesPage() {
             console.error('Failed to fetch grades data:', error);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load grades information', type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_LOADING', payload: false });
+            setIsLoading(false);
         }
     }, [token, user, dispatch]);
 

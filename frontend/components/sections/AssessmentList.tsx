@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
     Plus,
@@ -30,13 +30,13 @@ interface AssessmentListProps {
     role: Role;
 }
 
-export default function AssessmentList({ section, role }: AssessmentListProps) {
+export default memo(function AssessmentList({ section, role }: AssessmentListProps) {
     const { token } = useAuth();
-    const { state, dispatch } = useGlobal();
+    const { dispatch } = useGlobal();
     const router = useRouter();
 
     const [assessments, setAssessments] = useState<Assessment[]>([]);
-    const isLoading = state.ui.isLoading;
+    const [isLoading, setIsLoading] = useState(true);
 
     // Modals
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -46,7 +46,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
 
     const fetchAssessments = useCallback(async () => {
         if (!token) return;
-        dispatch({ type: 'UI_SET_LOADING', payload: true });
+        setIsLoading(true);
         try {
             const data = await api.org.getAssessments(token, { sectionId: section.id });
             setAssessments(data);
@@ -54,7 +54,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
             console.error('Failed to fetch assessments:', error);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load assessments', type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_LOADING', payload: false });
+            setIsLoading(false);
         }
     }, [token, section.id, dispatch]);
 
@@ -65,6 +65,7 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
     const handleDelete = async () => {
         if (!token || !deletingAssessment) return;
         try {
+            dispatch({ type: 'UI_START_PROCESSING', payload: `assessment-delete-${deletingAssessment.id}` });
             await api.org.deleteAssessment(deletingAssessment.id, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Assessment deleted successfully', type: 'success' } });
             setAssessments(prev => prev.filter(a => a.id !== deletingAssessment.id));
@@ -73,6 +74,8 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to delete assessment', type: 'error' } });
             setDeletingAssessment(null);
             console.error('Failed to delete assessment:', error);
+        } finally {
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: `assessment-delete-${deletingAssessment.id}` });
         }
     };
 
@@ -197,15 +200,19 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                                                 <Button
                                                     variant="secondary"
                                                     className="h-10 px-6 text-[11px] font-black gap-2 rounded-xl shadow-md"
+                                                    loadingId={`assessment-submit-${assessment.id}`}
                                                     disabled={!!(assessment.dueDate && new Date(assessment.dueDate) < new Date())}
                                                     onClick={async (e) => {
                                                         e.stopPropagation();
                                                         try {
+                                                            dispatch({ type: 'UI_START_PROCESSING', payload: `assessment-submit-${assessment.id}` });
                                                             await api.org.createSubmission(assessment.id, { assessmentId: assessment.id }, token!);
                                                             dispatch({ type: 'TOAST_ADD', payload: { message: 'Marked as done', type: 'success' } });
                                                         } catch (e) {
                                                             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to mark as done', type: 'error' } });
                                                             console.error('Failed to mark as done:', e);
+                                                        } finally {
+                                                            dispatch({ type: 'UI_STOP_PROCESSING', payload: `assessment-submit-${assessment.id}` });
                                                         }
                                                     }}
                                                 >
@@ -289,8 +296,9 @@ export default function AssessmentList({ section, role }: AssessmentListProps) {
                 description={`Are you sure you want to delete "${deletingAssessment?.title}"? This will also remove all associated grades and submissions.`}
                 confirmText="Delete Assessment"
                 isDestructive={true}
+                loadingId={deletingAssessment ? `assessment-delete-${deletingAssessment.id}` : undefined}
             />
         </div>
     );
-}
+});
 

@@ -41,7 +41,7 @@ export default function ChangePasswordForm({
             return;
         }
 
-        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'password-change-submit' } });
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'password-change-submit' });
         try {
             await onSubmit(formData.oldPassword, formData.newPassword);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Password changed successfully', type: 'success' } });
@@ -52,7 +52,7 @@ export default function ChangePasswordForm({
             const errorMessage = err instanceof Error ? err.message : 'Failed to change password';
             dispatch({ type: 'TOAST_ADD', payload: { message: errorMessage, type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'password-change-submit' });
         }
     };
 

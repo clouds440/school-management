@@ -70,8 +70,7 @@ export interface GlobalState {
         isMobileSidebarOpen: boolean;
         viewModal: ModalConfig;
         isLoading: boolean;
-        isProcessing: boolean;
-        processingId: string | null;
+        processing: Record<string, boolean>;
     };
     data: {
         sections: Section[];
@@ -97,7 +96,8 @@ type Action =
     | { type: 'UI_TOGGLE_SIDEBAR' }
     | { type: 'UI_SET_MOBILE_SIDEBAR'; payload: boolean }
     | { type: 'UI_SET_LOADING'; payload: boolean }
-    | { type: 'UI_SET_PROCESSING'; payload: boolean | { isProcessing: boolean; id: string } }
+    | { type: 'UI_START_PROCESSING'; payload: string }
+    | { type: 'UI_STOP_PROCESSING'; payload: string }
     | { type: 'UI_OPEN_VIEW_MODAL'; payload: Omit<ModalConfig, 'isOpen'> }
     | { type: 'UI_CLOSE_VIEW_MODAL' }
     | { type: 'DATA_SET_SECTIONS'; payload: Section[] }
@@ -124,8 +124,7 @@ const initialState: GlobalState = {
         isSidebarExpanded: true,
         isMobileSidebarOpen: false,
         isLoading: false,
-        isProcessing: false,
-        processingId: null,
+        processing: {},
         viewModal: {
             isOpen: false,
             title: '',
@@ -162,6 +161,7 @@ function globalReducer(state: GlobalState, action: Action): GlobalState {
                 }
             };
         case 'AUTH_SET_LOADING':
+            if (state.auth.loading === action.payload) return state;
             return { ...state, auth: { ...state.auth, loading: action.payload } };
         case 'AUTH_SET_PROFILE':
             return { ...state, auth: { ...state.auth, userProfile: action.payload } };
@@ -192,12 +192,29 @@ function globalReducer(state: GlobalState, action: Action): GlobalState {
         case 'UI_SET_MOBILE_SIDEBAR':
             return { ...state, ui: { ...state.ui, isMobileSidebarOpen: action.payload } };
         case 'UI_SET_LOADING':
+            if (state.ui.isLoading === action.payload) return state;
             return { ...state, ui: { ...state.ui, isLoading: action.payload } };
-        case 'UI_SET_PROCESSING':
-            if (typeof action.payload === 'boolean') {
-                return { ...state, ui: { ...state.ui, isProcessing: action.payload, processingId: action.payload ? state.ui.processingId : null } };
-            }
-            return { ...state, ui: { ...state.ui, isProcessing: action.payload.isProcessing, processingId: action.payload.isProcessing ? action.payload.id : null } };
+        case 'UI_START_PROCESSING':
+            return {
+                ...state,
+                ui: {
+                    ...state.ui,
+                    processing: {
+                        ...state.ui.processing,
+                        [action.payload]: true
+                    }
+                }
+            };
+        case 'UI_STOP_PROCESSING':
+            const updated = { ...state.ui.processing };
+            delete updated[action.payload];
+            return {
+                ...state,
+                ui: {
+                    ...state.ui,
+                    processing: updated
+                }
+            };
         case 'UI_OPEN_VIEW_MODAL':
             return { ...state, ui: { ...state.ui, viewModal: { ...action.payload, isOpen: true } } };
         case 'UI_CLOSE_VIEW_MODAL':

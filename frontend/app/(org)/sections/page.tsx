@@ -18,6 +18,7 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { useGlobal } from '@/context/GlobalContext';
 import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+import { Toggle } from '@/components/ui/Toggle';
 import { Loading } from '@/components/ui/Loading';
 import { sectionsStore } from '@/lib/sectionsStore';
 
@@ -28,7 +29,7 @@ interface SectionParams extends BasePaginationParams {
 export default function SectionsPage() {
     const { token, user } = useAuth();
     const { state, dispatch } = useGlobal();
-    const isProcessing = state.ui.isProcessing;
+    const isProcessing = state.ui.processing['section-edit'];
 
     const pathname = usePathname();
     const router = useRouter();
@@ -131,7 +132,7 @@ export default function SectionsPage() {
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingSection || !token) return;
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'section-edit' });
         try {
             await api.org.updateSection(editingSection.id, editFormData, token);
 
@@ -174,7 +175,7 @@ export default function SectionsPage() {
             const message = err instanceof Error ? err.message : 'Error updating section';
             dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'section-edit' });
         }
     };
 
@@ -324,18 +325,12 @@ export default function SectionsPage() {
 
                     <div className="flex flex-wrap items-center gap-2 md:gap-3">
                         {user?.role === Role.ORG_MANAGER && (
-                            <div
-                                onClick={() => updateQueryParams({ my: !showOnlyMySections, page: 1 })}
-                                className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-lg border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all cursor-pointer group select-none"
-                            >
-                                <button
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMySections ? 'bg-primary' : 'bg-muted'}`}
-                                >
-                                    <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${showOnlyMySections ? 'translate-x-6' : 'translate-x-1'}`}
-                                    />
-                                </button>
-                                <span className="text-xs font-bold text-card-foreground tracking-wider">My Sections</span>
+                            <div className="bg-primary/5 p-2 pr-4 rounded-lg border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
+                                <Toggle
+                                    checked={showOnlyMySections}
+                                    onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
+                                    label="My Sections"
+                                />
                             </div>
                         )}
 
@@ -377,6 +372,7 @@ export default function SectionsPage() {
                 title="Update Section Information"
                 onSubmit={handleEditSubmit}
                 isSubmitting={isProcessing}
+                loadingId="section-edit"
                 submitText="Save Changes"
                 showSubmit={user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER}
             >

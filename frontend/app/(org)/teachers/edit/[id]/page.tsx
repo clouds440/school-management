@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import TeacherForm from '@/components/forms/TeacherForm';
 import { useGlobal } from '@/context/GlobalContext';
 import { Teacher, Role } from '@/types';
+import { NotFound } from '@/components/NotFound';
 
 export default function EditTeacherPage() {
     const { user, token, loading: authLoading } = useAuth();
@@ -17,7 +18,8 @@ export default function EditTeacherPage() {
     const teacherId = params.id as string;
 
     const [teacherData, setTeacherData] = useState<Teacher | null>(null);
-    const dataLoading = state.ui.isLoading;
+    const [dataLoading, setDataLoading] = useState(false);
+    const [teacherExists, setTeacherExists] = useState<boolean | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -27,26 +29,33 @@ export default function EditTeacherPage() {
 
         // Fetch the teacher data now that we have a valid token
         const fetchTeacher = async () => {
-            dispatch({ type: 'UI_SET_LOADING', payload: true });
-            // Role guard: only ORG_ADMIN and ORG_MANAGER can edit teachers
-            if (!user || (user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER)) {
-                if (isMounted) router.replace('/');
-                return;
-            }
+            setDataLoading(true);
+            if (!user || !token) return;
 
             try {
                 const data = await api.org.getTeacher(teacherId, token!);
+                
+                // Role guard: only ORG_ADMIN and ORG_MANAGER can edit teachers
+                if (user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER) {
+                    if (isMounted) {
+                        dispatch({ type: 'TOAST_ADD', payload: { message: 'You do not have permission to edit this teacher.', type: 'error' } });
+                        router.replace('/teachers');
+                    }
+                    return;
+                }
+
                 if (isMounted) {
                     setTeacherData(data);
+                    setTeacherExists(true);
                 }
             } catch (error: unknown) {
                 // Ignore errors if component unmounted (e.g. strict mode remount)
                 if (!isMounted) return;
 
-                dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to load teacher.', type: 'error' } });
-                router.replace('/teachers');
+                console.warn('Failed to fetch teacher:', error);
+                setTeacherExists(false);
             } finally {
-                if (isMounted) dispatch({ type: 'UI_SET_LOADING', payload: false });
+                if (isMounted) setDataLoading(false);
             }
         };
 
@@ -67,6 +76,10 @@ export default function EditTeacherPage() {
                 </div>
             </div>
         );
+    }
+
+    if (teacherExists === false) {
+        return <NotFound page="Teacher" />;
     }
 
     if (!teacherData) return null;

@@ -1,22 +1,24 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { BookOpen, GraduationCap, Users, Trophy, Calendar, MapPin, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Section, Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import AssessmentList from '@/components/sections/AssessmentList';
 import SectionSchedules from '@/components/sections/SectionSchedules';
 import CourseMaterials from '@/components/sections/CourseMaterials';
 import { Loading } from '@/components/ui/Loading';
+import { NotFound } from '@/components/NotFound';
 
 export default function SectionDetailPage() {
     const { token, user } = useAuth();
     const params = useParams();
-    const router = useRouter();
     const { state, dispatch } = useGlobal();
+    const dispatchRef = useRef(dispatch);
+    useEffect(() => { dispatchRef.current = dispatch; }, [dispatch]);
     const [section, setSection] = useState<Section | null>(null);
     const isLoading = state.ui.isLoading;
 
@@ -24,18 +26,16 @@ export default function SectionDetailPage() {
 
     const fetchSection = useCallback(async () => {
         if (!token || !sectionId) return;
-        dispatch({ type: 'UI_SET_LOADING', payload: true });
+        dispatchRef.current({ type: 'UI_SET_LOADING', payload: true });
         try {
             const data = await api.org.getSection(sectionId, token);
             setSection(data);
         } catch (error) {
-            console.error('Failed to fetch section:', error);
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load section details', type: 'error' } });
-            router.push('/sections');
+            console.warn('Failed to fetch section:', error);
         } finally {
-            dispatch({ type: 'UI_SET_LOADING', payload: false });
+            dispatchRef.current({ type: 'UI_SET_LOADING', payload: false });
         }
-    }, [token, sectionId, dispatch, router]);
+    }, [token, sectionId]);
 
     useEffect(() => {
         fetchSection();
@@ -49,7 +49,7 @@ export default function SectionDetailPage() {
         );
     }
 
-    if (!section) return null;
+    if (!section) return <NotFound page="Section"/>;
 
     return (
         <div className="flex flex-col w-full space-y-8">

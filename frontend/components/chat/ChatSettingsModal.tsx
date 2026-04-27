@@ -11,6 +11,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useGlobal } from '@/context/GlobalContext';
 import { Modal } from '../ui/Modal';
+import { Toggle } from '../ui/Toggle';
 
 interface ChatSettingsModalProps {
     isOpen: boolean;
@@ -188,12 +189,11 @@ export function ChatSettingsModal({
                                 <p className="text-[10px] text-muted-foreground">Only admins and moderators can send messages</p>
                             </div>
                         </div>
-                        <button
-                            onClick={() => setReadOnly(!readOnly)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${readOnly ? 'bg-primary' : 'bg-muted'}`}
-                        >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${readOnly ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
+                        <Toggle
+                            checked={readOnly}
+                            onCheckedChange={setReadOnly}
+                            knobColor="bg-white"
+                        />
                     </div>
                 )}
 

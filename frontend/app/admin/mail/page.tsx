@@ -30,9 +30,7 @@ export default function MailPage() {
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<MailItem> | null>(null);
     const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
     const [newMailOpen, setNewMailOpen] = useState(false);
-
-    // Global UI states alias
-    const fetching = state.ui.isLoading;
+    const [fetching, setFetching] = useState(false);
 
     const [pageSize, setPageSize] = useState<number>(() => {
         if (typeof window !== 'undefined') {
@@ -64,7 +62,7 @@ export default function MailPage() {
     const fetchMails = useCallback(async () => {
         if (!token) return;
         try {
-            dispatch({ type: 'UI_SET_LOADING', payload: true });
+            setFetching(true);
             const [data, stats] = await Promise.all([
                 api.mail.getMails(token, {
                     page,
@@ -85,7 +83,7 @@ export default function MailPage() {
             const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
             dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_LOADING', payload: false });
+            setFetching(false);
         }
     }, [token, page, searchQuery, sortBy, sortOrder, statusFilter, pageSize, dispatch]);
 

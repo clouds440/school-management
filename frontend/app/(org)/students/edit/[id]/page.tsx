@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import StudentForm from '@/components/forms/StudentForm';
 import { useGlobal } from '@/context/GlobalContext';
 import { Student, Role } from '@/types';
+import { NotFound } from '@/components/NotFound';
 
 export default function EditStudentPage() {
     const { user, token, loading: authLoading } = useAuth();
@@ -17,7 +18,8 @@ export default function EditStudentPage() {
     const studentId = params.id as string;
 
     const [studentData, setStudentData] = useState<Student | null>(null);
-    const dataLoading = state.ui.isLoading;
+    const [dataLoading, setDataLoading] = useState(false);
+    const [studentExists, setStudentExists] = useState<boolean | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -25,7 +27,7 @@ export default function EditStudentPage() {
         if (authLoading) return;
 
         const fetchStudent = async () => {
-            dispatch({ type: 'UI_SET_LOADING', payload: true });
+            setDataLoading(true);
             if (!user || !token) return;
 
             if (user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER && user.role !== Role.TEACHER) {
@@ -49,14 +51,15 @@ export default function EditStudentPage() {
 
                 if (isMounted) {
                     setStudentData(data);
+                    setStudentExists(true);
                 }
             } catch (error: unknown) {
                 if (!isMounted) return;
 
-                dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to load student.', type: 'error' } });
-                router.replace('/students');
+                console.warn('Failed to fetch student:', error);
+                setStudentExists(false);
             } finally {
-                if (isMounted) dispatch({ type: 'UI_SET_LOADING', payload: false });
+                if (isMounted) setDataLoading(false);
             }
         };
 
@@ -76,6 +79,10 @@ export default function EditStudentPage() {
                 </div>
             </div>
         );
+    }
+
+    if (studentExists === false) {
+        return <NotFound page="Student" />;
     }
 
     if (!studentData) return null;

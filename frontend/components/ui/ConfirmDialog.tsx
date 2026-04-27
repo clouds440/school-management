@@ -12,6 +12,7 @@ interface ConfirmDialogProps {
     description: React.ReactNode;
     confirmText?: string;
     isDestructive?: boolean;
+    loadingId?: string;
 }
 
 export function ConfirmDialog({
@@ -22,6 +23,7 @@ export function ConfirmDialog({
     description,
     confirmText = 'Confirm',
     isDestructive = false,
+    loadingId,
 }: ConfirmDialogProps) {
     return (
         <ModalOverlay isOpen={isOpen} maxWidth="max-w-md" className="p-6 sm:p-8 md:p-10 animate-scale-in">
@@ -38,6 +40,7 @@ export function ConfirmDialog({
                 </Button>
                 <Button
                     variant={isDestructive ? 'danger' : 'primary'}
+                    loadingId={loadingId}
                     onClick={() => {
                         onConfirm();
                         onClose();

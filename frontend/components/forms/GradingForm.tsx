@@ -63,7 +63,7 @@ export default function GradingForm({
             return;
         }
 
-        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'grading-submit' } });
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'grading-submit' });
         try {
             const payload: UpdateGradeRequest = {
                 marksObtained: Number(data.marksObtained),
@@ -79,7 +79,7 @@ export default function GradingForm({
             const message = apiError?.response?.data?.message || 'Failed to save grade';
             dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'grading-submit' });
         }
     };
 

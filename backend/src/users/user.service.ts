@@ -24,8 +24,11 @@ interface CreateUserInput {
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createUser(data: CreateUserInput) {
-    const existingUser = await this.getUserByEmail(data.email);
+  async createUser(data: CreateUserInput, tx?: Prisma.TransactionClient) {
+    const db = tx || this.prisma;
+    const existingUser = await db.user.findUnique({
+      where: { email: data.email },
+    });
 
     if (existingUser) {
       throw new ConflictException(
@@ -35,7 +38,7 @@ export class UserService {
 
     const hashedPassword = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
 
-    return this.prisma.user.create({
+    return db.user.create({
       data: {
         email: data.email,
         password: hashedPassword,
@@ -47,8 +50,12 @@ export class UserService {
     });
   }
 
-  async updateUser(userId: string, data: Prisma.UserUpdateInput) {
-    const user = await this.getUserById(userId);
+  async updateUser(userId: string, data: Prisma.UserUpdateInput, tx?: Prisma.TransactionClient) {
+    const db = tx || this.prisma;
+    const user = await db.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) throw new NotFoundException('User not found');
 
     const updateData: Prisma.UserUpdateInput = {};
 
@@ -57,7 +64,9 @@ export class UserService {
     if (data.role !== undefined) updateData.role = data.role;
 
     if (data.email !== undefined && data.email !== user.email) {
-      const existingUser = await this.getUserByEmail(data.email as string);
+      const existingUser = await db.user.findUnique({
+        where: { email: data.email as string },
+      });
 
       if (existingUser) {
         throw new ConflictException('Email address already in use');
@@ -75,7 +84,7 @@ export class UserService {
       updateData.avatarUpdatedAt = new Date();
     }
 
-    return this.prisma.user.update({
+    return db.user.update({
       where: { id: userId },
       data: updateData,
     });

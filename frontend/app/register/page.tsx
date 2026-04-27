@@ -55,8 +55,8 @@ export default function RegisterPage() {
     }, [formData.email, sameAsLoginEmail, setValue, trigger, errors.contactEmail]);
 
     const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
-        if (state.ui.isProcessing) return;
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        if (state.ui.processing['register-submit']) return;
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'register-submit' });
         try {
             const payload: RegisterRequest = {
                 ...data,
@@ -92,7 +92,7 @@ export default function RegisterPage() {
                 dispatch({ type: 'TOAST_ADD', payload: { message: message as string, type: 'error' } });
             }
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'register-submit' });
         }
     };
 
@@ -334,6 +334,7 @@ export default function RegisterPage() {
                         <div className="pt-6 pb-44 mb-10">
                             <Button
                                 type="submit"
+                                loadingId="register-submit"
                                 className="w-full h-12 md:h-14 font-semibold shadow-lg hover:shadow-xl transition-shadow"
                                 loadingText="Creating account..."
                             >

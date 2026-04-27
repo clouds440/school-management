@@ -44,7 +44,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
 
     const handleBulkSubmit = async () => {
         if (!token) return;
-        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'bulk-grading-submit' } });
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'bulk-grading-submit' });
         try {
             const promises: Promise<Grade>[] = [];
 
@@ -53,7 +53,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
                     const marks = Number(data.marksObtained);
                     if (marks > assessment.totalMarks) {
                         dispatch({ type: 'TOAST_ADD', payload: { message: `Marks for a student cannot exceed ${assessment.totalMarks}`, type: 'error' } });
-                        dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+                        dispatch({ type: 'UI_STOP_PROCESSING', payload: 'bulk-grading-submit' });
                         return; // Abort saving if validation fails
                     }
                     const payload: UpdateGradeRequest = {
@@ -78,7 +78,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
             const message = apiError?.response?.data?.message || 'Failed to update grades in bulk';
             dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'bulk-grading-submit' });
         }
     };
 

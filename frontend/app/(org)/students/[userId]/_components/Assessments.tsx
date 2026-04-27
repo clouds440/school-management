@@ -66,7 +66,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
 
     const [search, setSearch] = useState('');
     const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
-    const isSubmitting = state.ui.isProcessing;
+    const isSubmitting = state.ui.processing['assessment-submission'];
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [submittedAssessmentIds, setSubmittedAssessmentIds] = useState<Set<string>>(new Set());
 
@@ -116,7 +116,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
         e.preventDefault();
         if (!token || !user || !selectedAssessment) return;
 
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'assessment-submission' });
         try {
             const submissionRes = await api.org.createSubmission(selectedAssessment.id, {
                 assessmentId: selectedAssessment.id,
@@ -139,7 +139,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
             const message = apiError.response?.data?.message || 'Failed to submit assessment';
             dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'assessment-submission' });
         }
     };
 
@@ -469,7 +469,7 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                                     <Button type="button" variant="secondary" onClick={handleCloseModal} disabled={isSubmitting}>
                                         Cancel
                                     </Button>
-                                    <Button type="submit" disabled={isSubmitting || (selectedAssessment?.allowSubmissions && !selectedFile)}>
+                                    <Button type="submit" loadingId="assessment-submission" disabled={isSubmitting || (selectedAssessment?.allowSubmissions && !selectedFile)}>
                                         {isSubmitting ? 'Submitting...' : (selectedAssessment?.allowSubmissions ? 'Upload & Mark as Done' : 'Mark as Done')}
                                     </Button>
                                 </div>

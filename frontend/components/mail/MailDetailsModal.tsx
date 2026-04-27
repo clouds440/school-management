@@ -93,7 +93,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
         const lid = idMap[newStatus as keyof typeof idMap] || 'status-update';
         
         try {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: lid } });
+            dispatch({ type: 'UI_START_PROCESSING', payload: lid });
             await api.mail.updateMail(mail.id, { status: newStatus }, token);
             const updated = await api.mail.getMail(mail.id, token);
             setMail(updated);
@@ -103,14 +103,14 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
             console.error(error);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to update status', type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: lid });
         }
     };
 
     const handleReply = async (content: string, files?: File[]) => {
         if (!mail || !token) return;
         try {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'reply-submit' } });
+            dispatch({ type: 'UI_START_PROCESSING', payload: 'reply-submit' });
             await api.mail.addMessage(mail.id, { content }, token, files);
             const updated = await api.mail.getMail(mail.id, token);
             setMail(updated);
@@ -119,7 +119,7 @@ export function MailDetailsModal({ mailId, isOpen, onClose, onUpdate }: MailDeta
             console.error(error);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to send reply', type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'reply-submit' });
         }
     };
 

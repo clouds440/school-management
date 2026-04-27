@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { api } from '@/lib/api';
 import { ApiError, SectionSchedule, Section, Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
@@ -30,14 +30,15 @@ interface SectionSchedulesProps {
     role: Role;
 }
 
-export default function SectionSchedules({ section, role }: SectionSchedulesProps) {
+export default memo(function SectionSchedules({ section, role }: SectionSchedulesProps) {
     const { token } = useAuth();
-    const { dispatch } = useGlobal();
+    const { state, dispatch } = useGlobal();
+    const dispatchRef = useRef(dispatch);
+    useEffect(() => { dispatchRef.current = dispatch; }, [dispatch]);
 
     const [schedules, setSchedules] = useState<SectionSchedule[]>([]);
     const [fetching, setFetching] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,7 +78,6 @@ export default function SectionSchedules({ section, role }: SectionSchedulesProp
         e.preventDefault();
         if (!token) return;
 
-        setIsSubmitting(true);
         try {
             const data = {
                 day: parseInt(formData.day, 10),
@@ -87,9 +87,11 @@ export default function SectionSchedules({ section, role }: SectionSchedulesProp
             };
 
             if (editingSchedule) {
+                dispatch({ type: 'UI_START_PROCESSING', payload: `schedule-edit-${editingSchedule.id}` });
                 await api.org.updateSchedule(section.id, editingSchedule.id, data, token);
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Schedule updated successfully', type: 'success' } });
             } else {
+                dispatch({ type: 'UI_START_PROCESSING', payload: 'schedule-create' });
                 await api.org.createSchedule(section.id, data, token);
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Schedule added successfully', type: 'success' } });
             }
@@ -109,15 +111,15 @@ export default function SectionSchedules({ section, role }: SectionSchedulesProp
                 payload: { message: (err as ApiError)?.message || 'Error saving schedule', type: 'error' }
             });
         } finally {
-            setIsSubmitting(false);
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: editingSchedule ? `schedule-edit-${editingSchedule.id}` : 'schedule-create' });
         }
     };
 
     const handleDelete = async () => {
         if (!token || !deletingSchedule) return;
 
-        setIsSubmitting(true);
         try {
+            dispatch({ type: 'UI_START_PROCESSING', payload: `schedule-delete-${deletingSchedule.id}` });
             await api.org.deleteSchedule(section.id, deletingSchedule.id, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Schedule removed successfully', type: 'success' } });
             setIsDeleteDialogOpen(false);
@@ -129,7 +131,7 @@ export default function SectionSchedules({ section, role }: SectionSchedulesProp
                 payload: { message: (err as ApiError)?.message || 'Error deleting schedule', type: 'error' }
             });
         } finally {
-            setIsSubmitting(false);
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: `schedule-delete-${deletingSchedule.id}` });
         }
     };
 
@@ -232,7 +234,8 @@ export default function SectionSchedules({ section, role }: SectionSchedulesProp
                 onClose={() => { setIsModalOpen(false); setEditingSchedule(null); }}
                 title={editingSchedule ? "Edit Section Schedule" : "Add Section Schedule"}
                 onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
+                isSubmitting={state.ui.processing[editingSchedule ? `schedule-edit-${editingSchedule.id}` : 'schedule-create']}
+                loadingId={editingSchedule ? `schedule-edit-${editingSchedule.id}` : 'schedule-create'}
                 submitText={editingSchedule ? "Update Schedule" : "Save Schedule"}
                 showSubmit={true}
             >
@@ -291,7 +294,8 @@ export default function SectionSchedules({ section, role }: SectionSchedulesProp
                 description="Are you sure you want to remove this schedule slot? This action cannot be undone."
                 confirmText="Remove Slot"
                 isDestructive={true}
+                loadingId={deletingSchedule ? `schedule-delete-${deletingSchedule.id}` : undefined}
             />
         </div>
     );
-}
+});

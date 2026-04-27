@@ -18,6 +18,7 @@ import { Loading } from '@/components/ui/Loading';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
 import { studentsStore } from '@/lib/studentsStore';
+import { Toggle } from '@/components/ui/Toggle';
 
 interface StudentParams extends BasePaginationParams {
     my?: boolean;
@@ -268,18 +269,14 @@ export default function StudentsPage() {
                         )}
 
                         {user?.role === Role.ORG_MANAGER && (
-                            <div
-                                onClick={() => updateQueryParams({ my: !showOnlyMyStudents, page: 1 })}
-                                className="flex items-center gap-3 bg-primary/5 p-2 pr-4 rounded-lg border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all cursor-pointer group select-none"
-                            >
-                                <button
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showOnlyMyStudents ? 'bg-primary' : 'bg-muted'}`}
-                                >
-                                    <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${showOnlyMyStudents ? 'translate-x-6' : 'translate-x-1'}`}
-                                    />
-                                </button>
-                                <span className="text-xs font-bold text-card-foreground tracking-wider">My Students</span>
+                            <div className="bg-primary/5 p-2 pr-4 rounded-lg border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
+                                <Toggle
+                                    checked={showOnlyMyStudents}
+                                    onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
+                                    label="My Students"
+                                    offColor="bg-background"
+                                    knobColor="bg-foreground"
+                                />
                             </div>
                         )}
 

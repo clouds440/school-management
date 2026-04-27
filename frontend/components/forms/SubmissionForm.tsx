@@ -36,7 +36,7 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
 
     const onSubmit = async (data: SubmissionFormValues) => {
         if (!token) return;
-        dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'submission-submit' } });
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'submission-submit' });
         try {
             const submission = await api.org.createSubmission(assessmentId, {
                 assessmentId,
@@ -50,7 +50,7 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
             const message = apiError?.response?.data?.message || 'Failed to submit work';
             dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'submission-submit' });
         }
     };
 

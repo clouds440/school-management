@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { MailTarget, Role, MailCategory } from '@/types';
 import { ADMIN_REPLY_TEMPLATES } from './MailTemplates';
 import { useGlobal } from '@/context/GlobalContext';
+import { Toggle } from '@/components/ui/Toggle';
 
 interface NewMailModalProps {
     isOpen: boolean;
@@ -293,7 +294,7 @@ export function NewMailModal({
         try {
             setSubmitting(true);
             setError('');
-            dispatch({ type: 'UI_SET_PROCESSING', payload: { isProcessing: true, id: 'new-mail-submit' } });
+            dispatch({ type: 'UI_START_PROCESSING', payload: 'new-mail-submit' });
 
             // Separate Roles from individual User IDs
             const roleTarget = selectedTargets.find(t => t.type === 'ROLE');
@@ -334,7 +335,7 @@ export function NewMailModal({
             setError(err instanceof Error ? err.message : 'Failed to send mail');
         } finally {
             setSubmitting(false);
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'new-mail-submit' });
         }
     };
 
@@ -427,28 +428,16 @@ export function NewMailModal({
                             </div>
                             {/* No Reply Option for Admins/Managers */}
                             {showNoReply && (
-                                <div
-                                    className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 p-4 bg-indigo-50/50 border border-indigo-100/50 rounded-lg mt-3 cursor-pointer hover:bg-indigo-100/50 transition-colors group"
+                                <div 
+                                    className="px-4 py-3 select-none hover:bg-card border border-border cursor-pointer rounded-lg mt-3"
                                     onClick={() => setNoReply(!noReply)}
                                 >
-                                    <div className="flex items-center space-x-3 flex-1">
-                                        <div className="relative">
-                                            <input
-                                                type="checkbox"
-                                                id="no-reply-checkbox"
-                                                checked={noReply}
-                                                onChange={(e) => {
-                                                    e.stopPropagation();
-                                                    setNoReply(e.target.checked);
-                                                }}
-                                                className="w-5 h-5 sm:w-4 sm:h-4 text-indigo-600 border-border rounded focus:ring-indigo-500 cursor-pointer"
-                                            />
-                                        </div>
-                                        <span className="text-xs sm:text-[11px] font-bold text-indigo-900 tracking-widest cursor-pointer select-none">
-                                            No Reply Needed (Broadcast)
-                                        </span>
-                                    </div>
-                                    <p className="text-[10px] text-indigo-600/70 font-medium group-hover:text-indigo-700 transition-colors">Recipient won&apos;t be able to reply</p>
+                                    <Toggle
+                                        checked={noReply}
+                                        onCheckedChange={setNoReply}
+                                        label="No Reply"
+                                        description="Recipients cannot reply to this mail"
+                                    />
                                 </div>
                             )}
                         </div>
@@ -459,17 +448,17 @@ export function NewMailModal({
                         <div className="pt-2">
                             <div className="flex items-center justify-between mb-3">
                                 <label className="text-xs font-black text-muted-foreground tracking-widest">Attachments</label>
-                                <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">{selectedFiles.length} / 5</span>
+                                <span className="text-[10px] font-black text-primary bg-primary/20 px-2 py-0.5 rounded-full">{selectedFiles.length} / 5</span>
                             </div>
 
                             <div className="flex flex-wrap gap-2 min-h-11 p-3 bg-card/5 border border-dashed border-border rounded-lg">
                                 {selectedFiles.map((file, i) => (
                                     <div key={i} className="flex items-center gap-2 bg-card border border-border pl-3 pr-2 py-1.5 rounded-lg shadow-sm animate-in fade-in zoom-in duration-200">
-                                        <div className="w-6 h-6 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                        <div className="w-6 h-6 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
                                             {file.type.startsWith('image/') ? <ImageIcon className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
                                         </div>
-                                        <span className="text-[11px] font-bold text-foreground max-w-25 truncate">{file.name}</span>
-                                        <button type="button" onClick={() => removeFile(i)} className="p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-full transition-colors ml-1">
+                                        <span className="text-[11px] font-bold text-foreground max-w-25 truncate select-none">{file.name}</span>
+                                        <button type="button" onClick={() => removeFile(i)} className="p-1 text-muted-foreground hover:text-red-500 hover:bg-red-500/40 rounded-full transition-colors ml-1">
                                             <X className="w-3 h-3" />
                                         </button>
                                     </div>

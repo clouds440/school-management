@@ -6,29 +6,30 @@ import { Trophy, Users, Calendar, CheckCircle2, Link as LinkIcon, Download } fro
 import { api } from '@/lib/api';
 import { Assessment, Section, Grade, Submission, Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { formatDate, getPublicUrl } from '@/lib/utils';
 import { Modal } from '@/components/ui/Modal';
 import GradingForm from '@/components/forms/GradingForm';
 import { BulkGradingModal } from '@/components/forms/BulkGradingModal';
 import { BrandIcon } from '@/components/ui/Brand';
 import { Loading } from '@/components/ui/Loading';
+import { NotFound } from '@/components/NotFound';
 
 export default function AssessmentDetailPage() {
     const { token, user } = useAuth();
     const role = user?.role;
     const userId = user?.id;
     const params = useParams();
-    const router = useRouter();
-    const { state, dispatch } = useGlobal();
+    const { dispatch } = useGlobal();
 
     const [assessment, setAssessment] = useState<Assessment | null>(null);
     const [section, setSection] = useState<Section | null>(null);
     const [grades, setGrades] = useState<Grade[]>([]);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
-    const isLoading = state.ui.isLoading;
+    const [isLoading, setIsLoading] = useState(false);
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [showBulkGrading, setShowBulkGrading] = useState(false);
+    const [resourceExists, setResourceExists] = useState<boolean | null>(null);
 
     const isAssigned = section?.teachers?.some(t => t.user?.id === userId);
     const canGrade = (role === Role.TEACHER || role === Role.ORG_MANAGER) && isAssigned;
@@ -39,7 +40,7 @@ export default function AssessmentDetailPage() {
 
     const fetchData = useCallback(async () => {
         if (!token || !sectionId || !assessmentId) return;
-        dispatch({ type: 'UI_SET_LOADING', payload: true });
+        setIsLoading(true);
         try {
             const [assessmentData, sectionData, gradesData, submissionsData] = await Promise.all([
                 api.org.getAssessment(assessmentId, token),
@@ -52,14 +53,14 @@ export default function AssessmentDetailPage() {
             setSection(sectionData);
             setGrades(gradesData);
             setSubmissions(submissionsData);
+            setResourceExists(true);
         } catch (error: unknown) {
-            console.error('Failed to fetch assessment details:', error);
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load assessment data', type: 'error' } });
-            router.push(`/sections/${sectionId}`);
+            console.warn('Failed to fetch assessment details:', error);
+            setResourceExists(false);
         } finally {
-            dispatch({ type: 'UI_SET_LOADING', payload: false });
+            setIsLoading(false);
         }
-    }, [token, sectionId, assessmentId, dispatch, router]);
+    }, [token, sectionId, assessmentId]);
 
     useEffect(() => {
         fetchData();
@@ -71,6 +72,10 @@ export default function AssessmentDetailPage() {
                 <Loading size="lg" />
             </div>
         );
+    }
+
+    if (resourceExists === false) {
+        return <NotFound page="Assessment" />;
     }
 
     if (!assessment || !section) return null;

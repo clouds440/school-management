@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { PaginatedResponse } from '@/types';
 
 interface CacheEntry<T> {
@@ -53,7 +53,7 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
 
     // Sync params when initialParams changes (e.g. from URL search params change)
     // We use a serialized version to avoid reference identity issues.
-    const initialParamsSerialized = JSON.stringify(initialParams);
+    const initialParamsSerialized = useMemo(() => JSON.stringify(initialParams), [initialParams]);
     useEffect(() => {
         const parsed = JSON.parse(initialParamsSerialized);
         setParams(prev => {
@@ -151,7 +151,7 @@ export function usePaginatedData<T, P extends BasePaginationParams = BasePaginat
 
     // Re-fetch when params change. 
     // Serialized version ensures we don't re-run if object reference changes but content is same.
-    const currentParamsSerialized = JSON.stringify(params);
+    const currentParamsSerialized = useMemo(() => JSON.stringify(params), [params]);
     useEffect(() => {
         fetchData(JSON.parse(currentParamsSerialized));
     }, [fetchData, currentParamsSerialized]);

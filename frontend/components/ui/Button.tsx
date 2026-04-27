@@ -16,13 +16,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         const { state } = useGlobal();
 
         // Determine effective loading/disabled state
-        const isGlobalBusy = state.ui.isProcessing || state.ui.isLoading;
-        const effectiveDisabled = disabled || isGlobalBusy || localIsLoading;
+        const isThisButtonProcessing = loadingId ? state.ui.processing[loadingId] : false;
+        const effectiveDisabled = disabled || isThisButtonProcessing || localIsLoading;
 
-        // Only show spinner if:
-        // 1. Local loading is true
-        // 2. Global processing is true AND (no specific ID was tracked OR the ID matches this button)
-        const effectiveLoading = localIsLoading || (state.ui.isProcessing && (!state.ui.processingId || state.ui.processingId === (loadingId || props.id)));
+        // Only show spinner if local loading is true OR this specific button is processing
+        const effectiveLoading = localIsLoading || isThisButtonProcessing;
         
         let variantClasses = "";
         if (variant === 'primary') {

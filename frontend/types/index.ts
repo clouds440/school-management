@@ -675,3 +675,37 @@ export interface RangeAttendanceResponse {
         }[];
     }[];
 }
+
+// ─── Course Materials Types ───────────────────────────────────────────────────
+
+export interface CourseMaterial {
+    id: string;
+    sectionId: string;
+    title: string;
+    description?: string | null;
+    files?: Attachment[];
+    links?: string[];
+    createdAt: string;
+    updatedAt: string;
+    createdBy?: string;
+    creator?: {
+        id: string;
+        name?: string;
+    } | null;
+    section?: Section;
+}
+
+export interface CreateCourseMaterialRequest {
+    sectionId?: string;
+    title: string;
+    description?: string;
+    fileIds?: string[];
+    links?: string[];
+}
+
+export interface UpdateCourseMaterialRequest {
+    title?: string;
+    description?: string;
+    fileIds?: string[];
+    filesToRemove?: string[];
+}

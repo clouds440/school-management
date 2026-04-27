@@ -25,8 +25,8 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (state.ui.isProcessing) return;
-    dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+    if (state.ui.processing['login-submit']) return;
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'login-submit' });
 
     try {
       const deviceId = getDeviceId();
@@ -46,7 +46,7 @@ export default function LoginPage() {
       const errorMessage = err instanceof Error ? err.message : 'Login failed';
       dispatch({ type: 'TOAST_ADD', payload: { message: errorMessage, type: 'error' } });
     } finally {
-      dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+      dispatch({ type: 'UI_STOP_PROCESSING', payload: 'login-submit' });
     }
   };
 
@@ -194,6 +194,7 @@ export default function LoginPage() {
             <div className="space-y-4 pt-4 mb-10 pb-30">
               <Button
                 type="submit"
+                loadingId="login-submit"
                 loadingText="Logging In..."
                 className="w-full h-12 md:h-14 font-semibold shadow-lg hover:shadow-xl transition-shadow"
               >

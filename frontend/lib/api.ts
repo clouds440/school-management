@@ -8,7 +8,7 @@ import {
     UpdateGradeRequest, CreateSubmissionRequest, FinalGradeResponse, MailTarget,
     Chat, ChatMessage, Notification, Announcement, TargetType, AnnouncementPriority, User,
     ThemeMode, SectionSchedule, TimetableEntry, AttendanceRecord, SectionAttendanceResponse,
-    RangeAttendanceResponse, DashboardInsights
+    RangeAttendanceResponse, CourseMaterial, CreateCourseMaterialRequest, UpdateCourseMaterialRequest, DashboardInsights
 } from '@/types';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
@@ -382,11 +382,11 @@ export const api = {
 
     courseMaterials: {
         getMaterials: (sectionId: string, token: string) =>
-            request<any[]>(`/course-materials/section/${sectionId}`, { token }),
-        createMaterial: (sectionId: string, data: { title: string, description?: string, fileIds?: string[], links?: string[] }, token: string) =>
-            request<any>(`/course-materials`, { method: 'POST', body: JSON.stringify({ ...data, sectionId }), token }),
-        updateMaterial: (materialId: string, data: { title?: string, description?: string, fileIds?: string[], filesToRemove?: string[] }, token: string) =>
-            request<any>(`/course-materials/${materialId}`, { method: 'PUT', body: JSON.stringify(data), token }),
+            request<CourseMaterial[]>(`/course-materials/section/${sectionId}`, { token }),
+        createMaterial: (sectionId: string, data: CreateCourseMaterialRequest, token: string) =>
+            request<CourseMaterial>(`/course-materials`, { method: 'POST', body: JSON.stringify({ ...data, sectionId }), token }),
+        updateMaterial: (materialId: string, data: UpdateCourseMaterialRequest, token: string) =>
+            request<CourseMaterial>(`/course-materials/${materialId}`, { method: 'PUT', body: JSON.stringify(data), token }),
         deleteMaterial: (materialId: string, token: string) =>
             request<void>(`/course-materials/${materialId}`, { method: 'DELETE', token }),
     }

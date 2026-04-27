@@ -5,10 +5,11 @@ import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
-import { Section, FinalGradeResponse, Student, ApiError, Role, Assessment, DashboardInsights } from '@/types';
+import { Section, FinalGradeResponse, Student, Role, Assessment, DashboardInsights } from '@/types';
 import { ShieldOff, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import { Loading } from '@/components/ui/Loading';
+import { NotFound } from '@/components/NotFound';
 
 import Overview from './_components/Overview';
 import Courses from './_components/Courses';
@@ -29,7 +30,8 @@ function StudentPortalContent() {
     const [grades, setGrades] = useState<FinalGradeResponse[]>([]);
     const [assessments, setAssessments] = useState<Assessment[]>([]);
     const [insights, setInsights] = useState<DashboardInsights | null>(null);
-    const fetchingData = state.ui.isLoading;
+    const [fetchingData, setFetchingData] = useState(false);
+    const [studentExists, setStudentExists] = useState<boolean | null>(null);
 
     const profile = state.auth.userProfile as Student | null;
 
@@ -46,25 +48,35 @@ function StudentPortalContent() {
             }
         }
 
-        // Role Guard: Only Student self-view, ORG_ADMIN, or ORG_MANAGER
-        // We can add TEACHER check later if needed, but for now strict access.
-        const isAuthorized =
-            user.role === Role.ORG_ADMIN ||
-            user.role === Role.ORG_MANAGER ||
-            (user.role === Role.STUDENT && user.id === params.userId);
+        // Role Guard: Only Student self-view
+        const isAuthorized = user.role === Role.STUDENT && user.id === params.userId;
 
         if (!isAuthorized) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied. You are not authorized to view this portal.', type: 'error' } });
-            const redirectPath = user.role === Role.STUDENT
-                ? `/students/${user.id}`
-                : `/${user.role === Role.ORG_ADMIN ? 'admin' : `teachers/${user.id}`}`;
-
-            router.replace(redirectPath);
-            return;
+            if (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER) {
+                router.push(`/students/edit/${params.userId}`);
+                return;
+            } else {
+                setStudentExists(false);
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied. You are not authorized to view this portal.', type: 'error' } });
+                return;
+            }
         }
 
+        // Validate that the student exists in the database
+        const validateStudentExists = async () => {
+            try {
+                const student = await api.org.getStudent(params.userId as string, token);
+                setStudentExists(!!student);
+            } catch (error) {
+                console.warn('Failed to fetch student:', error);
+                setStudentExists(false);
+            }
+        };
+
+        validateStudentExists();
+
         const fetchData = async () => {
-            dispatch({ type: 'UI_SET_LOADING', payload: true });
+            setFetchingData(true);
 
             try {
                 const [sectionsRes, gradesRes, assessmentsRes, insightsRes] = await Promise.all([
@@ -79,19 +91,20 @@ function StudentPortalContent() {
                 setAssessments(Array.isArray(assessmentsRes) ? assessmentsRes : []);
                 setInsights(insightsRes);
             } catch (err: unknown) {
-                const apiError = err as ApiError;
-                if (apiError?.response?.data?.message === 'Silent') return; // Custom check if needed
-                console.error('Failed to fetch other student data:', err);
-                dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load some data. Please try again.', type: 'error' } });
+                console.warn('Failed to fetch other student data:', err);
             } finally {
-                dispatch({ type: 'UI_SET_LOADING', payload: false });
+                setFetchingData(false);
             }
         };
 
         fetchData();
-    }, [token, dispatch, user, params.userId, router]);
+    }, [token, dispatch, user, params.userId]);
 
     if (!user) return null;
+
+    if (studentExists === false) {
+        return <NotFound page="Student" />;
+    }
 
     if (user.status === 'SUSPENDED') {
         return (

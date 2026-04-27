@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Settings, Shield } from 'lucide-react';
 import { Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
@@ -13,7 +13,7 @@ export default function AdminSettingsPage() {
     const { user } = useAuth();
     const router = useRouter();
     const { state } = useGlobal();
-    const loading = state.ui.isLoading;
+    const [loading, setLoading] = useState(false);
 
     // Scroll to section if hash is present
     useEffect(() => {

@@ -34,8 +34,6 @@ export default function SessionManagement({ userId }: SessionManagementProps) {
     const { dispatch } = useGlobal();
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(false);
-    const [revoking, setRevoking] = useState<string | null>(null);
-    const [revokingAll, setRevokingAll] = useState(false);
     const [showRevokeAllDialog, setShowRevokeAllDialog] = useState(false);
 
     const targetUserId = userId || user?.id;
@@ -60,8 +58,8 @@ export default function SessionManagement({ userId }: SessionManagementProps) {
 
     const handleRevokeSession = async (sessionId: string) => {
         if (!token) return;
-        setRevoking(sessionId);
         try {
+            dispatch({ type: 'UI_START_PROCESSING', payload: `revoke-session-${sessionId}` });
             const result = await api.auth.revokeSession(sessionId, token);
             if (result.shouldLogout) {
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Logging out...', type: 'success' } });
@@ -76,7 +74,7 @@ export default function SessionManagement({ userId }: SessionManagementProps) {
             console.error('Failed to revoke session', error);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to revoke session', type: 'error' } });
         } finally {
-            setRevoking(null);
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: `revoke-session-${sessionId}` });
         }
     };
 
@@ -87,8 +85,8 @@ export default function SessionManagement({ userId }: SessionManagementProps) {
 
     const handleConfirmRevokeAll = async () => {
         if (!token) return;
-        setRevokingAll(true);
         try {
+            dispatch({ type: 'UI_START_PROCESSING', payload: 'revoke-all-sessions' });
             await api.auth.revokeAllSessions(token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'All sessions revoked successfully', type: 'success' } });
             await fetchSessions();
@@ -96,7 +94,7 @@ export default function SessionManagement({ userId }: SessionManagementProps) {
             console.error('Failed to revoke all sessions', error);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to revoke all sessions', type: 'error' } });
         } finally {
-            setRevokingAll(false);
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'revoke-all-sessions' });
             setShowRevokeAllDialog(false);
         }
     };
@@ -230,10 +228,10 @@ export default function SessionManagement({ userId }: SessionManagementProps) {
                                                             onClick={() => handleRevokeSession(session.id)}
                                                             variant="danger"
                                                             icon={Trash2}
-                                                            disabled={revoking === session.id}
+                                                            loadingId={`revoke-session-${session.id}`}
                                                             className="w-full sm:w-auto"
                                                         >
-                                                            {revoking === session.id ? 'Revoking...' : 'Revoke'}
+                                                            Revoke
                                                         </Button>
                                                     </div>
                                                 )}
@@ -258,10 +256,11 @@ export default function SessionManagement({ userId }: SessionManagementProps) {
                                         onClick={handleRevokeAll}
                                         variant="danger"
                                         icon={LogOut}
-                                        disabled={revokingAll || sessions.filter(s => !isCurrentSession(s)).length === 0}
+                                        loadingId="revoke-all-sessions"
+                                        disabled={sessions.filter(s => !isCurrentSession(s)).length === 0}
                                         className="w-full sm:w-auto"
                                     >
-                                        {revokingAll ? 'Revoking...' : 'Revoke All Other Sessions'}
+                                        Revoke All Other Sessions
                                     </Button>
                                 </div>
                             </div>

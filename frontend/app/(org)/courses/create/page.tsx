@@ -41,7 +41,7 @@ export default function CreateCoursePage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!token) return;
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'course-create' });
 
         try {
             await api.org.createCourse(formData, token);
@@ -52,7 +52,7 @@ export default function CreateCoursePage() {
         } catch (error: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to create course', type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'course-create' });
         }
     };
 
@@ -112,6 +112,7 @@ export default function CreateCoursePage() {
                         </Link>
                         <Button
                             type="submit"
+                            loadingId="course-create"
                             className="px-10 h-12"
                         >
                             Create Course

@@ -22,7 +22,7 @@ export default function PlatformAdminsPage() {
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const { state, dispatch } = useGlobal();
-    const actionLoading = state.ui.isProcessing;
+    const actionLoading = Object.keys(state.ui.processing).length > 0;
 
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<PlatformAdmin> | null>(null);
 
@@ -103,7 +103,7 @@ export default function PlatformAdminsPage() {
         e.preventDefault();
         if (!token) return;
         try {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+            dispatch({ type: 'UI_START_PROCESSING', payload: 'platform-admin-submit' });
             if (adminModalMode === 'CREATE') {
                 await api.admin.createPlatformAdmin(adminFormData, token);
                 refresh();
@@ -121,7 +121,7 @@ export default function PlatformAdminsPage() {
         } catch (error) {
             dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to save admin', type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'platform-admin-submit' });
         }
     };
 
@@ -135,7 +135,7 @@ export default function PlatformAdminsPage() {
         if (!operatingAdmin || !token) return;
 
         try {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+            dispatch({ type: 'UI_START_PROCESSING', payload: `platform-admin-delete-${operatingAdmin.id}` });
             await api.admin.deletePlatformAdmin(operatingAdmin.id, token);
             refresh();
             dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingAdmin.name} deleted successfully`, type: 'success' } });
@@ -144,7 +144,7 @@ export default function PlatformAdminsPage() {
         } catch (error) {
             dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to delete admin', type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: `platform-admin-delete-${operatingAdmin.id}` });
         }
     };
 
@@ -276,6 +276,7 @@ export default function PlatformAdminsPage() {
                 title={adminModalMode === 'CREATE' ? 'Add New Platform Admin' : `Edit ${operatingAdmin?.name}`}
                 submitText={adminModalMode === 'CREATE' ? 'Create Admin' : 'Save Changes'}
                 isSubmitting={actionLoading}
+                loadingId="platform-admin-submit"
             >
                 <div className="space-y-4 py-2">
                     <div className="space-y-2">
@@ -337,6 +338,7 @@ export default function PlatformAdminsPage() {
                 submitText="Permanently Delete"
                 variant="danger"
                 isSubmitting={actionLoading}
+                loadingId="platform-admin-delete"
             >
                 <div>
                     <p className="text-sm font-medium text-foreground">

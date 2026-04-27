@@ -60,6 +60,8 @@ import {
 export function ChatLayout() {
     const { token, user } = useAuth();
     const { dispatch } = useGlobal();
+    const dispatchRef = useRef(dispatch);
+    useEffect(() => { dispatchRef.current = dispatch; }, [dispatch]);
     const { isDesktop } = useUI();
     const { subscribe, joinRoom, leaveRoom, emit } = useSocket({ token, userId: user?.id, enabled: !!token });
     const searchParams = useSearchParams();
@@ -201,12 +203,12 @@ export function ChatLayout() {
                 }, 100);
             } catch (err) {
                 console.error(err);
-                dispatch({ type: 'TOAST_ADD', payload: { message: 'Message not found in history', type: 'error' } });
+                dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Message not found in history', type: 'error' } });
             } finally {
                 setIsLoadingMessages(false);
             }
         }
-    }, [token, activeChatId, dispatch]);
+    }, [token, activeChatId]);
 
     const handleScroll = () => {
         if (!messagesContainerRef.current) return;
@@ -314,9 +316,9 @@ export function ChatLayout() {
         } catch (err) {
             console.error(err);
             setIsLoadingChats(false);
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load chats', type: 'error' } });
+            dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Failed to load chats', type: 'error' } });
         }
-    }, [token, dispatch]);
+    }, [token]);
 
     useEffect(() => {
         fetchChats();
@@ -366,11 +368,11 @@ export function ChatLayout() {
             setChats(prev => prev.map(chat => chat.id === chatId ? { ...chat, unreadCount: 0 } : chat));
         } catch (err) {
             console.error(err);
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load messages', type: 'error' } });
+            dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Failed to load messages', type: 'error' } });
         } finally {
             setIsLoadingMessages(false);
         }
-    }, [token, dispatch, scrollToBottom, scrollToMessage]);
+    }, [token, scrollToBottom, scrollToMessage]);
 
     useEffect(() => {
         if (!activeChatId) return;
@@ -399,8 +401,8 @@ export function ChatLayout() {
 
     useEffect(() => {
         const unread = chats.reduce((total, chat) => total + (chat.unreadCount || 0), 0);
-        dispatch({ type: 'STATS_SET_CHAT', payload: { unread } });
-    }, [chats, dispatch]);
+        dispatchRef.current({ type: 'STATS_SET_CHAT', payload: { unread } });
+    }, [chats]);
 
     // Presence: subscribe to presence:update (global — doesn't depend on active chat)
     useEffect(() => {
@@ -667,7 +669,7 @@ export function ChatLayout() {
         const unsubRoomLeft = subscribe('roomLeft', (data: unknown) => {
             const leftData = data as { roomId: string; forced?: boolean };
             if (leftData.forced && leftData.roomId === `chat:${activeChatId}`) {
-                dispatch({
+                dispatchRef.current({
                     type: 'TOAST_ADD',
                     payload: { message: 'You have been removed from this group.', type: 'info' }
                 });
@@ -684,7 +686,7 @@ export function ChatLayout() {
             unsubUpdate();
             unsubRoomLeft();
         };
-    }, [subscribe, activeChatId, token, user, dispatch, setActiveChatId, isAtBottom, scrollToBottom]);
+    }, [subscribe, activeChatId, token, user, setActiveChatId, isAtBottom, scrollToBottom]);
 
     // 4. Join/Leave rooms, Sync URL, and request presence
     useEffect(() => {
@@ -1034,12 +1036,12 @@ export function ChatLayout() {
                 } : msg));
             }
             setIsUploading(false);
-            dispatch({ type: 'TOAST_ADD', payload: { message: error.message || 'Failed to send message', type: 'error' } });
+            dispatchRef.current({ type: 'TOAST_ADD', payload: { message: error.message || 'Failed to send message', type: 'error' } });
         } finally {
             sendLockRef.current = false;
             setIsSending(false);
         }
-    }, [messageDraft, stagedFiles, replyToMessage, mentionedUsers, token, user, activeChatId, isSending, isUploading, editingMessage, dispatch, scrollToBottom, updateComposerStateForChat, emitTypingStop]);
+    }, [messageDraft, stagedFiles, replyToMessage, mentionedUsers, token, user, activeChatId, isSending, isUploading, editingMessage, scrollToBottom, updateComposerStateForChat, emitTypingStop]);
 
     const handleDeleteMessage = useCallback((messageId: string) => {
         if (!token || !activeChatId) return;
@@ -1062,12 +1064,12 @@ export function ChatLayout() {
                         await api.chat.deleteMessage(activeChatId, messageId, token);
                     } catch (err) {
                         console.error(err);
-                        dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to delete message', type: 'error' } });
+                        dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Failed to delete message', type: 'error' } });
                     }
                 }
             }
         });
-    }, [token, activeChatId, dispatch, messages]);
+    }, [token, activeChatId, messages]);
 
     const handleRemoveParticipant = (participantUserId: string) => {
         if (!token || !activeChatId) return;
@@ -1082,11 +1084,11 @@ export function ChatLayout() {
             onConfirm: async () => {
                 try {
                     await api.chat.removeParticipant(activeChatId, participantUserId, token);
-                    dispatch({ type: 'TOAST_ADD', payload: { message: 'Participant removed', type: 'success' } });
+                    dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Participant removed', type: 'success' } });
                     fetchChats();
                 } catch (err) {
                     console.error(err);
-                    dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to remove participant', type: 'error' } });
+                    dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Failed to remove participant', type: 'error' } });
                 }
             }
         });
@@ -1099,7 +1101,7 @@ export function ChatLayout() {
         if (!chatId) return;
 
         if (stagedFiles.length + files.length > 5) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Maximum 5 attachments allowed', type: 'info' } });
+            dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Maximum 5 attachments allowed', type: 'info' } });
             return;
         }
 
@@ -1162,12 +1164,12 @@ export function ChatLayout() {
 
     const handleCopyText = useCallback((msg: ChatMessage) => {
         navigator.clipboard.writeText(msg.content).then(() => {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Message text copied to clipboard', type: 'success' } });
+            dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Message text copied to clipboard', type: 'success' } });
         }).catch(err => {
             console.error('Failed to copy text', err);
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to copy text', type: 'error' } });
+            dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Failed to copy text', type: 'error' } });
         });
-    }, [dispatch]);
+    }, []);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (isDesktop && e.key === 'Enter' && !e.shiftKey) {

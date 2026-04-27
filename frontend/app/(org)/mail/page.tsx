@@ -29,9 +29,7 @@ export default function OrgMailPage() {
     const [paginatedData, setPaginatedData] = useState<PaginatedResponse<MailItem> | null>(null);
     const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
     const [newMailOpen, setNewMailOpen] = useState(false);
-
-    // Global symbols
-    const fetching = state.ui.isLoading;
+    const [fetching, setFetching] = useState(false);
 
     const [pageSize, setPageSize] = useState<number>(() => {
         if (typeof window !== 'undefined') {
@@ -48,7 +46,7 @@ export default function OrgMailPage() {
     const fetchMails = useCallback(async () => {
         if (!token) return;
         try {
-            dispatch({ type: 'UI_SET_LOADING', payload: true });
+            setFetching(true);
             const [data, stats] = await Promise.all([
                 api.mail.getMails(token, {
                     page,
@@ -64,7 +62,7 @@ export default function OrgMailPage() {
         } catch {
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to fetch mail', type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_SET_LOADING', payload: false });
+            setFetching(false);
         }
     }, [token, page, searchQuery, statusFilter, pageSize, dispatch]);
 

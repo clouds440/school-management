@@ -254,65 +254,6 @@ export class OrgController {
     return this.sectionsService.deleteSection(orgId, id);
   }
 
-  // --- Students ---
-  @Get('students')
-  async getStudents(
-    @OrgId() orgId: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('search') search?: string,
-    @Query('sortBy') sortBy?: string,
-    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
-    @Query('my') my?: string,
-    @Query('sectionId') sectionId?: string,
-    @Request() req?: AuthenticatedRequest,
-  ) {
-    return this.studentService.getStudents(orgId, {
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 10,
-      search,
-      sortBy,
-      sortOrder,
-      my: my === 'true',
-      sectionId,
-      userId: req?.user?.id,
-    });
-  }
-
-  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
-  @Get('students/:id')
-  getStudent(@OrgId() orgId: string, @Param('id') id: string) {
-    return this.studentService.getStudent(orgId, id);
-  }
-
-  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
-  @Post('students')
-  createStudent(
-    @OrgId() orgId: string,
-    @Body() createStudentDto: CreateStudentDto,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.studentService.createStudent(orgId, createStudentDto, {
-      name: req.user.name,
-      email: req.user.email,
-    });
-  }
-
-  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
-  @Patch('students/:id')
-  updateStudent(
-    @OrgId() orgId: string,
-    @Param('id') id: string,
-    @Body() updateStudentDto: UpdateStudentDto,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.studentService.updateStudent(orgId, id, updateStudentDto, {
-      role: req.user.role.toString() as Role,
-      name: req.user.name,
-      email: req.user.email,
-    });
-  }
-
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
   @Get('profile')
   async getProfile(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {

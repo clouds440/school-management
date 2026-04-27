@@ -33,7 +33,6 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
     const [recipientId, setRecipientId] = useState('');
     const [participantIds, setParticipantIds] = useState<string[]>([]);
     const [groupName, setGroupName] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
 
     const [contactableUsers, setContactableUsers] = useState<MultiSelectOption[]>([]);
     const [isFetchingUsers, setIsFetchingUsers] = useState(false);
@@ -157,8 +156,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
         if (!token) return;
 
         try {
-            setIsLoading(true);
-
+            dispatch({ type: 'UI_START_PROCESSING', payload: mode === 'ADD_PARTICIPANTS' ? 'chat-add-participants' : 'chat-create' });
             if (mode === 'ADD_PARTICIPANTS') {
                 if (!chatId) throw new Error('Chat ID is missing');
                 if (participantIds.length === 0) throw new Error('Please select at least one person');
@@ -192,7 +190,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
             const err = error as Error;
             dispatch({ type: 'TOAST_ADD', payload: { message: err.message || 'Failed to process request', type: 'error' } });
         } finally {
-            setIsLoading(false);
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: mode === 'ADD_PARTICIPANTS' ? 'chat-add-participants' : 'chat-create' });
         }
     };
 
@@ -352,7 +350,7 @@ export function NewChatModal({ isOpen, onClose, onChatCreated, mode = 'CREATE', 
                     <Button variant="secondary" onClick={onClose} type="button">
                         Cancel
                     </Button>
-                    <Button type="submit" variant="primary" icon={mode === 'ADD_PARTICIPANTS' ? Users : MessageSquarePlus} isLoading={isLoading} className="px-10 shadow-lg shadow-primary/20">
+                    <Button type="submit" variant="primary" icon={mode === 'ADD_PARTICIPANTS' ? Users : MessageSquarePlus} loadingId={mode === 'ADD_PARTICIPANTS' ? 'chat-add-participants' : 'chat-create'} className="px-10 shadow-lg shadow-primary/20">
                         {mode === 'ADD_PARTICIPANTS' ? 'Add' : 'Create Chat'}
                     </Button>
                 </div>

@@ -1,34 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { api } from '@/lib/api';
-import { Role } from '@/types';
+import { Role, CourseMaterial, CreateCourseMaterialRequest } from '@/types';
 import { FileText, Download, ExternalLink, Trash2, Plus, Upload, X, FileImage, FileCode, Archive, Edit, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { downloadFile } from '@/lib/utils';
-
-interface CourseMaterial {
-  id: string;
-  title: string;
-  description?: string;
-  createdAt: string;
-  files: Array<{
-    id: string;
-    filename: string;
-    path: string;
-    mimeType: string;
-    size: number;
-  }>;
-  creator: {
-    id: string;
-    name?: string;
-  } | null;
-}
 
 // Helper function to get file icon based on MIME type
 function getFileIcon(mimeType: string) {
@@ -51,9 +33,11 @@ interface CourseMaterialsProps {
   role: Role;
 }
 
-export default function CourseMaterials({ sectionId, role }: CourseMaterialsProps) {
+export default memo(function CourseMaterials({ sectionId, role }: CourseMaterialsProps) {
   const { token } = useAuth();
   const { state, dispatch } = useGlobal();
+  const dispatchRef = useRef(dispatch);
+  useEffect(() => { dispatchRef.current = dispatch; }, [dispatch]);
   const [materials, setMaterials] = useState<CourseMaterial[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -69,11 +53,11 @@ export default function CourseMaterials({ sectionId, role }: CourseMaterialsProp
       setMaterials(data);
     } catch (error) {
       console.error('Failed to fetch materials:', error);
-      dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load materials', type: 'error' } });
+      dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Failed to load materials', type: 'error' } });
     } finally {
       setIsLoading(false);
     }
-  }, [token, sectionId, dispatch]);
+  }, [token, sectionId]);
 
   useEffect(() => {
     fetchMaterials();
@@ -83,6 +67,7 @@ export default function CourseMaterials({ sectionId, role }: CourseMaterialsProp
     if (!token || !deletingMaterial) return;
     
     try {
+      dispatch({ type: 'UI_START_PROCESSING', payload: `material-delete-${deletingMaterial.id}` });
       await api.courseMaterials.deleteMaterial(deletingMaterial.id, token);
       dispatch({ type: 'TOAST_ADD', payload: { message: 'Material deleted successfully', type: 'success' } });
       fetchMaterials();
@@ -91,6 +76,8 @@ export default function CourseMaterials({ sectionId, role }: CourseMaterialsProp
       console.error('Failed to delete material:', error);
       dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to delete material', type: 'error' } });
       setDeletingMaterial(null);
+    } finally {
+      dispatch({ type: 'UI_STOP_PROCESSING', payload: `material-delete-${deletingMaterial.id}` });
     }
   };
 
@@ -195,7 +182,7 @@ export default function CourseMaterials({ sectionId, role }: CourseMaterialsProp
               </div>
 
               {/* Files */}
-              {material.files.length > 0 && (
+              {material.files && material.files.length > 0 && (
                 <div className="pt-4 border-t border-border/50">
                   <p className="text-[10px] font-black text-card-text/40 tracking-widest mb-3">ATTACHED FILES</p>
                   <div className="space-y-2">
@@ -258,7 +245,7 @@ export default function CourseMaterials({ sectionId, role }: CourseMaterialsProp
               {viewingMaterial.creator?.name && <span>by {viewingMaterial.creator.name}</span>}
             </div>
 
-            {viewingMaterial.files.length > 0 && (
+            {viewingMaterial.files && viewingMaterial.files.length > 0 && (
               <div>
                 <p className="text-[10px] font-black text-card-text/40 tracking-widest mb-3">ATTACHED FILES</p>
                 <div className="space-y-2">
@@ -317,10 +304,11 @@ export default function CourseMaterials({ sectionId, role }: CourseMaterialsProp
         description={`Are you sure you want to delete "${deletingMaterial?.title}"? This will also remove all attached files.`}
         confirmText="Delete Material"
         isDestructive={true}
+        loadingId={deletingMaterial ? `material-delete-${deletingMaterial.id}` : undefined}
       />
     </div>
   );
-}
+});
 
 // Upload Modal Component
 function UploadMaterialModal({
@@ -341,7 +329,6 @@ function UploadMaterialModal({
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [existingFiles, setExistingFiles] = useState<Array<{id: string, filename: string, path: string, mimeType: string, size: number}>>(material?.files || []);
   const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (material) {
@@ -368,8 +355,8 @@ function UploadMaterialModal({
     e.preventDefault();
     if (!token || !title) return;
 
-    setIsUploading(true);
     try {
+      dispatch({ type: 'UI_START_PROCESSING', payload: material ? `material-edit-${material.id}` : 'material-create' });
       if (material) {
         // Edit existing material
         const orgId = state.auth.user?.orgId || state.auth.user?.organizationId;
@@ -418,7 +405,7 @@ function UploadMaterialModal({
       console.error('Failed to save material:', error);
       dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to save material', type: 'error' } });
     } finally {
-      setIsUploading(false);
+      dispatch({ type: 'UI_STOP_PROCESSING', payload: material ? `material-edit-${material.id}` : 'material-create' });
     }
   };
 
@@ -457,7 +444,7 @@ function UploadMaterialModal({
               onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
               className="hidden"
               id="file-upload"
-              disabled={isUploading}
+              disabled={state.ui.processing['material-create'] || state.ui.processing['material-edit']}
             />
             <label
               htmlFor="file-upload"
@@ -465,7 +452,7 @@ function UploadMaterialModal({
             >
               <Upload className="w-8 h-8 text-card-text/40" />
               <span className="text-sm text-card-text/60">
-                {isUploading ? 'Uploading...' : 'Click to upload files'}
+                {state.ui.processing['material-create'] || state.ui.processing['material-edit'] ? 'Uploading...' : 'Click to upload files'}
               </span>
               <span className="text-xs text-card-text/30">
                 PDF, DOCX, XLSX, PPTX, ZIP (max 50MB)
@@ -533,8 +520,8 @@ function UploadMaterialModal({
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={!title || isUploading}>
-            {isUploading ? 'Creating...' : 'Create Material'}
+          <Button type="submit" loadingId={material ? `material-edit-${material.id}` : 'material-create'} disabled={!title}>
+            {material ? 'Update Material' : 'Create Material'}
           </Button>
         </div>
       </form>

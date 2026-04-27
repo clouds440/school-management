@@ -22,7 +22,7 @@ export default function SettingsPage() {
     const { token, user } = useAuth();
     const router = useRouter();
     const { state, dispatch } = useGlobal();
-    const loading = state.ui.isLoading;
+    const [loading, setLoading] = useState(false);
     const [reapplying, setReapplying] = useState(false);
     const [orgData, setOrgData] = useState<Organization | null>(null);
     const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
@@ -72,7 +72,7 @@ export default function SettingsPage() {
         if (user.role !== Role.ORG_ADMIN) {
             return;
         }
-        dispatch({ type: 'UI_SET_LOADING', payload: true });
+        setLoading(true);
         api.org.getOrgData(token)
             .then((data: Organization) => {
                 setOrgData(data);
@@ -93,7 +93,7 @@ export default function SettingsPage() {
                 dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
             })
             .finally(() => {
-                dispatch({ type: 'UI_SET_LOADING', payload: false });
+                setLoading(false);
                 setRedirecting(false);
             });
     }, [token, dispatch, user, router]);
@@ -113,7 +113,7 @@ export default function SettingsPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!token) return;
-        dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+        dispatch({ type: 'UI_START_PROCESSING', payload: 'settings-submit' });
         try {
             // 1. Save text settings — send only primary for accentColor (no secondary)
             const payload = {
@@ -146,7 +146,7 @@ export default function SettingsPage() {
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to update settings. Please try again.', type: 'error' } });
             console.error('Failed to update settings', error);
         } finally {
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'settings-submit' });
         }
     };
 
@@ -336,6 +336,7 @@ export default function SettingsPage() {
                     <div className="pt-4 border-t border-border/50 flex justify-end">
                         <Button
                             type="submit"
+                            loadingId="settings-submit"
                             className="h-12 md:h-14 px-8 md:px-10 font-semibold shadow-lg hover:shadow-xl transition-shadow"
                             icon={Save}
                         >

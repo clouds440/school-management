@@ -35,8 +35,7 @@ export default function OrganizationsPage() {
     const searchParams = useSearchParams();
 
     const { openViewModal } = useUI();
-    const actionLoading = state.ui.isProcessing;
-    const [processingId, setProcessingId] = useState<string | null>(null);
+    const actionLoading = Object.keys(state.ui.processing).length > 0;
     const stats = state.stats.admin;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -106,8 +105,7 @@ export default function OrganizationsPage() {
     const handleApprove = async (id: string, name: string) => {
         if (!token) return;
         try {
-            setProcessingId(`approve-${id}`);
-            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+            dispatch({ type: 'UI_START_PROCESSING', payload: `approve-${id}` });
             await api.admin.approveOrganization(id, token);
             organizationsStore.invalidate();
             dispatch({ type: 'TOAST_ADD', payload: { message: `${name} approved successfully`, type: 'success' } });
@@ -121,8 +119,7 @@ export default function OrganizationsPage() {
             const message = error instanceof Error ? error.message : 'Failed to approve organization';
             dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
         } finally {
-            setProcessingId(null);
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: `approve-${id}` });
         }
     };
 
@@ -139,8 +136,7 @@ export default function OrganizationsPage() {
         if (!operatingOrg || !token) return;
 
         try {
-            setProcessingId(`${modalMode.toLowerCase()}-${operatingOrg.id}`);
-            dispatch({ type: 'UI_SET_PROCESSING', payload: true });
+            dispatch({ type: 'UI_START_PROCESSING', payload: `${modalMode.toLowerCase()}-${operatingOrg.id}` });
             if (modalMode === 'REJECT') {
                 await api.admin.rejectOrganization(operatingOrg.id, reason, token);
                 organizationsStore.invalidate();
@@ -168,8 +164,7 @@ export default function OrganizationsPage() {
             const message = error instanceof Error ? error.message : `Failed to ${modalMode.toLowerCase()} organization`;
             dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
         } finally {
-            setProcessingId(null);
-            dispatch({ type: 'UI_SET_PROCESSING', payload: false });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: `${modalMode.toLowerCase()}-${operatingOrg.id}` });
         }
     };
 
@@ -262,31 +257,31 @@ export default function OrganizationsPage() {
                         actions.push({
                             variant: 'approve',
                             onClick: () => handleApprove(row.id, row.name),
-                            loading: actionLoading && processingId === `approve-${row.id}`
+                            loading: state.ui.processing[`approve-${row.id}`]
                         });
                         actions.push({
                             variant: 'reject',
                             onClick: () => handleOpenModal(row, 'REJECT'),
-                            loading: actionLoading && processingId === `reject-${row.id}`
+                            loading: state.ui.processing[`reject-${row.id}`]
                         });
                     } else if (effectiveStatus === OrgStatus.APPROVED) {
                         actions.push({
                             variant: 'suspend',
                             onClick: () => handleOpenModal(row, 'SUSPEND'),
-                            loading: actionLoading && processingId === `suspend-${row.id}`
+                            loading: state.ui.processing[`suspend-${row.id}`]
                         });
                     } else if (effectiveStatus === OrgStatus.REJECTED) {
                         actions.push({
                             variant: 'reapprove',
                             onClick: () => handleApprove(row.id, row.name),
-                            loading: actionLoading && processingId === `approve-${row.id}`,
+                            loading: state.ui.processing[`approve-${row.id}`],
                             title: 'Re-approve'
                         });
                     } else if (effectiveStatus === OrgStatus.SUSPENDED) {
                         actions.push({
                             variant: 'unsuspend',
                             onClick: () => handleApprove(row.id, row.name),
-                            loading: actionLoading && processingId === `approve-${row.id}`,
+                            loading: state.ui.processing[`approve-${row.id}`],
                             title: 'Unsuspend'
                         });
                     }
