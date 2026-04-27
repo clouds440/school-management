@@ -21,10 +21,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
         // Only show spinner if:
         // 1. Local loading is true
-        // 2. Global processing is true AND the processingId matches this button's loadingId or id
-        // This ensures only one button shows spinner at a time
-        const effectiveLoading = localIsLoading || (state.ui.isProcessing && state.ui.processingId === (loadingId || props.id));
-
+        // 2. Global processing is true AND (no specific ID was tracked OR the ID matches this button)
+        const effectiveLoading = localIsLoading || (state.ui.isProcessing && (!state.ui.processingId || state.ui.processingId === (loadingId || props.id)));
+        
         let variantClasses = "";
         if (variant === 'primary') {
             variantClasses = "bg-linear-to-r from-primary to-primary/90 text-primary-foreground hover:from-primary/90 hover:to-primary hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-primary/30";

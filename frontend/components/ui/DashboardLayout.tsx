@@ -195,6 +195,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     </span>
                                 </Link>
 
+                               {user?.role != Role.STUDENT && 
                                 <Link
                                     href="/contact"
                                     onClick={(e) => {
@@ -206,7 +207,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                 >
                                         <MessageCircleQuestionMark className="w-4 h-4 shrink-0 text-primary/80" />
                                     {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Contact Us</span>}
-                                </Link>
+                                </Link>}
                             </>
                         )}
 

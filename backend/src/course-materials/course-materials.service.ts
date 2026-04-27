@@ -72,7 +72,6 @@ export class CourseMaterialsService {
           entityType: 'COURSE_MATERIAL',
         },
       });
-      console.log(`Updated ${updateResult.count} files for material ${material.id}`);
     }
 
     // Create notifications for all enrolled students
@@ -149,14 +148,12 @@ export class CourseMaterialsService {
 
     // Fetch files for each material
     const materialIds = materials.map((m) => m.id);
-    console.log('Fetching files for material IDs:', materialIds);
     const files = await this.prisma.file.findMany({
       where: {
         entityType: 'COURSE_MATERIAL',
         entityId: { in: materialIds },
       },
     });
-    console.log('Found files:', files.length, 'for materials:', materialIds);
 
     // Group files by material ID
     const filesByMaterial = files.reduce((acc, file) => {
