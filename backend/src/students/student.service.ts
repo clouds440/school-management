@@ -460,8 +460,7 @@ export class StudentService {
   }
 
   async deleteStudent(orgId: string, id: string) {
-    const student = await this.getStudentById(orgId, id);
-    await this.prisma.student.update({
+    const result = await this.prisma.student.update({
       where: { id },
       data: { status: StudentStatus.DELETED },
     });

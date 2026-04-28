@@ -97,11 +97,12 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
             {/* Branded Sidebar */}
             <aside
                 className={`
-                    fixed lg:relative inset-y-0 left-0 z-90 transform transition-all duration-300 ease-in-out
+                    fixed lg:relative inset-y-0 left-0 z-90 transform
                     flex flex-col bg-background text-sidebar-text border-r border-border shadow-[4px_0_24px_var(--shadow-color)]
                     ${isMobileOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0'}
                     ${effectiveExpanded ? 'lg:w-72' : 'lg:w-20'}
                     h-full shrink-0 overflow-hidden
+                    transition-transform duration-300 ease-in-out lg:transition-none
                 `}
             >
                 {/* Sidebar Header - Branded */}

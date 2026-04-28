@@ -25,6 +25,7 @@ export const setUnauthorizedHandler = (handler: (failedToken?: string) => void) 
 
 interface RequestOptions extends RequestInit {
     token?: string;
+    signal?: AbortSignal;
 }
 
 interface QueryParams {
@@ -54,129 +55,190 @@ function buildQueryString(params: QueryParams): string {
     return query ? `?${query}` : '';
 }
 
-/**
- * Robust request helper to handle common chores
- */
+// --- FIX 1: In-flight GET request deduplication ---
+// Prevents duplicate simultaneous GET requests to the same endpoint+token.
+// Each unique (method, endpoint, token) combination shares one in-flight promise.
+const inFlightRequests = new Map<string, Promise<unknown>>();
+
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    const { token, ...rest } = options;
-    const headers = {
+    const { token, signal, ...rest } = options;
+    const method = (rest.method ?? 'GET').toUpperCase();
+
+    // Only deduplicate GET requests — mutating requests must always fire
+    const dedupeKey = method === 'GET' ? `${endpoint}::${token ?? ''}` : null;
+
+    if (dedupeKey && inFlightRequests.has(dedupeKey)) {
+        return inFlightRequests.get(dedupeKey) as Promise<T>;
+    }
+
+    const headers: HeadersInit = {
         ...(rest.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...rest.headers,
+        ...(rest.headers as Record<string, string> ?? {}),
     };
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...rest, headers });
-
-    if (response.status === 401 && unauthorizedHandler) {
-        unauthorizedHandler(token);
-    }
-
-    if (!response.ok) {
-        let message = `Request failed with status ${response.status}`;
-        try {
-            const contentType = response.headers.get('content-type');
-            if (contentType?.includes('application/json')) {
-                const data = await response.json();
-                message = Array.isArray(data.message) ? data.message[0] : data.message || message;
-            } else {
-                const text = await response.text();
-                if (text && text.length < 200) message = text;
+    // --- FIX 2: AbortSignal threading ---
+    // Callers can pass a signal to cancel in-flight requests (e.g. on component
+    // unmount or when a new request supersedes a previous one).
+    const promise = fetch(`${API_BASE_URL}${endpoint}`, { ...rest, headers, signal })
+        .then(async (response) => {
+            if (response.status === 401 && unauthorizedHandler) {
+                unauthorizedHandler(token);
             }
-        } catch (error) {
-            console.error('Error parsing error response:', error);
-        }
-        throw new Error(message);
+
+            if (!response.ok) {
+                let message = `Request failed with status ${response.status}`;
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType?.includes('application/json')) {
+                        const data = await response.json();
+                        message = Array.isArray(data.message) ? data.message[0] : data.message || message;
+                    } else {
+                        const text = await response.text();
+                        if (text && text.length < 200) message = text;
+                    }
+                } catch (error) {
+                    console.error('Error parsing error response:', error);
+                }
+                throw new Error(message);
+            }
+
+            if (response.status === 204) return null as T;
+            return response.json() as Promise<T>;
+        })
+        .finally(() => {
+            if (dedupeKey) inFlightRequests.delete(dedupeKey);
+        });
+
+    if (dedupeKey) {
+        inFlightRequests.set(dedupeKey, promise);
     }
 
-    if (response.status === 204) return null as T;
-    return response.json();
+    return promise;
+}
+
+// --- FIX 3: Consolidated FormData upload helper ---
+// Previously, uploadLogo, uploadAvatar, uploadFile, and addMessage (with files)
+// each duplicated the raw fetch + 401 handling + error parsing logic.
+// This single helper covers all of them and supports AbortSignal too.
+async function uploadFormData<T>(
+    endpoint: string,
+    formData: FormData,
+    token: string,
+    method: string = 'POST',
+    signal?: AbortSignal,
+): Promise<T> {
+    return request<T>(endpoint, {
+        method,
+        body: formData,
+        token,
+        signal,
+    });
 }
 
 export const api = {
     auth: {
-        register: (data: RegisterRequest) => request<AuthResponse>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
-        login: (data: LoginRequest) => request<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
-        logout: (token: string) => request<void>('/auth/logout', { method: 'POST', token }).catch(e => console.warn('Logout failed', e)),
+        register: (data: RegisterRequest) =>
+            request<AuthResponse>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+        login: (data: LoginRequest) =>
+            request<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+        logout: (token: string) =>
+            request<void>('/auth/logout', { method: 'POST', token }).catch(e => console.warn('Logout failed', e)),
         changePassword: (oldPassword: string, newPassword: string, token: string) =>
             request<{ access_token: string, role: string }>('/auth/change-password', {
                 method: 'POST', body: JSON.stringify({ oldPassword, newPassword }), token
             }),
         updateProfile: (data: Partial<{ themeMode?: ThemeMode; name?: string }>, token: string) =>
             request('/auth/profile', { method: 'PATCH', body: JSON.stringify(data), token }),
-        getSessions: (token: string) => request<AuthSessionSummary[]>('/auth/sessions', { token }),
-        revokeSession: (sessionId: string, token: string) => request<{ message: string; shouldLogout?: boolean }>(`/auth/sessions/${sessionId}`, { method: 'DELETE', token }),
-        revokeAllSessions: (token: string) => request<{ message: string }>('/auth/sessions', { method: 'DELETE', token }),
+        getSessions: (token: string) =>
+            request<AuthSessionSummary[]>('/auth/sessions', { token }),
+        revokeSession: (sessionId: string, token: string) =>
+            request<{ message: string; shouldLogout?: boolean }>(`/auth/sessions/${sessionId}`, { method: 'DELETE', token }),
+        revokeAllSessions: (token: string) =>
+            request<{ message: string }>('/auth/sessions', { method: 'DELETE', token }),
+    },
+
+    user: {
+        getUser: (id: string, token: string) =>
+            request<User>(`/users/${id}`, { token }),
     },
 
     admin: {
         getOrganizations: (token: string, params: { status?: OrgStatus, page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', type?: string } = {}) =>
             request<PaginatedResponse<Organization>>(`/admin/organizations${buildQueryString(params)}`, { token }),
-        approveOrganization: (id: string, token: string) => request<void>(`/admin/organizations/${id}/approve`, { method: 'PATCH', token }),
+        approveOrganization: (id: string, token: string) =>
+            request<void>(`/admin/organizations/${id}/approve`, { method: 'PATCH', token }),
         rejectOrganization: (id: string, reason: string, token: string) =>
             request<void>(`/admin/organizations/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }), token }),
         suspendOrganization: (id: string, reason: string, token: string) =>
             request<void>(`/admin/organizations/${id}/suspend`, { method: 'PATCH', body: JSON.stringify({ reason }), token }),
-        getAdminStats: (token: string) => request<AdminStats>('/admin/stats', { token }),
+        getAdminStats: (token: string) =>
+            request<AdminStats>('/admin/stats', { token }),
         getPlatformAdmins: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
             request<PaginatedResponse<PlatformAdmin>>(`/admin/platform-admins${buildQueryString(params)}`, { token }),
         createPlatformAdmin: (data: Partial<PlatformAdmin> & { password?: string }, token: string) =>
             request<PlatformAdmin>('/admin/platform-admins', { method: 'POST', body: JSON.stringify(data), token }),
         updatePlatformAdmin: (id: string, data: Partial<PlatformAdmin>, token: string) =>
             request<PlatformAdmin>(`/admin/platform-admins/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-        deletePlatformAdmin: (id: string, token: string) => request<void>(`/admin/platform-admins/${id}`, { method: 'DELETE', token }),
+        deletePlatformAdmin: (id: string, token: string) =>
+            request<void>(`/admin/platform-admins/${id}`, { method: 'DELETE', token }),
     },
 
     org: {
-        getOrgData: (token: string) => request<Organization>('/org/settings', { token }),
+        getOrgData: (token: string) =>
+            request<Organization>('/org/settings', { token }),
         updateSettings: (data: UpdateOrgSettingsRequest, token: string) =>
             request<void>('/org/settings', { method: 'PATCH', body: JSON.stringify(data), token }),
-        reapply: (token: string) => request<void>('/org/reapply', { method: 'PATCH', token }),
-        getStats: (token: string) => request<OrgStats>('/org/stats', { token }),
-        uploadLogo: async (file: File, token: string): Promise<{ logoUrl: string; avatarUpdatedAt: string }> => {
+        reapply: (token: string) =>
+            request<void>('/org/reapply', { method: 'PATCH', token }),
+        getStats: (token: string) =>
+            request<OrgStats>('/org/stats', { token }),
+
+        // FIX 3 applied: was duplicating raw fetch + 401 handling
+        uploadLogo: (file: File, token: string): Promise<{ logoUrl: string; avatarUpdatedAt: string }> => {
             const formData = new FormData();
             formData.append('file', file);
-            // Specifically for uploadLogo we override content-type to let browser set it with boundary
-            const response = await fetch(`${API_BASE_URL}/org/settings/logo`, {
-                method: 'PATCH',
-                headers: { Authorization: `Bearer ${token}` },
-                body: formData,
-            });
-
-            if (response.status === 401 && unauthorizedHandler) {
-                unauthorizedHandler(token);
-            }
-
-            if (!response.ok) throw new Error('Failed to upload logo');
-            return response.json();
+            return uploadFormData('/org/settings/logo', formData, token, 'PATCH');
         },
-        getTeacher: (id: string, token: string) => request<Teacher>(`/org/teachers/${id}`, { token }),
+
+        getTeacher: (id: string, token: string) =>
+            request<Teacher>(`/org/teachers/${id}`, { token }),
+        getTeacherByUserId: (userId: string, token: string) =>
+            request<Teacher>(`/org/teachers/by-user/${userId}`, { token }),
         getTeachers: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
             request<PaginatedResponse<Teacher>>(`/org/teachers${buildQueryString(params)}`, { token }),
         createTeacher: (data: CreateTeacherRequest, token: string) =>
             request<Teacher>('/org/teachers', { method: 'POST', body: JSON.stringify(data), token }),
         updateTeacher: (id: string, data: UpdateTeacherRequest, token: string) =>
             request<Teacher>(`/org/teachers/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-        deleteTeacher: (id: string, token: string) => request<void>(`/org/teachers/${id}`, { method: 'DELETE', token }),
+        deleteTeacher: (id: string, token: string) =>
+            request<void>(`/org/teachers/${id}`, { method: 'DELETE', token }),
         getManagers: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
             request<PaginatedResponse<Teacher>>(`/org/managers${buildQueryString(params)}`, { token }),
 
-        getStudent: (id: string, token: string) => request<Student>(`/org/students/${id}`, { token }),
+        getStudent: (id: string, token: string) =>
+            request<Student>(`/org/students/${id}`, { token }),
+        getStudentByUserId: (userId: string, token: string) =>
+            request<Student>(`/org/students/by-user/${userId}`, { token }),
         getStudents: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean, sectionId?: string } = {}) =>
             request<PaginatedResponse<Student>>(`/org/students${buildQueryString(params)}`, { token }),
         createStudent: (data: CreateStudentRequest, token: string) =>
             request<Student>('/org/students', { method: 'POST', body: JSON.stringify(data), token }),
         updateStudent: (id: string, data: UpdateStudentRequest, token: string) =>
             request<Student>(`/org/students/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-        deleteStudent: (id: string, token: string) => request<void>(`/org/students/${id}`, { method: 'DELETE', token }),
+        deleteStudent: (id: string, token: string) =>
+            request<void>(`/org/students/${id}`, { method: 'DELETE', token }),
 
-        getSection: (id: string, token: string) => request<Section>(`/org/sections/${id}`, { token }),
+        getSection: (id: string, token: string) =>
+            request<Section>(`/org/sections/${id}`, { token }),
         getSections: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean } = {}) =>
             request<PaginatedResponse<Section>>(`/org/sections${buildQueryString(params)}`, { token }),
         createSection: (data: CreateSectionRequest, token: string) =>
             request<Section>('/org/sections', { method: 'POST', body: JSON.stringify(data), token }),
         updateSection: (id: string, data: UpdateSectionRequest, token: string) =>
             request<Section>(`/org/sections/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-        deleteSection: (id: string, token: string) => request<void>(`/org/sections/${id}`, { method: 'DELETE', token }),
+        deleteSection: (id: string, token: string) =>
+            request<void>(`/org/sections/${id}`, { method: 'DELETE', token }),
 
         getCourses: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean } = {}) =>
             request<PaginatedResponse<Course>>(`/org/courses${buildQueryString(params)}`, { token }),
@@ -184,33 +246,27 @@ export const api = {
             request<Course>('/org/courses', { method: 'POST', body: JSON.stringify(data), token }),
         updateCourse: (id: string, data: UpdateCourseRequest, token: string) =>
             request<Course>(`/org/courses/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-        deleteCourse: (id: string, token: string) => request<void>(`/org/courses/${id}`, { method: 'DELETE', token }),
-        uploadAvatar: async (userId: string, file: File, token: string): Promise<{ avatarUrl: string; avatarUpdatedAt: string }> => {
+        deleteCourse: (id: string, token: string) =>
+            request<void>(`/org/courses/${id}`, { method: 'DELETE', token }),
+
+        // FIX 3 applied: was duplicating raw fetch + 401 handling
+        uploadAvatar: (userId: string, file: File, token: string): Promise<{ avatarUrl: string; avatarUpdatedAt: string }> => {
             const formData = new FormData();
             formData.append('file', file);
-            const response = await fetch(`${API_BASE_URL}/org/users/${userId}/avatar`, {
-                method: 'PATCH',
-                headers: { Authorization: `Bearer ${token}` },
-                body: formData,
-            });
-
-            if (response.status === 401 && unauthorizedHandler) {
-                unauthorizedHandler(token);
-            }
-
-            if (!response.ok) throw new Error('Failed to upload avatar');
-            return response.json();
+            return uploadFormData(`/org/users/${userId}/avatar`, formData, token, 'PATCH');
         },
 
         // --- Assessments ---
         getAssessments: (token: string, params: { sectionId?: string, courseId?: string } = {}) =>
             request<Assessment[]>(`/org/assessments${buildQueryString(params)}`, { token }),
-        getAssessment: (id: string, token: string) => request<Assessment>(`/org/assessments/${id}`, { token }),
+        getAssessment: (id: string, token: string) =>
+            request<Assessment>(`/org/assessments/${id}`, { token }),
         createAssessment: (data: CreateAssessmentRequest, token: string) =>
             request<Assessment>('/org/assessments', { method: 'POST', body: JSON.stringify(data), token }),
         updateAssessment: (id: string, data: UpdateAssessmentRequest, token: string) =>
             request<Assessment>(`/org/assessments/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-        deleteAssessment: (id: string, token: string) => request<void>(`/org/assessments/${id}`, { method: 'DELETE', token }),
+        deleteAssessment: (id: string, token: string) =>
+            request<void>(`/org/assessments/${id}`, { method: 'DELETE', token }),
 
         // --- Grades ---
         getGrades: (assessmentId: string, token: string) =>
@@ -265,34 +321,17 @@ export const api = {
     },
 
     files: {
-        uploadFile: async (orgId: string, entityType: string, entityId: string, file: File, token: string) => {
+        // FIX 3 applied: was duplicating raw fetch + 401 handling + error parsing
+        uploadFile: (orgId: string, entityType: string, entityId: string, file: File, token: string) => {
             const formData = new FormData();
             formData.append('orgId', orgId);
             formData.append('entityType', entityType);
             formData.append('entityId', entityId);
             formData.append('file', file);
-
-            const response = await fetch(`${API_BASE_URL}/files`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-                body: formData,
-            });
-
-            if (response.status === 401 && unauthorizedHandler) {
-                unauthorizedHandler(token);
-            }
-
-            if (!response.ok) {
-                let errMessage = 'Failed to upload file';
-                try {
-                    const err = await response.json();
-                    errMessage = Array.isArray(err.message) ? err.message[0] : err.message || errMessage;
-                } catch (e) { console.error(e) }
-                throw new Error(errMessage || 'Failed to upload file');
-            }
-            return response.json();
+            return uploadFormData('/files', formData, token, 'POST');
         },
-        deleteFile: (id: string, token: string) => request<void>(`/files/${id}`, { method: 'DELETE', token }),
+        deleteFile: (id: string, token: string) =>
+            request<void>(`/files/${id}`, { method: 'DELETE', token }),
     },
 
     mail: {
@@ -304,27 +343,18 @@ export const api = {
             request<MailDetail>('/mail', { method: 'POST', body: JSON.stringify(data), token }),
         updateMail: (id: string, data: UpdateMailPayload, token: string) =>
             request<MailDetail>(`/mail/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-        addMessage: async (mailId: string, data: { content: string }, token: string, files?: File[]) => {
+
+        // FIX 3 applied: was duplicating raw fetch + 401 handling in the files branch
+        addMessage: (mailId: string, data: { content: string }, token: string, files?: File[]) => {
             if (files && files.length > 0) {
                 const formData = new FormData();
                 formData.append('content', data.content);
                 files.forEach(file => formData.append('files', file));
-
-                const response = await fetch(`${API_BASE_URL}/mail/${mailId}/messages`, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: formData,
-                });
-
-                if (response.status === 401 && unauthorizedHandler) {
-                    unauthorizedHandler(token);
-                }
-
-                if (!response.ok) throw new Error('Failed to send reply with files');
-                return response.json();
+                return uploadFormData<MailDetail>(`/mail/${mailId}/messages`, formData, token, 'POST');
             }
             return request<MailDetail>(`/mail/${mailId}/messages`, { method: 'POST', body: JSON.stringify(data), token });
         },
+
         getContactableUsers: (token: string, search?: string) =>
             request<MailTarget[]>(`/mail/contacts${buildQueryString({ search })}`, { token }),
         getUnreadCount: (token: string) =>

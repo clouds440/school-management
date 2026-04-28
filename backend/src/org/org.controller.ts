@@ -649,5 +649,17 @@ export class OrgController {
   ) {
     return this.attendanceService.getStudentAttendance(orgId, studentId, req.user);
   }
+
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+  @Get('teachers/by-user/:userId')
+  getTeacherByUserId(@OrgId() orgId: string, @Param('userId') userId: string) {
+    return this.teacherService.getTeacherByUserId(userId);
+  }
+
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+  @Get('students/by-user/:userId')
+  getStudentByUserId(@OrgId() orgId: string, @Param('userId') userId: string) {
+    return this.studentService.getStudentByUserId(userId);
+  }
 }
 

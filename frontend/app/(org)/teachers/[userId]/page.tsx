@@ -25,14 +25,15 @@ export default function TeacherLandingPage() {
 
         const validateAndFetch = async () => {
             try {
-                const teacher = await api.org.getTeacher(userId, token);
+                // Fetch teacher by userId to validate existence and get teacher record
+                const teacher = await api.org.getTeacherByUserId(userId, token);
                 setTeacherExists(true);
 
                 // Check authorization
                 if (user.id !== userId) {
                     if (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER) {
                         // Redirect to edit page for admins/managers
-                        router.replace(`/teachers/edit/${userId}`);
+                        router.replace(`/teachers/edit/${teacher.id}`);
                         return;
                     } else {
                         // Unauthorized access

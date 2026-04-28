@@ -6,6 +6,7 @@ import { FilesModule } from './files/files.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { EventsModule } from './events/events.module';
 import { MailModule } from './mail/mail.module';
+import { UserModule } from './users/user.module';
 
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -28,6 +29,7 @@ import { CourseMaterialsModule } from './course-materials/course-materials.modul
     PrismaModule,
     EventsModule,
     MailModule,
+    UserModule,
     ThrottlerModule.forRoot([
       {
         ttl: parseInt(process.env.THROTTLE_TTL!, 10),

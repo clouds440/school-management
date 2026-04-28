@@ -32,6 +32,7 @@ function StudentPortalContent() {
     const [insights, setInsights] = useState<DashboardInsights | null>(null);
     const [fetchingData, setFetchingData] = useState(false);
     const [studentExists, setStudentExists] = useState<boolean | null>(null);
+    const [validating, setValidating] = useState(true);
 
     const profile = state.auth.userProfile as Student | null;
 
@@ -48,28 +49,34 @@ function StudentPortalContent() {
             }
         }
 
-        // Role Guard: Only Student self-view
-        const isAuthorized = user.role === Role.STUDENT && user.id === params.userId;
-
-        if (!isAuthorized) {
-            if (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER) {
-                router.push(`/students/edit/${params.userId}`);
-                return;
-            } else {
-                setStudentExists(false);
-                dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied. You are not authorized to view this portal.', type: 'error' } });
-                return;
-            }
-        }
-
-        // Validate that the student exists in the database
+        // Validate that the student exists in the database and check authorization
         const validateStudentExists = async () => {
+            setValidating(true);
             try {
-                const student = await api.org.getStudent(params.userId as string, token);
+                // Fetch student by userId to validate existence and get student record
+                const student = await api.org.getStudentByUserId(params.userId as string, token);
+
+                // Role Guard: Only Student self-view
+                const isAuthorized = user.role === Role.STUDENT && user.id === params.userId;
+
+                if (!isAuthorized) {
+                    if (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER) {
+                        router.push(`/students/edit/${student.id}`);
+                        return;
+                    } else {
+                        setStudentExists(false);
+                        dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied. You are not authorized to view this portal.', type: 'error' } });
+                        return;
+                    }
+                }
+
+                // Only set studentExists to true after authorization passes
                 setStudentExists(!!student);
             } catch (error) {
                 console.warn('Failed to fetch student:', error);
                 setStudentExists(false);
+            } finally {
+                setValidating(false);
             }
         };
 
@@ -79,18 +86,18 @@ function StudentPortalContent() {
             setFetchingData(true);
 
             try {
-                const [sectionsRes, gradesRes, assessmentsRes, insightsRes] = await Promise.all([
-                    api.org.getSections(token, { my: true }).catch(() => ({ data: [] })),
-                    api.org.getOwnFinalGrades(token).catch(() => []),
-                    api.org.getAssessments(token).catch(() => []),
-                    api.org.getInsights(token).catch(() => null),
+                const [sectionsData, gradesData, assessmentsData, insightsData] = await Promise.all([
+                    api.org.getSections(token, { my: true }),
+                    api.org.getStudentFinalGrades(token, user.id),
+                    api.org.getAssessments(token, {}),
+                    api.org.getInsights(token),
                 ]);
 
-                setSections(sectionsRes.data || []);
-                setGrades(gradesRes || []);
-                setAssessments(Array.isArray(assessmentsRes) ? assessmentsRes : []);
-                setInsights(insightsRes);
-            } catch (err: unknown) {
+                setSections(sectionsData.data || []);
+                setGrades(gradesData);
+                setAssessments(assessmentsData);
+                setInsights(insightsData);
+            } catch (err) {
                 console.warn('Failed to fetch other student data:', err);
             } finally {
                 setFetchingData(false);
@@ -100,26 +107,26 @@ function StudentPortalContent() {
         fetchData();
     }, [token, dispatch, user, params.userId]);
 
-    if (!user) return null;
+    if (validating) {
+        return (
+            <div className="flex flex-1 items-center justify-center h-full py-20">
+                <Loading size="lg" />
+            </div>
+        );
+    }
 
     if (studentExists === false) {
         return <NotFound page="Student" />;
     }
 
-    if (user.status === 'SUSPENDED') {
+    if (user?.status === 'SUSPENDED') {
         return (
             <div className="flex flex-col items-center justify-center p-12 bg-card/70 backdrop-blur-md rounded-lg shadow-2xl border border-orange-500/20 text-center max-w-2xl mx-auto mt-10">
                 <ShieldOff className="w-20 h-20 text-orange-500 mb-6" />
                 <h2 className="text-4xl font-black text-foreground mb-4">Account Suspended</h2>
                 <p className="text-muted-foreground text-lg mb-8">
-                    Your account has been temporarily suspended by the administration. Please contact the office for details.
+                    Your account has been temporarily suspended by the administration. Please contact your Administration for details.
                 </p>
-                <Link
-                    href={`/mail`}
-                    className="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-black tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all"
-                >
-                    Contact Support
-                </Link>
             </div>
         );
     }
@@ -134,7 +141,7 @@ function StudentPortalContent() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            {user.status === 'ALUMNI' && (
+            {user?.status === 'ALUMNI' && (
                 <div className="flex flex-col items-center justify-center p-12 bg-card/70 backdrop-blur-md rounded-lg shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] border border-blue-500/20 text-center max-w-2xl mx-auto mb-10 hover:shadow-2xl transition-all duration-500">
                     <div className="p-6 bg-blue-500/10 rounded-full mb-6">
                         <GraduationCap className="w-20 h-20 text-blue-500" />

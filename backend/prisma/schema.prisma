@@ -353,6 +353,8 @@ model File {
   size       Int
   uploadedBy String
   createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
 }
 
 enum Role {
