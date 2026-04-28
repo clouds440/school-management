@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Check, Edit3, MessageCircle, Star } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
-import { Grade, GradeStatus, UpdateGradeRequest, ApiError, Student } from '@/types';
+import { Grade, GradeStatus, UpdateGradeRequest, Student } from '@/types';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
@@ -75,8 +75,7 @@ export default function GradingForm({
             dispatch({ type: 'TOAST_ADD', payload: { message: `Grade updated for ${student.user.name}.`, type: 'success' } });
             onSuccess?.(savedGrade);
         } catch (error: unknown) {
-            const apiError = error as ApiError;
-            const message = apiError?.response?.data?.message || 'Failed to save grade';
+            const message = error instanceof Error ? error.message : 'Failed to save grade';
             dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
             dispatch({ type: 'UI_STOP_PROCESSING', payload: 'grading-submit' });

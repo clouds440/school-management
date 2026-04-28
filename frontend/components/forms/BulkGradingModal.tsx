@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import { Assessment, Section, Grade, GradeStatus, UpdateGradeRequest, ApiError } from '@/types';
+import { Assessment, Section, Grade, GradeStatus, UpdateGradeRequest } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -74,8 +74,7 @@ export function BulkGradingModal({ isOpen, onClose, assessment, section, existin
             onClose();
         } catch (error: unknown) {
             console.error('Failed to update bulk grades', error);
-            const apiError = error as ApiError;
-            const message = apiError?.response?.data?.message || 'Failed to update grades in bulk';
+            const message = error instanceof Error ? error.message : 'Failed to update grades in bulk';
             dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
             dispatch({ type: 'UI_STOP_PROCESSING', payload: 'bulk-grading-submit' });

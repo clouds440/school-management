@@ -1,41 +1,24 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { BookOpen, GraduationCap, ChevronRight, Search } from 'lucide-react';
-import { api } from '@/lib/api';
+import useSWR from 'swr';
 import { Section, Role } from '@/types';
-import { useGlobal } from '@/context/GlobalContext';
 import Link from 'next/link';
 import { Input } from '@/components/ui/Input';
 import { Loading } from '@/components/ui/Loading';
 
 export default function GradesPage() {
     const { token, user } = useAuth();
-    const { state, dispatch } = useGlobal();
-    const [sections, setSections] = useState<Section[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const fetchGradesData = useCallback(async () => {
-        if (!token || !user) return;
-        setIsLoading(true);
-        try {
-            // Admins/Teachers see sections to manage
-            const params = user.role === Role.TEACHER ? { my: true } : {};
-            const data = await api.org.getSections(token, params);
-            setSections(data.data || []);
-        } catch (error) {
-            console.error('Failed to fetch grades data:', error);
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load grades information', type: 'error' } });
-        } finally {
-            setIsLoading(false);
-        }
-    }, [token, user, dispatch]);
-
-    useEffect(() => {
-        fetchGradesData();
-    }, [fetchGradesData]);
+    // SWR for sections data - replaces useCallback + useEffect
+    const sectionsKey = token && user
+        ? ['sections-for-grades', { my: user.role === Role.TEACHER }] as const
+        : null;
+    const { data: sectionsData, isLoading } = useSWR<{ data: Section[] }>(sectionsKey);
+    const sections = sectionsData?.data || [];
 
     const filteredSections = sections.filter(s =>
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

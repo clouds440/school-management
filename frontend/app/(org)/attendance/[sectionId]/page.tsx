@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import useSWR, { mutate } from 'swr';
 import { api } from '@/lib/api';
 import { ApiError, SectionAttendanceResponse, AttendanceStatus, Role, Section, RangeAttendanceResponse, SectionSchedule } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -25,15 +26,10 @@ export default function SectionAttendancePage() {
     const paramDate = searchParams.get('date');
     const paramScheduleId = searchParams.get('scheduleId');
 
-    const [section, setSection] = useState<Section | null>(null);
     const [date, setDate] = useState<string>(paramDate || new Date().toISOString().split('T')[0]);
     const [viewMode, setViewMode] = useState<'daily' | 'monthly'>(paramScheduleId ? 'daily' : 'daily');
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-
-    const [dailyData, setDailyData] = useState<SectionAttendanceResponse | null>(null);
-    const [rangeData, setRangeData] = useState<RangeAttendanceResponse | null>(null);
-    const [fetching, setFetching] = useState(true);
     const [saving, setSaving] = useState(false);
 
     const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(paramScheduleId);
@@ -48,61 +44,40 @@ export default function SectionAttendancePage() {
         }
     }, [isStudent, viewMode]);
 
-    const fetchSection = useCallback(async () => {
-        if (!token) return;
-        try {
-            const data = await api.org.getSection(sectionId, token);
-            setSection(data);
+    // SWR for section data
+    const sectionKey = token ? ['attendance-section', sectionId] as const : null;
+    const { data: section, error: sectionError } = useSWR<Section>(sectionKey);
 
-            // If no paramScheduleId, try to find first available for today
-            if (!paramScheduleId && data.schedules) {
-                const todayDay = new Date().getDay();
-                const matched = data.schedules.find((schedule: SectionSchedule) => schedule.day === todayDay);
-                if (matched) setSelectedScheduleId(matched.id);
-            }
-        } catch (error) {
-            console.error('Failed to fetch section', error);
+    // Set default schedule when section loads
+    useEffect(() => {
+        if (section && !paramScheduleId && section.schedules) {
+            const todayDay = new Date().getDay();
+            const matched = section.schedules.find((schedule: SectionSchedule) => schedule.day === todayDay);
+            if (matched) setSelectedScheduleId(matched.id);
+        }
+    }, [section, paramScheduleId]);
+
+    // Redirect on section fetch error
+    useEffect(() => {
+        if (sectionError) {
+            console.error('Failed to fetch section', sectionError);
             router.push('/attendance');
         }
-    }, [sectionId, token, router, paramScheduleId]);
+    }, [sectionError, router]);
 
-    const fetchDailyAttendance = useCallback(async () => {
-        if (!token || !date || viewMode !== 'daily') return;
-        setFetching(true);
-        try {
-            const data = await api.org.getSectionAttendance(sectionId, date, token, selectedScheduleId || undefined);
-            setDailyData(data);
-        } catch (error: unknown) {
-            dispatch({
-                type: 'TOAST_ADD',
-                payload: { message: (error as ApiError)?.message || 'Failed to load daily attendance', type: 'error' }
-            });
-        } finally {
-            setFetching(false);
-        }
-    }, [sectionId, date, token, dispatch, viewMode, selectedScheduleId]);
+    // SWR for daily attendance
+    const dailyKey = token && viewMode === 'daily' ? ['attendance-daily', sectionId, date, selectedScheduleId || undefined] as const : null;
+    const { data: dailyData, isLoading: dailyLoading } = useSWR<SectionAttendanceResponse>(dailyKey);
 
-    const fetchMonthlyAttendance = useCallback(async () => {
-        if (!token || viewMode !== 'monthly') return;
-        setFetching(true);
-        try {
-            const start = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
-            const end = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
-            const data = await api.org.getSectionAttendanceRange(sectionId, start, end, token);
-            setRangeData(data);
-        } catch (error: unknown) {
-            dispatch({
-                type: 'TOAST_ADD',
-                payload: { message: (error as ApiError)?.message || 'Failed to load monthly attendance', type: 'error' }
-            });
-        } finally {
-            setFetching(false);
-        }
-    }, [sectionId, currentMonth, currentYear, token, dispatch, viewMode]);
+    // SWR for monthly attendance
+    const monthlyStart = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
+    const monthlyEnd = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
+    const monthlyKey = token && viewMode === 'monthly' ? ['attendance-monthly', sectionId, monthlyStart, monthlyEnd] as const : null;
+    const { data: rangeData, isLoading: monthlyLoading } = useSWR<RangeAttendanceResponse>(monthlyKey);
 
-    useEffect(() => { fetchSection(); }, [fetchSection]);
-    useEffect(() => { fetchDailyAttendance(); }, [fetchDailyAttendance]);
-    useEffect(() => { fetchMonthlyAttendance(); }, [fetchMonthlyAttendance]);
+    const fetching = viewMode === 'daily' ? dailyLoading : monthlyLoading;
+
+    // SWR handles data fetching - no need for manual effect triggers
 
     const handleSaveRecords = async (records: { studentId: string; status: AttendanceStatus }[]) => {
         if (!token || !dailyData) return;
@@ -122,7 +97,7 @@ export default function SectionAttendancePage() {
             }
             await api.org.markAttendance(sessionId as string, records, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Attendance saved successfully', type: 'success' } });
-            fetchDailyAttendance();
+            mutate(dailyKey);
         } catch (error: unknown) {
             dispatch({
                 type: 'TOAST_ADD',

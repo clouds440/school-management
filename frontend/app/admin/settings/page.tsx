@@ -2,18 +2,15 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Settings, Shield } from 'lucide-react';
 import { Role } from '@/types';
-import { useGlobal } from '@/context/GlobalContext';
 import SessionManagement from '@/components/SessionManagement';
 import { Loading } from '@/components/ui/Loading';
 
 export default function AdminSettingsPage() {
     const { user } = useAuth();
     const router = useRouter();
-    const { state } = useGlobal();
-    const [loading, setLoading] = useState(false);
 
     // Scroll to section if hash is present
     useEffect(() => {
@@ -32,7 +29,7 @@ export default function AdminSettingsPage() {
         return null;
     }
 
-    if (loading || !user) {
+    if (!user) {
         return (
             <div className="flex justify-center items-center h-64">
                 <Loading size="md" />

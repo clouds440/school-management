@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Tag, Calendar, Filter, Clock, MailPlus } from 'lucide-react';
+import useSWR, { mutate } from 'swr';
 import { api } from '@/lib/api';
 import { MailItem, MailStatus, PaginatedResponse } from '@/types';
 import { DataTable, Column } from '@/components/ui/DataTable';
@@ -26,10 +27,8 @@ export default function OrgMailPage() {
     const pathname = usePathname();
     const getRowClassName = useMailRowClassName();
 
-    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<MailItem> | null>(null);
     const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
     const [newMailOpen, setNewMailOpen] = useState(false);
-    const [fetching, setFetching] = useState(false);
 
     const [pageSize, setPageSize] = useState<number>(() => {
         if (typeof window !== 'undefined') {
@@ -43,28 +42,24 @@ export default function OrgMailPage() {
     const searchQuery = searchParams.get('search') || '';
     const statusFilter = searchParams.get('status') || '';
 
-    const fetchMails = useCallback(async () => {
-        if (!token) return;
-        try {
-            setFetching(true);
-            const [data, stats] = await Promise.all([
-                api.mail.getMails(token, {
-                    page,
-                    limit: pageSize,
-                    search: searchQuery,
-                    status: statusFilter || undefined
-                }),
-                api.mail.getUnreadCount(token)
-            ]);
-            setPaginatedData(data);
-            // Sync with global state
-            dispatch({ type: 'STATS_SET_MAIL', payload: stats });
-        } catch {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to fetch mail', type: 'error' } });
-        } finally {
-            setFetching(false);
+    // SWR for mails data - replaces fetchMails callback
+    const mailsKey = token ? ['mails', {
+        page,
+        limit: pageSize,
+        search: searchQuery,
+        status: statusFilter || undefined
+    }] as const : null;
+
+    const { data: paginatedData, isLoading: fetching } = useSWR<PaginatedResponse<MailItem>>(mailsKey);
+
+    // Sync stats when data loads
+    useEffect(() => {
+        if (token && paginatedData) {
+            api.mail.getUnreadCount(token).then((stats: { total: number; unread: number; countsByStatus: Record<string, number> }) => {
+                dispatch({ type: 'STATS_SET_MAIL', payload: stats });
+            }).catch(() => {});
         }
-    }, [token, page, searchQuery, statusFilter, pageSize, dispatch]);
+    }, [token, paginatedData, dispatch]);
 
     const { subscribe } = useSocket({
         token: token,
@@ -75,10 +70,9 @@ export default function OrgMailPage() {
 
     useEffect(() => {
         if (!authLoading && token) {
-            fetchMails();
             api.notifications.clearCategory('MAIL', token).catch(console.error);
         }
-    }, [authLoading, token, fetchMails]);
+    }, [authLoading, token]);
 
     useEffect(() => {
         const mid = searchParams.get('mailId');
@@ -88,28 +82,18 @@ export default function OrgMailPage() {
     }, [searchParams]);
 
     useEffect(() => {
-        // Debounce mail list refreshes to avoid repeated full fetches
-        const timerRef: { current: number | null } = { current: null };
-        const scheduleFetch = () => {
-            if (timerRef.current) window.clearTimeout(timerRef.current);
-            timerRef.current = window.setTimeout(() => {
-                fetchMails();
-                timerRef.current = null;
-            }, 1000);
-        };
-
+        // Socket events trigger SWR revalidation directly
         const unsubs = [
-            subscribe('unread:update', scheduleFetch),
-            subscribe('mail:new', scheduleFetch),
-            subscribe('mail:message', scheduleFetch),
-            subscribe('mail:update', scheduleFetch)
+            subscribe('unread:update', () => mutate(mailsKey)),
+            subscribe('mail:new', () => mutate(mailsKey)),
+            subscribe('mail:message', () => mutate(mailsKey)),
+            subscribe('mail:update', () => mutate(mailsKey))
         ];
 
         return () => {
             unsubs.forEach(u => u());
-            if (timerRef.current) window.clearTimeout(timerRef.current);
         };
-    }, [subscribe, fetchMails]);
+    }, [subscribe, mailsKey]);
 
     const handleMailClick = (mail: MailItem) => {
         setSelectedMailId(mail.id);
@@ -281,14 +265,14 @@ export default function OrgMailPage() {
                     const query = params.toString();
                     router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
                 }}
-                onUpdate={fetchMails}
+                onUpdate={() => mutate(mailsKey)}
             />
 
             <NewMailModal
                 isOpen={newMailOpen}
                 onClose={() => setNewMailOpen(false)}
                 onSuccess={() => {
-                    fetchMails();
+                    mutate(mailsKey);
                     dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent', type: 'success' } });
                 }}
             />

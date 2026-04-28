@@ -21,7 +21,7 @@ import { ThemeDropdown } from '@/components/ui/ThemeDropdown';
 export default function SettingsPage() {
     const { token, user } = useAuth();
     const router = useRouter();
-    const { state, dispatch } = useGlobal();
+    const { dispatch } = useGlobal();
     const [loading, setLoading] = useState(false);
     const [reapplying, setReapplying] = useState(false);
     const [orgData, setOrgData] = useState<Organization | null>(null);

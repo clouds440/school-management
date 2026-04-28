@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { User, Mail, Lock, Hash, ShieldCheck, UserX, GraduationCap, BookOpen, MapPin, Phone, Plus, Users, DollarSign } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
-import { Section, Student, StudentStatus, CreateStudentRequest, UpdateStudentRequest, Role, ApiError } from '@/types';
+import { Section, Student, StudentStatus, CreateStudentRequest, UpdateStudentRequest, Role } from '@/types';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
@@ -17,7 +17,6 @@ import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { studentCreateSchema, studentUpdateSchema, studentProfileSchema, StudentCreateFormData, StudentUpdateFormData, StudentProfileFormData } from '@/lib/schemas';
-import { studentsStore } from '@/lib/studentsStore';
 
 interface StudentFormProps {
     studentId?: string;
@@ -105,10 +104,8 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
                 savedStudent = await api.org.updateProfile<Student>(payload as UpdateStudentRequest, token!);
             } else if (studentId) {
                 savedStudent = await api.org.updateStudent(studentId, payload as UpdateStudentRequest, token!);
-                studentsStore.invalidate();
             } else {
                 savedStudent = await api.org.createStudent(payload as CreateStudentRequest, token!);
-                studentsStore.invalidate();
             }
 
             // Sync global auth state if the updated student is the current user
@@ -143,8 +140,7 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
                 router.push('/students');
             }
         } catch (error: unknown) {
-            const apiError = error as ApiError;
-            const message = apiError?.response?.data?.message || 'Failed to save student';
+            const message = error instanceof Error ? error.message : 'Failed to save student';
 
             if (Array.isArray(message)) {
                 message.forEach((m: string) => dispatch({ type: 'TOAST_ADD', payload: { message: m, type: 'error' } }));

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
-import { ApiError, TimetableEntry, Role } from '@/types';
+import useSWR from 'swr';
+import { TimetableEntry, Role } from '@/types';
 import { Clock, MapPin } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Loading } from '@/components/ui/Loading';
@@ -72,37 +72,17 @@ const getClosestDateForWeekday = (targetDay: number) => {
 export default function TimetablePage() {
     const router = useRouter();
     const { token, user } = useAuth();
-    const [entries, setEntries] = useState<TimetableEntry[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!token || !user) {
-            setLoading(false);
-            return;
-        }
-
-        const fetchTimetable = async () => {
-            try {
-                setLoading(true);
-                const data = await api.org.getTimetable(token);
-                setEntries(data || []);
-            } catch (err: unknown) {
-                setError((err as ApiError)?.message || 'Failed to load timetable');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchTimetable();
-    }, [token, user]);
+    // SWR for timetable data
+    const timetableKey = token && user ? ['timetable', user.id, user.role] as const : null;
+    const { data: entries = [], isLoading: loading, error } = useSWR<TimetableEntry[]>(timetableKey);
 
     if (loading) return <Loading fullScreen text="Synchronizing Weekly Ledger..." size="lg" />;
-
 
     if (error) return (
         <div className="bg-destructive/10 border border-destructive/20 p-8 rounded-3xl text-destructive text-center">
             <h2 className="text-2xl font-black italic tracking-tighter mb-2">System Error</h2>
-            <p className="font-bold opacity-70 tracking-widest text-sm">{error}</p>
+            <p className="font-bold opacity-70 tracking-widest text-sm">{error.message || 'Failed to load timetable'}</p>
         </div>
     );
 

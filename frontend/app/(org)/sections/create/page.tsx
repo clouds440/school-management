@@ -4,22 +4,20 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Calendar, MapPin, Hash } from 'lucide-react';
-import { api } from '@/lib/api';
+import useSWR, { mutate } from 'swr';
 import { useGlobal } from '@/context/GlobalContext';
 import Link from 'next/link';
-import { Course, Role } from '@/types';
+import { Course, Role, PaginatedResponse } from '@/types';
 import { Input } from '@/components/ui/Input';
-import { sectionsStore } from '@/lib/sectionsStore';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { api } from '@/lib/api';
 
 export default function CreateSectionPage() {
     const { token, user } = useAuth();
     const { dispatch } = useGlobal();
     const router = useRouter();
-
-    const [courses, setCourses] = useState<Course[]>([]);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -29,21 +27,20 @@ export default function CreateSectionPage() {
         courseId: ''
     });
 
+    // SWR for courses dropdown (only for admins/managers)
+    const canFetchCourses = token && user && (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER);
+    const coursesKey = canFetchCourses ? ['courses', { limit: 1000 }] as const : null;
+    const { data: coursesData } = useSWR<PaginatedResponse<Course>>(coursesKey);
+    const courses = coursesData?.data || [];
+
     useEffect(() => {
-        if (!token || !user) return;
+        if (!user) return;
 
         // Teachers should not be able to create sections
         if (user.role === Role.TEACHER) {
             router.replace('/sections');
-            return;
         }
-
-        if (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER) {
-            api.org.getCourses(token)
-                .then(res => setCourses(res.data || []))
-                .catch(err => console.error('Failed to load courses', err));
-        }
-    }, [token, user, router]);
+    }, [user, router]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -56,7 +53,8 @@ export default function CreateSectionPage() {
         try {
             if (!token) return;
             await api.org.createSection(formData, token);
-            sectionsStore.invalidate();
+            // Invalidate sections cache using SWR mutate
+            mutate((key) => Array.isArray(key) && key[0] === 'sections');
 
             window.dispatchEvent(new Event('stats-updated'));
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Section created successfully', type: 'success' } });

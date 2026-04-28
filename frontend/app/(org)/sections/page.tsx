@@ -17,12 +17,16 @@ import { Label } from '@/components/ui/Label';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { useGlobal } from '@/context/GlobalContext';
-import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
 import { Toggle } from '@/components/ui/Toggle';
 import { Loading } from '@/components/ui/Loading';
-import { sectionsStore } from '@/lib/sectionsStore';
+import useSWR, { mutate } from 'swr';
 
-interface SectionParams extends BasePaginationParams {
+interface SectionParams {
+    page: number;
+    limit: number;
+    search: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
     my?: boolean;
 }
 
@@ -35,8 +39,12 @@ export default function SectionsPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    // Redundant paginatedData state removed
-    const [courses, setCourses] = useState<Course[]>([]);
+    // SWR for courses (for edit form dropdown) - replaces useCallback + useEffect
+    const coursesKey = token ? ['courses', { limit: 1000 }] as const : null;
+    const { data: coursesData } = useSWR<PaginatedResponse<Course>>(coursesKey);
+    const courses = coursesData?.data || [];
+
+    // Students state remains (on-demand fetch for enrollment)
     const [students, setStudents] = useState<Student[]>([]);
     const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
@@ -63,16 +71,11 @@ export default function SectionsPage() {
         my: user?.role === Role.TEACHER ? true : showOnlyMySections
     };
 
-    const {
-        data: fetchedData,
-        fetching: isFetching,
-        refresh
-    } = usePaginatedData<Section, SectionParams>(
-        (p) => api.org.getSections(token!, p),
-        sectionParams,
-        'sections',
-        { enabled: !!token, store: sectionsStore }
-    );
+    // SWR for sections data - replaces usePaginatedData
+    const sectionsKey = token ? ['sections', sectionParams] as const : null;
+    const { data: fetchedData, isLoading: isFetching } = useSWR<
+        PaginatedResponse<Section>
+    >(sectionsKey);
 
     useEffect(() => {
         if (user && user.role === Role.STUDENT) {
@@ -105,16 +108,7 @@ export default function SectionsPage() {
         updateQueryParams({ page: 1 });
     };
 
-    const fetchCoursesOnly = useCallback(async () => {
-        if (!token) return;
-        try {
-            const coursesResponse = await api.org.getCourses(token);
-            setCourses(Array.isArray(coursesResponse) ? coursesResponse : (coursesResponse as PaginatedResponse<Course>).data || []);
-        } catch (err: unknown) {
-            console.error(err);
-        }
-    }, [token]);
-
+    // On-demand fetch for students (only needed when editing)
     const fetchStudents = useCallback(async () => {
         if (!token) return;
         try {
@@ -124,10 +118,6 @@ export default function SectionsPage() {
             console.error(err);
         }
     }, [token]);
-
-    useEffect(() => {
-        if (token) fetchCoursesOnly();
-    }, [token, fetchCoursesOnly]);
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -167,10 +157,9 @@ export default function SectionsPage() {
                 }
             }
 
-            sectionsStore.invalidate();
             setEditModalOpen(false);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Section updated successfully', type: 'success' } });
-            refresh();
+            mutate(sectionsKey);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Error updating section';
             dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
@@ -183,10 +172,9 @@ export default function SectionsPage() {
         if (!deletingSection || !token) return;
         try {
             await api.org.deleteSection(deletingSection.id, token);
-            sectionsStore.invalidate();
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Section deleted successfully', type: 'success' } });
             setDeleteDialogOpen(false);
-            refresh();
+            mutate(sectionsKey);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Error deleting section';
             dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });

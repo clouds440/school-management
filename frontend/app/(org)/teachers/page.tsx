@@ -12,13 +12,18 @@ import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { TableActions } from '@/components/ui/TableActions';
-import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+import useSWR, { mutate } from 'swr';
 import { Loading } from '@/components/ui/Loading';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
-import { teachersStore } from '@/lib/teachersStore';
 
-type TeacherParams = BasePaginationParams;
+interface TeacherParams {
+    page: number;
+    limit: number;
+    search: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+}
 
 export default function TeachersPage() {
     const { token, user } = useAuth();
@@ -55,16 +60,11 @@ export default function TeachersPage() {
         sortOrder,
     };
 
-    const {
-        data: fetchedData,
-        fetching: isFetching,
-        refresh
-    } = usePaginatedData<Teacher, TeacherParams>(
-        (p) => api.org.getTeachers(token!, p),
-        teacherParams,
-        'teachers',
-        { enabled: !!token, store: teachersStore }
-    );
+    // SWR for teachers data - replaces usePaginatedData
+    const teachersKey = token ? ['teachers', teacherParams] as const : null;
+    const { data: fetchedData, isLoading: isFetching } = useSWR<
+        { data: Teacher[]; totalPages: number; totalRecords: number }
+    >(teachersKey);
 
     useEffect(() => {
         if (user && user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER) {
@@ -102,10 +102,9 @@ export default function TeachersPage() {
         if (!deletingTeacher || !token) return;
         try {
             await api.org.deleteTeacher(deletingTeacher.id, token);
-            teachersStore.invalidate();
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Teacher removed from organization', type: 'success' } });
             setDeleteDialogOpen(false);
-            refresh();
+            mutate(teachersKey);
         } catch (err: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: err instanceof Error ? err.message : 'Failed to delete teacher', type: 'error' } });
         }

@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { api } from '@/lib/api';
-import { Role, CourseMaterial, CreateCourseMaterialRequest } from '@/types';
-import { FileText, Download, ExternalLink, Trash2, Plus, Upload, X, FileImage, FileCode, Archive, Edit, Eye } from 'lucide-react';
+import { Role, CourseMaterial } from '@/types';
+import { FileText, Download, Trash2, Plus, Upload, X, FileImage, FileCode, Archive, Edit, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
 import { Modal } from '@/components/ui/Modal';
@@ -35,7 +35,7 @@ interface CourseMaterialsProps {
 
 export default memo(function CourseMaterials({ sectionId, role }: CourseMaterialsProps) {
   const { token } = useAuth();
-  const { state, dispatch } = useGlobal();
+  const { dispatch } = useGlobal();
   const dispatchRef = useRef(dispatch);
   useEffect(() => { dispatchRef.current = dispatch; }, [dispatch]);
   const [materials, setMaterials] = useState<CourseMaterial[]>([]);
@@ -86,6 +86,7 @@ export default memo(function CourseMaterials({ sectionId, role }: CourseMaterial
       await downloadFile(file.path, file.filename);
     } catch (error) {
       dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to download file', type: 'error' } });
+      console.error(error)
     }
   };
 
@@ -121,7 +122,7 @@ export default memo(function CourseMaterials({ sectionId, role }: CourseMaterial
           <FileText className="w-12 h-12 text-card-text/20 mx-auto mb-4" />
           <p className="text-card-text/40 font-bold tracking-widest text-xs">No materials uploaded yet</p>
           {canUpload && (
-            <p className="text-card-text/30 text-sm mt-2">Click "Add Material" to upload your first resource</p>
+            <p className="text-card-text/30 text-sm mt-2">Click &quot;Add Material&quot; to upload your first resource</p>
           )}
         </div>
       ) : (
@@ -366,7 +367,7 @@ function UploadMaterialModal({
         if (orgId && pendingFiles.length > 0) {
           for (const file of pendingFiles) {
             const data = await api.files.uploadFile(orgId, 'COURSE_MATERIAL', 'temp', file, token);
-            uploadedFileIds.push(data.id);
+            uploadedFileIds.push(data.id!);
           }
         }
 
@@ -387,12 +388,12 @@ function UploadMaterialModal({
         if (orgId && pendingFiles.length > 0) {
           for (const file of pendingFiles) {
             const data = await api.files.uploadFile(orgId, 'COURSE_MATERIAL', 'temp', file, token);
-            uploadedFileIds.push(data.id);
+            uploadedFileIds.push(data.id!);
           }
         }
 
         // Create material with fileIds
-        const newMaterial = await api.courseMaterials.createMaterial(
+        await api.courseMaterials.createMaterial(
           sectionId,
           { title, description, fileIds: uploadedFileIds },
           token,

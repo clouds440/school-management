@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { User, Mail, Lock, BookOpen, DollarSign, Phone, Plus, ShieldCheck, UserX, CalendarClock, MapPin } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
-import { Section, Teacher, TeacherStatus, Role, CreateTeacherRequest, UpdateTeacherRequest, ApiError } from '@/types';
+import { Section, Teacher, TeacherStatus, Role, CreateTeacherRequest, UpdateTeacherRequest } from '@/types';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
@@ -17,7 +17,6 @@ import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { teacherCreateSchema, teacherUpdateSchema, teacherProfileSchema, TeacherCreateFormData, TeacherUpdateFormData, TeacherProfileFormData } from '@/lib/schemas';
-import { teachersStore } from '@/lib/teachersStore';
 import { Toggle } from '@/components/ui/Toggle';
 
 interface TeacherFormProps {
@@ -97,10 +96,8 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
                 savedTeacher = await api.org.updateProfile<Teacher>(payload as UpdateTeacherRequest, token!);
             } else if (teacherId) {
                 savedTeacher = await api.org.updateTeacher(teacherId, payload as UpdateTeacherRequest, token!);
-                teachersStore.invalidate();
             } else {
                 savedTeacher = await api.org.createTeacher(payload as CreateTeacherRequest, token!);
-                teachersStore.invalidate();
             }
 
             // Sync global auth state if the updated teacher is the current user
@@ -135,8 +132,7 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
                 router.push('/teachers');
             }
         } catch (error: unknown) {
-            const apiError = error as ApiError;
-            const message = apiError?.response?.data?.message || 'Failed to save teacher';
+            const message = error instanceof Error ? error.message : 'Failed to save teacher';
 
             if (Array.isArray(message)) {
                 message.forEach((m: string) => dispatch({ type: 'TOAST_ADD', payload: { message: m, type: 'error' } }));

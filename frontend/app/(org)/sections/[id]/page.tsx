@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { BookOpen, GraduationCap, Users, Trophy, Calendar, MapPin, FileText } from 'lucide-react';
-import { api } from '@/lib/api';
+import useSWR from 'swr';
 import { Section, Role } from '@/types';
-import { useGlobal } from '@/context/GlobalContext';
 import { useParams } from 'next/navigation';
 import AssessmentList from '@/components/sections/AssessmentList';
 import SectionSchedules from '@/components/sections/SectionSchedules';
@@ -16,30 +14,12 @@ import { NotFound } from '@/components/NotFound';
 export default function SectionDetailPage() {
     const { token, user } = useAuth();
     const params = useParams();
-    const { state, dispatch } = useGlobal();
-    const dispatchRef = useRef(dispatch);
-    useEffect(() => { dispatchRef.current = dispatch; }, [dispatch]);
-    const [section, setSection] = useState<Section | null>(null);
-    const isLoading = state.ui.isLoading;
 
     const sectionId = params.id as string;
 
-    const fetchSection = useCallback(async () => {
-        if (!token || !sectionId) return;
-        dispatchRef.current({ type: 'UI_SET_LOADING', payload: true });
-        try {
-            const data = await api.org.getSection(sectionId, token);
-            setSection(data);
-        } catch (error) {
-            console.warn('Failed to fetch section:', error);
-        } finally {
-            dispatchRef.current({ type: 'UI_SET_LOADING', payload: false });
-        }
-    }, [token, sectionId]);
-
-    useEffect(() => {
-        fetchSection();
-    }, [fetchSection]);
+    // SWR for section data - replaces useCallback + useEffect + global loading state
+    const sectionKey = token && sectionId ? ['section-detail', sectionId] as const : null;
+    const { data: section, isLoading } = useSWR<Section>(sectionKey);
 
     if (isLoading) {
         return (

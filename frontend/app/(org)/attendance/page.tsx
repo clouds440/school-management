@@ -1,9 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { api } from '@/lib/api';
-import { ApiError, Section, Role } from '@/types';
-import { useGlobal } from '@/context/GlobalContext';
+import useSWR from 'swr';
+import { Section, PaginatedResponse } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { CheckCircle, Users, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -11,38 +9,16 @@ import { Loading } from '@/components/ui/Loading';
 
 export default function AttendanceLandingPage() {
     const { token, user } = useAuth();
-    const { dispatch } = useGlobal();
-    const [sections, setSections] = useState<Section[]>([]);
-    const [fetching, setFetching] = useState(true);
 
-    const fetchSections = useCallback(async () => {
-        if (!token) return;
-        setFetching(true);
-        try {
-            // For teachers, 'my: true' fetches sections they teach.
-            // For org managers, 'my: true' might return nothing if they aren't assigned as a teacher,
-            // but the user requirement specified: "sections assigned to the current user (teacher) are shown". 
-            // We'll fetch 'my: true' by default, meaning they must be explicitly assigned as a teacher to the section.
-            const response = await api.org.getSections(token, { my: true, limit: 100 });
-            setSections(response.data || []);
-        } catch (err: unknown) {
-            dispatch({
-                type: 'TOAST_ADD',
-                payload: { message: (err as ApiError)?.message || 'Failed to fetch sections', type: 'error' }
-            });
-        } finally {
-            setFetching(false);
-        }
-    }, [token, dispatch]);
+    // SWR for sections assigned to current user
+    const sectionsKey = token ? ['sections', { my: true, limit: 100 }] as const : null;
+    const { data: sectionsData, isLoading: fetching } = useSWR<PaginatedResponse<Section>>(sectionsKey);
+    const sections = sectionsData?.data || [];
 
-    useEffect(() => {
-        fetchSections();
-    }, [fetchSections]);
-
-    if (!user || (user.role !== Role.TEACHER && user.role !== Role.ORG_MANAGER && user.role !== Role.ORG_ADMIN && user.role !== Role.STUDENT)) {
+    if (!user) {
         return (
             <div className="flex flex-col h-full items-center justify-center p-8 text-center bg-card rounded-lg shadow-xl border border-border">
-                <p className="text-lg">Attendance portal is restricted to authorized academic personnel and students.</p>
+                <p className="text-lg">Attendance portal is restricted to authorized academic personnel.</p>
             </div>
         );
     }

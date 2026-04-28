@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { api } from '@/lib/api';
+import { useState, useMemo } from 'react';
+import useSWR from 'swr';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { Loading } from '@/components/ui/Loading';
 import AttendanceSheet from '@/components/sections/AttendanceSheet';
-import { ApiError, AttendanceRecord, Role, RangeAttendanceResponse, AttendanceStatus } from '@/types';
+import { AttendanceRecord, Role, RangeAttendanceResponse, AttendanceStatus } from '@/types';
 import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -14,60 +14,33 @@ export default function Attendance() {
     const { token, user } = useAuth();
     const { dispatch } = useGlobal();
 
-    const [records, setRecords] = useState<AttendanceRecord[]>([]);
-    const [fetching, setFetching] = useState(true);
     const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
-    const [rangeData, setRangeData] = useState<RangeAttendanceResponse | null>(null);
-    const [fetchingDetail, setFetchingDetail] = useState(false);
 
-    // Fetch overall student records for cards
-    const fetchAttendance = useCallback(async () => {
-        if (!token || !user || user.role !== Role.STUDENT) return;
-        setFetching(true);
-        try {
-            const data = await api.org.getStudentAttendance(user.id, token);
-            setRecords(data || []);
-        } catch (error: unknown) {
+    // SWR: Primary fetch for overall student attendance records (overview cards)
+    const attendanceKey = token && user?.role === Role.STUDENT
+        ? ['student-attendance', user.id] as const
+        : null;
+    const { data: records = [], isLoading: fetching } = useSWR<AttendanceRecord[]>(attendanceKey, {
+        onError: (error) => {
             dispatch({
                 type: 'TOAST_ADD',
-                payload: { message: (error as ApiError)?.message || 'Failed to fetch attendance', type: 'error' }
+                payload: { message: error?.message || 'Failed to fetch attendance', type: 'error' }
             });
-        } finally {
-            setFetching(false);
         }
-    }, [token, user, dispatch]);
+    });
 
-    // Fetch monthly range data for drill-down
-    const fetchSectionMonthly = useCallback(async (sectionId: string) => {
-        if (!token) return;
-        setFetchingDetail(true);
-        try {
-            const now = new Date();
-            const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-            const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-            const data = await api.org.getSectionAttendanceRange(sectionId, start, end, token);
-            setRangeData(data);
-        } catch (error: unknown) {
+    // SWR: Dependent fetch for monthly range data (drill-down when section selected)
+    const rangeKey = token && selectedSectionId
+        ? ['section-attendance-range', selectedSectionId] as const
+        : null;
+    const { data: rangeData, isLoading: fetchingDetail } = useSWR<RangeAttendanceResponse>(rangeKey, {
+        onError: (error) => {
             dispatch({
                 type: 'TOAST_ADD',
-                payload: { message: (error as ApiError)?.message || 'Failed to fetch section details', type: 'error' }
+                payload: { message: error?.message || 'Failed to fetch section details', type: 'error' }
             });
-        } finally {
-            setFetchingDetail(false);
         }
-    }, [token, dispatch]);
-
-    useEffect(() => {
-        fetchAttendance();
-    }, [fetchAttendance]);
-
-    useEffect(() => {
-        if (selectedSectionId) {
-            fetchSectionMonthly(selectedSectionId);
-        } else {
-            setRangeData(null);
-        }
-    }, [selectedSectionId, fetchSectionMonthly]);
+    });
 
     // Group records by section for overview cards
     const sectionSummaries = useMemo(() => {

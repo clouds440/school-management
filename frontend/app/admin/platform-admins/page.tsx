@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Users, Mail, MessageSquare, Calendar, UserPlus } from 'lucide-react';
@@ -11,10 +11,16 @@ import { ModalForm } from '@/components/ui/ModalForm';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useGlobal } from '@/context/GlobalContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+import useSWR, { mutate } from 'swr';
 import { Button } from '@/components/ui/Button';
 
-type PlatformAdminParams = BasePaginationParams;
+interface PlatformAdminParams {
+    page: number;
+    limit: number;
+    search: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+}
 
 export default function PlatformAdminsPage() {
     const { user, token, loading } = useAuth();
@@ -23,8 +29,6 @@ export default function PlatformAdminsPage() {
     const pathname = usePathname();
     const { state, dispatch } = useGlobal();
     const actionLoading = Object.keys(state.ui.processing).length > 0;
-
-    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<PlatformAdmin> | null>(null);
 
     // URL State
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -48,16 +52,11 @@ export default function PlatformAdminsPage() {
         sortOrder,
     };
 
-    const {
-        data: fetchedData,
-        fetching,
-        refresh
-    } = usePaginatedData<PlatformAdmin, PlatformAdminParams>(
-        (p) => api.admin.getPlatformAdmins(token!, p),
-        adminParams,
-        'platform-admins',
-        { enabled: !!token }
-    );
+    // SWR for platform admins data - replaces usePaginatedData
+    const adminsKey = token ? ['platform-admins', adminParams] as const : null;
+    const { data: fetchedData, isLoading: fetching } = useSWR<
+        PaginatedResponse<PlatformAdmin>
+    >(adminsKey);
 
     const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
     const [adminModalMode, setAdminModalMode] = useState<'CREATE' | 'EDIT'>('CREATE');
@@ -66,9 +65,7 @@ export default function PlatformAdminsPage() {
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-    useEffect(() => {
-        setPaginatedData(fetchedData);
-    }, [fetchedData]);
+    const paginatedData = fetchedData || null;
 
     const updateQueryParams = (updates: Record<string, string | number | undefined>) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -106,7 +103,7 @@ export default function PlatformAdminsPage() {
             dispatch({ type: 'UI_START_PROCESSING', payload: 'platform-admin-submit' });
             if (adminModalMode === 'CREATE') {
                 await api.admin.createPlatformAdmin(adminFormData, token);
-                refresh();
+                mutate(adminsKey);
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Platform Admin created successfully', type: 'success' } });
             } else if (operatingAdmin) {
                 await api.admin.updatePlatformAdmin(operatingAdmin.id, {
@@ -114,7 +111,7 @@ export default function PlatformAdminsPage() {
                     phone: adminFormData.phone,
                     ...(adminFormData.password ? { password: adminFormData.password } : {})
                 }, token);
-                refresh();
+                mutate(adminsKey);
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Platform Admin updated successfully', type: 'success' } });
             }
             setIsAdminModalOpen(false);
@@ -137,7 +134,7 @@ export default function PlatformAdminsPage() {
         try {
             dispatch({ type: 'UI_START_PROCESSING', payload: `platform-admin-delete-${operatingAdmin.id}` });
             await api.admin.deletePlatformAdmin(operatingAdmin.id, token);
-            refresh();
+            mutate(adminsKey);
             dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingAdmin.name} deleted successfully`, type: 'success' } });
             setIsDeleteModalOpen(false);
             setOperatingAdmin(null);

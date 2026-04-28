@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
-import { ApiError, Section, SectionSchedule } from '@/types';
+import React from 'react';
+import useSWR from 'swr';
+import { Section, SectionSchedule } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { Loading } from '@/components/ui/Loading';
@@ -11,49 +11,91 @@ import Link from 'next/link';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-interface SectionWithSchedules extends Section {
-    schedules?: SectionSchedule[];
+// Individual section card with its own schedule fetch
+// This pattern avoids React hooks violation by calling useSWR at component level
+function SectionScheduleCard({ section }: { section: Section; token: string }) {
+    const { data: schedulesData, isLoading: schedulesLoading } = useSWR<{ data: SectionSchedule[] }>(
+        ['schedules', section.id] as const
+    );
+    const schedules = schedulesData?.data || [];
+
+    return (
+        <div className="group bg-card border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300 shadow-lg hover:shadow-primary/5">
+            <div className="p-4 md:p-6 bg-linear-to-br from-primary/5 via-transparent to-transparent border-b border-border/50 flex items-center justify-between">
+                <div className="flex items-center gap-3 md:gap-4">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-300">
+                        <CalendarDays className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg md:text-xl font-black tracking-tighter">{section.name}</h3>
+                        <p className="text-[10px] font-black text-muted-foreground tracking-widest">{section.course?.name}</p>
+                    </div>
+                </div>
+                <Link
+                    href={`/sections/${section.id}`}
+                    className="p-2 md:p-3 rounded-lg bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-all group/btn"
+                >
+                    <ChevronRight className="w-4 h-4 md:w-5 md:h-5 group-hover/btn:translate-x-1 transition-transform" />
+                </Link>
+            </div>
+
+            <div className="p-4 md:p-6 space-y-3 md:space-y-4">
+                {schedulesLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    </div>
+                ) : schedules.length === 0 ? (
+                    <div className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/40 italic p-3 md:p-4 border border-dashed border-border/50 rounded-xl text-center">
+                        No time-slots allocated for this section
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
+                        {schedules.map((schedule: SectionSchedule, idx: number) => (
+                            <div key={idx} className="flex flex-col gap-2 p-3 md:p-4 bg-muted/20 rounded-xl border border-border/50">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-black tracking-widest text-primary">{DAY_NAMES[schedule.day]}</span>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-primary/30"></div>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2 text-[11px] font-bold text-foreground">
+                                        <Clock className="w-3.5 h-3.5 text-primary/60" />
+                                        {schedule.startTime} - {schedule.endTime}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground">
+                                        <MapPin className="w-3.5 h-3.5 text-primary/60" />
+                                        {schedule.room || section.room || 'Venue TBD'}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 }
 
 export default function SchedulesPage() {
     const { token } = useAuth();
     const { dispatch } = useGlobal();
-    const [sections, setSections] = useState<SectionWithSchedules[]>([]);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (!token) return;
-        
-        const fetchAllData = async () => {
-            setLoading(true);
-            try {
-                // Fetch sections first
-                const response = await api.org.getSections(token, { limit: 100 });
-                const sectionData = response.data || [];
-                
-                // Now fetch schedules for each section (since getSections doesn't include them)
-                const sectionsWithSchedules = await Promise.all(
-                    sectionData.map(async (section: Section): Promise<SectionWithSchedules> => {
-                        const schedules = await api.org.getSchedules(section.id, token);
-                        return { ...section, schedules };
-                    })
-                );
-                
-                setSections(sectionsWithSchedules);
-            } catch (err: unknown) {
-                dispatch({
-                    type: 'TOAST_ADD',
-                    payload: { message: (err as ApiError)?.message || 'Failed to load schedules', type: 'error' }
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
+    // Fetch all sections first
+    const sectionsKey = token ? ['sections-for-schedules', { limit: 100 }] as const : null;
+    const { data: sectionsData, isLoading: sectionsLoading, error: sectionsError } = useSWR<{ data: Section[] }>(sectionsKey);
 
-        fetchAllData();
-    }, [token, dispatch]);
+    const sections = sectionsData?.data || [];
 
-    if (loading) return <Loading fullScreen text="Synchronizing Time-slots..." size="lg" />;
+    // Show error toast
+    React.useEffect(() => {
+        if (sectionsError) {
+            dispatch({
+                type: 'TOAST_ADD',
+                payload: { message: 'Failed to load schedules', type: 'error' }
+            });
+        }
+    }, [sectionsError, dispatch]);
+
+    if (sectionsLoading) return <Loading fullScreen text="Synchronizing Time-slots..." size="lg" />;
 
     return (
         <div className="flex flex-col h-full w-full space-y-6 pb-6">
@@ -79,54 +121,7 @@ export default function SchedulesPage() {
                         </div>
                     ) : (
                         sections.map((section) => (
-                            <div key={section.id} className="group bg-card border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300 shadow-lg hover:shadow-primary/5">
-                                <div className="p-4 md:p-6 bg-linear-to-br from-primary/5 via-transparent to-transparent border-b border-border/50 flex items-center justify-between">
-                                    <div className="flex items-center gap-3 md:gap-4">
-                                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-300">
-                                            <CalendarDays className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg md:text-xl font-black tracking-tighter">{section.name}</h3>
-                                            <p className="text-[10px] font-black text-muted-foreground tracking-widest">{section.course?.name}</p>
-                                        </div>
-                                    </div>
-                                    <Link 
-                                        href={`/sections/${section.id}`}
-                                        className="p-2 md:p-3 rounded-lg bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-all group/btn"
-                                    >
-                                        <ChevronRight className="w-4 h-4 md:w-5 md:h-5 group-hover/btn:translate-x-1 transition-transform" />
-                                    </Link>
-                                </div>
-
-                                <div className="p-4 md:p-6 space-y-3 md:space-y-4">
-                                    {(!section.schedules || section.schedules.length === 0) ? (
-                                        <div className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/40 italic p-3 md:p-4 border border-dashed border-border/50 rounded-xl text-center">
-                                            No time-slots allocated for this section
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
-                                            {section.schedules.map((schedule: SectionSchedule, idx: number) => (
-                                                <div key={idx} className="flex flex-col gap-2 p-3 md:p-4 bg-muted/20 rounded-xl border border-border/50">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-xs font-black tracking-widest text-primary">{DAY_NAMES[schedule.day]}</span>
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary/30"></div>
-                                                    </div>
-                                                    <div className="flex flex-col gap-1">
-                                                        <div className="flex items-center gap-2 text-[11px] font-bold text-foreground">
-                                                            <Clock className="w-3.5 h-3.5 text-primary/60" />
-                                                            {schedule.startTime} - {schedule.endTime}
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground">
-                                                            <MapPin className="w-3.5 h-3.5 text-primary/60" />
-                                                            {schedule.room || section.room || 'Venue TBD'}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                            <SectionScheduleCard key={section.id} section={section} token={token!} />
                         ))
                     )}
                 </div>

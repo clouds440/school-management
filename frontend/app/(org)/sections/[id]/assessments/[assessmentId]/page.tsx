@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Trophy, Users, Calendar, CheckCircle2, Link as LinkIcon, Download } from 'lucide-react';
-import { api } from '@/lib/api';
+import useSWR, { mutate } from 'swr';
 import { Assessment, Section, Grade, Submission, Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
 import { useParams } from 'next/navigation';
@@ -22,49 +22,32 @@ export default function AssessmentDetailPage() {
     const params = useParams();
     const { dispatch } = useGlobal();
 
-    const [assessment, setAssessment] = useState<Assessment | null>(null);
-    const [section, setSection] = useState<Section | null>(null);
-    const [grades, setGrades] = useState<Grade[]>([]);
-    const [submissions, setSubmissions] = useState<Submission[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [showBulkGrading, setShowBulkGrading] = useState(false);
-    const [resourceExists, setResourceExists] = useState<boolean | null>(null);
-
-    const isAssigned = section?.teachers?.some(t => t.user?.id === userId);
-    const canGrade = (role === Role.TEACHER || role === Role.ORG_MANAGER) && isAssigned;
-    const isTeacherOrAdmin = role === Role.TEACHER || role === Role.ORG_ADMIN || role === Role.ORG_MANAGER;
 
     const sectionId = params.id as string;
     const assessmentId = params.assessmentId as string;
 
-    const fetchData = useCallback(async () => {
-        if (!token || !sectionId || !assessmentId) return;
-        setIsLoading(true);
-        try {
-            const [assessmentData, sectionData, gradesData, submissionsData] = await Promise.all([
-                api.org.getAssessment(assessmentId, token),
-                api.org.getSection(sectionId, token),
-                api.org.getGrades(assessmentId, token),
-                api.org.getSubmissions(assessmentId, token)
-            ]);
+    // SWR for assessment detail - composite key with parallel fetching
+    const assessmentKey = token && sectionId && assessmentId
+        ? ['assessment-detail', sectionId, assessmentId] as const
+        : null;
+    const { data: assessmentData, isLoading } = useSWR<{
+        assessment: Assessment;
+        section: Section;
+        grades: Grade[];
+        submissions: Submission[];
+    }>(assessmentKey);
 
-            setAssessment(assessmentData);
-            setSection(sectionData);
-            setGrades(gradesData);
-            setSubmissions(submissionsData);
-            setResourceExists(true);
-        } catch (error: unknown) {
-            console.warn('Failed to fetch assessment details:', error);
-            setResourceExists(false);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [token, sectionId, assessmentId]);
+    const assessment = assessmentData?.assessment || null;
+    const section = assessmentData?.section || null;
+    const grades = assessmentData?.grades || [];
+    const submissions = assessmentData?.submissions || [];
+    const resourceExists = assessmentData ? true : (isLoading ? null : false);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    const isAssigned = section?.teachers?.some(t => t.user?.id === userId);
+    const canGrade = (role === Role.TEACHER || role === Role.ORG_MANAGER) && isAssigned;
+    const isTeacherOrAdmin = role === Role.TEACHER || role === Role.ORG_ADMIN || role === Role.ORG_MANAGER;
 
     if (isLoading) {
         return (
@@ -286,7 +269,7 @@ export default function AssessmentDetailPage() {
                     assessment={assessment}
                     section={section}
                     existingGrades={grades}
-                    onSuccess={fetchData}
+                    onSuccess={() => mutate(assessmentKey)}
                 />
             )}
 
@@ -307,12 +290,8 @@ export default function AssessmentDetailPage() {
                             student={student}
                             totalMarks={assessment.totalMarks}
                             initialData={grades.find(g => g.studentId === selectedStudentId)}
-                            onSuccess={(g) => {
-                                setGrades(prev => {
-                                    const index = prev.findIndex(item => item.id === g.id);
-                                    if (index !== -1) return prev.map(item => item.id === g.id ? g : item);
-                                    return [...prev, g];
-                                });
+                            onSuccess={() => {
+                                mutate(assessmentKey);
                                 setSelectedStudentId(null);
                                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Grade saved successfully', type: 'success' } });
                             }}

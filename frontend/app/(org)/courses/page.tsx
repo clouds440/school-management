@@ -15,12 +15,16 @@ import { TableActions } from '@/components/ui/TableActions';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { useGlobal } from '@/context/GlobalContext';
-import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+import useSWR, { mutate } from 'swr';
 import { Loading } from '@/components/ui/Loading';
-import { coursesStore } from '@/lib/coursesStore';
 import { Toggle } from '@/components/ui/Toggle';
 
-interface CourseParams extends BasePaginationParams {
+interface CourseParams {
+    page: number;
+    limit: number;
+    search: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
     my?: boolean;
 }
 
@@ -57,16 +61,11 @@ export default function CoursesPage() {
         my: user?.role === Role.TEACHER ? true : (showOnlyMyCourses || undefined)
     };
 
-    const {
-        data: fetchedData,
-        fetching: isFetching,
-        refresh
-    } = usePaginatedData<Course, CourseParams>(
-        (p) => api.org.getCourses(token!, p),
-        courseParams,
-        'courses',
-        { enabled: !!token, store: coursesStore }
-    );
+    // SWR for courses data - replaces usePaginatedData
+    const coursesKey = token ? ['courses', courseParams] as const : null;
+    const { data: fetchedData, isLoading: isFetching } = useSWR<
+        { data: Course[]; totalPages: number; totalRecords: number }
+    >(coursesKey);
 
     useEffect(() => {
         if (user && user.role === Role.STUDENT) {
@@ -107,10 +106,9 @@ export default function CoursesPage() {
         dispatch({ type: 'UI_START_PROCESSING', payload: 'course-edit' });
         try {
             await api.org.updateCourse(editingCourse.id, editFormData, token);
-            coursesStore.invalidate();
             setEditModalOpen(false);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Course updated successfully', type: 'success' } });
-            refresh();
+            mutate(coursesKey);
         } catch (err: unknown) {
             const apiError = err as ApiError;
             const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Error updating course';
@@ -125,10 +123,9 @@ export default function CoursesPage() {
         if (!deletingCourse || !token) return;
         try {
             await api.org.deleteCourse(deletingCourse.id, token);
-            coursesStore.invalidate();
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Course deleted successfully', type: 'success' } });
             setDeleteDialogOpen(false);
-            refresh();
+            mutate(coursesKey);
         } catch (err: unknown) {
             const apiError = err as ApiError;
             const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Error deleting course';

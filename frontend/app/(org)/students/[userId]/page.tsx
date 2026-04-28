@@ -1,13 +1,12 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
+import useSWR from 'swr';
 import { useGlobal } from '@/context/GlobalContext';
-import { Section, FinalGradeResponse, Student, Role, Assessment, DashboardInsights } from '@/types';
+import { Section, FinalGradeResponse, Student, Role, Assessment, DashboardInsights, PaginatedResponse } from '@/types';
 import { ShieldOff, GraduationCap } from 'lucide-react';
-import Link from 'next/link';
 import { Loading } from '@/components/ui/Loading';
 import { NotFound } from '@/components/NotFound';
 
@@ -26,86 +25,59 @@ function StudentPortalContent() {
     const { user, token } = useAuth();
     const { state, dispatch } = useGlobal();
 
-    const [sections, setSections] = useState<Section[]>([]);
-    const [grades, setGrades] = useState<FinalGradeResponse[]>([]);
-    const [assessments, setAssessments] = useState<Assessment[]>([]);
-    const [insights, setInsights] = useState<DashboardInsights | null>(null);
-    const [fetchingData, setFetchingData] = useState(false);
-    const [studentExists, setStudentExists] = useState<boolean | null>(null);
-    const [validating, setValidating] = useState(true);
-
     const profile = state.auth.userProfile as Student | null;
+    const userId = params.userId as string;
 
+    // SWR: Validation fetch (runs in parallel with data, NOT blocking)
+    const validationKey = token && userId ? ['validate-student', userId] as const : null;
+    const { data: studentData, error: validationError, isLoading: validating } = useSWR<Student>(validationKey);
+
+    // SWR: Data fetches (run in parallel, NOT gated on validation)
+    const shouldFetchData = token && user;
+
+    const sectionsKey = shouldFetchData ? ['student-sections', { my: true }] as const : null;
+    const { data: sectionsData, isLoading: sectionsLoading } = useSWR<PaginatedResponse<Section>>(sectionsKey);
+
+    const gradesKey = shouldFetchData && user?.id ? ['student-grades', user.id] as const : null;
+    const { data: grades, isLoading: gradesLoading } = useSWR<FinalGradeResponse[]>(gradesKey);
+
+    const assessmentsKey = shouldFetchData ? ['student-assessments', {}] as const : null;
+    const { data: assessments, isLoading: assessmentsLoading } = useSWR<Assessment[]>(assessmentsKey);
+
+    const insightsKey = shouldFetchData ? ['student-insights'] as const : null;
+    const { data: insights, isLoading: insightsLoading } = useSWR<DashboardInsights>(insightsKey);
+
+    // Derived states
+    const studentExists = validationError ? false : (studentData ? true : null);
+    const isDataLoading = sectionsLoading || gradesLoading || assessmentsLoading || insightsLoading;
+    const sections = sectionsData?.data || [];
+
+    // Handle hash scroll
     useEffect(() => {
-        if (!token || !user) return;
-
-        // Scroll to section if hash is present
         const hash = window.location.hash;
         if (hash) {
-            const elementId = hash.substring(1); // Remove the # symbol
+            const elementId = hash.substring(1);
             const element = document.getElementById(elementId);
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
+    }, []);
 
-        // Validate that the student exists in the database and check authorization
-        const validateStudentExists = async () => {
-            setValidating(true);
-            try {
-                // Fetch student by userId to validate existence and get student record
-                const student = await api.org.getStudentByUserId(params.userId as string, token);
+    // Authorization effect - handles redirects based on validation and role
+    useEffect(() => {
+        if (!user || !studentData) return;
 
-                // Role Guard: Only Student self-view
-                const isAuthorized = user.role === Role.STUDENT && user.id === params.userId;
+        const isAuthorized = user.role === Role.STUDENT && user.id === userId;
 
-                if (!isAuthorized) {
-                    if (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER) {
-                        router.push(`/students/edit/${student.id}`);
-                        return;
-                    } else {
-                        setStudentExists(false);
-                        dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied. You are not authorized to view this portal.', type: 'error' } });
-                        return;
-                    }
-                }
-
-                // Only set studentExists to true after authorization passes
-                setStudentExists(!!student);
-            } catch (error) {
-                console.warn('Failed to fetch student:', error);
-                setStudentExists(false);
-            } finally {
-                setValidating(false);
+        if (!isAuthorized) {
+            if (user.role === Role.ORG_ADMIN || user.role === Role.ORG_MANAGER) {
+                router.push(`/students/edit/${studentData.id}`);
+            } else {
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'Access Denied. You are not authorized to view this portal.', type: 'error' } });
             }
-        };
-
-        validateStudentExists();
-
-        const fetchData = async () => {
-            setFetchingData(true);
-
-            try {
-                const [sectionsData, gradesData, assessmentsData, insightsData] = await Promise.all([
-                    api.org.getSections(token, { my: true }),
-                    api.org.getStudentFinalGrades(token, user.id),
-                    api.org.getAssessments(token, {}),
-                    api.org.getInsights(token),
-                ]);
-
-                setSections(sectionsData.data || []);
-                setGrades(gradesData);
-                setAssessments(assessmentsData);
-                setInsights(insightsData);
-            } catch (err) {
-                console.warn('Failed to fetch other student data:', err);
-            } finally {
-                setFetchingData(false);
-            }
-        };
-
-        fetchData();
-    }, [token, dispatch, user, params.userId]);
+        }
+    }, [user, studentData, userId, router, dispatch]);
 
     if (validating) {
         return (
@@ -131,7 +103,7 @@ function StudentPortalContent() {
         );
     }
 
-    if (fetchingData || state.auth.loading) {
+    if (isDataLoading || state.auth.loading) {
         return (
             <div className="flex flex-1 items-center justify-center h-full py-20">
                 <Loading size="lg" />
@@ -154,10 +126,10 @@ function StudentPortalContent() {
             )}
 
             <div className="mt-4">
-                {tab === 'overview' && <Overview insights={insights} />}
+                {tab === 'overview' && <Overview insights={insights || null} />}
                 {tab === 'courses' && <Courses sections={sections} />}
-                {tab === 'assessments' && <Assessments assessments={assessments} sections={sections} />}
-                {tab === 'grades' && <Grades grades={grades} />}
+                {tab === 'assessments' && <Assessments assessments={assessments || []} sections={sections} />}
+                {tab === 'grades' && <Grades grades={grades || []} />}
                 {tab === 'attendance' && <Attendance />}
                 {tab === 'profile' && <Profile profile={profile} />}
             </div>

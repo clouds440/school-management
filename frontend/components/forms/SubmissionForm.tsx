@@ -9,7 +9,7 @@ import { useGlobal } from '@/context/GlobalContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Upload, FileCheck } from 'lucide-react';
-import { Submission, ApiError } from '@/types';
+import { Submission } from '@/types';
 
 const submissionSchema = z.object({
     fileUrl: z.string().url('Please provide a valid URL for your submission').or(z.literal('')),
@@ -45,9 +45,8 @@ export default function SubmissionForm({ assessmentId, onSuccess, onCancel }: Su
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Work submitted successfully!', type: 'success' } });
             onSuccess(submission);
         } catch (error: unknown) {
-            const apiError = error as ApiError;
             console.error('Submission failed:', error);
-            const message = apiError?.response?.data?.message || 'Failed to submit work';
+            const message = error instanceof Error ? error.message : 'Failed to submit work';
             dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
             dispatch({ type: 'UI_STOP_PROCESSING', payload: 'submission-submit' });

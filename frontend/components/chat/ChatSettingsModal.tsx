@@ -79,6 +79,9 @@ export function ChatSettingsModal({
             // 1. Upload the file
             const res = await api.files.uploadFile(uploadOrgId, 'chat_avatar', chat.id, file, token);
             const newAvatarUrl = res.url || res.path;
+            if (!newAvatarUrl) {
+                throw new Error('Upload failed: no URL returned');
+            }
             setAvatarUrl(newAvatarUrl);
 
             // 2. Immediate live update to the group chat record

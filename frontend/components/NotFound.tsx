@@ -25,7 +25,7 @@ export function NotFound({ page = 'page', showBackBtn = true}: NotFoundProps) {
                         {page} Not Found
                     </h1>
                     <p className="text-muted-foreground text-sm md:text-base">
-                        The {page} you're looking for doesn't exist or has been moved.
+                        The {page} you&apos;re looking for doesn&apos;t exist or has been moved.
                     </p>
                 </div>
 

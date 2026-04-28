@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
 import { api } from '@/lib/api';
-import { coursesStore } from '@/lib/coursesStore';
+import { mutate } from 'swr';
 
 export default function CreateCoursePage() {
     const { token, user } = useAuth();
@@ -45,7 +45,8 @@ export default function CreateCoursePage() {
 
         try {
             await api.org.createCourse(formData, token);
-            coursesStore.invalidate();
+            // Invalidate courses cache using SWR mutate
+            mutate((key) => Array.isArray(key) && key[0] === 'courses');
             window.dispatchEvent(new Event('stats-updated'));
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Course created successfully', type: 'success' } });
             router.push('/courses');

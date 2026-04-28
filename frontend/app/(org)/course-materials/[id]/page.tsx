@@ -1,45 +1,24 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { BookOpen, GraduationCap, Users, Calendar, MapPin, FileText, ArrowLeft } from 'lucide-react';
-import { api } from '@/lib/api';
+import { BookOpen, GraduationCap, Calendar, MapPin, FileText } from 'lucide-react';
+import useSWR from 'swr';
 import { Section, Role } from '@/types';
-import { useGlobal } from '@/context/GlobalContext';
 import { useParams } from 'next/navigation';
 import CourseMaterials from '@/components/sections/CourseMaterials';
 import { Loading } from '@/components/ui/Loading';
-import { Button } from '@/components/ui/Button';
 import { NotFound } from '@/components/NotFound';
 
 export default function CourseMaterialsPage() {
     const { token, user } = useAuth();
     const params = useParams();
-    const { dispatch } = useGlobal();
-    const [section, setSection] = useState<Section | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [sectionExists, setSectionExists] = useState<boolean | null>(null);
 
     const sectionId = params.id as string;
 
-    const fetchSection = useCallback(async () => {
-        if (!token || !sectionId) return;
-        setIsLoading(true);
-        try {
-            const data = await api.org.getSection(sectionId, token);
-            setSection(data);
-            setSectionExists(true);
-        } catch (error) {
-            console.warn('Failed to fetch section:', error);
-            setSectionExists(false);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [token, sectionId]);
-
-    useEffect(() => {
-        fetchSection();
-    }, [fetchSection]);
+    // SWR for section data
+    const sectionKey = token && sectionId ? ['section-materials', sectionId] as const : null;
+    const { data: section, isLoading, error } = useSWR<Section>(sectionKey);
+    const sectionExists = error ? false : (section ? true : null);
 
     if (isLoading) {
         return (

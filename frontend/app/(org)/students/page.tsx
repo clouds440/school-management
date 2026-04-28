@@ -13,14 +13,18 @@ import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { TableActions } from '@/components/ui/TableActions';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+import useSWR, { mutate } from 'swr';
 import { Loading } from '@/components/ui/Loading';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
-import { studentsStore } from '@/lib/studentsStore';
 import { Toggle } from '@/components/ui/Toggle';
 
-interface StudentParams extends BasePaginationParams {
+interface StudentParams {
+    page: number;
+    limit: number;
+    search: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
     my?: boolean;
     sectionId?: string;
 }
@@ -35,7 +39,14 @@ export default function StudentsPage() {
     // Redundant paginatedData state removed
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-    const [sections, setSections] = useState<Section[]>([]);
+
+    // SWR for sections (for filter dropdown) - replaces useEffect
+    const sectionsKey = token && (user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER)
+        ? ['sections', { my: user.role === Role.TEACHER, limit: 100 }] as const
+        : null;
+    const { data: sectionsData } = useSWR<{ data: Section[] }>(sectionsKey);
+    const sections = sectionsData?.data || [];
+
     const [newMailOpen, setNewMailOpen] = useState(false);
     const [initialTargetId, setInitialTargetId] = useState<string | undefined>(undefined);
     const [initialSubject, setInitialSubject] = useState<string | undefined>(undefined);
@@ -65,30 +76,17 @@ export default function StudentsPage() {
         sectionId: sectionId || undefined
     };
 
-    const {
-        data: fetchedData,
-        fetching: isFetching,
-        refresh
-    } = usePaginatedData<Student, StudentParams>(
-        (p) => api.org.getStudents(token!, p),
-        studentParams,
-        'students',
-        { enabled: !!token, store: studentsStore }
-    );
+    // SWR for students data - replaces usePaginatedData
+    const studentsKey = token ? ['students', studentParams] as const : null;
+    const { data: fetchedData, isLoading: isFetching } = useSWR<
+        { data: Student[]; totalPages: number; totalRecords: number }
+    >(studentsKey);
 
     useEffect(() => {
         if (user && user.role === Role.STUDENT) {
             router.replace(`/students/${user.id}`);
         }
     }, [user, router]);
-
-    useEffect(() => {
-        if (token && (user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER)) {
-            api.org.getSections(token, { my: user.role === Role.TEACHER, limit: 100 }).then(res => {
-                setSections(res.data);
-            }).catch(err => console.error('Failed to fetch sections:', err));
-        }
-    }, [token, user]);
 
     const updateQueryParams = (updates: Record<string, string | number | undefined | boolean>) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -230,10 +228,9 @@ export default function StudentsPage() {
         if (!selectedStudent || !token) return;
         try {
             await api.org.deleteStudent(selectedStudent.id, token);
-            studentsStore.invalidate();
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Student removed successfully', type: 'success' } });
             setIsDeleteDialogOpen(false);
-            refresh();
+            mutate(studentsKey);
         } catch (error: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to delete student', type: 'error' } });
         }

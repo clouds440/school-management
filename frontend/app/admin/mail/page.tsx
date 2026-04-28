@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { Filter, MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Hash, Calendar, Clock, MailPlus } from 'lucide-react';
+import useSWR, { mutate } from 'swr';
 import { api } from '@/lib/api';
-import { MailItem, MailStatus, Role, PaginatedResponse, ApiError } from '@/types';
+import { MailItem, MailStatus, Role, PaginatedResponse } from '@/types';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -27,10 +28,8 @@ export default function MailPage() {
     const searchParams = useSearchParams();
     const getRowClassName = useMailRowClassName();
 
-    const [paginatedData, setPaginatedData] = useState<PaginatedResponse<MailItem> | null>(null);
     const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
     const [newMailOpen, setNewMailOpen] = useState(false);
-    const [fetching, setFetching] = useState(false);
 
     const [pageSize, setPageSize] = useState<number>(() => {
         if (typeof window !== 'undefined') {
@@ -59,33 +58,26 @@ export default function MailPage() {
         router.push(`${pathname}?${params.toString()}`);
     };
 
-    const fetchMails = useCallback(async () => {
-        if (!token) return;
-        try {
-            setFetching(true);
-            const [data, stats] = await Promise.all([
-                api.mail.getMails(token, {
-                    page,
-                    limit: pageSize,
-                    search: searchQuery,
-                    sortBy,
-                    sortOrder,
-                    status: statusFilter !== 'ALL' ? statusFilter : undefined,
-                }),
-                api.mail.getUnreadCount(token)
-            ]);
-            setPaginatedData(data);
-            // Sync with global state
-            dispatch({ type: 'STATS_SET_MAIL', payload: stats });
-        } catch (error: unknown) {
-            const apiError = error as ApiError;
-            const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Failed to fetch mail';
-            const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : rawMessage;
-            dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
-        } finally {
-            setFetching(false);
+    // SWR for mails data - replaces fetchMails callback
+    const mailsKey = token ? ['mails', {
+        page,
+        limit: pageSize,
+        search: searchQuery,
+        sortBy,
+        sortOrder,
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+    }] as const : null;
+
+    const { data: paginatedData, isLoading: fetching } = useSWR<PaginatedResponse<MailItem>>(mailsKey);
+
+    // Sync stats when data loads
+    useEffect(() => {
+        if (token && paginatedData) {
+            api.mail.getUnreadCount(token).then((stats: { total: number; unread: number; countsByStatus: Record<string, number> }) => {
+                dispatch({ type: 'STATS_SET_MAIL', payload: stats });
+            }).catch(() => {});
         }
-    }, [token, page, searchQuery, sortBy, sortOrder, statusFilter, pageSize, dispatch]);
+    }, [token, paginatedData, dispatch]);
 
     const { subscribe } = useSocket({
         token: token,
@@ -96,10 +88,9 @@ export default function MailPage() {
 
     useEffect(() => {
         if (!authLoading && user && (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && token) {
-            fetchMails();
             api.notifications.clearCategory('MAIL', token).catch(console.error);
         }
-    }, [authLoading, user, token, fetchMails]);
+    }, [authLoading, user, token]);
 
     useEffect(() => {
         const mid = searchParams.get('mailId');
@@ -109,28 +100,18 @@ export default function MailPage() {
     }, [searchParams]);
 
     useEffect(() => {
-        // Debounce full list refreshes to avoid storms from many socket events
-        const timerRef: { current: number | null } = { current: null };
-        const scheduleFetch = () => {
-            if (timerRef.current) window.clearTimeout(timerRef.current);
-            timerRef.current = window.setTimeout(() => {
-                fetchMails();
-                timerRef.current = null;
-            }, 1000);
-        };
-
+        // Socket events trigger SWR revalidation directly
         const unsubs = [
-            subscribe('unread:update', scheduleFetch),
-            subscribe('mail:new', scheduleFetch),
-            subscribe('mail:message', scheduleFetch),
-            subscribe('mail:update', scheduleFetch)
+            subscribe('unread:update', () => mutate(mailsKey)),
+            subscribe('mail:new', () => mutate(mailsKey)),
+            subscribe('mail:message', () => mutate(mailsKey)),
+            subscribe('mail:update', () => mutate(mailsKey))
         ];
 
         return () => {
             unsubs.forEach(u => u());
-            if (timerRef.current) window.clearTimeout(timerRef.current);
         };
-    }, [subscribe, fetchMails]);
+    }, [subscribe, mailsKey]);
 
     const handleViewMail = (item: MailItem) => {
         setSelectedMailId(item.id);
@@ -199,7 +180,7 @@ export default function MailPage() {
                 <div className="flex items-center gap-2">
                     {row.assignees && row.assignees.length > 0 ? (
                         <>
-                                        <div className="flex -space-x-2 mr-1">
+                            <div className="flex -space-x-2 mr-1">
                                 {row.assignees.slice(0, 2).map((a) => (
                                     <div key={a.id} className="w-7 h-7 border-2 border-border rounded-full bg-card/5 shadow-sm">
                                         <BrandIcon variant="user" size="sm" user={a} className="w-full h-full" />
@@ -246,7 +227,7 @@ export default function MailPage() {
         {
             header: 'Messages',
             accessor: (row: MailItem) => (
-                    <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-card/5 rounded-full text-[10px] font-black text-muted-foreground min-w-7.5 justify-center">
                         <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                         {row._count?.messages || 0}
@@ -280,34 +261,34 @@ export default function MailPage() {
             <div className="bg-card/80 backdrop-blur-2xl rounded-sm shadow-xl overflow-hidden flex flex-col flex-1 min-h-0">
                 <div className="p-1">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-1">
-                            <CustomSelect
-                                value={statusFilter}
-                                onChange={(val: string) => updateQueryParams({ status: val, page: 1 })}
-                                options={[
-                                    { value: 'ALL', label: 'All Statuses', badge: state.stats.mail?.total },
-                                    { value: MailStatus.OPEN, label: 'Open', badge: state.stats.mail?.countsByStatus?.[MailStatus.OPEN], icon: Clock, iconClassName: 'text-blue-500' },
-                                    { value: MailStatus.IN_PROGRESS, label: 'In Progress', badge: state.stats.mail?.countsByStatus?.[MailStatus.IN_PROGRESS], icon: ArrowUpRight, iconClassName: 'text-amber-500' },
-                                    { value: MailStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[MailStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-primary/80' },
-                                    { value: MailStatus.RESOLVED, label: 'Resolved', badge: state.stats.mail?.countsByStatus?.[MailStatus.RESOLVED], icon: CheckCircle2, iconClassName: 'text-green-500' },
-                                    { value: MailStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[MailStatus.CLOSED], icon: XCircle, iconClassName: 'text-muted-foreground' },
-                                ]}
-                                className="w-full sm:w-60"
-                                placeholder="Status"
-                                icon={Filter}
-                            />
-                            <div className="flex flex-1 items-center justify-between gap-1 w-full sm:w-auto">
+                        <CustomSelect
+                            value={statusFilter}
+                            onChange={(val: string) => updateQueryParams({ status: val, page: 1 })}
+                            options={[
+                                { value: 'ALL', label: 'All Statuses', badge: state.stats.mail?.total },
+                                { value: MailStatus.OPEN, label: 'Open', badge: state.stats.mail?.countsByStatus?.[MailStatus.OPEN], icon: Clock, iconClassName: 'text-blue-500' },
+                                { value: MailStatus.IN_PROGRESS, label: 'In Progress', badge: state.stats.mail?.countsByStatus?.[MailStatus.IN_PROGRESS], icon: ArrowUpRight, iconClassName: 'text-amber-500' },
+                                { value: MailStatus.AWAITING_RESPONSE, label: 'Awaiting Response', badge: state.stats.mail?.countsByStatus?.[MailStatus.AWAITING_RESPONSE], icon: MessageSquare, iconClassName: 'text-primary/80' },
+                                { value: MailStatus.RESOLVED, label: 'Resolved', badge: state.stats.mail?.countsByStatus?.[MailStatus.RESOLVED], icon: CheckCircle2, iconClassName: 'text-green-500' },
+                                { value: MailStatus.CLOSED, label: 'Closed', badge: state.stats.mail?.countsByStatus?.[MailStatus.CLOSED], icon: XCircle, iconClassName: 'text-muted-foreground' },
+                            ]}
+                            className="w-full sm:w-60"
+                            placeholder="Status"
+                            icon={Filter}
+                        />
+                        <div className="flex flex-1 items-center justify-between gap-1 w-full sm:w-auto">
                             <SearchBar
                                 value={searchQuery}
                                 onChange={(val: string) => updateQueryParams({ search: val, page: 1 })}
                                 placeholder="Search mail..."
                             />
-                        
-                        <Button
-                            onClick={() => setNewMailOpen(true)}
-                            icon={MailPlus}
-                        >
-                            NEW MAIL
-                        </Button>
+
+                            <Button
+                                onClick={() => setNewMailOpen(true)}
+                                icon={MailPlus}
+                            >
+                                NEW MAIL
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -337,13 +318,13 @@ export default function MailPage() {
                 isOpen={!!selectedMailId}
                 mailId={selectedMailId}
                 onClose={() => setSelectedMailId(null)}
-                onUpdate={fetchMails}
+                onUpdate={() => mutate(mailsKey)}
             />
 
             <NewMailModal
                 isOpen={newMailOpen}
                 onClose={() => setNewMailOpen(false)}
-                onSuccess={() => { fetchMails(); dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent', type: 'success' } }); }}
+                onSuccess={() => { mutate(mailsKey); dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent', type: 'success' } }); }}
             />
         </div>
     );

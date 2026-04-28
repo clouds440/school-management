@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { BookOpen, Calendar, Type, FileText, Percent, UploadCloud, Link as LinkIcon, Check, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
-import { Assessment, AssessmentType, CreateAssessmentRequest, UpdateAssessmentRequest, ApiError } from '@/types';
+import { Assessment, AssessmentType, CreateAssessmentRequest, UpdateAssessmentRequest } from '@/types';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
@@ -108,8 +108,7 @@ export default function AssessmentForm({
             dispatch({ type: 'TOAST_ADD', payload: { message: `Assessment ${assessmentId ? 'updated' : 'created'} successfully.`, type: 'success' } });
             onSuccess?.(savedAssessment);
         } catch (error: unknown) {
-            const apiError = error as ApiError;
-            const message = apiError?.response?.data?.message || 'Failed to save assessment';
+            const message = error instanceof Error ? error.message : 'Failed to save assessment';
             dispatch({ type: 'TOAST_ADD', payload: { message: Array.isArray(message) ? message[0] : message, type: 'error' } });
         } finally {
             dispatch({ type: 'UI_STOP_PROCESSING', payload: 'assessment-submit' });

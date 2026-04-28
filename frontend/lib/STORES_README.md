@@ -1,3 +1,15 @@
+## Why this existed
+
+- Needed fine control over pagination caching
+- Wanted mutation-driven invalidation
+- Avoided unnecessary refetches
+- Built before switching to SWR
+
+## Why I moved away
+
+- Maintenance overhead
+- SWR provides same patterns + more edge cases handled
+
 # Per-Resource Stores Documentation
 
 This document explains how to use the per-resource stores (organizationsStore, studentsStore, teachersStore, coursesStore, sectionsStore) with `usePaginatedData.ts`.

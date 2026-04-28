@@ -17,13 +17,17 @@ import { DataTable, Column } from '@/components/ui/DataTable';
 import { DataField, useUI } from '@/context/UIContext';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
-import { usePaginatedData, BasePaginationParams } from '@/hooks/usePaginatedData';
+import useSWR, { mutate } from 'swr';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Loading } from '@/components/ui/Loading';
 import { NewMailModal } from '@/components/mail/NewMailModal';
-import { organizationsStore } from '@/lib/organizationsStore';
 
-interface AdminOrgParams extends BasePaginationParams {
+interface AdminOrgParams {
+    page: number;
+    limit: number;
+    search: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
     status: OrgStatus | 'ALL';
     type: string;
 }
@@ -57,25 +61,23 @@ export default function OrganizationsPage() {
 
     // URL State
     const orgParams: AdminOrgParams = {
-        status: (searchParams.get('status') as OrgStatus | 'ALL') || 'ALL',
         page: parseInt(searchParams.get('page') || '1', 10),
+        limit: pageSize,
         search: searchParams.get('search') || '',
         sortBy: searchParams.get('sortBy') || 'name',
         sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc',
+        status: (searchParams.get('status') as OrgStatus | 'ALL') || 'ALL',
         type: searchParams.get('type') || 'ALL',
-        limit: pageSize
     };
 
-    const {
-        data: fetchedData,
-        fetching: isFetching,
-        refresh
-    } = usePaginatedData<Organization, AdminOrgParams>(
-        (p) => api.admin.getOrganizations(token!, { ...p, status: p.status === 'ALL' ? undefined : p.status }),
-        orgParams,
-        'admin-organizations',
-        { enabled: !!token, store: organizationsStore }
-    );
+    // SWR for organizations data - replaces usePaginatedData
+    const orgsKey = token ? ['admin-organizations', {
+        ...orgParams,
+        status: orgParams.status === 'ALL' ? undefined : orgParams.status
+    }] as const : null;
+    const { data: fetchedData, isLoading: isFetching } = useSWR<
+        { data: Organization[]; totalPages: number; totalRecords: number; counts?: Record<string, number> }
+    >(orgsKey);
 
     const activeStatusTab = orgParams.status;
     const page = orgParams.page || 1;
@@ -107,9 +109,9 @@ export default function OrganizationsPage() {
         try {
             dispatch({ type: 'UI_START_PROCESSING', payload: `approve-${id}` });
             await api.admin.approveOrganization(id, token);
-            organizationsStore.invalidate();
             dispatch({ type: 'TOAST_ADD', payload: { message: `${name} approved successfully`, type: 'success' } });
-            refresh();
+            mutate(orgsKey);
+            // Also refresh admin stats
             if (token) {
                 statsStore.fetchAll(token).then(({ admin }) => {
                     if (admin) dispatch({ type: 'STATS_SET_ADMIN', payload: admin });
@@ -139,23 +141,20 @@ export default function OrganizationsPage() {
             dispatch({ type: 'UI_START_PROCESSING', payload: `${modalMode.toLowerCase()}-${operatingOrg.id}` });
             if (modalMode === 'REJECT') {
                 await api.admin.rejectOrganization(operatingOrg.id, reason, token);
-                organizationsStore.invalidate();
                 dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingOrg.name} rejected`, type: 'info' } });
-                refresh();
+                mutate(orgsKey);
             } else if (modalMode === 'SUSPEND') {
                 await api.admin.suspendOrganization(operatingOrg.id, reason, token);
-                organizationsStore.invalidate();
                 dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingOrg.name} suspended`, type: 'info' } });
-                refresh();
+                mutate(orgsKey);
             } else {
                 if (activeStatusTab === OrgStatus.REJECTED) {
                     await api.admin.rejectOrganization(operatingOrg.id, reason, token);
                 } else {
                     await api.admin.suspendOrganization(operatingOrg.id, reason, token);
                 }
-                organizationsStore.invalidate();
                 dispatch({ type: 'TOAST_ADD', payload: { message: `Status message updated for ${operatingOrg.name}`, type: 'success' } });
-                refresh();
+                mutate(orgsKey);
             }
             setIsModalOpen(false);
             setOperatingOrg(null);

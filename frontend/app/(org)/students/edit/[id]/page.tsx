@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { Loader2, UserPlus } from 'lucide-react';
-import { api } from '@/lib/api';
+import useSWR from 'swr';
 import StudentForm from '@/components/forms/StudentForm';
 import { useGlobal } from '@/context/GlobalContext';
 import { Student, Role } from '@/types';
@@ -14,61 +14,36 @@ export default function EditStudentPage() {
     const { user, token, loading: authLoading } = useAuth();
     const router = useRouter();
     const params = useParams();
-    const { state, dispatch } = useGlobal();
+    const { dispatch } = useGlobal();
     const studentId = params.id as string;
 
-    const [studentData, setStudentData] = useState<Student | null>(null);
-    const [dataLoading, setDataLoading] = useState(false);
-    const [studentExists, setStudentExists] = useState<boolean | null>(null);
-
+    // Role guard check
     useEffect(() => {
-        let isMounted = true;
-
-        if (authLoading) return;
-
-        const fetchStudent = async () => {
-            setDataLoading(true);
-            if (!user || !token) return;
-
+        if (!authLoading && user) {
             if (user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER && user.role !== Role.TEACHER) {
-                if (isMounted) router.replace('/');
-                return;
+                router.replace('/');
             }
+        }
+    }, [authLoading, user, router]);
 
-            try {
-                const data = await api.org.getStudent(studentId, token);
+    // SWR for student data
+    const studentKey = token && studentId ? ['student', studentId] as const : null;
+    const { data: studentData, isLoading: dataLoading, error } = useSWR<Student>(studentKey);
 
-                if (user.role === Role.TEACHER) {
-                    const isMyStudent = data.enrollments?.some(e =>
-                        e.section?.teachers?.some(t => t.userId === user.id)
-                    );
-                    if (!isMyStudent) {
-                        dispatch({ type: 'TOAST_ADD', payload: { message: 'You do not have permission to view this student record.', type: 'error' } });
-                        router.replace('/students');
-                        return;
-                    }
-                }
-
-                if (isMounted) {
-                    setStudentData(data);
-                    setStudentExists(true);
-                }
-            } catch (error: unknown) {
-                if (!isMounted) return;
-
-                console.warn('Failed to fetch student:', error);
-                setStudentExists(false);
-            } finally {
-                if (isMounted) setDataLoading(false);
+    // Teacher permission check
+    useEffect(() => {
+        if (user?.role === Role.TEACHER && studentData) {
+            const isMyStudent = studentData.enrollments?.some(e =>
+                e.section?.teachers?.some(t => t.userId === user.id)
+            );
+            if (!isMyStudent) {
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'You do not have permission to view this student record.', type: 'error' } });
+                router.replace('/students');
             }
-        };
+        }
+    }, [user, studentData, router, dispatch]);
 
-        fetchStudent();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [authLoading, user, token, studentId, router, dispatch]);
+    const studentExists = error ? false : (studentData ? true : null);
 
     if (authLoading || dataLoading) {
         return (

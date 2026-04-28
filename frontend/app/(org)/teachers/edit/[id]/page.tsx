@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { UserPlus, Loader2 } from 'lucide-react';
-import { api } from '@/lib/api';
+import useSWR from 'swr';
 import TeacherForm from '@/components/forms/TeacherForm';
 import { useGlobal } from '@/context/GlobalContext';
 import { Teacher, Role } from '@/types';
@@ -14,59 +14,25 @@ export default function EditTeacherPage() {
     const { user, token, loading: authLoading } = useAuth();
     const router = useRouter();
     const params = useParams();
-    const { state, dispatch } = useGlobal();
+    const { dispatch } = useGlobal();
     const teacherId = params.id as string;
 
-    const [teacherData, setTeacherData] = useState<Teacher | null>(null);
-    const [dataLoading, setDataLoading] = useState(false);
-    const [teacherExists, setTeacherExists] = useState<boolean | null>(null);
-
+    // Role guard check
     useEffect(() => {
-        let isMounted = true;
-
-        // Wait for auth to finish loading before doing anything
-        if (authLoading) return;
-
-        // Fetch the teacher data now that we have a valid token
-        const fetchTeacher = async () => {
-            setDataLoading(true);
-            if (!user || !token) return;
-
-            try {
-                const data = await api.org.getTeacher(teacherId, token!);
-                
-                // Role guard: only ORG_ADMIN and ORG_MANAGER can edit teachers
-                if (user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER) {
-                    if (isMounted) {
-                        dispatch({ type: 'TOAST_ADD', payload: { message: 'You do not have permission to edit this teacher.', type: 'error' } });
-                        router.replace('/teachers');
-                    }
-                    return;
-                }
-
-                if (isMounted) {
-                    setTeacherData(data);
-                    setTeacherExists(true);
-                }
-            } catch (error: unknown) {
-                // Ignore errors if component unmounted (e.g. strict mode remount)
-                if (!isMounted) return;
-
-                console.warn('Failed to fetch teacher:', error);
-                setTeacherExists(false);
-            } finally {
-                if (isMounted) setDataLoading(false);
+        if (!authLoading && user) {
+            if (user.role !== Role.ORG_ADMIN && user.role !== Role.ORG_MANAGER) {
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'You do not have permission to edit this teacher.', type: 'error' } });
+                router.replace('/teachers');
             }
-        };
+        }
+    }, [authLoading, user, router, dispatch]);
 
-        fetchTeacher();
+    // SWR for teacher data
+    const teacherKey = token && teacherId ? ['teacher', teacherId] as const : null;
+    const { data: teacherData, isLoading: dataLoading, error } = useSWR<Teacher>(teacherKey);
 
-        return () => {
-            isMounted = false;
-        };
-    }, [authLoading, user, token, teacherId, router, dispatch]);
+    const teacherExists = error ? false : (teacherData ? true : null);
 
-    // Show a spinner while auth is loading or data is being fetched
     if (authLoading || dataLoading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">

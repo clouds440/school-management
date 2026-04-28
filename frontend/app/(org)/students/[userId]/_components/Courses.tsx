@@ -28,6 +28,7 @@ export default function Courses({ sections }: { sections: Section[] }) {
                         counts[section.id] = materials.length;
                     } catch (error) {
                         counts[section.id] = 0;
+                        console.error('No materials found: ', error);
                     }
                 })
             );

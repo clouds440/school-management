@@ -55,21 +55,8 @@ function buildQueryString(params: QueryParams): string {
     return query ? `?${query}` : '';
 }
 
-// --- FIX 1: In-flight GET request deduplication ---
-// Prevents duplicate simultaneous GET requests to the same endpoint+token.
-// Each unique (method, endpoint, token) combination shares one in-flight promise.
-const inFlightRequests = new Map<string, Promise<unknown>>();
-
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const { token, signal, ...rest } = options;
-    const method = (rest.method ?? 'GET').toUpperCase();
-
-    // Only deduplicate GET requests — mutating requests must always fire
-    const dedupeKey = method === 'GET' ? `${endpoint}::${token ?? ''}` : null;
-
-    if (dedupeKey && inFlightRequests.has(dedupeKey)) {
-        return inFlightRequests.get(dedupeKey) as Promise<T>;
-    }
 
     const headers: HeadersInit = {
         ...(rest.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
@@ -77,44 +64,33 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
         ...(rest.headers as Record<string, string> ?? {}),
     };
 
-    // --- FIX 2: AbortSignal threading ---
-    // Callers can pass a signal to cancel in-flight requests (e.g. on component
-    // unmount or when a new request supersedes a previous one).
-    const promise = fetch(`${API_BASE_URL}${endpoint}`, { ...rest, headers, signal })
-        .then(async (response) => {
-            if (response.status === 401 && unauthorizedHandler) {
-                unauthorizedHandler(token);
-            }
+    // Note: SWR handles request deduplication with dedupingInterval.
+    // We keep AbortSignal support for explicit cancellation when needed.
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...rest, headers, signal });
 
-            if (!response.ok) {
-                let message = `Request failed with status ${response.status}`;
-                try {
-                    const contentType = response.headers.get('content-type');
-                    if (contentType?.includes('application/json')) {
-                        const data = await response.json();
-                        message = Array.isArray(data.message) ? data.message[0] : data.message || message;
-                    } else {
-                        const text = await response.text();
-                        if (text && text.length < 200) message = text;
-                    }
-                } catch (error) {
-                    console.error('Error parsing error response:', error);
-                }
-                throw new Error(message);
-            }
-
-            if (response.status === 204) return null as T;
-            return response.json() as Promise<T>;
-        })
-        .finally(() => {
-            if (dedupeKey) inFlightRequests.delete(dedupeKey);
-        });
-
-    if (dedupeKey) {
-        inFlightRequests.set(dedupeKey, promise);
+    if (response.status === 401 && unauthorizedHandler) {
+        unauthorizedHandler(token);
     }
 
-    return promise;
+    if (!response.ok) {
+        let message = `Request failed with status ${response.status}`;
+        try {
+            const contentType = response.headers.get('content-type');
+            if (contentType?.includes('application/json')) {
+                const data = await response.json();
+                message = Array.isArray(data.message) ? data.message[0] : data.message || message;
+            } else {
+                const text = await response.text();
+                if (text && text.length < 200) message = text;
+            }
+        } catch (error) {
+            console.error('Error parsing error response:', error);
+        }
+        throw new Error(message);
+    }
+
+    if (response.status === 204) return null as T;
+    return response.json() as Promise<T>;
 }
 
 // --- FIX 3: Consolidated FormData upload helper ---
@@ -322,7 +298,7 @@ export const api = {
 
     files: {
         // FIX 3 applied: was duplicating raw fetch + 401 handling + error parsing
-        uploadFile: (orgId: string, entityType: string, entityId: string, file: File, token: string) => {
+        uploadFile: (orgId: string, entityType: string, entityId: string, file: File, token: string): Promise<{ id?: string; url?: string; path?: string }> => {
             const formData = new FormData();
             formData.append('orgId', orgId);
             formData.append('entityType', entityType);

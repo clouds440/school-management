@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { SectionAttendanceStudent, AttendanceStatus, RangeAttendanceResponse, Role } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Check, X, Clock, FileWarning, Save, CheckSquare, Calendar, User, Activity } from 'lucide-react';
+import { BrandIcon } from '../ui/Brand';
 
 interface AttendanceSheetProps {
     students: SectionAttendanceStudent[];
