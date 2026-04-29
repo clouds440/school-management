@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  --font-geist-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-geist-mono: "Cascadia Code", "Fira Code", Consolas, monospace;
   --background: #f8fafc;
   /* slate-50 */
   --foreground: #0f172a;
@@ -439,6 +441,7 @@ body {
   }
 
   .chat-date-separator span {
+    -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
     padding: 6px 15px;
     border-radius: 8px;

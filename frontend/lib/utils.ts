@@ -19,7 +19,10 @@ export function getPublicUrl(path: string | null | undefined, updatedAt?: string
     if (path.startsWith('/assets/')) return path;
 
     // Get API URL from env and strip /api to get the base server URL
-    const apiUrl = (process.env.NEXT_PUBLIC_API_URL!).replace(/\/+$/, '');
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '');
+    if (!apiUrl) {
+        return normalizedPathWithTimestamp(path, updatedAt);
+    }
     const baseUrl = apiUrl.replace(/\/api$/, '');
 
     // Ensure path starts with a slash if it doesn't already have one
@@ -36,6 +39,21 @@ export function getPublicUrl(path: string | null | undefined, updatedAt?: string
     }
 
     return finalUrl;
+}
+
+function normalizedPathWithTimestamp(path: string, updatedAt?: string | Date | null): string {
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+    if (!updatedAt) {
+        return normalizedPath;
+    }
+
+    const date = new Date(updatedAt);
+    if (isNaN(date.getTime())) {
+        return normalizedPath;
+    }
+
+    return `${normalizedPath}${normalizedPath.includes('?') ? '&' : '?'}t=${date.getTime()}`;
 }
 
 export function formatDate(date: string | Date | null | undefined): string {

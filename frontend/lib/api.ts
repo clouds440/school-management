@@ -11,10 +11,14 @@ import {
     RangeAttendanceResponse, CourseMaterial, CreateCourseMaterialRequest, UpdateCourseMaterialRequest, DashboardInsights
 } from '@/types';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') ?? '';
 
-if (!API_BASE_URL) {
-    throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
+function getApiBaseUrl(): string {
+    if (!API_BASE_URL) {
+        throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
+    }
+
+    return API_BASE_URL;
 }
 
 let unauthorizedHandler: ((failedToken?: string) => void) | null = null;
@@ -57,6 +61,7 @@ function buildQueryString(params: QueryParams): string {
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const { token, signal, ...rest } = options;
+    const apiBaseUrl = getApiBaseUrl();
 
     const headers: HeadersInit = {
         ...(rest.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
@@ -66,7 +71,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
     // Note: SWR handles request deduplication with dedupingInterval.
     // We keep AbortSignal support for explicit cancellation when needed.
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...rest, headers, signal });
+    const response = await fetch(`${apiBaseUrl}${endpoint}`, { ...rest, headers, signal });
 
     if (response.status === 401 && unauthorizedHandler) {
         unauthorizedHandler(token);

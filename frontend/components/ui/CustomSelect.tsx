@@ -26,7 +26,7 @@ export interface CustomSelectProps<T extends string = string> {
     searchable?: boolean;
 }
 
-export const CustomSelect = React.memo(function CustomSelect<T extends string = string>({
+function CustomSelectComponent<T extends string = string>({
     options,
     value,
     onChange,
@@ -227,4 +227,6 @@ export const CustomSelect = React.memo(function CustomSelect<T extends string = 
             )}
         </div>
     );
-});
+}
+
+export const CustomSelect = React.memo(CustomSelectComponent) as typeof CustomSelectComponent;
