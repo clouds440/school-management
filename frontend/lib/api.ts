@@ -181,27 +181,31 @@ export const api = {
             request<Teacher>(`/org/teachers/${id}`, { token }),
         getTeacherByUserId: (userId: string, token: string) =>
             request<Teacher>(`/org/teachers/by-user/${userId}`, { token }),
-        getTeachers: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+        getTeachers: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', status?: string, deleted?: boolean } = {}) =>
             request<PaginatedResponse<Teacher>>(`/org/teachers${buildQueryString(params)}`, { token }),
         createTeacher: (data: CreateTeacherRequest, token: string) =>
             request<Teacher>('/org/teachers', { method: 'POST', body: JSON.stringify(data), token }),
         updateTeacher: (id: string, data: UpdateTeacherRequest, token: string) =>
             request<Teacher>(`/org/teachers/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+        restoreTeacher: (id: string, status: string, token: string) =>
+            request<{ message: string }>(`/org/teachers/${id}/restore`, { method: 'PATCH', body: JSON.stringify({ status }), token }),
         deleteTeacher: (id: string, token: string) =>
             request<void>(`/org/teachers/${id}`, { method: 'DELETE', token }),
-        getManagers: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+        getManagers: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', status?: string, deleted?: boolean } = {}) =>
             request<PaginatedResponse<Teacher>>(`/org/managers${buildQueryString(params)}`, { token }),
 
         getStudent: (id: string, token: string) =>
             request<Student>(`/org/students/${id}`, { token }),
         getStudentByUserId: (userId: string, token: string) =>
             request<Student>(`/org/students/by-user/${userId}`, { token }),
-        getStudents: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean, sectionId?: string } = {}) =>
+        getStudents: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean, sectionId?: string, status?: string, deleted?: boolean } = {}) =>
             request<PaginatedResponse<Student>>(`/org/students${buildQueryString(params)}`, { token }),
         createStudent: (data: CreateStudentRequest, token: string) =>
             request<Student>('/org/students', { method: 'POST', body: JSON.stringify(data), token }),
         updateStudent: (id: string, data: UpdateStudentRequest, token: string) =>
             request<Student>(`/org/students/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+        restoreStudent: (id: string, status: string, token: string) =>
+            request<{ message: string }>(`/org/students/${id}/restore`, { method: 'PATCH', body: JSON.stringify({ status }), token }),
         deleteStudent: (id: string, token: string) =>
             request<void>(`/org/students/${id}`, { method: 'DELETE', token }),
 

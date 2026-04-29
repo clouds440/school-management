@@ -43,7 +43,7 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-8">
             <Reveal delay={100}>
               <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight text-foreground leading-[1.1] md:leading-tight">
-                Empower Your Institution with <Image src={"/assets/eduverse-logo.png"} alt="Eduverse" width={400} height={120} className="mt-6 inline-block h-auto animate-float w-auto" unoptimized />
+                Empower Your Institution with <Image src={"/assets/eduverse-logo.png"} alt="Eduverse" width={400} height={120} className="mt-6 inline-block h-auto animate-float w-auto" />
               </h1>
             </Reveal>
 
@@ -143,7 +143,6 @@ export default function HomePage() {
                       fill
                       className="transform transition-transform duration-700 group-hover:scale-105"
                       sizes="(max-width: 1024px) 100vw, 50vw"
-                      unoptimized
                     />
                   </div>
                 </div>

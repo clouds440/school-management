@@ -93,7 +93,7 @@ export const BrandIcon = React.memo(function BrandIcon({
             alt="Identity"
             fill
             className="object-cover"
-            unoptimized
+            sizes="96px"
             onError={() => {
               if (displayLogo) failedBrandImageUrls.add(displayLogo);
               setFailedSrc(displayLogo);
@@ -212,6 +212,7 @@ export const Brand = React.memo(function Brand({
                 : ''
                 } object-contain transition-all duration-300`}
               priority={size === 'hero' || size === 'xl'}
+              sizes="(max-width: 768px) 150px, 300px"
             />
           </div>
         )
@@ -234,7 +235,7 @@ export const Brand = React.memo(function Brand({
 export function BrandLogoIcon() {
   return (
     <div className={`relative flex items-center justify-center w-full h-full`}>
-      <Image src="/assets/eduverse-icon.png" alt="Eduverse" fill className="object-contain" />
+      <Image src="/assets/eduverse-icon.png" alt="Eduverse" fill className="object-contain" sizes="96px" />
     </div>
   )
 }

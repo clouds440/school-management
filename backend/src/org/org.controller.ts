@@ -48,8 +48,11 @@ import { CreateSubmissionDto } from '../assessments/dto/create-submission.dto';
 import { CreateScheduleDto } from '../attendance/dto/create-schedule.dto';
 import { UpdateScheduleDto } from '../attendance/dto/update-schedule.dto';
 import { AttendanceRecordDto } from '../attendance/dto/mark-attendance.dto';
+import { Access } from '../common/access-control/access.decorator';
+import { AccessLevel } from '../common/access-control/access-level.enum';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Access(AccessLevel.READ)
 @Controller('org')
 export class OrgController {
   constructor(
@@ -75,12 +78,14 @@ export class OrgController {
   }
 
   // --- Settings ---
+  @Access(AccessLevel.NONE)
   @Get('settings')
   getSettings(@OrgId() orgId: string) {
     return this.orgService.getSettings(orgId);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Patch('settings')
   updateSettings(
     @OrgId() orgId: string,
@@ -90,6 +95,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Patch('settings/logo')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -139,6 +145,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.NONE)
   @Patch('reapply')
   reapply(@OrgId() orgId: string) {
     return this.orgService.reapply(orgId);
@@ -168,6 +175,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Post('courses')
   createCourse(
     @OrgId() orgId: string,
@@ -179,6 +187,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Patch('courses/:id')
   updateCourse(
     @OrgId() orgId: string,
@@ -191,6 +200,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Delete('courses/:id')
   deleteCourse(@OrgId() orgId: string, @Param('id') id: string) {
     return this.coursesService.deleteCourse(orgId, id);
@@ -230,6 +240,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Post('sections')
   createSection(
     @OrgId() orgId: string,
@@ -239,6 +250,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Patch('sections/:id')
   updateSection(
     @OrgId() orgId: string,
@@ -249,6 +261,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Delete('sections/:id')
   deleteSection(@OrgId() orgId: string, @Param('id') id: string) {
     return this.sectionsService.deleteSection(orgId, id);
@@ -273,6 +286,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
+  @Access(AccessLevel.WRITE)
   @Patch('profile')
   async updateProfile(
     @OrgId() orgId: string,
@@ -335,6 +349,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+  @Access(AccessLevel.WRITE)
   @Patch('users/:id/avatar')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -394,6 +409,7 @@ export class OrgController {
 
   // --- Assessments ---
   @Roles(Role.ORG_MANAGER, Role.TEACHER)
+  @Access(AccessLevel.WRITE)
   @Post('assessments')
   createAssessment(
     @OrgId() orgId: string,
@@ -418,6 +434,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+  @Access(AccessLevel.WRITE)
   @Patch('assessments/:id')
   updateAssessment(
     @OrgId() orgId: string,
@@ -435,6 +452,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+  @Access(AccessLevel.WRITE)
   @Delete('assessments/:id')
   deleteAssessment(
     @OrgId() orgId: string,
@@ -463,6 +481,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+  @Access(AccessLevel.WRITE)
   @Patch('assessments/:id/grades/:studentId')
   updateGrade(
     @OrgId() orgId: string,
@@ -482,12 +501,14 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+  @Access(AccessLevel.WRITE)
   @Patch('assessments/:id/publish')
   publishGrades(@OrgId() orgId: string, @Param('id') id: string) {
     return this.assessmentsService.publishGrades(orgId, id);
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+  @Access(AccessLevel.WRITE)
   @Patch('assessments/:id/finalize')
   finalizeGrades(@OrgId() orgId: string, @Param('id') id: string) {
     return this.assessmentsService.finalizeGrades(orgId, id);
@@ -495,6 +516,7 @@ export class OrgController {
 
   // --- Submissions ---
   @Roles(Role.STUDENT)
+  @Access(AccessLevel.WRITE)
   @Post('assessments/:id/submissions')
   createSubmission(
     @OrgId() orgId: string,
@@ -534,6 +556,7 @@ export class OrgController {
 
   // --- Timetable & Schedules ---
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Post('sections/:id/schedules')
   createSchedule(
     @OrgId() orgId: string,
@@ -544,6 +567,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Patch('sections/:id/schedules/:scheduleId')
   updateSchedule(
     @OrgId() orgId: string,
@@ -555,6 +579,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Delete('sections/:id/schedules/:scheduleId')
   deleteSchedule(
     @OrgId() orgId: string,
@@ -582,6 +607,7 @@ export class OrgController {
 
   // --- Attendance ---
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+  @Access(AccessLevel.WRITE)
   @Post('sections/:id/attendance/sessions')
   createAttendanceSession(
     @OrgId() orgId: string,
@@ -604,6 +630,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER)
+  @Access(AccessLevel.WRITE)
   @Post('attendance/:sessionId')
   markAttendance(
     @OrgId() orgId: string,

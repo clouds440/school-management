@@ -16,7 +16,7 @@ export default function AdminPage() {
     });
 
     if (loading || insightsLoading) {
-        return <Loading fullScreen text="Loading live organization insights..." size="lg" />;
+        return <Loading className="h-full" text="Loading live organization insights..." size="lg" />;
     }
 
     if (!insights) return null;

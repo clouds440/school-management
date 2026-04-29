@@ -4,9 +4,10 @@ import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { User, Organization, Teacher, ThemeMode } from '@prisma/client';
-import { Role, OrgStatus } from '../common/enums';
+import { Role, OrgStatus, UserStatus } from '../common/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { BCRYPT_ROUNDS } from '../common/utils';
+import { resolveAccessLevel } from '../common/access-control/access.utils';
 
 export type TokenUser = User & {
   organization?: Organization | null;
@@ -21,7 +22,7 @@ export class AuthService {
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto) {
     const existing = await this.prisma.user.findUnique({
@@ -83,6 +84,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (user.status === 'DELETED') {
+      throw new UnauthorizedException(
+        'Your account has been deleted by your organization',
+      );
+    }
+
     // Cleanup old inactive sessions for this user (older than 90 days)
     await this.cleanupOldSessions(user.id);
 
@@ -110,6 +117,11 @@ export class AuthService {
       avatarUpdatedAt: user.avatarUpdatedAt || null,
       themeMode: user.themeMode ?? ThemeMode.SYSTEM,
       status: user.organization ? user.organization.status : OrgStatus.APPROVED, // Keep SUPER_ADMIN as APPROVED
+      userStatus: user.status as unknown as UserStatus,
+      accessLevel: resolveAccessLevel({
+        userStatus: user.status as unknown as UserStatus,
+        orgStatus: (user.organization?.status as unknown as OrgStatus) || OrgStatus.APPROVED,
+      }),
       isFirstLogin: user.isFirstLogin,
     };
 
@@ -235,6 +247,11 @@ export class AuthService {
     return {
       access_token: token,
       role: user.role,
+      status: user.status as unknown as UserStatus,
+      accessLevel: resolveAccessLevel({
+        userStatus: user.status as unknown as UserStatus,
+        orgStatus: (user.organization?.status as unknown as OrgStatus) || OrgStatus.APPROVED,
+      }),
     };
   }
 
@@ -285,46 +302,42 @@ export class AuthService {
       include: { organization: true, teacherProfile: true },
     });
 
-    // Revoke all sessions except the current one
+    // Issue a NEW token so the isFirstLogin: false change is reflected in the JWT payload
+    const { access_token: newToken } = await this.generateToken(updatedUser, true);
+
+    // Update the session in database if it exists
     if (currentToken) {
-      // First, verify the current session exists
-      const currentSession = await this.prisma.session.findFirst({
+      await this.prisma.session.updateMany({
         where: {
           userId,
           token: currentToken,
           isActive: true,
         },
+        data: {
+          token: newToken,
+          lastSeenAt: new Date(),
+        },
       });
 
-      if (currentSession) {
-        // Revoke all other sessions
-        await this.prisma.session.updateMany({
-          where: {
-            userId,
-            token: { not: currentToken },
-            isActive: true,
-          },
-          data: { isActive: false },
-        });
-      } else {
-        // If current session not found, revoke all (fallback behavior)
-        await this.prisma.session.updateMany({
-          where: { userId, isActive: true },
-          data: { isActive: false },
-        });
-      }
-    } else {
-      // No token provided, revoke all sessions
+      // Revoke all other sessions
       await this.prisma.session.updateMany({
-        where: { userId, isActive: true },
+        where: {
+          userId,
+          token: { not: newToken },
+          isActive: true,
+        },
         data: { isActive: false },
       });
     }
 
-    // Return current token in response so frontend can re-login with it
     return {
-      access_token: currentToken || '',
+      access_token: newToken,
       role: updatedUser.role,
+      status: updatedUser.status as unknown as UserStatus,
+      accessLevel: resolveAccessLevel({
+        userStatus: updatedUser.status as unknown as UserStatus,
+        orgStatus: (updatedUser.organization?.status as unknown as OrgStatus) || OrgStatus.APPROVED,
+      }),
     };
   }
 

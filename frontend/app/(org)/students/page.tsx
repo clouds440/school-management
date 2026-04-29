@@ -8,7 +8,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useGlobal } from '@/context/GlobalContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { Role, Student, Section } from '@/types';
+import { Role, Student, Section, StudentStatus } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { TableActions } from '@/components/ui/TableActions';
@@ -27,6 +27,8 @@ interface StudentParams {
     sortOrder: 'asc' | 'desc';
     my?: boolean;
     sectionId?: string;
+    status?: string;
+    deleted?: boolean;
 }
 
 export default function StudentsPage() {
@@ -58,6 +60,9 @@ export default function StudentsPage() {
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
     const showOnlyMyStudents = searchParams.get('my') === 'true';
     const sectionId = searchParams.get('sectionId') || '';
+    const statusFilter = searchParams.get('status') || '';
+    const isDeletedView = searchParams.get('deleted') === 'true';
+    const showAlumni = searchParams.get('showAlumni') === 'true';
     const [pageSize, setPageSize] = useState<number>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('edu-students-limit');
@@ -73,7 +78,9 @@ export default function StudentsPage() {
         sortBy,
         sortOrder,
         my: user?.role === Role.TEACHER ? true : showOnlyMyStudents,
-        sectionId: sectionId || undefined
+        sectionId: sectionId || undefined,
+        status: isDeletedView ? undefined : (statusFilter || (showAlumni ? undefined : 'ACTIVE,SUSPENDED')),
+        deleted: isDeletedView,
     };
 
     // SWR for students data - replaces usePaginatedData
@@ -119,6 +126,26 @@ export default function StudentsPage() {
                     <span className="font-semibold text-card-foreground">{row.user.name || 'N/A'}</span>
                 </div>
             )
+        },
+        {
+            header: 'Status',
+            sortable: true,
+            sortKey: 'status',
+            accessor: (row: Student) => {
+                const status = row.status || StudentStatus.ACTIVE;
+                const config: Record<StudentStatus, { label: string; bg: string; text: string; border: string }> = {
+                    [StudentStatus.ACTIVE]: { label: 'Active', bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/20' },
+                    [StudentStatus.SUSPENDED]: { label: 'Suspended', bg: 'bg-red-500/10', text: 'text-red-600', border: 'border-red-500/20' },
+                    [StudentStatus.ALUMNI]: { label: 'Alumni', bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/20' },
+                    [StudentStatus.DELETED]: { label: 'Deleted', bg: 'bg-gray-500/10', text: 'text-gray-600', border: 'border-gray-500/20' },
+                };
+                const { label, bg, text, border } = config[status];
+                return (
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${bg} ${text} ${border}`}>
+                        {label}
+                    </span>
+                );
+            }
         },
         {
             header: 'Reg / Roll No.',
@@ -205,11 +232,28 @@ export default function StudentsPage() {
                 const isManagerOrAdmin = user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER;
                 return (
                     <TableActions
-                        onEdit={isManagerOrAdmin ? () => router.push(`/students/edit/${row.id}`) : undefined}
-                        onView={user?.role === Role.TEACHER ? () => router.push(`/students/edit/${row.id}`) : undefined}
-                        onDelete={isManagerOrAdmin ? () => handleDeleteClick(row.id) : undefined}
+                        onEdit={isDeletedView || !isManagerOrAdmin ? undefined : () => router.push(`/students/edit/${row.id}`)}
+                        onView={isDeletedView || user?.role !== Role.TEACHER ? undefined : () => router.push(`/students/edit/${row.id}`)}
+                        onDelete={isDeletedView || !isManagerOrAdmin ? undefined : () => handleDeleteClick(row.id)}
                         variant="user"
-                        isViewAndEdit={isManagerOrAdmin}
+                        isViewAndEdit={!isDeletedView && isManagerOrAdmin}
+                        extraActions={isDeletedView ? [
+                            {
+                                variant: 'restore' as const,
+                                title: 'Restore',
+                                onClick: () => handleRestore(row.id)
+                            }
+                        ] : [
+                            {
+                                variant: 'mail' as const,
+                                title: 'Send Mail',
+                                onClick: () => {
+                                    setInitialTargetId(row.user.id);
+                                    setInitialSubject(`Inquiry regarding ${row.user.name}`);
+                                    setNewMailOpen(true);
+                                }
+                            }
+                        ]}
                     />
                 );
             }
@@ -230,63 +274,108 @@ export default function StudentsPage() {
             await api.org.deleteStudent(selectedStudent.id, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Student removed successfully', type: 'success' } });
             setIsDeleteDialogOpen(false);
-            mutate(studentsKey);
+            // Invalidate all students-related cache keys
+            mutate((key: any) => Array.isArray(key) && key[0] === 'students');
         } catch (error: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to delete student', type: 'error' } });
         }
     };
 
+    const handleRestore = async (id: string) => {
+        if (!token) return;
+        try {
+            await api.org.restoreStudent(id, StudentStatus.ACTIVE, token);
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Student restored successfully', type: 'success' } });
+            mutate((key: any) => Array.isArray(key) && key[0] === 'students');
+        } catch (err: unknown) {
+            dispatch({ type: 'TOAST_ADD', payload: { message: err instanceof Error ? err.message : 'Failed to restore student', type: 'error' } });
+        }
+    };
+
     if ((!token && !user) || (isFetching && !fetchedData)) {
-        return <Loading fullScreen text="Loading Students..." size="lg" />;
+        return <Loading className="h-full" text="Loading Students..." size="lg" />;
     }
 
     return (
         <div className="flex flex-col h-full w-full">
             <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
-                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
-                    <div className="flex-1 max-w-xl">
-                        <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, reg, roll or major..." />
+                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+                    <div className="flex flex-wrap items-center gap-4 flex-1">
+                        <div className="w-full md:w-72">
+                            <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search students..." />
+                        </div>
+
+                        {!isDeletedView && (
+                            <>
+                                <div className="w-40">
+                                    <CustomSelect
+                                        options={[
+                                            { label: 'All Statuses', value: '' },
+                                            { label: 'Active', value: StudentStatus.ACTIVE },
+                                            { label: 'Suspended', value: StudentStatus.SUSPENDED },
+                                        ]}
+                                        value={statusFilter}
+                                        onChange={(val) => updateQueryParams({ status: val, page: 1 })}
+                                        placeholder="Filter Status"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-lg border border-border/50">
+                                    <Toggle
+                                        checked={showAlumni}
+                                        onCheckedChange={(val) => updateQueryParams({ showAlumni: val ? 'true' : undefined, page: 1 })}
+                                        label="Show Alumni"
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        <button
+                            onClick={() => updateQueryParams({ deleted: isDeletedView ? undefined : 'true', page: 1, status: undefined, showAlumni: undefined, sectionId: undefined })}
+                            className={`text-xs font-bold tracking-tighter hover:underline hover:text-primary cursor-pointer ${isDeletedView ? 'text-primary' : 'text-muted-foreground/40'}`}
+                        >
+                            {isDeletedView ? '← Back to Active Students' : 'View Deleted Students'}
+                        </button>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                        {(user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER) && (
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-muted-foreground/40 tracking-wider whitespace-nowrap">Section:</span>
-                                <CustomSelect
-                                    value={sectionId}
-                                    onChange={(val) => updateQueryParams({ sectionId: val, page: 1 })}
-                                    options={[
-                                        { value: '', label: 'All My Sections' },
-                                        ...sections.map(sec => ({ value: sec.id, label: sec.name }))
-                                    ]}
-                                    placeholder="All My Sections"
-                                    className="flex-1 px-5"
-                                />
-                            </div>
-                        )}
+                    {!isDeletedView && (
+                        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                            {(user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER) && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-muted-foreground/40 tracking-wider whitespace-nowrap">Section:</span>
+                                    <CustomSelect
+                                        value={sectionId}
+                                        onChange={(val) => updateQueryParams({ sectionId: val, page: 1 })}
+                                        options={[
+                                            { value: '', label: 'All My Sections' },
+                                            ...sections.map(sec => ({ value: sec.id, label: sec.name }))
+                                        ]}
+                                        placeholder="All My Sections"
+                                        className="flex-1 px-5"
+                                    />
+                                </div>
+                            )}
 
-                        {user?.role === Role.ORG_MANAGER && (
-                            <div className="bg-primary/5 p-2 pr-4 rounded-lg border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
-                                <Toggle
-                                    checked={showOnlyMyStudents}
-                                    onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
-                                    label="My Students"
-                                    offColor="bg-background"
-                                    knobColor="bg-foreground"
-                                />
-                            </div>
-                        )}
+                            {user?.role === Role.ORG_MANAGER && (
+                                <div className="bg-primary/5 p-2 pr-4 rounded-lg border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
+                                    <Toggle
+                                        checked={showOnlyMyStudents}
+                                        onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
+                                        label="My Students"
+                                    />
+                                </div>
+                            )}
 
-                        {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
-                            <Button
-                                onClick={() => router.push('/students/add')}
-                                icon={UserPlus}
-                                className="px-8 w-full md:w-auto text-xs font-black tracking-widest"
-                            >
-                                Add New Student
-                            </Button>
-                        )}
-                    </div>
+                            {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
+                                <Button
+                                    onClick={() => router.push('/students/add')}
+                                    icon={UserPlus}
+                                    className="px-8 w-full md:w-auto text-xs font-black tracking-widest"
+                                >
+                                    Add Student
+                                </Button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="relative overflow-x-hidden flex-1 min-h-0">

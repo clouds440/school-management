@@ -84,10 +84,10 @@ export default function OrgMailPage() {
     useEffect(() => {
         // Socket events trigger SWR revalidation directly
         const unsubs = [
-            subscribe('unread:update', () => mutate(mailsKey)),
-            subscribe('mail:new', () => mutate(mailsKey)),
-            subscribe('mail:message', () => mutate(mailsKey)),
-            subscribe('mail:update', () => mutate(mailsKey))
+            subscribe('unread:update', () => mutate((key: any) => Array.isArray(key) && key[0] === 'mails')),
+            subscribe('mail:new', () => mutate((key: any) => Array.isArray(key) && key[0] === 'mails')),
+            subscribe('mail:message', () => mutate((key: any) => Array.isArray(key) && key[0] === 'mails')),
+            subscribe('mail:update', () => mutate((key: any) => Array.isArray(key) && key[0] === 'mails'))
         ];
 
         return () => {
@@ -265,14 +265,14 @@ export default function OrgMailPage() {
                     const query = params.toString();
                     router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
                 }}
-                onUpdate={() => mutate(mailsKey)}
+                onUpdate={() => mutate((key: any) => Array.isArray(key) && key[0] === 'mails')}
             />
 
             <NewMailModal
                 isOpen={newMailOpen}
                 onClose={() => setNewMailOpen(false)}
                 onSuccess={() => {
-                    mutate(mailsKey);
+                    mutate((key: any) => Array.isArray(key) && key[0] === 'mails');
                     dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent', type: 'success' } });
                 }}
             />

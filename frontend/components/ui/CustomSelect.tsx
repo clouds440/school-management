@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo, useLayoutEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, useLayoutEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { LucideIcon, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ export interface CustomSelectProps<T extends string = string> {
     searchable?: boolean;
 }
 
-export function CustomSelect<T extends string = string>({
+export const CustomSelect = React.memo(function CustomSelect<T extends string = string>({
     options,
     value,
     onChange,
@@ -44,39 +44,37 @@ export function CustomSelect<T extends string = string>({
     const containerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const selectedOption = options.find(opt => opt.value === value);
+    const selectedOption = useMemo(() => options.find(opt => opt.value === value), [options, value]);
 
-    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
-
-    if (isOpen !== prevIsOpen) {
-        setPrevIsOpen(isOpen);
+    // Clear search term when closed
+    useEffect(() => {
         if (!isOpen) setSearchTerm("");
-    }
+    }, [isOpen]);
 
-    const updateCoords = () => {
+    const updateCoords = useCallback(() => {
         if (containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
-            // We want to position it relative to the viewport because we portal to body
             setCoords({
                 top: rect.bottom + window.scrollY,
                 left: rect.left + window.scrollX,
                 width: rect.width
             });
         }
-    };
+    }, []);
 
     useLayoutEffect(() => {
         if (isOpen) {
             updateCoords();
-            // Listen to scroll and resize to keep anchored
-            window.addEventListener('scroll', updateCoords, true);
-            window.addEventListener('resize', updateCoords);
+
+            // Use a passive scroll listener for better performance
+            window.addEventListener('scroll', updateCoords, { passive: true, capture: true });
+            window.addEventListener('resize', updateCoords, { passive: true });
         }
         return () => {
-            window.removeEventListener('scroll', updateCoords, true);
+            window.removeEventListener('scroll', updateCoords, { capture: true });
             window.removeEventListener('resize', updateCoords);
         };
-    }, [isOpen]);
+    }, [isOpen, updateCoords]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -92,16 +90,17 @@ export function CustomSelect<T extends string = string>({
     }, []);
 
     const filteredOptions = useMemo(() => {
-        if (!searchable) return options;
+        if (!searchable || !searchTerm) return options;
+        const lowSearch = searchTerm.toLowerCase();
         return options.filter(opt =>
-            opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+            opt.label.toLowerCase().includes(lowSearch)
         );
     }, [options, searchTerm, searchable]);
 
-    const handleSelect = (val: T) => {
+    const handleSelect = useCallback((val: T) => {
         onChange(val);
         setIsOpen(false);
-    };
+    }, [onChange]);
 
     return (
         <div className={`relative group ${className}`} ref={containerRef}>
@@ -228,4 +227,4 @@ export function CustomSelect<T extends string = string>({
             )}
         </div>
     );
-}
+});

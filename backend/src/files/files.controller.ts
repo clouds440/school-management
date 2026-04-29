@@ -16,6 +16,8 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Role } from '../common/enums';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { FilesService } from './files.service';
+import { Access } from '../common/access-control/access.decorator';
+import { AccessLevel } from '../common/access-control/access-level.enum';
 import { FileUploadDto } from './files.dto';
 import type {
   UploadedFileInfo,
@@ -43,6 +45,7 @@ const IMAGE_MIME_PREFIX = 'image/';
 const IMAGE_MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const DEFAULT_MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
 
+@Access(AccessLevel.WRITE)
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}

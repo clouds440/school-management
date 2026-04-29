@@ -1,9 +1,11 @@
 'use client';
 
+import { mutate } from 'swr';
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Lock, BookOpen, DollarSign, Phone, Plus, ShieldCheck, UserX, CalendarClock, MapPin } from 'lucide-react';
+import { User, Mail, Lock, BookOpen, DollarSign, Phone, Plus, ShieldCheck, UserX, CalendarClock, MapPin, UserLock } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { Section, Teacher, TeacherStatus, Role, CreateTeacherRequest, UpdateTeacherRequest } from '@/types';
@@ -39,6 +41,7 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
         setValue,
         watch,
         trigger,
+        reset,
         formState: { errors },
     } = useForm({
         resolver: zodResolver(isProfile ? teacherProfileSchema : (teacherId ? teacherUpdateSchema : teacherCreateSchema)),
@@ -78,6 +81,29 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
             sectionIds: []
         }
     });
+
+    useEffect(() => {
+        if (initialData) {
+            reset({
+                name: initialData.user?.name || '',
+                phone: initialData.user?.phone || '',
+                email: initialData.user?.email || '',
+                password: '',
+                education: initialData.education || '',
+                designation: initialData.designation || '',
+                subject: initialData.subject || '',
+                salary: initialData.salary?.toString() || '',
+                isManager: !!(initialData.user?.role === Role.ORG_MANAGER),
+                department: initialData.department || '',
+                joiningDate: initialData.joiningDate ? new Date(initialData.joiningDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                address: initialData.address || '',
+                emergencyContact: initialData.emergencyContact || '',
+                bloodGroup: initialData.bloodGroup || '',
+                status: initialData.status as TeacherStatus || TeacherStatus.ACTIVE,
+                sectionIds: initialData.sections?.map(s => s.id) || []
+            });
+        }
+    }, [initialData, reset]);
 
     const formData = watch();
 
@@ -131,6 +157,9 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
             } else {
                 router.push('/teachers');
             }
+            
+            // Invalidate all teacher lists (paginated, filtered, etc.)
+            mutate((key: any) => Array.isArray(key) && key[0] === 'teachers');
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Failed to save teacher';
 
@@ -195,7 +224,8 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
                                     options={[
                                         { value: TeacherStatus.ACTIVE, label: 'Active', icon: ShieldCheck },
                                         { value: TeacherStatus.SUSPENDED, label: 'Suspended', icon: UserX },
-                                        { value: TeacherStatus.ON_LEAVE, label: 'On Leave', icon: CalendarClock }
+                                        { value: TeacherStatus.ON_LEAVE, label: 'On Leave', icon: CalendarClock },
+                                        { value: TeacherStatus.EMERITUS, label: 'Emeritus', icon: UserLock }
                                     ]}
                                     value={formData.status}
                                     onChange={(val) => {
@@ -204,10 +234,14 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
                                         trigger('status');
                                     }}
                                     error={!!errors.status}
-                                    disabled={isProfile}
+                                    disabled={isProfile || (
+                                        currentUser?.role === Role.ORG_MANAGER &&
+                                        (initialData?.user?.role === Role.ORG_MANAGER || currentUser?.id === initialData?.userId)
+                                    )}
                                     icon={
                                         formData.status === TeacherStatus.ACTIVE ? ShieldCheck :
-                                            formData.status === TeacherStatus.SUSPENDED ? UserX : CalendarClock
+                                            formData.status === TeacherStatus.SUSPENDED ? UserX :
+                                                formData.status === TeacherStatus.EMERITUS ? UserLock : CalendarClock
                                     }
                                 />
                                 {errors.status && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.status.message}</p>}

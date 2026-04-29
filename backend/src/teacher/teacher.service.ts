@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { UserService } from '../users/user.service';
 import { SectionsService } from '../sections/sections.service';
-import { Role, TeacherStatus } from '../common/enums';
+import { Role, TeacherStatus, UserStatus } from '../common/enums';
 import { CreateTeacherDto } from '../org/dto/create-teacher.dto';
 import { UpdateTeacherDto } from '../org/dto/update-teacher.dto';
 import { PaginationOptions, getPaginationOptions, formatPaginatedResponse, extractUpdateFields } from '../common/utils';
@@ -26,7 +26,7 @@ export class TeacherService {
     private readonly notifications: NotificationsService,
     private readonly userService: UserService,
     private readonly sectionsService: SectionsService,
-  ) {}
+  ) { }
 
   private async getTeacherById(orgId: string, id: string) {
     const teacher = await this.prisma.teacher.findFirst({
@@ -41,31 +41,35 @@ export class TeacherService {
   }
 
   async getTeachers(orgId: string, options: PaginationOptions) {
-    const { skip, take, sortBy, sortOrder } = getPaginationOptions(options);
+    const { skip, take, sortBy, sortOrder, status, deleted } = getPaginationOptions(options);
 
     const where: Prisma.TeacherWhereInput = {
       organizationId: orgId,
-      status: { not: TeacherStatus.DELETED },
+      status: deleted
+        ? TeacherStatus.DELETED
+        : status
+          ? { in: status.split(',') as TeacherStatus[] }
+          : { not: TeacherStatus.DELETED },
       ...(options.search
         ? {
-            OR: [
-              {
-                user: {
-                  name: { contains: options.search, mode: 'insensitive' },
-                },
+          OR: [
+            {
+              user: {
+                name: { contains: options.search, mode: 'insensitive' },
               },
-              {
-                user: {
-                  email: { contains: options.search, mode: 'insensitive' },
-                },
+            },
+            {
+              user: {
+                email: { contains: options.search, mode: 'insensitive' },
               },
-              { subject: { contains: options.search, mode: 'insensitive' } },
-              { department: { contains: options.search, mode: 'insensitive' } },
-              {
-                designation: { contains: options.search, mode: 'insensitive' },
-              },
-            ],
-          }
+            },
+            { subject: { contains: options.search, mode: 'insensitive' } },
+            { department: { contains: options.search, mode: 'insensitive' } },
+            {
+              designation: { contains: options.search, mode: 'insensitive' },
+            },
+          ],
+        }
         : {}),
     };
 
@@ -115,32 +119,36 @@ export class TeacherService {
   }
 
   async getManagers(orgId: string, options: PaginationOptions) {
-    const { skip, take, sortBy, sortOrder } = getPaginationOptions(options);
+    const { skip, take, sortBy, sortOrder, status, deleted } = getPaginationOptions(options);
 
     const where: Prisma.TeacherWhereInput = {
       organizationId: orgId,
       user: { role: Role.ORG_MANAGER },
-      status: { not: TeacherStatus.DELETED },
+      status: deleted
+        ? TeacherStatus.DELETED
+        : status
+          ? { in: status.split(',') as TeacherStatus[] }
+          : { not: TeacherStatus.DELETED },
       ...(options.search
         ? {
-            OR: [
-              {
-                user: {
-                  name: { contains: options.search, mode: 'insensitive' },
-                },
+          OR: [
+            {
+              user: {
+                name: { contains: options.search, mode: 'insensitive' },
               },
-              {
-                user: {
-                  email: { contains: options.search, mode: 'insensitive' },
-                },
+            },
+            {
+              user: {
+                email: { contains: options.search, mode: 'insensitive' },
               },
-              { subject: { contains: options.search, mode: 'insensitive' } },
-              { department: { contains: options.search, mode: 'insensitive' } },
-              {
-                designation: { contains: options.search, mode: 'insensitive' },
-              },
-            ],
-          }
+            },
+            { subject: { contains: options.search, mode: 'insensitive' } },
+            { department: { contains: options.search, mode: 'insensitive' } },
+            {
+              designation: { contains: options.search, mode: 'insensitive' },
+            },
+          ],
+        }
         : {}),
     };
 
@@ -234,6 +242,7 @@ export class TeacherService {
           organizationId: orgId,
           name: data.name,
           phone: data.phone,
+          status: data.status as unknown as UserStatus,
         }, prisma);
 
         const teacher = await prisma.teacher.create({
@@ -251,7 +260,7 @@ export class TeacherService {
             emergencyContact: data.emergencyContact,
             bloodGroup: data.bloodGroup,
             address: data.address,
-            status: data.status,
+            status: data.status as unknown as TeacherStatus,
             sections: data.sectionIds
               ? { connect: data.sectionIds.map((id) => ({ id })) }
               : undefined,
@@ -310,6 +319,16 @@ export class TeacherService {
           'Managers cannot modify Admin or Manager profiles',
         );
       }
+
+      // Managers cannot change status for themselves or other managers
+      if (
+        data.status !== undefined &&
+        (teacher.user.role === Role.ORG_MANAGER || userContext.id === teacher.userId)
+      ) {
+        throw new ForbiddenException(
+          'Managers cannot change account status for themselves or other managers',
+        );
+      }
     }
 
     const userFields = ['name', 'email', 'phone', 'password'];
@@ -334,6 +353,10 @@ export class TeacherService {
 
     if (data.isManager !== undefined) {
       userData.role = data.isManager ? Role.ORG_MANAGER : Role.TEACHER;
+    }
+
+    if (data.status !== undefined) {
+      userData.status = data.status as unknown as UserStatus;
     }
 
     if (data.sectionIds !== undefined) {
@@ -385,7 +408,7 @@ export class TeacherService {
         title: 'Account Status Updated',
         body: `Your account status has been changed to ${data.status.toLowerCase()}.`,
         type: 'USER_STATUS_CHANGE',
-        actionUrl: '/profile',
+        actionUrl: `/teachers/${teacher.userId}/profile`,
         metadata: { oldStatus: teacher.status, newStatus: data.status },
       });
     }
@@ -399,7 +422,7 @@ export class TeacherService {
         title: 'Role Updated',
         body: `Your administrative role has been updated to ${data.isManager ? 'Manager' : 'Teacher'}.`,
         type: 'USER_ROLE_CHANGE',
-        actionUrl: '#',
+        actionUrl: `/teachers/${teacher.userId}/profile`,
         metadata: {
           oldRole: teacher.user.role,
           newRole: data.isManager ? Role.ORG_MANAGER : Role.TEACHER,
@@ -433,12 +456,41 @@ export class TeacherService {
       }
     }
 
-    await this.prisma.teacher.update({
-      where: { id },
-      data: { status: TeacherStatus.DELETED },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.teacher.update({
+        where: { id },
+        data: { status: TeacherStatus.DELETED as unknown as TeacherStatus },
+      });
+
+      await tx.user.update({
+        where: { id: teacher.userId },
+        data: { status: UserStatus.DELETED as unknown as UserStatus },
+      });
     });
 
     return { message: 'Teacher deleted successfully' };
+  }
+  
+  async restoreTeacher(orgId: string, id: string, status: TeacherStatus = TeacherStatus.ACTIVE) {
+    const teacher = await this.prisma.teacher.findFirst({
+      where: { id, organizationId: orgId, status: TeacherStatus.DELETED },
+    });
+
+    if (!teacher) throw new NotFoundException('Deleted teacher not found');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.teacher.update({
+        where: { id },
+        data: { status: status as unknown as TeacherStatus },
+      });
+
+      await tx.user.update({
+        where: { id: teacher.userId },
+        data: { status: UserStatus.ACTIVE as unknown as UserStatus },
+      });
+    });
+
+    return { message: 'Teacher restored successfully' };
   }
 
   async getTeacherByUserId(userId: string) {
@@ -475,7 +527,7 @@ export class TeacherService {
 
     const sections = await this.sectionsService.getSectionsByTeacherId(teacher.id);
     const sectionIds = sections.map(s => s.id);
-    
+
     const sectionsWithDetails = await this.prisma.section.findMany({
       where: { id: { in: sectionIds } },
       include: {

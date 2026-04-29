@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect, useCallback } from 'react';
 import { AdminStats, OrgStats, Role, Organization, Teacher, Student, Section, Course, ThemeMode } from '@/types';
 import { Toast, ToastType } from '@/components/ui/Toast';
 
@@ -20,7 +20,9 @@ export interface JwtPayload {
     role?: Role;
     designation?: string;
     type?: string;
-    status?: string;
+    status?: string; // This maps to organization status
+    userStatus?: string;
+    accessLevel?: number;
     isFirstLogin?: boolean;
     userName?: string;
     themeMode?: ThemeMode;
@@ -286,6 +288,10 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const removeToast = useCallback((id: string) => {
+        dispatch({ type: 'TOAST_REMOVE', payload: id });
+    }, [dispatch]);
+
     return (
         <GlobalContext.Provider value={{ state, dispatch }}>
             {children}
@@ -297,7 +303,7 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
                         message={toast.message}
                         type={toast.type}
                         duration={toast.duration}
-                        onClose={(id) => dispatch({ type: 'TOAST_REMOVE', payload: id })}
+                        onClose={removeToast}
                     />
                 ))}
             </div>

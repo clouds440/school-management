@@ -12,6 +12,8 @@ export interface PaginationOptions {
   my?: boolean;
   sectionId?: string;
   userId?: string;
+  status?: string;
+  deleted?: boolean;
 }
 
 export interface PaginatedResult<T> {
@@ -86,12 +88,14 @@ export const getPaginationOptions = (options: PaginationOptions) => {
     search = '',
     sortBy = 'createdAt',
     sortOrder = 'desc',
+    status,
+    deleted,
   } = options;
 
   const skip = (page - 1) * limit;
   const take = limit;
 
-  return { skip, take, search, sortBy, sortOrder };
+  return { skip, take, search, sortBy, sortOrder, status, deleted };
 };
 
 export const formatPaginatedResponse = <T>(

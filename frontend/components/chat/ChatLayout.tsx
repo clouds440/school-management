@@ -25,14 +25,14 @@ import { formatDistanceToNow } from 'date-fns';
 import {
     Search, Plus, Paperclip, MessageSquarePlus, SendHorizonal as Send, MoreVertical, X, Loader2,
     UserMinus, Trash2, Info, ChevronLeft, Check, CheckCheck, ArrowDown, Pencil, Reply, ArrowUp, RotateCcw,
-    View, Lock as LockIcon
+    Lock as LockIcon
 } from 'lucide-react';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 import { Button } from '../ui/Button';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { NewChatModal } from './NewChatModal';
 import { ChatSettingsModal } from './ChatSettingsModal';
-import { MessageActionsDropdown } from './MessageActionsDropdown';
+import { MessageContextMenu } from './MessageActionsDropdown';
 import {
     type ChatTypingEvent,
     type ChatTypingStateMap,
@@ -90,7 +90,8 @@ export function ChatLayout() {
     const [isSending, setIsSending] = useState(false);
     const [chatComposerStates, setChatComposerStates] = useState<ChatComposerStateMap>(() => getCachedComposerStates());
     const [isUploading, setIsUploading] = useState(false);
-    const [isPreviewMode, setIsPreviewMode] = useState(false);
+    // Live markdown preview - auto-shows when markdown syntax detected
+    const [showMarkdownPreview, setShowMarkdownPreview] = useState(false);
     const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
@@ -108,23 +109,10 @@ export function ChatLayout() {
 
     // Mobile: tap-to-show actions
     const [tappedMessageId, setTappedMessageId] = useState<string | null>(null);
-    const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ msg: ChatMessageWithMeta, x: number, y: number } | null>(null);
 
-    useEffect(() => {
-        const handleGlobalClick = (ev: MouseEvent) => {
-            const target = ev.target as HTMLElement | null;
-            // If click is inside a chat dropdown, ignore
-            if (target && target.closest && target.closest('.chat-dropdown')) return;
-            // Also ignore clicks on the more actions button itself
-            if (target && target.closest && target.closest('.more-actions-btn')) return;
-            // If we recently opened a dropdown for this id, suppress immediate close
-            if (suppressCloseRef.current && openDropdownId === suppressCloseRef.current) return;
-            setOpenDropdownId(null);
-        };
-        document.addEventListener('click', handleGlobalClick);
-        return () => document.removeEventListener('click', handleGlobalClick);
-    }, [openDropdownId]);
-
+    const scrollTimeoutRef = useRef<NodeJS.Timeout>(null);
+    const lastScrollTopRef = useRef<number>(0);
     const [confirmConfig, setConfirmConfig] = useState<{
         isOpen: boolean;
         title: string;
@@ -159,7 +147,6 @@ export function ChatLayout() {
 
     const [composerHeight, setComposerHeight] = useState(0);
     const [readOnlyBannerHeight, setReadOnlyBannerHeight] = useState(0);
-    const suppressCloseRef = useRef<string | null>(null);
     const pendingMessageIdRef = useRef<string | null>(null);
     const sendLockRef = useRef(false);
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1148,7 +1135,7 @@ export function ChatLayout() {
             replyToMessage: null,
             messageDraft: msg.content
         });
-        setIsPreviewMode(false);
+        setShowMarkdownPreview(false);
         requestAnimationFrame(() => {
             const el = document.querySelector('textarea');
             if (el) {
@@ -1243,8 +1230,19 @@ export function ChatLayout() {
                 {showDateSep && <div className="chat-date-separator"><span>{formatChatDateLabel(msg.createdAt)}</span></div>}
                 <div
                     id={`msg-${msg.id}`}
+                    onContextMenu={(e) => {
+                        if (isDesktop && !isDeleted) {
+                            e.preventDefault();
+                            setContextMenu({ msg, x: e.clientX, y: e.clientY });
+                        }
+                    }}
+                    onClick={(e) => {
+                        if (!isDesktop && !isDeleted) {
+                            setContextMenu({ msg, x: 0, y: 0 });
+                        }
+                    }}
                     onTouchStart={(e) => { e.stopPropagation(); setTappedMessageId(msg.id); }}
-                    className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-3.5' : 'mb-0.5'} px-3 md:px-5 -mx-3 md:-mx-5 ${highlightedMessageId === msg.id ? 'bg-primary/30 rounded-sm' : ''}`}
+                    className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-3.5' : 'mb-0.5'} px-3 md:px-5 -mx-3 md:-mx-5 ${highlightedMessageId === msg.id || contextMenu?.msg.id === msg.id ? 'bg-primary/20 rounded-sm' : ''}`}
                 >
                     {!isMine && (
                         <div className="w-7 shrink-0 mr-2 flex flex-col justify-end mb-1">
@@ -1291,22 +1289,13 @@ export function ChatLayout() {
 
                                         return (
                                             <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} space-y-1 relative`}>
-                                                {!isDeleted && (
-                                                    <div className={`absolute top-0 shrink-0 flex items-center justify-center transition-all z-10
-                                                        opacity-0 group-hover/content:opacity-100
-                                                        ${showActionsOnMobile ? 'opacity-100!' : ''}
+                                                {!isDeleted && isDesktop && (
+                                                    <div className={`absolute top-0 ${isMine ? '-left-6' : '-right-6'} shrink-0 flex items-center justify-center transition-all z-10
+                                                        opacity-0 group-hover/content:opacity-100 pointer-events-none
                                                     `}>
-                                                        <MessageActionsDropdown
-                                                            msg={msg}
-                                                            user={user}
-                                                            isMine={isMine}
-                                                            isFailedMessage={isFailedMessage}
-                                                            onReply={handleReply}
-                                                            onCopyText={handleCopyText}
-                                                            onEditMessage={handleEditMessage}
-                                                            onDownload={handleDownload}
-                                                            onDeleteMessage={handleDeleteMessage}
-                                                        />
+                                                        <div className="w-5 h-5 rounded-full bg-background/80 shadow-sm border border-border flex items-center justify-center">
+                                                            <MoreVertical size={12} className="text-muted-foreground opacity-60" />
+                                                        </div>
                                                     </div>
                                                 )}
                                                 {segments.map((segment, idx) => {
@@ -1338,45 +1327,47 @@ export function ChatLayout() {
                                                     return (
                                                         <div
                                                             key={idx}
-                                                            className={`message-bubble px-3.5 py-2 rounded-2xl leading-relaxed relative shadow-lg
+                                                            className={`message-bubble px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl leading-relaxed relative shadow-sm
                                                                         ${isMine
-                                                                    ? 'bg-primary text-foreground rounded-br-sm shadow-primary/50'
-                                                                    : 'bg-card border border-border rounded-bl-sm shadow-black/10 text-foreground!'
+                                                                    ? 'bg-primary text-primary-foreground rounded-tr-md rounded-br-xs'
+                                                                    : 'bg-card border border-border rounded-tl-md rounded-bl-xs text-foreground'
                                                                 }
                                                                         ${isSendingMessage && isMine ? 'animate-in fade-in slide-in-from-bottom-1 duration-200' : ''}
                                                                         `}>
 
                                                             <div className={`prose prose-sm max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground!'}`}>
-                                                                <MarkdownRenderer content={segment} className={`${isMine ? 'text-white!' : 'text-(--card-text)!'} whitespace-pre-wrap wrap-break-word text-foreground!`} />
+                                                                <MarkdownRenderer content={segment} className={`${isMine ? 'text-primary-foreground!' : 'text-foreground!'} whitespace-pre-wrap wrap-break-word`} />
                                                             </div>
-                                                            <span className="text-[12px] text-foreground font-medium flex items-center my-1.5 justify-end space-x-1">
+                                                            <div className={`flex items-center justify-end space-x-1 mt-0.5 -mb-0.5 sm:-mb-1 ${isMine ? 'text-primary-foreground/75' : 'text-muted-foreground'}`}>
                                                                 {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
-                                                                    <sub className="text-[10px] text-foreground font-medium opacity-85">Edited</sub>
+                                                                    <span className="text-[9px] sm:text-[10px] rounded-lg px-2 bg-card/70 text-foreground!">Edited</span>
                                                                 )}
-                                                                <sub className='text-[11px] text-foreground/80'>{formatChatTimestamp(msg.createdAt)}</sub>
+                                                                <span className='text-[9.5px] sm:text-[10px] font-medium tracking-wide'>
+                                                                    {formatChatTimestamp(msg.createdAt)}
+                                                                </span>
                                                                 {isMine && (
                                                                     isSendingMessage ? (
-                                                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-foreground/70" strokeWidth={2.5} />
+                                                                        <Loader2 className="w-3 h-3 animate-spin opacity-80" strokeWidth={2.5} />
                                                                     ) : isFailedMessage ? (
                                                                         <span className="ml-1 inline-flex items-center gap-1">
-                                                                            <sub className="text-[10px] text-foreground/60">Failed</sub>
+                                                                            <span className="text-[9px] font-bold text-red-300">Failed</span>
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => { void handleSendMessage(msg); }}
                                                                                 disabled={sendLockRef.current || isSending || isUploading}
-                                                                                className="inline-flex items-center gap-1 rounded-full border border-foreground/15 px-1.5 py-0.5 text-[10px] text-foreground/75 hover:bg-foreground/8 disabled:opacity-50"
+                                                                                className="inline-flex items-center gap-1 rounded-full border border-primary-foreground/30 px-1 py-0.5 text-[9px] hover:bg-primary-foreground/10 disabled:opacity-50 transition-colors"
                                                                                 title="Retry send"
                                                                             >
-                                                                                <RotateCcw className="w-3 h-3" strokeWidth={2.5} />
+                                                                                <RotateCcw className="w-2.5 h-2.5" strokeWidth={2.5} />
                                                                             </button>
                                                                         </span>
                                                                     ) : msg.readBy && msg.readBy.length > 0 ? (
-                                                                        <CheckCheck className="w-4 h-4 text-[10px] transform translate-y-0.5 text-foreground/70" strokeWidth={2.5} />
+                                                                        <CheckCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-300 transform translate-y-px" strokeWidth={2.5} />
                                                                     ) : (
-                                                                        <Check className="w-4 h-4 text-[10px] transform translate-y-0.5 text-foreground/70" strokeWidth={2.5} />
+                                                                        <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 opacity-80 transform translate-y-px" strokeWidth={2.5} />
                                                                     )
                                                                 )}
-                                                            </span>
+                                                            </div>
                                                         </div>
                                                     );
                                                 })}
@@ -1390,7 +1381,7 @@ export function ChatLayout() {
                 </div>
             </div>
         );
-    }), [messages, user, user?.id, user?.role, tappedMessageId, openDropdownId, highlightedMessageId, isDesktop, activeChat?.type, scrollToMessage, isSending, isUploading, handleReply, handleCopyText, handleEditMessage, handleDownload, handleDeleteMessage, handleSendMessage, onlineUsers]);
+    }), [messages, user, user?.id, user?.role, tappedMessageId, contextMenu, highlightedMessageId, isDesktop, activeChat?.type, scrollToMessage, isSending, isUploading, handleReply, handleCopyText, handleEditMessage, handleDownload, handleDeleteMessage, handleSendMessage, onlineUsers]);
 
     if (!user) return null;
 
@@ -1475,8 +1466,8 @@ export function ChatLayout() {
                                     onClick={() => setActiveChatId(chat.id)}
                                     className={`w-full flex items-center px-3 sm:px-4 py-3 sm:py-3.5 transition-all text-left group relative
                                         ${isActive
-                                            ? 'bg-primary/5 border-l-[3px] border-l-primary'
-                                            : 'hover:bg-muted/50 border-l-[3px] border-l-transparent'
+                                            ? 'bg-primary/10 border-l-[3px] border-l-primary'
+                                            : 'hover:bg-muted/60 border-l-[3px] border-l-transparent'
                                         }`}
                                 >
                                     <div className="relative mr-2.5 sm:mr-3 shrink-0">
@@ -1862,9 +1853,9 @@ export function ChatLayout() {
                                         </div>
                                     )}
 
-                                    {/* Preview Mode Render - unchanged */}
-                                    {isPreviewMode && messageDraft.trim() && (
-                                        <div className="my-1 px-4 py-3 mx-2 bg-muted rounded-xl border border-border max-h-37.5 overflow-y-auto custom-scrollbar">
+                                    {/* Live Markdown Preview - auto appears when markdown detected */}
+                                    {showMarkdownPreview && messageDraft.trim() && (
+                                        <div className="my-1 px-4 py-3 mx-2 bg-muted rounded-xl border border-border max-h-37.5 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-200">
                                             <div className="prose prose-sm max-w-none prose-p:text-foreground/80">
                                                 <MarkdownRenderer content={messageDraft} className='text-foreground!' />
                                             </div>
@@ -1872,7 +1863,7 @@ export function ChatLayout() {
                                     )}
 
                                     {/* Composer Row */}
-                                    <div className={`flex mr-2 flex-col space-y-1.5 sm:space-y-2`}>
+                                    <div className={`flex flex-row items-end mb-1.5 sm:mb-2`}>
                                         <input
                                             title="Upload File"
                                             type="file"
@@ -1883,34 +1874,25 @@ export function ChatLayout() {
                                         />
 
                                         {/* Main composer container */}
-                                        <div className="w-full bg-muted border border-transparent mb-1.5 sm:mb-2 rounded-2xl focus-within:bg-card focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                                        <div className="flex-1 bg-muted border border-transparent rounded-3xl focus-within:bg-card focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 transition-all shadow-sm">
                                             {/* Top row */}
-                                            <div className={`flex items-end ${isComposerExpanded ? 'px-2 pt-1' : 'px-2'}`}>
+                                            <div className={`flex items-end transition-all duration-500 ease-out ${isComposerExpanded ? 'px-3 pt-2' : 'px-2'}`}>
                                                 {/* Left buttons only in compact mode */}
                                                 {!isComposerExpanded && (
-                                                    <div className="flex items-center gap-0.5 sm:gap-1 pb-3 sm:pb-4">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                                            className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
-                                                            title={isPreviewMode ? "Write text" : "Preview markdown"}
-                                                        >
-                                                            {isPreviewMode ? <Pencil size={24} /> : <View size={24} />}
-                                                        </button>
-
+                                                    <div className="flex items-center gap-0.5 sm:gap-1 pb-2 sm:pb-2.5">
                                                         <button
                                                             type="button"
                                                             onClick={() => document.getElementById('chat-file-upload')?.click()}
-                                                            className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
+                                                            className="text-primary/70 hover:text-primary hover:bg-primary/10 transition-all p-1.5 rounded-full"
                                                             title="Attach file"
                                                         >
-                                                            <Paperclip size={22} className="cursor-pointer -rotate-45" />
+                                                            <Paperclip size={20} className="cursor-pointer -rotate-45" />
                                                         </button>
                                                     </div>
                                                 )}
 
                                                 {/* Textarea */}
-                                                <div className="relative flex-1 py-0.5">
+                                                <div className="relative flex-1">
                                                     <textarea
                                                         ref={textareaRef}
                                                         value={messageDraft}
@@ -1935,6 +1917,10 @@ export function ChatLayout() {
                                                             } else {
                                                                 emitTypingStop();
                                                             }
+
+                                                            // Auto-show markdown preview when markdown syntax detected
+                                                            const hasMarkdown = /[*#\[\]`>_~\-]/.test(newVal);
+                                                            setShowMarkdownPreview(hasMarkdown && newVal.trim().length > 0);
 
                                                             el.style.height = 'auto';
                                                             el.style.height = el.scrollHeight + 'px';
@@ -1983,9 +1969,9 @@ export function ChatLayout() {
                                                         }}
                                                         onFocus={handleEditorFocus}
                                                         onBlur={() => setTimeout(() => setShowMentionDropdown(false), 200)}
-                                                        placeholder={stagedFiles.length > 0 ? "Add a caption..." : `Message... ${isDesktop ? '(Shift + Enter for new line)' : ''}`}
+                                                        placeholder={stagedFiles.length > 0 ? "Add a caption..." : `Message...`}
                                                         rows={1}
-                                                        className={`w-full bg-transparent px-1.5 sm:px-2 pb-2 pt-2.5 sm:pt-3 border-none text-[13px] sm:text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-60 leading-relaxed`}
+                                                        className={`w-full bg-transparent px-2 sm:px-3 py-2.5 border-none text-[14px] sm:text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 resize-none max-h-60 leading-relaxed transition-[height] duration-500 ease-out`}
                                                     />
 
                                                     {/* Mention Dropdown */}
@@ -2019,19 +2005,6 @@ export function ChatLayout() {
                                                         </div>
                                                     )}
                                                 </div>
-
-                                                {/* Send button only in compact mode */}
-                                                {!isComposerExpanded && (messageDraft.trim() || stagedFiles.length > 0) && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => { void handleSendMessage(); }}
-                                                        disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
-                                                        className="shrink-0 mr-2 pb-3 sm:pb-4 px-1.5 sm:px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
-                                                        title="Send"
-                                                    >
-                                                        <Send size={24} className="cursor-pointer" />
-                                                    </button>
-                                                )}
                                             </div>
 
                                             {/* Bottom row actions in expanded mode */}
@@ -2040,36 +2013,31 @@ export function ChatLayout() {
                                                     <div className="flex items-center gap-0.5 sm:gap-1">
                                                         <button
                                                             type="button"
-                                                            onClick={() => setIsPreviewMode(!isPreviewMode)}
-                                                            className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
-                                                            title={isPreviewMode ? "Write text" : "Preview markdown"}
-                                                        >
-                                                            {isPreviewMode ? <Pencil size={22} /> : <View size={22} />}
-                                                        </button>
-
-                                                        <button
-                                                            type="button"
                                                             onClick={() => document.getElementById('chat-file-upload')?.click()}
-                                                            className="text-primary/80 hover:text-primary hover:scale-110 transition-all px-1.5 sm:px-2 rounded-lg"
+                                                            className="text-primary/70 hover:text-primary hover:bg-primary/10 transition-all p-1.5 rounded-full"
                                                             title="Attach file"
                                                         >
-                                                            <Paperclip size={22} className="cursor-pointer -rotate-45" />
+                                                            <Paperclip size={20} className="cursor-pointer -rotate-45" />
                                                         </button>
                                                     </div>
-
-                                                    {(messageDraft.trim() || stagedFiles.length > 0) && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => { void handleSendMessage(); }}
-                                                            disabled={(!messageDraft.trim() && stagedFiles.length === 0) || isSending || isUploading}
-                                                            className="shrink-0 pb-3 sm:pb-4 px-1.5 sm:px-2 rounded-lg text-primary/80 hover:text-primary active:scale-95 transition-all"
-                                                            title="Send"
-                                                        >
-                                                            <Send size={24} className="cursor-pointer" />
-                                                        </button>
-                                                    )}
                                                 </div>
                                             )}
+                                        </div>
+
+                                        {/* External Send Button (Animated Drop Style) */}
+                                        <div className={`flex items-end justify-center transition-all duration-300 ease-out ${(messageDraft.trim() || stagedFiles.length > 0)
+                                            ? 'w-12 opacity-100 scale-100 ml-1'
+                                            : 'w-0 opacity-0 scale-50 ml-0 overflow-hidden'
+                                            }`}>
+                                            <button
+                                                type="button"
+                                                onClick={() => { void handleSendMessage(); }}
+                                                disabled={isSending || isUploading}
+                                                className="w-12.5 h-12.5 shrink-0 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-md hover:bg-primary/90 hover:scale-[1.03] hover:shadow-lg active:scale-95 transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                                                title="Send message"
+                                            >
+                                                <Send size={18} className="cursor-pointer mx-auto" />
+                                            </button>
                                         </div>
                                     </div>
 
@@ -2166,6 +2134,23 @@ export function ChatLayout() {
                 isDestructive={confirmConfig.isDestructive}
                 confirmText={confirmConfig.isDestructive ? 'Delete' : 'Confirm'}
             />
+
+            {contextMenu && (
+                <MessageContextMenu
+                    msg={contextMenu.msg}
+                    user={user}
+                    isMine={contextMenu.msg.senderId === user?.id}
+                    isFailedMessage={contextMenu.msg.clientStatus === 'failed'}
+                    position={{ x: contextMenu.x, y: contextMenu.y }}
+                    isMobile={!isDesktop}
+                    onClose={() => setContextMenu(null)}
+                    onReply={handleReply}
+                    onCopyText={handleCopyText}
+                    onEditMessage={handleEditMessage}
+                    onDownload={handleDownload}
+                    onDeleteMessage={handleDeleteMessage}
+                />
+            )}
         </div>
     );
 }

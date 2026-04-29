@@ -13,9 +13,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CourseMaterialsService } from './course-materials.service';
 import { CreateCourseMaterialDto } from './dto/create-course-material.dto';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
+import { Access } from '../common/access-control/access.decorator';
+import { AccessLevel } from '../common/access-control/access-level.enum';
 
 @Controller('course-materials')
 @UseGuards(JwtAuthGuard)
+@Access(AccessLevel.READ)
 export class CourseMaterialsController {
   constructor(private readonly courseMaterialsService: CourseMaterialsService) {}
 
@@ -24,6 +27,7 @@ export class CourseMaterialsController {
    * Create a new course material
    */
   @Post()
+  @Access(AccessLevel.WRITE)
   async createMaterial(
     @Body() dto: CreateCourseMaterialDto,
     @Request() req: AuthenticatedRequest,
@@ -59,6 +63,7 @@ export class CourseMaterialsController {
    * Delete a course material
    */
   @Delete(':materialId')
+  @Access(AccessLevel.WRITE)
   async deleteMaterial(
     @Param('materialId') materialId: string,
     @Request() req: AuthenticatedRequest,
@@ -76,6 +81,7 @@ export class CourseMaterialsController {
    * Update a course material
    */
   @Put(':materialId')
+  @Access(AccessLevel.WRITE)
   async updateMaterial(
     @Param('materialId') materialId: string,
     @Body() dto: { title?: string; description?: string; fileIds?: string[]; filesToRemove?: string[] },

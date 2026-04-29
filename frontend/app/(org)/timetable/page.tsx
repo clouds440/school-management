@@ -77,7 +77,7 @@ export default function TimetablePage() {
     const timetableKey = token && user ? ['timetable', user.id, user.role] as const : null;
     const { data: entries = [], isLoading: loading, error } = useSWR<TimetableEntry[]>(timetableKey);
 
-    if (loading) return <Loading fullScreen text="Synchronizing Weekly Ledger..." size="lg" />;
+    if (loading) return <Loading className="h-full" text="Synchronizing Weekly Ledger..." size="lg" />;
 
     if (error) return (
         <div className="bg-destructive/10 border border-destructive/20 p-8 rounded-3xl text-destructive text-center">

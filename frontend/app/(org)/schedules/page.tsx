@@ -95,7 +95,7 @@ export default function SchedulesPage() {
         }
     }, [sectionsError, dispatch]);
 
-    if (sectionsLoading) return <Loading fullScreen text="Synchronizing Time-slots..." size="lg" />;
+    if (sectionsLoading) return <Loading className="h-full" text="Synchronizing Time-slots..." size="lg" />;
 
     return (
         <div className="flex flex-col h-full w-full space-y-6 pb-6">

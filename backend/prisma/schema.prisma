@@ -42,6 +42,7 @@ model User {
   email                 String             @unique
   password              String
   role                  Role               @default(SUPER_ADMIN)
+  status                UserStatus         @default(ACTIVE)
   isFirstLogin          Boolean            @default(true)
   organizationId        String?
   createdAt             DateTime           @default(now())
@@ -386,6 +387,7 @@ enum TeacherStatus {
   ACTIVE
   SUSPENDED
   ON_LEAVE
+  EMERITUS
   DELETED
 }
 
@@ -414,6 +416,15 @@ enum ThemeMode {
   LIGHT
   DARK
   SYSTEM
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  ON_LEAVE
+  ALUMNI
+  EMERITUS
+  DELETED
 }
 
 // ─── CHAT SYSTEM ────────────────────────────────────────────────────────────

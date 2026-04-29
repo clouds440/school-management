@@ -89,7 +89,6 @@ export default function LoginPage() {
               fill
               className="object-contain animate-float relative z-10"
               sizes="(max-width: 1024px) 0px, 28rem"
-              unoptimized
             />
           </div>
         </div>

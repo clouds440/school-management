@@ -102,9 +102,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isUserPath = isAdminPath || (segments.length >= 1 && DASHBOARD_MODULES.includes(segments[0]));
 
             if (user) {
-                if ((user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN) && user.isFirstLogin && pathname !== '/admin/change-password') {
-                    router.replace('/admin/change-password');
-                    return;
+                // Enforce password change on first login for all roles
+                if (user.isFirstLogin && user.role != Role.ORG_ADMIN) {
+                    const changePasswordPath = (user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN)
+                        ? '/admin/change-password'
+                        : '/change-password';
+
+                    if (pathname !== changePasswordPath) {
+                        router.replace(changePasswordPath);
+                        return;
+                    }
                 }
 
                 if (isGuestPath) {
@@ -200,8 +207,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <AuthContext.Provider value={{ token, user, loading, login, logout, updateUser }}>
-            {loading ? 
-                <Loading size='xl' fullScreen={true}/> : children
+            {loading ?
+                <Loading size='xl' fullScreen={true} /> : children
             }
         </AuthContext.Provider>
     );

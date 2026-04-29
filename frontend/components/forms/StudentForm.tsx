@@ -1,5 +1,7 @@
 'use client';
 
+import { mutate } from 'swr';
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -38,6 +40,7 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
         setValue,
         watch,
         trigger,
+        reset,
         formState: { errors },
     } = useForm({
         resolver: zodResolver(isProfile ? studentProfileSchema : (studentId ? studentUpdateSchema : studentCreateSchema)),
@@ -85,6 +88,33 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
             address: ''
         }
     });
+
+    useEffect(() => {
+        if (initialData) {
+            reset({
+                name: initialData.user?.name || '',
+                email: initialData.user?.email || '',
+                password: '',
+                registrationNumber: initialData.registrationNumber || '',
+                rollNumber: initialData.rollNumber || '',
+                admissionDate: initialData.admissionDate ? new Date(initialData.admissionDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                status: initialData.status as StudentStatus || StudentStatus.ACTIVE,
+                sectionIds: initialData.enrollments?.map(e => e.section.id) || [],
+                major: initialData.major || '',
+                department: initialData.department || '',
+                fatherName: initialData.fatherName || '',
+                age: initialData.age?.toString() || '',
+                gender: initialData.gender || '',
+                fee: initialData.fee?.toString() || '',
+                feePlan: initialData.feePlan || '',
+                graduationDate: initialData.graduationDate ? new Date(initialData.graduationDate).toISOString().split('T')[0] : '',
+                phone: initialData.user?.phone || '',
+                emergencyContact: initialData.emergencyContact || '',
+                bloodGroup: initialData.bloodGroup || '',
+                address: initialData.address || ''
+            });
+        }
+    }, [initialData, reset]);
 
     const formData = watch();
 
@@ -139,6 +169,9 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
             } else {
                 router.push('/students');
             }
+            
+            // Invalidate all student lists
+            mutate((key: any) => Array.isArray(key) && key[0] === 'students');
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Failed to save student';
 

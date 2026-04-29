@@ -12,6 +12,7 @@ export default function AdminChangePasswordPage() {
     const handleSubmit = async (oldPassword: string, newPassword: string) => {
         if (!token) return;
         const res = await api.auth.changePassword(oldPassword, newPassword, token);
+        // This will update the GlobalState and user object
         login(res.access_token);
     };
 
@@ -23,7 +24,9 @@ export default function AdminChangePasswordPage() {
                     ? 'For security reasons, you must change the default super admin password before accessing the dashboard.'
                     : 'Update your super admin administrative password'}
                 onSubmit={handleSubmit}
-                onSuccess={() => router.push('/admin')}
+                onSuccess={() => {
+                    setTimeout(() => router.push('/admin'), 100);
+                }}
             />
         </div>
     );

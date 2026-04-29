@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
         port: '3000',
         pathname: '/uploads/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
     ],
     // Allow blob: and data: object URLs for local crop previews
     dangerouslyAllowSVG: true,

@@ -110,7 +110,7 @@ export default function OrganizationsPage() {
             dispatch({ type: 'UI_START_PROCESSING', payload: `approve-${id}` });
             await api.admin.approveOrganization(id, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: `${name} approved successfully`, type: 'success' } });
-            mutate(orgsKey);
+                mutate((key: any) => Array.isArray(key) && key[0] === 'admin-organizations');
             // Also refresh admin stats
             if (token) {
                 statsStore.fetchAll(token).then(({ admin }) => {
@@ -142,11 +142,11 @@ export default function OrganizationsPage() {
             if (modalMode === 'REJECT') {
                 await api.admin.rejectOrganization(operatingOrg.id, reason, token);
                 dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingOrg.name} rejected`, type: 'info' } });
-                mutate(orgsKey);
+                    mutate((key: any) => Array.isArray(key) && key[0] === 'admin-organizations');
             } else if (modalMode === 'SUSPEND') {
                 await api.admin.suspendOrganization(operatingOrg.id, reason, token);
                 dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingOrg.name} suspended`, type: 'info' } });
-                mutate(orgsKey);
+                    mutate((key: any) => Array.isArray(key) && key[0] === 'admin-organizations');
             } else {
                 if (activeStatusTab === OrgStatus.REJECTED) {
                     await api.admin.rejectOrganization(operatingOrg.id, reason, token);
@@ -154,7 +154,7 @@ export default function OrganizationsPage() {
                     await api.admin.suspendOrganization(operatingOrg.id, reason, token);
                 }
                 dispatch({ type: 'TOAST_ADD', payload: { message: `Status message updated for ${operatingOrg.name}`, type: 'success' } });
-                mutate(orgsKey);
+                    mutate((key: any) => Array.isArray(key) && key[0] === 'admin-organizations');
             }
             setIsModalOpen(false);
             setOperatingOrg(null);
@@ -192,7 +192,7 @@ export default function OrganizationsPage() {
                 <div className="flex items-start gap-4 min-w-0">
                     <div className={`w-10 h-10 ${row.logoUrl ? 'bg-transparent' : 'bg-card/5'} rounded-lg flex items-center justify-center text-primary shrink-0`}>
                         {row.logoUrl ? (
-                            <Image src={getPublicUrl(row.logoUrl)} alt="Org Logo/Icon" width={40} height={40} className="w-10 h-10 bg-transparent rounded-full object-contain" unoptimized />
+                            <Image src={getPublicUrl(row.logoUrl)} alt="Org Logo/Icon" width={40} height={40} className="w-10 h-10 bg-transparent rounded-full object-contain" />
                         ) : (
                             <Building2 className="w-5 h-5" />
                         )}
@@ -318,7 +318,7 @@ export default function OrganizationsPage() {
     ];
 
     if ((loading || (!user && !loading)) || (isFetching && !fetchedData)) {
-        return <Loading fullScreen text="Loading Organizations..." size="lg" icon={Building2} />;
+        return <Loading className="h-full" text="Loading Organizations..." size="lg" icon={Building2} />;
     }
 
     const handleViewOrg = (org: Organization) => {

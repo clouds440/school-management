@@ -97,7 +97,8 @@ export default function SectionAttendancePage() {
             }
             await api.org.markAttendance(sessionId as string, records, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Attendance saved successfully', type: 'success' } });
-            mutate(dailyKey);
+            // Invalidate all attendance-related cache keys for this section
+            mutate((key: any) => Array.isArray(key) && key[0].startsWith('attendance-'));
         } catch (error: unknown) {
             dispatch({
                 type: 'TOAST_ADD',

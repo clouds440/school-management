@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pencil, Trash2, Eye, UserPen, Check, X, ShieldAlert, CheckCircle2, MessageSquareText, Send, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, Eye, UserPen, Check, X, ShieldAlert, CheckCircle2, MessageSquareText, Send, Loader2, Lock } from 'lucide-react';
+import { useAccess } from '@/hooks/useAccess';
 
-export type AdminActionVariant = 'approve' | 'reject' | 'suspend' | 'unsuspend' | 'resolve' | 'reapprove' | 'editMessage' | 'mail';
+export type AdminActionVariant = 'approve' | 'reject' | 'suspend' | 'unsuspend' | 'resolve' | 'reapprove' | 'editMessage' | 'mail' | 'restore';
 
 export interface AdminAction {
     variant: AdminActionVariant;
@@ -33,7 +34,8 @@ const adminActionConfig: Record<AdminActionVariant, { icon: React.ElementType, c
     reapprove: { icon: Check, color: 'text-primary hover:bg-primary/10', defaultTitle: 'Re-approve' },
     resolve: { icon: CheckCircle2, color: 'text-primary hover:bg-primary/10', defaultTitle: 'Resolve' },
     editMessage: { icon: MessageSquareText, color: 'text-blue-600 hover:bg-blue-500/10', defaultTitle: 'Edit Message' },
-    mail: { icon: Send, color: 'text-primary hover:bg-primary/10', defaultTitle: 'Send Mail' }
+    mail: { icon: Send, color: 'text-primary hover:bg-primary/10', defaultTitle: 'Send Mail' },
+    restore: { icon: Check, color: 'text-emerald-600 hover:bg-emerald-500/10', defaultTitle: 'Restore' }
 };
 
 export const TableActions: React.FC<TableActionsProps> = ({
@@ -49,11 +51,12 @@ export const TableActions: React.FC<TableActionsProps> = ({
     className = "",
     showLabels = false
 }) => {
+    const { canWrite } = useAccess();
     // Select the appropriate icon based on variant
     const EditIcon = variant === 'user' ? UserPen : Pencil;
 
     return (
-        <div className={`flex gap-3 items-center ${className}`}>
+        <div className={`flex gap-1 items-center ${className}`}>
             {onView && !isViewAndEdit && (
                 <button
                     onClick={(e) => {
@@ -74,8 +77,8 @@ export const TableActions: React.FC<TableActionsProps> = ({
                         e.stopPropagation();
                         onEdit();
                     }}
-                    className="text-primary cursor-pointer hover:text-primary px-3 py-2.5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all shadow-xs active:scale-95 group relative flex items-center gap-2"
-                    title={editTitle}
+                    className={`text-primary cursor-pointer hover:text-primary px-3 py-2.5 hover:bg-primary/10 border border-primary/20 rounded-lg transition-all shadow-xs active:scale-95 group relative flex items-center gap-2 ${!canWrite ? 'opacity-70 bg-muted/30 border-muted text-muted-foreground' : ''}`}
+                    title={canWrite ? editTitle : `${editTitle} (Read-only)`}
                 >
                     <div className="flex items-center gap-2">
                         {isViewAndEdit &&
@@ -83,7 +86,7 @@ export const TableActions: React.FC<TableActionsProps> = ({
                                 <Eye className="w-4 h-4" /> <span className="text-current/30 text-[10px]">/</span>
                             </div>
                         }
-                        <EditIcon className="w-4 h-4" />
+                        {!canWrite ? <Lock className="w-3.5 h-3.5 text-muted-foreground/60 mr-1" /> : <EditIcon className="w-4 h-4" />}
                     </div>
                     {showLabels && <span className="text-[10px] font-black tracking-wider">{editTitle}</span>}
                 </button>
@@ -100,9 +103,9 @@ export const TableActions: React.FC<TableActionsProps> = ({
                             e.stopPropagation();
                             action.onClick();
                         }}
-                        disabled={action.disabled || action.loading}
+                        disabled={action.disabled || action.loading || !canWrite}
                         className={`${config.color} cursor-pointer px-3 py-2.5 border border-current/20 rounded-lg transition-all shadow-xs active:scale-95 disabled:opacity-50 group relative flex items-center gap-2`}
-                        title={label}
+                        title={!canWrite ? `${label} (Permission Denied)` : label}
                     >
                         {action.loading ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -120,9 +123,9 @@ export const TableActions: React.FC<TableActionsProps> = ({
                         e.stopPropagation();
                         onDelete();
                     }}
-                    disabled={isDeleting}
-                    className="text-red-600 cursor-pointer hover:bg-red-500/50 px-3 py-2.5 border border-red-500/20 rounded-lg transition-all shadow-xs active:scale-95 disabled:opacity-50 group flex items-center gap-2"
-                    title={deleteTitle}
+                    disabled={isDeleting || !canWrite}
+                    className={`text-red-600 cursor-pointer hover:bg-red-500/50 px-3 py-2.5 border border-red-500/20 rounded-lg transition-all shadow-xs active:scale-95 disabled:opacity-50 group flex items-center gap-2 ${!canWrite ? 'hidden' : ''}`}
+                    title={canWrite ? deleteTitle : `${deleteTitle} (Permission Denied)`}
                 >
                     {isDeleting ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

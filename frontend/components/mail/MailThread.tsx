@@ -43,7 +43,7 @@ function AttachmentPreview({ file }: { file: Attachment }) {
         >
             {isImage ? (
                 <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-border/10 relative shadow-sm hover:scale-105 transition-transform duration-300">
-                    <Image src={url} alt={file.filename} fill className="object-cover" unoptimized />
+                    <Image src={url} alt={file.filename} fill className="object-cover" sizes="(max-width: 768px) 100vw, 300px" />
                 </div>
             ) : (
                 <div className="w-10 h-10 bg-card/5 rounded-full flex items-center justify-center shrink-0 border border-border/10 shadow-sm">

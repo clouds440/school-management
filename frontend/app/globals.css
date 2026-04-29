@@ -344,7 +344,7 @@ body {
   }
 
   /* --- Brute-force overrides removed to fix quirks --- */
-  
+
   /* Placeholder text in dark mode */
   .dark ::placeholder {
     color: var(--foreground);

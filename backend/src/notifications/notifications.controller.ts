@@ -11,7 +11,12 @@ import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 
+import { Access, AnonymousAccess } from '../common/access-control/access.decorator';
+import { AccessLevel } from '../common/access-control/access-level.enum';
+
 @UseGuards(JwtAuthGuard)
+@Access(AccessLevel.READ)
+@AnonymousAccess()
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}

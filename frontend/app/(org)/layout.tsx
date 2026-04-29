@@ -19,10 +19,15 @@ import { useGlobal } from '@/context/GlobalContext';
 import { useSocket } from '@/hooks/useSocket';
 
 // Status Message Components
-const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayload | null }) => {
+const StatusOverlay = ({ orgData, user }: { orgData: Organization | null, user: JwtPayload | null }) => {
+    // If we have user status but no orgData yet, we can still show a basic message
+    const currentStatus = orgData?.status || user?.status;
+    const accessLevel = user?.accessLevel ?? 2;
+
+    if (accessLevel > 0) return null;
     if (!orgData) return null;
 
-    if (orgData.status === OrgStatus.PENDING) {
+    if (currentStatus === OrgStatus.PENDING) {
         return (
             <div className="flex flex-col items-center justify-center p-12 bg-card/50 backdrop-blur-md rounded-lg shadow-xl border border-border text-center max-w-2xl mx-5 lg:mx-auto my-10">
                 <div className="p-6 bg-yellow-50 rounded-full mb-6 relative">
@@ -105,6 +110,46 @@ const StatusOverlay = ({ orgData, user }: { orgData: Organization, user: JwtPayl
         );
     }
 
+    if (user?.userStatus === 'SUSPENDED') {
+        // We don't return a blocking overlay here because Level 1 users (Suspended) 
+        // are supposed to have READ access. Instead, we show a banner in the layout.
+        return null;
+    }
+
+    if (user?.userStatus === 'ALUMNI' || user?.userStatus === 'EMERITUS') {
+        return (
+            <div className="flex flex-col items-center justify-center p-12 bg-card/70 backdrop-blur-md rounded-lg shadow-xl border border-border text-center max-w-2xl mx-auto my-10">
+                <div className="p-6 bg-blue-50 rounded-full mb-6 relative">
+                    <GraduationCap className="w-20 h-20 text-blue-500" />
+                </div>
+                <h2 className="text-4xl font-black text-card-foreground mb-4 tracking-tight italic">Account Retired</h2>
+                <p className="text-muted-foreground text-lg mb-8 font-medium">
+                    Your account has been marked as {user.userStatus === 'ALUMNI' ? 'Alumni' : 'Emeritus'} by your organization.
+                </p>
+                <div className="bg-blue-50 text-blue-800 p-8 rounded-lg border border-blue-100 w-full mb-10 shadow-inner text-center">
+                    <p className="font-bold">You no longer have access to system records and write operations.</p>
+                    <p className="text-sm opacity-70 mt-2">You can still access your mail and update your security settings.</p>
+                </div>
+                <div className="flex gap-4">
+                    <Link
+                        href="/mail"
+                        className="inline-flex items-center gap-4 bg-card hover:bg-muted text-foreground px-8 py-4 rounded-lg font-bold shadow-xl transition-all border border-border"
+                    >
+                        <Mail className="w-5 h-5" />
+                        Access Mail
+                    </Link>
+                    <Link
+                        href="/change-password"
+                        className="inline-flex items-center gap-4 bg-card hover:bg-muted text-foreground px-8 py-4 rounded-lg font-bold shadow-xl transition-all border border-border"
+                    >
+                        <Settings className="w-5 h-5" />
+                        Security Settings
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
     return null;
 };
 
@@ -117,7 +162,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
     const orgData = state.stats.orgData;
     const userProfile = state.auth.userProfile;
     const chatStats = state.stats.chat;
-    const isApproved = orgData?.status === OrgStatus.APPROVED;
+    const accessLevel = user?.accessLevel ?? 2;
+    const isApproved = accessLevel >= 1;
 
     const { subscribe } = useSocket({
         token: token,
@@ -203,8 +249,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
         const orgLinks: SidebarLink[] = [];
 
         if (!isApproved) {
-            // Simplified links for non-approved orgs - Allow Settings if REJECTED for ORG_ADMIN
-            if (orgData?.status === OrgStatus.REJECTED && user?.role === Role.ORG_ADMIN) {
+            // Simplified links for non-approved orgs - Allow Settings/Mail
+            if (user?.role === Role.ORG_ADMIN) {
                 orgLinks.push({ id: 'SETTINGS', label: 'Settings', href: '/settings', icon: Settings });
             }
             return orgLinks;
@@ -298,8 +344,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
     const showPadding = isOrgAdmin || isGrades || isOverview;
 
     // Check if the current route is allowed for non-approved organizations
-    const allowedSubPaths = ['settings', 'change-password'];
-    const isAllowedRoute = allowedSubPaths.some(sub => pathname === `/${sub}`);
+    const allowedSubPaths = ['settings', 'change-password', 'mail', 'contact'];
+    const isAllowedRoute = allowedSubPaths.some(sub => pathname.startsWith(`/${sub}`));
 
     return (
         <DashboardLayout
@@ -307,8 +353,24 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             bottomLinks={bottomLinks}
             showPadding={showPadding}
         >
+            {user?.userStatus === 'SUSPENDED' && (
+                <div className="mx-6 my-6 p-4 bg-orange-50 border border-orange-200 rounded-xl flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2 bg-orange-100 rounded-lg">
+                            <ShieldOff className="w-5 h-5 text-orange-600" />
+                        </div>
+                        <div>
+                            <p className="font-bold text-orange-900 leading-none">Read-Only Mode</p>
+                            <p className="text-sm text-orange-700 mt-1">Your account is suspended. You can view data but cannot make changes.</p>
+                        </div>
+                    </div>
+                    <Link href="/mail" className="text-xs font-black bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        Appeal Suspension
+                    </Link>
+                </div>
+            )}
             {!isApproved && !isAllowedRoute ? (
-                <StatusOverlay orgData={orgData!} user={user} />
+                <StatusOverlay orgData={orgData} user={user} />
             ) : (
                 children
             )}

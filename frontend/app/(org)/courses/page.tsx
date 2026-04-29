@@ -108,7 +108,7 @@ export default function CoursesPage() {
             await api.org.updateCourse(editingCourse.id, editFormData, token);
             setEditModalOpen(false);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Course updated successfully', type: 'success' } });
-            mutate(coursesKey);
+            mutate((key: any) => Array.isArray(key) && key[0] === 'courses');
         } catch (err: unknown) {
             const apiError = err as ApiError;
             const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Error updating course';
@@ -125,7 +125,7 @@ export default function CoursesPage() {
             await api.org.deleteCourse(deletingCourse.id, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Course deleted successfully', type: 'success' } });
             setDeleteDialogOpen(false);
-            mutate(coursesKey);
+            mutate((key: any) => Array.isArray(key) && key[0] === 'courses');
         } catch (err: unknown) {
             const apiError = err as ApiError;
             const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Error deleting course';
@@ -208,7 +208,7 @@ export default function CoursesPage() {
     ];
 
     if ((!token && !user) || (isFetching && !fetchedData)) {
-        return <Loading fullScreen text="Loading Courses..." size="lg" />;
+        return <Loading className="h-full" text="Loading Courses..." size="lg" />;
     }
 
     return (

@@ -50,7 +50,7 @@ export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(
         };
 
         return (
-            <div className={`flex items-center gap-3 ${className}`}>
+            <div className={`flex items-center w-auto gap-3 ${className}`}>
                 <button
                     ref={ref}
                     type="button"

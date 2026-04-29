@@ -30,17 +30,20 @@ export default function OrganizationChangePasswordPage() {
                     }
                     onSubmit={handleSubmit}
                     onSuccess={() => {
-                        if (!user || !user.userName) {
-                            router.push('/');
-                            return;
-                        }
-
-                        const target = user.role === Role.ORG_ADMIN
-                            ? '/settings'
-                            : user.role === Role.STUDENT
-                                ? `/students/${user.id}`
-                                : `/teachers/${user.id}`;
-                        router.push(target);
+                        // Small delay to allow AuthContext state to sync with the new token
+                        setTimeout(() => {
+                            if (!user || !user.userName) {
+                                router.push('/');
+                                return;
+                            }
+    
+                            const target = user.role === Role.ORG_ADMIN
+                                ? '/settings'
+                                : user.role === Role.STUDENT
+                                    ? `/students/${user.id}`
+                                    : `/teachers/${user.id}`;
+                            router.push(target);
+                        }, 100);
                     }}
                 />
             </div>

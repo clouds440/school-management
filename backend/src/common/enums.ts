@@ -27,6 +27,7 @@ export enum TeacherStatus {
   ACTIVE = 'ACTIVE',
   SUSPENDED = 'SUSPENDED',
   ON_LEAVE = 'ON_LEAVE',
+  EMERITUS = 'EMERITUS',
   DELETED = 'DELETED',
 }
 
@@ -34,6 +35,15 @@ export enum StudentStatus {
   ACTIVE = 'ACTIVE',
   SUSPENDED = 'SUSPENDED',
   ALUMNI = 'ALUMNI',
+  DELETED = 'DELETED',
+}
+
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  ON_LEAVE = 'ON_LEAVE',
+  ALUMNI = 'ALUMNI',
+  EMERITUS = 'EMERITUS',
   DELETED = 'DELETED',
 }
 

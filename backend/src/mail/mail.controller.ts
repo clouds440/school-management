@@ -16,7 +16,11 @@ import { UpdateMailDto } from './dto/update-mail.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 
+import { Access } from '../common/access-control/access.decorator';
+import { AccessLevel } from '../common/access-control/access-level.enum';
+
 @UseGuards(JwtAuthGuard)
+@Access(AccessLevel.NONE)
 @Controller('mail')
 export class MailController {
   constructor(private readonly mailService: MailService) {}

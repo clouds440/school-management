@@ -18,6 +18,7 @@ interface ModalFormProps {
     showSubmit?: boolean;
     maxWidth?: string;
     feedback?: ReactNode;
+    requireWrite?: boolean;
 }
 
 export function ModalForm({
@@ -33,7 +34,8 @@ export function ModalForm({
     showCancel = true,
     showSubmit = true,
     maxWidth = 'max-w-lg',
-    feedback
+    feedback,
+    requireWrite
 }: ModalFormProps) {
     const footer = (showCancel || showSubmit) ? (
         <div className="flex justify-end gap-3 sm:gap-4 flex-col-reverse sm:flex-row">
@@ -53,6 +55,7 @@ export function ModalForm({
                     form="modal-form"
                     isLoading={isSubmitting}
                     loadingId={loadingId}
+                    requireWrite={requireWrite !== false}
                     className={`w-full sm:w-auto px-6 sm:px-10 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold tracking-wider text-primary-foreground border-none shadow-lg hover:scale-105 active:scale-95 ${
                         variant === 'danger' ? 'bg-destructive hover:bg-destructive/90 shadow-destructive/20' :
                         variant === 'warning' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' :

@@ -7,7 +7,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { Role, StudentStatus } from '../common/enums';
+import { Role, StudentStatus, UserStatus } from '../common/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { UserService } from '../users/user.service';
@@ -94,11 +94,15 @@ export class StudentService {
   }
 
   async getStudents(orgId: string, options: PaginationOptions) {
-    const { skip, take, sortBy, sortOrder } = getPaginationOptions(options);
+    const { skip, take, sortBy, sortOrder, status, deleted } = getPaginationOptions(options);
 
     const where: Prisma.StudentWhereInput = {
       organizationId: orgId,
-      status: { not: StudentStatus.DELETED },
+      status: deleted
+        ? StudentStatus.DELETED
+        : status
+          ? { in: status.split(',') as StudentStatus[] }
+          : { not: StudentStatus.DELETED },
       ...(options.sectionId
         ? {
             enrollments: {
@@ -260,6 +264,7 @@ export class StudentService {
           organizationId: orgId,
           name: data.name,
           phone: data.phone,
+          status: data.status as unknown as UserStatus,
         }, prisma);
 
         const student = await prisma.student.create({
@@ -284,7 +289,7 @@ export class StudentService {
             bloodGroup: data.bloodGroup,
             gender: data.gender,
             feePlan: data.feePlan,
-            status: data.status,
+            status: data.status as unknown as StudentStatus,
             enrollments: data.sectionIds
               ? { create: data.sectionIds.map((sectionId) => ({ sectionId })) }
               : undefined,
@@ -358,6 +363,10 @@ export class StudentService {
       studentFields,
       student.user.email,
     );
+
+    if (data.status !== undefined) {
+      userData.status = data.status as unknown as UserStatus;
+    }
 
     // --- Role-based Field Locking ---
     const isOrgAdmin = userContext.role === Role.ORG_ADMIN;
@@ -451,7 +460,7 @@ export class StudentService {
         title: 'Account Status Updated',
         body: `Your account status has been changed to ${data.status.toLowerCase()}.`,
         type: 'USER_STATUS_CHANGE',
-        actionUrl: '/profile',
+        actionUrl: `/students/${student.userId}/profile`,
         metadata: { oldStatus: student.status, newStatus: data.status },
       });
     }
@@ -460,11 +469,48 @@ export class StudentService {
   }
 
   async deleteStudent(orgId: string, id: string) {
-    const result = await this.prisma.student.update({
+    const student = await this.prisma.student.findUnique({
       where: { id },
-      data: { status: StudentStatus.DELETED },
+      select: { userId: true },
     });
+
+    if (!student) throw new NotFoundException('Student not found');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.student.update({
+        where: { id },
+        data: { status: StudentStatus.DELETED },
+      });
+
+      await tx.user.update({
+        where: { id: student.userId },
+        data: { status: UserStatus.DELETED },
+      });
+    });
+
     return { message: 'Student deleted successfully' };
+  }
+
+  async restoreStudent(orgId: string, id: string, status: StudentStatus = StudentStatus.ACTIVE) {
+    const student = await this.prisma.student.findFirst({
+      where: { id, organizationId: orgId, status: StudentStatus.DELETED },
+    });
+
+    if (!student) throw new NotFoundException('Deleted student not found');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.student.update({
+        where: { id },
+        data: { status: status as unknown as StudentStatus },
+      });
+
+      await tx.user.update({
+        where: { id: student.userId },
+        data: { status: UserStatus.ACTIVE as unknown as UserStatus },
+      });
+    });
+
+    return { message: 'Student restored successfully' };
   }
 
   async getStudentByUserId(userId: string) {

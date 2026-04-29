@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Role } from '../common/enums';
+import { Role, UserStatus } from '../common/enums';
 import * as bcrypt from 'bcrypt';
 import { BCRYPT_ROUNDS } from '../common/utils';
 import { Prisma } from '@prisma/client';
@@ -18,11 +18,12 @@ interface CreateUserInput {
   name: string;
   phone?: string;
   avatarUrl?: string;
+  status?: UserStatus;
 }
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async createUser(data: CreateUserInput, tx?: Prisma.TransactionClient) {
     const db = tx || this.prisma;
@@ -46,6 +47,7 @@ export class UserService {
         organizationId: data.organizationId,
         name: data.name,
         phone: data.phone,
+        status: (data.status as unknown as UserStatus) || UserStatus.ACTIVE,
       },
     });
   }
@@ -62,6 +64,7 @@ export class UserService {
     if (data.name !== undefined) updateData.name = data.name;
     if (data.phone !== undefined) updateData.phone = data.phone;
     if (data.role !== undefined) updateData.role = data.role;
+    if (data.status !== undefined) updateData.status = data.status as UserStatus;
 
     if (data.email !== undefined && data.email !== user.email) {
       const existingUser = await db.user.findUnique({
@@ -84,10 +87,20 @@ export class UserService {
       updateData.avatarUpdatedAt = new Date();
     }
 
-    return db.user.update({
+    const updated = await db.user.update({
       where: { id: userId },
       data: updateData,
     });
+
+    // Revoke all sessions if status or role changes, so they get a new JWT
+    if (data.status !== undefined || data.role !== undefined) {
+      await db.session.updateMany({
+        where: { userId, isActive: true },
+        data: { isActive: false },
+      });
+    }
+
+    return updated;
   }
 
 

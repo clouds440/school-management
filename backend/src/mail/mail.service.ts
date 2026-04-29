@@ -48,21 +48,26 @@ export class MailService {
 
   async createMail(dto: CreateMailDto, user: MailUser) {
     // --- Org Status Enforcement ---
-    if (user.organizationId) {
+    const isPlatformAdmin = user.role === Role.SUPER_ADMIN || user.role === Role.PLATFORM_ADMIN;
+    
+    if (!isPlatformAdmin && user.organizationId) {
       const org = await this.prisma.organization.findUnique({
         where: { id: user.organizationId },
         select: { status: true },
       });
       const status = org?.status as OrgStatus | undefined;
-      if (
-        status &&
-        status !== OrgStatus.APPROVED &&
-        dto.targetRole !== Role.PLATFORM_ADMIN &&
-        dto.targetRole !== Role.SUPER_ADMIN
-      ) {
-        throw new ForbiddenException(
-          'Your organization is not active. You can only contact the platform administrative team.',
-        );
+      
+      if (status && status !== OrgStatus.APPROVED) {
+        // Restricted orgs can only contact platform support
+        const contactingSupport = 
+          dto.targetRole === Role.PLATFORM_ADMIN || 
+          dto.targetRole === Role.SUPER_ADMIN;
+          
+        if (!contactingSupport) {
+          throw new ForbiddenException(
+            'Your organization is not active. You can only contact the platform administrative team.',
+          );
+        }
       }
     }
 

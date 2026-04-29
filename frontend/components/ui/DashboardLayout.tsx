@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LogOut, Key, Mail, MessageCircleQuestionMark } from 'lucide-react';
+import { LogOut, Key, Mail, MessageCircleQuestionMark, Eye } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { useGlobal } from '@/context/GlobalContext';
@@ -26,6 +26,15 @@ interface DashboardLayoutProps {
     bottomLinks?: SidebarLink[];
     showPadding?: boolean;
 }
+
+const ReadOnlyBanner = () => (
+    <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-center gap-2 animate-in slide-in-from-top duration-500">
+        <Eye className="w-4 h-4 text-amber-600" />
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">
+            Read-Only Mode: Your account has restricted write access.
+        </span>
+    </div>
+);
 
 export function DashboardLayout({ children, links, bottomLinks = [], showPadding = false }: DashboardLayoutProps) {
     const { logout, user } = useAuth();
@@ -196,34 +205,34 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     </span>
                                 </Link>
 
-                               {user?.role != Role.STUDENT && 
-                                <Link
-                                    href="/contact"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        router.push('/contact');
-                                    }}
-                                    className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-lg text-sidebar-text/60 ${pathname === '/contact' ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
-                                    title="Contact Us"
-                                >
+                                {user?.role != Role.STUDENT &&
+                                    <Link
+                                        href="/contact"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            router.push('/contact');
+                                        }}
+                                        className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-lg text-sidebar-text/60 ${pathname === '/contact' ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
+                                        title="Contact Us"
+                                    >
                                         <MessageCircleQuestionMark className="w-4 h-4 shrink-0 text-primary/80" />
-                                    {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Contact Us</span>}
-                                </Link>}
+                                        {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Contact Us</span>}
+                                    </Link>}
                             </>
                         )}
 
-                            <Link
-                                href={user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : '/change-password'}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : '/change-password');
-                                }}
-                                className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-lg text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
-                                title="Change Password"
-                            >
-                                <Key className="w-4 h-4 shrink-0 text-primary/80" />
-                                {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Change Password</span>}
-                            </Link>
+                        <Link
+                            href={user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : '/change-password'}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : '/change-password');
+                            }}
+                            className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-lg text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
+                            title="Change Password"
+                        >
+                            <Key className="w-4 h-4 shrink-0 text-primary/80" />
+                            {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Change Password</span>}
+                        </Link>
 
 
                         {/* log out button separater */}
@@ -243,8 +252,9 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
-                {/* Universal Content Wrapper - This is the ONLY scrollable area */}
-                <div className={`flex-1 min-h-0 w-full ${showPadding ? 'px-0.75 md:px-2 py-1 md:py-2 bg-background' : 'p-0 bg-card'} overflow-y-auto custom-scrollbar flex flex-col`}>
+                {/* Universal Content Wrapper - This is the ONLY scrollable area (unless in app-like routes) */}
+                <div className={`flex-1 min-h-0 w-full ${showPadding ? 'px-0.75 md:px-2 py-1 md:py-2 bg-background' : 'p-0 bg-card'} ${pathname.includes('/chat') || pathname.includes('/mail') ? 'overflow-hidden' : 'overflow-y-auto'} custom-scrollbar flex flex-col`}>
+                    {user?.accessLevel === 1 && <ReadOnlyBanner />}
                     {children}
                 </div>
             </main>

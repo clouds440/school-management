@@ -102,10 +102,10 @@ export default function MailPage() {
     useEffect(() => {
         // Socket events trigger SWR revalidation directly
         const unsubs = [
-            subscribe('unread:update', () => mutate(mailsKey)),
-            subscribe('mail:new', () => mutate(mailsKey)),
-            subscribe('mail:message', () => mutate(mailsKey)),
-            subscribe('mail:update', () => mutate(mailsKey))
+            subscribe('unread:update', () => mutate((key: any) => Array.isArray(key) && key[0] === 'mails')),
+            subscribe('mail:new', () => mutate((key: any) => Array.isArray(key) && key[0] === 'mails')),
+            subscribe('mail:message', () => mutate((key: any) => Array.isArray(key) && key[0] === 'mails')),
+            subscribe('mail:update', () => mutate((key: any) => Array.isArray(key) && key[0] === 'mails'))
         ];
 
         return () => {
@@ -253,7 +253,7 @@ export default function MailPage() {
     ];
 
     if (authLoading || (!user && !authLoading)) {
-        return <Loading fullScreen text="Preparing Mailbox..." size="lg" />;
+        return <Loading className="h-full" text="Preparing Mailbox..." size="lg" />;
     }
 
     return (
@@ -318,13 +318,13 @@ export default function MailPage() {
                 isOpen={!!selectedMailId}
                 mailId={selectedMailId}
                 onClose={() => setSelectedMailId(null)}
-                onUpdate={() => mutate(mailsKey)}
+                onUpdate={() => mutate((key: any) => Array.isArray(key) && key[0] === 'mails')}
             />
 
             <NewMailModal
                 isOpen={newMailOpen}
                 onClose={() => setNewMailOpen(false)}
-                onSuccess={() => { mutate(mailsKey); dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent', type: 'success' } }); }}
+                onSuccess={() => { mutate((key: any) => Array.isArray(key) && key[0] === 'mails'); dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent', type: 'success' } }); }}
             />
         </div>
     );

@@ -27,6 +27,7 @@ export enum TeacherStatus {
     ACTIVE = 'ACTIVE',
     SUSPENDED = 'SUSPENDED',
     ON_LEAVE = 'ON_LEAVE',
+    EMERITUS = 'EMERITUS',
     DELETED = 'DELETED',
 }
 

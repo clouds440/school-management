@@ -7,7 +7,7 @@ import { DataTable, Column } from '@/components/ui/DataTable';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Teacher, Role } from '@/types';
+import { Teacher, Role, TeacherStatus } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
@@ -16,6 +16,8 @@ import useSWR, { mutate } from 'swr';
 import { Loading } from '@/components/ui/Loading';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { Toggle } from '@/components/ui/Toggle';
 
 interface TeacherParams {
     page: number;
@@ -23,6 +25,8 @@ interface TeacherParams {
     search: string;
     sortBy: string;
     sortOrder: 'asc' | 'desc';
+    status?: string;
+    deleted?: boolean;
 }
 
 export default function TeachersPage() {
@@ -44,6 +48,9 @@ export default function TeachersPage() {
     const searchTerm = searchParams.get('search') || '';
     const sortBy = searchParams.get('sortBy') || 'name';
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
+    const statusFilter = searchParams.get('status') || '';
+    const isDeletedView = searchParams.get('deleted') === 'true';
+    const showEmeritus = searchParams.get('showEmeritus') === 'true';
     const [pageSize, setPageSize] = useState<number>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('edu-teachers-limit');
@@ -58,6 +65,8 @@ export default function TeachersPage() {
         search: searchTerm,
         sortBy,
         sortOrder,
+        status: isDeletedView ? undefined : (statusFilter || (showEmeritus ? undefined : 'ACTIVE,SUSPENDED,ON_LEAVE')),
+        deleted: isDeletedView,
     };
 
     // SWR for teachers data - replaces usePaginatedData
@@ -104,9 +113,21 @@ export default function TeachersPage() {
             await api.org.deleteTeacher(deletingTeacher.id, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Teacher removed from organization', type: 'success' } });
             setDeleteDialogOpen(false);
-            mutate(teachersKey);
+            // Invalidate all teachers-related cache keys
+            mutate((key: any) => Array.isArray(key) && key[0] === 'teachers');
         } catch (err: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: err instanceof Error ? err.message : 'Failed to delete teacher', type: 'error' } });
+        }
+    };
+
+    const handleRestore = async (id: string) => {
+        if (!token) return;
+        try {
+            await api.org.restoreTeacher(id, TeacherStatus.ACTIVE, token);
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Teacher restored successfully', type: 'success' } });
+            mutate((key: any) => Array.isArray(key) && key[0] === 'teachers');
+        } catch (err: unknown) {
+            dispatch({ type: 'TOAST_ADD', payload: { message: err instanceof Error ? err.message : 'Failed to restore teacher', type: 'error' } });
         }
     };
 
@@ -137,6 +158,27 @@ export default function TeachersPage() {
                     </div>
                 </div>
             )
+        },
+        {
+            header: 'Status',
+            sortable: true,
+            sortKey: 'status',
+            accessor: (row: Teacher) => {
+                const status = row.status || TeacherStatus.ACTIVE;
+                const config: Record<TeacherStatus, { label: string; bg: string; text: string; border: string }> = {
+                    [TeacherStatus.ACTIVE]: { label: 'Active', bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/20' },
+                    [TeacherStatus.SUSPENDED]: { label: 'Suspended', bg: 'bg-red-500/10', text: 'text-red-600', border: 'border-red-500/20' },
+                    [TeacherStatus.ON_LEAVE]: { label: 'On Leave', bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20' },
+                    [TeacherStatus.EMERITUS]: { label: 'Emeritus', bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/20' },
+                    [TeacherStatus.DELETED]: { label: 'Deleted', bg: 'bg-gray-500/10', text: 'text-gray-600', border: 'border-gray-500/20' },
+                };
+                const { label, bg, text, border } = config[status];
+                return (
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${bg} ${text} ${border}`}>
+                        {label}
+                    </span>
+                );
+            }
         },
         {
             header: 'Role & Subject',
@@ -176,23 +218,31 @@ export default function TeachersPage() {
             width: 200,
             accessor: (row: Teacher) => (
                 <TableActions
-                    onEdit={() => router.push(`/teachers/edit/${row.id}`)}
-                    onDelete={() => {
+                    onEdit={isDeletedView ? undefined : () => router.push(`/teachers/edit/${row.id}`)}
+                    onDelete={isDeletedView ? undefined : () => {
                         setDeletingTeacher(row);
                         setDeleteDialogOpen(true);
                     }}
                     variant="user"
-                    isViewAndEdit={true}
+                    isViewAndEdit={!isDeletedView}
                     extraActions={[
-                        {
-                            variant: 'mail',
-                            title: 'Send Mail',
-                            onClick: () => {
-                                setInitialTargetId(row.user.id);
-                                setInitialSubject(`Inquiry regarding ${row.user.name}`);
-                                setNewMailOpen(true);
+                        ...(isDeletedView ? [
+                            {
+                                variant: 'restore' as const,
+                                title: 'Restore',
+                                onClick: () => handleRestore(row.id)
                             }
-                        }
+                        ] : [
+                            {
+                                variant: 'mail' as const,
+                                title: 'Send Mail',
+                                onClick: () => {
+                                    setInitialTargetId(row.user.id);
+                                    setInitialSubject(`Inquiry regarding ${row.user.name}`);
+                                    setNewMailOpen(true);
+                                }
+                            }
+                        ])
                     ]}
                 />
             )
@@ -200,18 +250,52 @@ export default function TeachersPage() {
     ];
 
     if ((!token && !user) || (isFetching && !fetchedData)) {
-        return <Loading fullScreen text="Loading Faculty..." size="lg" />;
+        return <Loading className="h-full" text="Loading Faculty..." size="lg" />;
     }
 
     return (
         <div className="flex flex-col h-full w-full">
             <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
-                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
-                    <div className="flex-1 max-w-xl">
-                        <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, email or subject..." />
+                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+                    <div className="flex flex-wrap items-center gap-4 flex-1">
+                        <div className="w-full md:w-72">
+                            <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search faculty..." />
+                        </div>
+
+                        {!isDeletedView && (
+                            <>
+                                <div className="w-40">
+                                    <CustomSelect
+                                        options={[
+                                            { label: 'All Statuses', value: '' },
+                                            { label: 'Active', value: TeacherStatus.ACTIVE },
+                                            { label: 'Suspended', value: TeacherStatus.SUSPENDED },
+                                            { label: 'On Leave', value: TeacherStatus.ON_LEAVE },
+                                        ]}
+                                        value={statusFilter}
+                                        onChange={(val) => updateQueryParams({ status: val, page: 1 })}
+                                        placeholder="Filter Status"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-lg border border-border/50">
+                                    <Toggle
+                                        checked={showEmeritus}
+                                        onCheckedChange={(val) => updateQueryParams({ showEmeritus: val ? 'true' : undefined, page: 1 })}
+                                        label="Show Emeritus"
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        <button
+                            onClick={() => updateQueryParams({ deleted: isDeletedView ? undefined : 'true', page: 1, status: undefined, showEmeritus: undefined })}
+                            className={`text-xs font-bold tracking-tighter hover:underline hover:text-primary cursor-pointer ${isDeletedView ? 'text-primary' : 'text-muted-foreground/40'}`}
+                        >
+                            {isDeletedView ? '← Back to Active Faculty' : 'View Deleted Faculty'}
+                        </button>
                     </div>
 
-                    {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
+                    {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && !isDeletedView && (
                         <Button
                             onClick={() => router.push('/teachers/add')}
                             icon={UserPlus}
@@ -251,7 +335,7 @@ export default function TeachersPage() {
                 onClose={() => setDeleteDialogOpen(false)}
                 onConfirm={handleDeleteConfirm}
                 title={<>Remove Faculty Member <strong>{deletingTeacher?.user?.name}</strong></>}
-                description={<>Are you really sure you want to remove <strong>{deletingTeacher?.user?.email}</strong>? This action is permanent and cannot be reversed.</>}
+                description={<>Are you really sure you want to remove <strong>{deletingTeacher?.user?.email}</strong>?</>}
                 confirmText="Permanently Delete"
                 isDestructive={true}
             />

@@ -23,7 +23,7 @@ export function OrgLogoOrIcon({ logoUrl, orgName, className }: OrgLogoOrIconProp
                     alt={orgName ?? 'Org logo'}
                     fill
                     className="object-cover"
-                    unoptimized
+                    sizes="96px"
                 />
             </div>
         );

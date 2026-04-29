@@ -11,13 +11,18 @@ import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
+import { Access, AnonymousAccess } from '../common/access-control/access.decorator';
+import { AccessLevel } from '../common/access-control/access-level.enum';
 
 @UseGuards(JwtAuthGuard)
+@Access(AccessLevel.READ)
+@AnonymousAccess()
 @Controller('announcements')
 export class AnnouncementsController {
   constructor(private readonly announcementsService: AnnouncementsService) {}
 
   @Post()
+  @Access(AccessLevel.WRITE)
   async create(
     @Body() dto: CreateAnnouncementDto,
     @Request() req: AuthenticatedRequest,

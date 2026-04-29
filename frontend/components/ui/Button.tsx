@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useGlobal } from "@/context/GlobalContext"
+import { useAccess } from "@/hooks/useAccess"
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     isLoading?: boolean
@@ -9,15 +10,18 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
     icon?: React.ElementType
     px?: string
     py?: 'py-2.5' | string;
+    requireWrite?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, isLoading: localIsLoading, loadingId, loadingText, variant = 'primary', children, disabled, icon, px = 'px-6', py = 'py-3', ...props }, ref) => {
+    ({ className, isLoading: localIsLoading, loadingId, loadingText, variant = 'primary', children, disabled, icon, px = 'px-6', py = 'py-3', requireWrite, ...props }, ref) => {
         const { state } = useGlobal();
+        const { canWrite } = useAccess();
 
         // Determine effective loading/disabled state
         const isThisButtonProcessing = loadingId ? state.ui.processing[loadingId] : false;
-        const effectiveDisabled = disabled || isThisButtonProcessing || localIsLoading;
+        const accessDisabled = requireWrite && !canWrite;
+        const effectiveDisabled = disabled || isThisButtonProcessing || localIsLoading || accessDisabled;
 
         // Only show spinner if local loading is true OR this specific button is processing
         const effectiveLoading = localIsLoading || isThisButtonProcessing;
@@ -50,6 +54,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         `}
                 disabled={effectiveDisabled}
                 ref={ref}
+                title={accessDisabled ? "You do not have permission to perform this action (Read-only mode)" : props.title}
                 {...props}
             >
                 {effectiveLoading ? (

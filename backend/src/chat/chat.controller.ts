@@ -18,13 +18,17 @@ import { SendMessageDto } from './dto/send-message.dto';
 import { AddParticipantsDto } from './dto/add-participants.dto';
 import { ChatParticipantRole } from '@prisma/client';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
+import { Access } from '../common/access-control/access.decorator';
+import { AccessLevel } from '../common/access-control/access-level.enum';
 
 @UseGuards(JwtAuthGuard)
+@Access(AccessLevel.READ)
 @Controller('chat')
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Patch(':id')
+  @Access(AccessLevel.WRITE)
   async updateChat(
     @Param('id') id: string,
     @Body() dto: UpdateChatDto,
@@ -59,6 +63,7 @@ export class ChatController {
   }
 
   @Post('direct')
+  @Access(AccessLevel.WRITE)
   async createDirectChat(
     @Body() dto: CreateDirectChatDto,
     @Request() req: AuthenticatedRequest,
@@ -71,6 +76,7 @@ export class ChatController {
   }
 
   @Post('group')
+  @Access(AccessLevel.WRITE)
   async createGroupChat(
     @Body() dto: CreateGroupChatDto,
     @Request() req: AuthenticatedRequest,
@@ -115,6 +121,7 @@ export class ChatController {
   }
 
   @Post(':id/messages')
+  @Access(AccessLevel.WRITE)
   async sendMessage(
     @Param('id') id: string,
     @Body() dto: SendMessageDto,
@@ -128,6 +135,7 @@ export class ChatController {
   }
 
   @Patch([':id/read', ':id/read/:messageId'])
+  @Access(AccessLevel.WRITE)
   async markAsRead(
     @Param('id') id: string,
     @Param('messageId') messageId?: string,
@@ -141,6 +149,7 @@ export class ChatController {
   }
 
   @Post(':id/participants')
+  @Access(AccessLevel.WRITE)
   async addParticipants(
     @Param('id') id: string,
     @Body() dto: AddParticipantsDto,
@@ -154,6 +163,7 @@ export class ChatController {
   }
 
   @Post([':id/participants/:userId/remove', ':id/participants/remove/:userId'])
+  @Access(AccessLevel.WRITE)
   async removeParticipant(
     @Param('id') id: string,
     @Param('userId') userId: string,
@@ -167,6 +177,7 @@ export class ChatController {
   }
 
   @Patch(':id/participants/:userId/role')
+  @Access(AccessLevel.WRITE)
   async updateParticipantRole(
     @Param('id') id: string,
     @Param('userId') userId: string,
@@ -181,6 +192,7 @@ export class ChatController {
   }
 
   @Post([':id/messages/:messageId/delete', ':id/messages/delete/:messageId'])
+  @Access(AccessLevel.WRITE)
   async deleteMessage(
     @Param('id') id: string,
     @Param('messageId') messageId: string,
@@ -194,6 +206,7 @@ export class ChatController {
   }
 
   @Patch(':id/messages/:messageId')
+  @Access(AccessLevel.WRITE)
   async editMessage(
     @Param('id') id: string,
     @Param('messageId') messageId: string,

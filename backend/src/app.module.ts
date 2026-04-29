@@ -15,8 +15,10 @@ import { ChatModule } from './chat/chat.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ActiveOrgGuard } from './common/guards/active-org.guard';
+import { AccessGuard } from './common/access-control/access.guard';
 import { CourseMaterialsModule } from './course-materials/course-materials.module';
+import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { RolesGuard } from './auth/roles.guard';
 
 @Module({
   imports: [
@@ -48,7 +50,15 @@ import { CourseMaterialsModule } from './course-materials/course-materials.modul
     },
     {
       provide: APP_GUARD,
-      useClass: ActiveOrgGuard,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AccessGuard,
     },
   ],
 })

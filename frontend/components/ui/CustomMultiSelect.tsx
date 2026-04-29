@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from "react";
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { LucideIcon, ChevronDown, X, Check } from "lucide-react";
 
@@ -22,7 +22,7 @@ export interface CustomMultiSelectProps {
     error?: boolean;
 }
 
-export function CustomMultiSelect({
+export const CustomMultiSelect = React.memo(function CustomMultiSelect({
     options,
     values,
     onChange,
@@ -38,13 +38,18 @@ export function CustomMultiSelect({
     const containerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Derived state for selected options
-    const selectedOptions = options.filter(opt => values.includes(opt.value));
+    // Use a Set for O(1) lookups
+    const valuesSet = useMemo(() => new Set(values), [values]);
+
+    // Derived state for selected options - O(n)
+    const selectedOptions = useMemo(() => options.filter(opt => valuesSet.has(opt.value)), [options, valuesSet]);
 
     // Filtered options based on search term
-    const filteredOptions = React.useMemo(() => {
+    const filteredOptions = useMemo(() => {
+        if (!searchTerm) return options;
+        const lowSearch = searchTerm.toLowerCase();
         return options.filter(opt =>
-            opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+            opt.label.toLowerCase().includes(lowSearch)
         );
     }, [options, searchTerm]);
 
@@ -52,7 +57,7 @@ export function CustomMultiSelect({
         if (containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
             const windowHeight = window.innerHeight;
-            const dropdownHeight = 350; // Estimated max height including search and 5 options
+            const dropdownHeight = 350;
 
             const isMobile = window.innerWidth <= 640;
             const shouldFlip = !isMobile && (rect.bottom + dropdownHeight > windowHeight) && (rect.top > dropdownHeight);
@@ -85,22 +90,20 @@ export function CustomMultiSelect({
         const syncCoords = () => updateCoords(false);
         const frameId = window.requestAnimationFrame(() => updateCoords(true));
 
-        window.addEventListener('scroll', syncCoords, true);
-        window.addEventListener('resize', syncCoords);
+        window.addEventListener('scroll', syncCoords, { passive: true, capture: true });
+        window.addEventListener('resize', syncCoords, { passive: true });
 
         return () => {
             window.cancelAnimationFrame(frameId);
-            window.removeEventListener('scroll', syncCoords, true);
+            window.removeEventListener('scroll', syncCoords, { capture: true });
             window.removeEventListener('resize', syncCoords);
         };
     }, [isOpen, updateCoords]);
 
-    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
-
-    if (isOpen !== prevIsOpen) {
-        setPrevIsOpen(isOpen);
+    // Clear search term when closed
+    useEffect(() => {
         if (!isOpen) setSearchTerm("");
-    }
+    }, [isOpen]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -115,18 +118,18 @@ export function CustomMultiSelect({
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const toggleOption = (val: string) => {
-        if (values.includes(val)) {
+    const toggleOption = useCallback((val: string) => {
+        if (valuesSet.has(val)) {
             onChange(values.filter(v => v !== val));
         } else {
             onChange([...values, val]);
         }
-    };
+    }, [values, valuesSet, onChange]);
 
-    const removeOption = (val: string, e: React.MouseEvent) => {
+    const removeOption = useCallback((val: string, e: React.MouseEvent) => {
         e.stopPropagation();
         onChange(values.filter(v => v !== val));
-    };
+    }, [values, onChange]);
 
     return (
         <div className={`relative group ${className}`} ref={containerRef} >
@@ -220,7 +223,7 @@ export function CustomMultiSelect({
                             <div className="px-4 py-3 sm:py-4 text-sm sm:text-base text-muted-foreground text-center">No options found</div>
                         ) : (
                             filteredOptions.map((option) => {
-                                const isSelected = values.includes(option.value);
+                                const isSelected = valuesSet.has(option.value);
                                 return (
                                     <button
                                         key={option.value}
@@ -250,5 +253,4 @@ export function CustomMultiSelect({
             )}
         </div>
     );
-}
-
+});

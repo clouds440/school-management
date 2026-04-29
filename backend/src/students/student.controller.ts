@@ -10,7 +10,7 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
-import { Role } from '../common/enums';
+import { Role, StudentStatus } from '../common/enums';
 import { StudentService } from './student.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -19,11 +19,14 @@ import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-requ
 import { CreateStudentDto } from '../org/dto/create-student.dto';
 import { UpdateStudentDto } from '../org/dto/update-student.dto';
 import { OrgId } from '../common/decorators/org-id.decorator';
+import { Access } from '../common/access-control/access.decorator';
+import { AccessLevel } from '../common/access-control/access-level.enum';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Access(AccessLevel.READ)
 @Controller('org')
 export class StudentController {
-  constructor(private readonly studentService: StudentService) {}
+  constructor(private readonly studentService: StudentService) { }
 
   @Get('students')
   async getStudents(
@@ -35,6 +38,8 @@ export class StudentController {
     @Query('sortOrder') sortOrder?: 'asc' | 'desc',
     @Query('my') my?: string,
     @Query('sectionId') sectionId?: string,
+    @Query('status') status?: string,
+    @Query('deleted') deleted?: string,
     @Request() req?: AuthenticatedRequest,
   ) {
     return this.studentService.getStudents(orgId, {
@@ -46,6 +51,8 @@ export class StudentController {
       my: my === 'true',
       sectionId,
       userId: req?.user?.id,
+      status,
+      deleted: deleted === 'true',
     });
   }
 
@@ -56,6 +63,7 @@ export class StudentController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Post('students')
   createStudent(
     @OrgId() orgId: string,
@@ -69,6 +77,7 @@ export class StudentController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Patch('students/:id')
   updateStudent(
     @OrgId() orgId: string,
@@ -84,6 +93,18 @@ export class StudentController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
+  @Patch('students/:id/restore')
+  restoreStudent(
+    @OrgId() orgId: string,
+    @Param('id') id: string,
+    @Body('status') status?: string,
+  ) {
+    return this.studentService.restoreStudent(orgId, id, status as StudentStatus);
+  }
+
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
+  @Access(AccessLevel.WRITE)
   @Delete('students/:id')
   deleteStudent(
     @OrgId() orgId: string,

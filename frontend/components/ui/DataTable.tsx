@@ -135,7 +135,7 @@ export function DataTable<T>({
                                     <th
                                         key={index}
                                         style={{
-                                            width: index === 0 ? columnWidths[index] + 30 : columnWidths[index]
+                                            width: index === 0 || index === columns.length - 1 ? columnWidths[index] + 40 : columnWidths[index]
                                         }}
                                         className={`
                                             px-3 sm:px-6 py-3 sm:py-5 border-b border-border/50 whitespace-nowrap relative group/th

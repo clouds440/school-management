@@ -103,7 +103,7 @@ export default function PlatformAdminsPage() {
             dispatch({ type: 'UI_START_PROCESSING', payload: 'platform-admin-submit' });
             if (adminModalMode === 'CREATE') {
                 await api.admin.createPlatformAdmin(adminFormData, token);
-                mutate(adminsKey);
+                mutate((key: any) => Array.isArray(key) && key[0] === 'platform-admins');
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Platform Admin created successfully', type: 'success' } });
             } else if (operatingAdmin) {
                 await api.admin.updatePlatformAdmin(operatingAdmin.id, {
@@ -111,7 +111,7 @@ export default function PlatformAdminsPage() {
                     phone: adminFormData.phone,
                     ...(adminFormData.password ? { password: adminFormData.password } : {})
                 }, token);
-                mutate(adminsKey);
+                mutate((key: any) => Array.isArray(key) && key[0] === 'platform-admins');
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Platform Admin updated successfully', type: 'success' } });
             }
             setIsAdminModalOpen(false);
@@ -134,7 +134,7 @@ export default function PlatformAdminsPage() {
         try {
             dispatch({ type: 'UI_START_PROCESSING', payload: `platform-admin-delete-${operatingAdmin.id}` });
             await api.admin.deletePlatformAdmin(operatingAdmin.id, token);
-            mutate(adminsKey);
+            mutate((key: any) => Array.isArray(key) && key[0] === 'platform-admins');
             dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingAdmin.name} deleted successfully`, type: 'success' } });
             setIsDeleteModalOpen(false);
             setOperatingAdmin(null);
