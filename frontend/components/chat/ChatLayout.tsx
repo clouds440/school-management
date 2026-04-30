@@ -1569,7 +1569,7 @@ export function ChatLayout() {
                     <>
                         {/* Chat Header */}
                         <div
-                            className="relative w-full px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border flex items-center justify-between z-99 bg-background/80 backdrop-blur-md transition-all duration-200"
+                            className="relative w-full px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border flex items-center justify-between z-20 bg-background/80 backdrop-blur-md transition-all duration-200"
                         >
                             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
                                 {!isDesktop && (

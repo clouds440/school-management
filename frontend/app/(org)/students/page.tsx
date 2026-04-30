@@ -320,7 +320,7 @@ export default function StudentsPage() {
                                         placeholder="Filter Status"
                                     />
                                 </div>
-                                <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-lg border border-border/50">
+                                <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-2xl border border-border/50">
                                     <Toggle
                                         checked={showAlumni}
                                         onCheckedChange={(val) => updateQueryParams({ showAlumni: val ? 'true' : undefined, page: 1 })}
@@ -357,7 +357,7 @@ export default function StudentsPage() {
                             )}
 
                             {user?.role === Role.ORG_MANAGER && (
-                                <div className="bg-primary/5 p-2 pr-4 rounded-lg border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
+                                <div className="bg-primary/5 p-2 pr-4 rounded-2xl border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
                                     <Toggle
                                         checked={showOnlyMyStudents}
                                         onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}

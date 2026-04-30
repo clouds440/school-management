@@ -278,7 +278,7 @@ export default function TeachersPage() {
                                         placeholder="Filter Status"
                                     />
                                 </div>
-                                <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-lg border border-border/50">
+                                <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-2xl border border-border/50">
                                     <Toggle
                                         checked={showEmeritus}
                                         onCheckedChange={(val) => updateQueryParams({ showEmeritus: val ? 'true' : undefined, page: 1 })}

@@ -314,7 +314,7 @@ export default function SectionsPage() {
 
                     <div className="flex flex-wrap items-center gap-2 md:gap-3">
                         {user?.role === Role.ORG_MANAGER && (
-                            <div className="bg-primary/5 p-2 pr-4 rounded-lg border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
+                            <div className="bg-primary/5 p-2 pr-4 rounded-2xl border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
                                 <Toggle
                                     checked={showOnlyMySections}
                                     onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
