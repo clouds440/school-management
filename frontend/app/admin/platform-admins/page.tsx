@@ -12,6 +12,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { useGlobal } from '@/context/GlobalContext';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import useSWR, { mutate } from 'swr';
+import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { Button } from '@/components/ui/Button';
 
 interface PlatformAdminParams {
@@ -103,7 +104,7 @@ export default function PlatformAdminsPage() {
             dispatch({ type: 'UI_START_PROCESSING', payload: 'platform-admin-submit' });
             if (adminModalMode === 'CREATE') {
                 await api.admin.createPlatformAdmin(adminFormData, token);
-                mutate((key: any) => Array.isArray(key) && key[0] === 'platform-admins');
+                mutate(matchesCacheKeyPrefix('platform-admins'));
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Platform Admin created successfully', type: 'success' } });
             } else if (operatingAdmin) {
                 await api.admin.updatePlatformAdmin(operatingAdmin.id, {
@@ -111,7 +112,7 @@ export default function PlatformAdminsPage() {
                     phone: adminFormData.phone,
                     ...(adminFormData.password ? { password: adminFormData.password } : {})
                 }, token);
-                mutate((key: any) => Array.isArray(key) && key[0] === 'platform-admins');
+                mutate(matchesCacheKeyPrefix('platform-admins'));
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Platform Admin updated successfully', type: 'success' } });
             }
             setIsAdminModalOpen(false);
@@ -134,14 +135,14 @@ export default function PlatformAdminsPage() {
         try {
             dispatch({ type: 'UI_START_PROCESSING', payload: `platform-admin-delete-${operatingAdmin.id}` });
             await api.admin.deletePlatformAdmin(operatingAdmin.id, token);
-            mutate((key: any) => Array.isArray(key) && key[0] === 'platform-admins');
+            mutate(matchesCacheKeyPrefix('platform-admins'));
             dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingAdmin.name} deleted successfully`, type: 'success' } });
             setIsDeleteModalOpen(false);
             setOperatingAdmin(null);
         } catch (error) {
             dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to delete admin', type: 'error' } });
         } finally {
-            dispatch({ type: 'UI_STOP_PROCESSING', payload: `platform-admin-delete-${operatingAdmin.id}` });
+            dispatch({ type: 'UI_STOP_PROCESSING', payload: 'platform-admin-delete' });
         }
     };
 

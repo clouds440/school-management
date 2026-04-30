@@ -14,6 +14,7 @@ import { api } from '@/lib/api';
 import { TableActions } from '@/components/ui/TableActions';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import useSWR, { mutate } from 'swr';
+import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { Loading } from '@/components/ui/Loading';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
@@ -275,7 +276,7 @@ export default function StudentsPage() {
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Student removed successfully', type: 'success' } });
             setIsDeleteDialogOpen(false);
             // Invalidate all students-related cache keys
-            mutate((key: any) => Array.isArray(key) && key[0] === 'students');
+            mutate(matchesCacheKeyPrefix('students'));
         } catch (error: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to delete student', type: 'error' } });
         }
@@ -286,7 +287,7 @@ export default function StudentsPage() {
         try {
             await api.org.restoreStudent(id, StudentStatus.ACTIVE, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Student restored successfully', type: 'success' } });
-            mutate((key: any) => Array.isArray(key) && key[0] === 'students');
+            mutate(matchesCacheKeyPrefix('students'));
         } catch (err: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: err instanceof Error ? err.message : 'Failed to restore student', type: 'error' } });
         }
@@ -391,6 +392,7 @@ export default function StudentsPage() {
                         totalPages={fetchedData?.totalPages || 1}
                         totalResults={fetchedData?.totalRecords || 0}
                         pageSize={pageSize}
+                        showSerialNumber
                         onPageChange={(p) => updateQueryParams({ page: p })}
                         onPageSizeChange={handlePageSizeChange}
                         maxHeight="100%"

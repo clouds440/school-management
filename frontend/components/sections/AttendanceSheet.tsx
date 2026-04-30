@@ -6,6 +6,7 @@ import { SectionAttendanceStudent, AttendanceStatus, RangeAttendanceResponse, Ro
 import { Button } from '@/components/ui/Button';
 import { Check, X, Clock, FileWarning, Save, CheckSquare, Calendar, User, Activity } from 'lucide-react';
 import { BrandIcon } from '../ui/Brand';
+import { DataTable } from '@/components/ui/DataTable';
 
 interface AttendanceSheetProps {
     students: SectionAttendanceStudent[];
@@ -385,90 +386,86 @@ export default function AttendanceSheet({
                 </div>
             )}
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                    <thead>
-                        <tr className="bg-primary/5 border-b border-border">
-                            <th className="px-4 py-4 font-black tracking-widest text-[10px] text-primary/70 w-12 text-center">#</th>
-                            <th className="px-6 py-4 font-black tracking-widest text-[10px] text-primary/70 border-l border-primary/10">
-                                Student
-                            </th>
-                            <th className="px-6 py-4 font-black tracking-widest text-[10px] text-primary/70 text-center border-l border-primary/10">
-                                Status
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/60">
-                        {students.length === 0 ? (
-                            <tr>
-                                <td colSpan={3} className="px-6 py-16 text-center text-muted-foreground">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <User className="w-8 h-8 opacity-20" />
-                                        <span>No students enrolled in this section.</span>
+            <DataTable
+                data={students}
+                columns={[
+                    {
+                        header: 'Student',
+                        accessor: (student) => (
+                            <div className="flex items-center gap-3">
+                                <BrandIcon
+                                    variant="user"
+                                    size="sm"
+                                    user={{ avatarUrl: student.avatarUrl, name: student.name }}
+                                    className="w-8 h-8 shadow-sm"
+                                />
+                                <div>
+                                    <div className="font-bold text-foreground">{student.name}</div>
+                                    <div className="text-[10px] text-muted-foreground tracking-wide font-mono mt-0.5">
+                                        Roll: {student.rollNumber || student.registrationNumber}
                                     </div>
-                                </td>
-                            </tr>
-                        ) : (
-                            students.map((student, idx) => {
-                                const status = localRecords[student.studentId];
-                                return (
-                                    <tr key={student.studentId} className="group hover:bg-muted/5 transition-colors">
-                                        <td className="px-4 py-4 text-center font-bold text-muted-foreground/60">
-                                            {idx + 1}
-                                        </td>
-                                        <td className="px-6 py-4 border-l border-border/30">
-                                            <div className="font-bold text-foreground">{student.name}</div>
-                                            <div className="text-[10px] text-muted-foreground tracking-wide font-mono mt-0.5">
-                                                Roll: {student.rollNumber || student.registrationNumber}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 border-l border-border/30 text-center">
-                                            <div className="inline-flex flex-wrap justify-center gap-2">
-                                                <button
-                                                    disabled={readOnly}
-                                                    onClick={() => handleStatusChange(student.studentId, AttendanceStatus.PRESENT)}
-                                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${getStatusButtonClass(status === AttendanceStatus.PRESENT, AttendanceStatus.PRESENT)}`}
-                                                    title="Present"
-                                                >
-                                                    <Check className="w-3.5 h-3.5" />
-                                                    <span className="hidden xs:inline">P</span>
-                                                </button>
-                                                <button
-                                                    disabled={readOnly}
-                                                    onClick={() => handleStatusChange(student.studentId, AttendanceStatus.ABSENT)}
-                                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${getStatusButtonClass(status === AttendanceStatus.ABSENT, AttendanceStatus.ABSENT)}`}
-                                                    title="Absent"
-                                                >
-                                                    <X className="w-3.5 h-3.5" />
-                                                    <span className="hidden xs:inline">A</span>
-                                                </button>
-                                                <button
-                                                    disabled={readOnly}
-                                                    onClick={() => handleStatusChange(student.studentId, AttendanceStatus.LATE)}
-                                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${getStatusButtonClass(status === AttendanceStatus.LATE, AttendanceStatus.LATE)}`}
-                                                    title="Late"
-                                                >
-                                                    <Clock className="w-3.5 h-3.5" />
-                                                    <span className="hidden xs:inline">L</span>
-                                                </button>
-                                                <button
-                                                    disabled={readOnly}
-                                                    onClick={() => handleStatusChange(student.studentId, AttendanceStatus.EXCUSED)}
-                                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${getStatusButtonClass(status === AttendanceStatus.EXCUSED, AttendanceStatus.EXCUSED)}`}
-                                                    title="Excused"
-                                                >
-                                                    <FileWarning className="w-3.5 h-3.5" />
-                                                    <span className="hidden xs:inline">E</span>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                                </div>
+                            </div>
+                        ),
+                        width: 280,
+                    },
+                    {
+                        header: 'Status',
+                        accessor: (student) => {
+                            const status = localRecords[student.studentId];
+                            return (
+                                <div className="inline-flex flex-wrap justify-center gap-2">
+                                    <button
+                                        disabled={readOnly}
+                                        onClick={() => handleStatusChange(student.studentId, AttendanceStatus.PRESENT)}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${getStatusButtonClass(status === AttendanceStatus.PRESENT, AttendanceStatus.PRESENT)}`}
+                                        title="Present"
+                                    >
+                                        <Check className="w-3.5 h-3.5" />
+                                        <span className="hidden xs:inline">P</span>
+                                    </button>
+                                    <button
+                                        disabled={readOnly}
+                                        onClick={() => handleStatusChange(student.studentId, AttendanceStatus.ABSENT)}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${getStatusButtonClass(status === AttendanceStatus.ABSENT, AttendanceStatus.ABSENT)}`}
+                                        title="Absent"
+                                    >
+                                        <X className="w-3.5 h-3.5" />
+                                        <span className="hidden xs:inline">A</span>
+                                    </button>
+                                    <button
+                                        disabled={readOnly}
+                                        onClick={() => handleStatusChange(student.studentId, AttendanceStatus.LATE)}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${getStatusButtonClass(status === AttendanceStatus.LATE, AttendanceStatus.LATE)}`}
+                                        title="Late"
+                                    >
+                                        <Clock className="w-3.5 h-3.5" />
+                                        <span className="hidden xs:inline">L</span>
+                                    </button>
+                                    <button
+                                        disabled={readOnly}
+                                        onClick={() => handleStatusChange(student.studentId, AttendanceStatus.EXCUSED)}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${getStatusButtonClass(status === AttendanceStatus.EXCUSED, AttendanceStatus.EXCUSED)}`}
+                                        title="Excused"
+                                    >
+                                        <FileWarning className="w-3.5 h-3.5" />
+                                        <span className="hidden xs:inline">E</span>
+                                    </button>
+                                </div>
+                            );
+                        },
+                        width: 300,
+                    },
+                ]}
+                keyExtractor={(student) => student.studentId}
+                currentPage={1}
+                totalPages={1}
+                totalResults={students.length}
+                pageSize={students.length || 10}
+                onPageChange={() => {}}
+                disableZebra={true}
+                showSerialNumber
+            />
         </div>
     );
 }

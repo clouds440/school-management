@@ -20,6 +20,7 @@ import { useGlobal } from '@/context/GlobalContext';
 import { Toggle } from '@/components/ui/Toggle';
 import { Loading } from '@/components/ui/Loading';
 import useSWR, { mutate } from 'swr';
+import { matchesCacheKeyPrefix } from '@/lib/swr';
 
 interface SectionParams {
     page: number;
@@ -159,7 +160,7 @@ export default function SectionsPage() {
 
             setEditModalOpen(false);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Section updated successfully', type: 'success' } });
-            mutate((key: any) => Array.isArray(key) && key[0] === 'sections');
+            mutate(matchesCacheKeyPrefix('sections'));
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Error updating section';
             dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
@@ -174,7 +175,7 @@ export default function SectionsPage() {
             await api.org.deleteSection(deletingSection.id, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Section deleted successfully', type: 'success' } });
             setDeleteDialogOpen(false);
-            mutate((key: any) => Array.isArray(key) && key[0] === 'sections');
+            mutate(matchesCacheKeyPrefix('sections'));
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Error deleting section';
             dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });

@@ -515,6 +515,7 @@ export interface ChatParticipant {
     role: ChatParticipantRole;
     isActive: boolean;
     lastReadMessageId: string | null;
+    lastSeenAt: string | null;
     joinedAt: string;
     user?: User;
 }
@@ -639,6 +640,7 @@ export interface SectionAttendanceStudent {
     studentId: string;
     name: string;
     email: string;
+    avatarUrl?: string | null;
     registrationNumber?: string;
     rollNumber?: string;
     status: AttendanceStatus | null;

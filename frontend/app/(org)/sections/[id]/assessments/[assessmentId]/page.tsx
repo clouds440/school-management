@@ -14,6 +14,8 @@ import { BulkGradingModal } from '@/components/forms/BulkGradingModal';
 import { BrandIcon } from '@/components/ui/Brand';
 import { Loading } from '@/components/ui/Loading';
 import { NotFound } from '@/components/NotFound';
+import { DataTable } from '@/components/ui/DataTable';
+import { Button } from '@/components/ui/Button';
 
 export default function AssessmentDetailPage() {
     const { token, user } = useAuth();
@@ -144,120 +146,133 @@ export default function AssessmentDetailPage() {
                             <h2 className="text-xl font-black text-foreground tracking-wider">Student Performance & Grading</h2>
                         </div>
                         {canGrade && (
-                            <button
+                            <Button
                                 onClick={() => setShowBulkGrading(true)}
-                                className="px-4 py-2 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground text-[10px] font-black tracking-widest rounded-lg transition-colors shadow-sm active:scale-95"
+                                variant='primary'
                             >
                                 Grade All
-                            </button>
+                            </Button>
                         )}
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-muted/20 border-b border-border">
-                                    <th className="px-6 py-4 text-[11px] font-black tracking-widest text-card-text/40">Student Name</th>
-                                    <th className="px-6 py-4 text-[11px] font-black tracking-widest text-card-text/40">Reg #</th>
-                                    <th className="px-6 py-4 text-[11px] font-black tracking-widest text-card-text/40">Status</th>
-                                    <th className="px-6 py-4 text-[11px] font-black tracking-widest text-card-text/40">Submission</th>
-                                    <th className="px-6 py-4 text-[11px] font-black tracking-widest text-card-text/40 text-center">Marks</th>
-                                    <th className="px-6 py-4 text-[11px] font-black tracking-widest text-card-text/40 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                                {section.students?.map((student) => {
+                    <DataTable
+                        data={section.students || []}
+                        columns={[
+                            {
+                                header: 'Student Name',
+                                accessor: (student) => (
+                                    <div className="flex items-center gap-3">
+                                        <BrandIcon
+                                            variant="user"
+                                            size="sm"
+                                            user={student.user}
+                                            className="w-8 h-8 shadow-sm"
+                                        />
+                                        <div className="font-bold text-sm text-card-text">{student.user.name}</div>
+                                    </div>
+                                ),
+                                width: 250,
+                            },
+                            {
+                                header: 'Reg #',
+                                accessor: 'registrationNumber',
+                                width: 120,
+                            },
+                            {
+                                header: 'Status',
+                                accessor: (student) => {
                                     const grade = grades.find(g => g.studentId === student.id);
-                                    const submission = submissions.find(s => s.studentId === student.id);
-                                    return (
-                                        <tr
-                                            key={student.id}
-                                            className={`hover:bg-muted/40 transition-colors group ${submission?.fileUrl ? 'cursor-pointer' : ''}`}
-                                            onClick={() => {
-                                                if (submission?.fileUrl) {
-                                                    window.open(submission.fileUrl, '_blank', 'noopener,noreferrer');
-                                                }
-                                            }}
-                                        >
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <BrandIcon
-                                                        variant="user"
-                                                        size="sm"
-                                                        user={student.user}
-                                                        className="w-8 h-8 shadow-sm"
-                                                    />
-                                                    <div className="font-bold text-sm text-card-text">{student.user.name}</div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-xs font-bold text-card-text/40 tabular-nums">
-                                                {student.registrationNumber || 'N/A'}
-                                            </td>
-                                            <td className="px-6 py-4 text-xs font-black italic tracking-widest tabular-nums">
-                                                {grade ? (
-                                                    <span className="flex items-center gap-1.5 text-emerald-500">
-                                                        <CheckCircle2 className="w-3.5 h-3.5" /> Graded
-                                                    </span>
-                                                ) : (
-                                                    <span className="flex items-center gap-1.5 text-orange-500">
-                                                        <Calendar className="w-3.5 h-3.5" /> Pending
-
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-xs font-bold text-card-text/40">
-                                                {submission ? (
-                                                    (submission.files && submission.files.length > 0) ? (
-                                                        <a
-                                                            href={getPublicUrl(submission.files[0].path)}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-primary hover:text-primary-light flex items-center gap-1.5 underline-offset-2 hover:underline font-black italic tracking-widest"
-                                                        >
-                                                            <LinkIcon className="w-3 h-3" /> View Work
-                                                        </a>
-                                                    ) : submission.fileUrl ? (
-                                                        <a
-                                                            href={submission.fileUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-primary hover:text-primary-light flex items-center gap-1.5 underline-offset-2 hover:underline font-black italic tracking-widest"
-                                                        >
-                                                            <LinkIcon className="w-3 h-3" /> View Link
-                                                        </a>
-                                                    ) : (
-                                                        <span className="text-emerald-500 italic flex items-center gap-1.5 font-black tracking-widest"><CheckCircle2 className="w-3 h-3" /> Done</span>
-                                                    )
-                                                ) : (
-                                                    <span className="text-muted-foreground italic font-black tracking-widest">No Submission</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                {grade ? (
-                                                    <span className="text-lg font-black italic text-primary">{grade.marksObtained}<span className="text-xs text-card-text/30 ml-1">/ {assessment.totalMarks}</span></span>
-                                                ) : (
-                                                    <span className="text-xs font-black text-muted-foreground italic tracking-tighter">Not Assigned</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                {canGrade && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setSelectedStudentId(student.id);
-                                                        }}
-                                                        className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-[10px] font-black tracking-widest rounded-lg border border-primary/20 transition-all shadow-sm active:scale-95 z-10 relative"
-                                                    >
-                                                        {grade ? 'Update Grade' : 'Assign Grade'}
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
+                                    return grade ? (
+                                        <span className="flex items-center gap-1.5 text-emerald-500">
+                                            <CheckCircle2 className="w-3.5 h-3.5" /> Graded
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-1.5 text-orange-500">
+                                            <Calendar className="w-3.5 h-3.5" /> Pending
+                                        </span>
                                     );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                },
+                                width: 120,
+                            },
+                            {
+                                header: 'Submission',
+                                accessor: (student) => {
+                                    const submission = submissions.find(s => s.studentId === student.id);
+                                    return submission ? (
+                                        (submission.files && submission.files.length > 0) ? (
+                                            <a
+                                                href={getPublicUrl(submission.files[0].path)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-primary hover:text-primary-light flex items-center gap-1.5 underline-offset-2 hover:underline font-black italic tracking-widest"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <LinkIcon className="w-3 h-3" /> View Work
+                                            </a>
+                                        ) : submission.fileUrl ? (
+                                            <a
+                                                href={submission.fileUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-primary hover:text-primary-light flex items-center gap-1.5 underline-offset-2 hover:underline font-black italic tracking-widest"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <LinkIcon className="w-3 h-3" /> View Link
+                                            </a>
+                                        ) : (
+                                            <span className="text-emerald-500 italic flex items-center gap-1.5 font-black tracking-widest"><CheckCircle2 className="w-3 h-3" /> Done</span>
+                                        )
+                                    ) : (
+                                        <span className="text-muted-foreground italic font-black tracking-widest">No Submission</span>
+                                    );
+                                },
+                                width: 150,
+                            },
+                            {
+                                header: 'Marks',
+                                accessor: (student) => {
+                                    const grade = grades.find(g => g.studentId === student.id);
+                                    return grade ? (
+                                        <span className="text-lg font-black italic text-primary">{grade.marksObtained}<span className="text-xs text-card-text/30 ml-1">/ {assessment.totalMarks}</span></span>
+                                    ) : (
+                                        <span className="text-xs font-black text-muted-foreground italic tracking-tighter">Not Assigned</span>
+                                    );
+                                },
+                                width: 120,
+                            },
+                            {
+                                header: 'Actions',
+                                accessor: (student) => canGrade ? (
+                                    <Button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedStudentId(student.id);
+                                        }}
+                                        py='py-1'
+                                        px='px-3'
+                                        variant={grades.find(g => g.studentId === student.id) ? 'warning' : 'primary'}
+                                    >
+                                        {grades.find(g => g.studentId === student.id) ? 'Update Grade' : 'Assign Grade'}
+                                    </Button>
+                                ) : null,
+                                width: 150,
+                            },
+                        ]}
+                        keyExtractor={(student) => student.id}
+                        onRowClick={(student) => {
+                            const submission = submissions.find(s => s.studentId === student.id);
+                            if (submission?.fileUrl) {
+                                window.open(submission.fileUrl, '_blank', 'noopener,noreferrer');
+                            }
+                        }}
+                        currentPage={1}
+                        totalPages={1}
+                        showSerialNumber
+                        totalResults={section.students?.length || 0}
+                        pageSize={section.students?.length || 10}
+                        onPageChange={() => {}}
+                        disableZebra={true}
+                    />
                 </div>
             )}
 

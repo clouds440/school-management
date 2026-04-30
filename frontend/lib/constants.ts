@@ -16,6 +16,7 @@ export const DASHBOARD_MODULES = [
     'change-password',
     'courses',
     'grades',
+    'schedules',
     'attendance',
     'profile',
 ];

@@ -5,7 +5,6 @@ export function useAccess() {
     
     // accessLevel: 0 (NONE), 1 (READ), 2 (WRITE)
     const accessLevel = user?.accessLevel ?? 2;
-    const isUserSuspended = user?.userStatus === 'SUSPENDED';
     
     return {
         accessLevel,

@@ -1,6 +1,7 @@
 'use client';
 
 import { mutate } from 'swr';
+import { matchesCacheKeyPrefix } from '@/lib/swr';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -122,6 +123,7 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
         dispatch({ type: 'UI_START_PROCESSING', payload: 'student-submit' });
         try {
             const { password, fee, age, ...rest } = data;
+
             const payload: CreateStudentRequest | UpdateStudentRequest = {
                 ...rest,
                 fee: fee ? Number(fee) : null,
@@ -171,7 +173,7 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
             }
             
             // Invalidate all student lists
-            mutate((key: any) => Array.isArray(key) && key[0] === 'students');
+            mutate(matchesCacheKeyPrefix('students'));
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Failed to save student';
 

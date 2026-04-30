@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { useGlobal } from '@/context/GlobalContext';
 import useSWR, { mutate } from 'swr';
+import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { Loading } from '@/components/ui/Loading';
 import { Toggle } from '@/components/ui/Toggle';
 
@@ -108,7 +109,7 @@ export default function CoursesPage() {
             await api.org.updateCourse(editingCourse.id, editFormData, token);
             setEditModalOpen(false);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Course updated successfully', type: 'success' } });
-            mutate((key: any) => Array.isArray(key) && key[0] === 'courses');
+            mutate(matchesCacheKeyPrefix('courses'));
         } catch (err: unknown) {
             const apiError = err as ApiError;
             const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Error updating course';
@@ -125,7 +126,7 @@ export default function CoursesPage() {
             await api.org.deleteCourse(deletingCourse.id, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Course deleted successfully', type: 'success' } });
             setDeleteDialogOpen(false);
-            mutate((key: any) => Array.isArray(key) && key[0] === 'courses');
+            mutate(matchesCacheKeyPrefix('courses'));
         } catch (err: unknown) {
             const apiError = err as ApiError;
             const rawMessage = apiError?.response?.data?.message || apiError?.message || 'Error deleting course';

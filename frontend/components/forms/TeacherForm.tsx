@@ -1,6 +1,7 @@
 'use client';
 
 import { mutate } from 'swr';
+import { matchesCacheKeyPrefix } from '@/lib/swr';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -111,6 +112,7 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
         dispatch({ type: 'UI_START_PROCESSING', payload: 'teacher-submit' });
         try {
             const { password, salary, ...rest } = data;
+
             const payload: CreateTeacherRequest | UpdateTeacherRequest = {
                 ...rest,
                 salary: salary ? Number(salary) : null,
@@ -159,7 +161,7 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
             }
             
             // Invalidate all teacher lists (paginated, filtered, etc.)
-            mutate((key: any) => Array.isArray(key) && key[0] === 'teachers');
+            mutate(matchesCacheKeyPrefix('teachers'));
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Failed to save teacher';
 

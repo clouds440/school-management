@@ -1,5 +1,4 @@
 import { Prisma } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
 
 export const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS!, 10);
 
@@ -125,15 +124,13 @@ export const extractUpdateFields = async <T extends Record<string, unknown>>(
     if (value === undefined) continue;
 
     if (userFields.includes(key)) {
-      if (
-        key === 'password' &&
-        typeof value === 'string' &&
-        value.trim() !== ''
-      ) {
-        userData.password = await bcrypt.hash(value, BCRYPT_ROUNDS);
-      } else if (key === 'password') {
+      if (key === 'password') {
         // Skip empty password to preserve existing password
-        continue;
+        if (typeof value === 'string' && value.trim() === '') {
+          continue;
+        }
+        // Pass password through as-is - updateUser will handle hashing
+        userData.password = value;
       } else if (key === 'email') {
         if (value !== existingUserEmail) {
           userData.email = value;

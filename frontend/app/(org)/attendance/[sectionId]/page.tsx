@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import useSWR, { mutate } from 'swr';
+import { matchesCacheKeyPrefixStartsWith } from '@/lib/swr';
 import { api } from '@/lib/api';
 import { ApiError, SectionAttendanceResponse, AttendanceStatus, Role, Section, RangeAttendanceResponse, SectionSchedule } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -98,7 +99,7 @@ export default function SectionAttendancePage() {
             await api.org.markAttendance(sessionId as string, records, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Attendance saved successfully', type: 'success' } });
             // Invalidate all attendance-related cache keys for this section
-            mutate((key: any) => Array.isArray(key) && key[0].startsWith('attendance-'));
+            mutate(matchesCacheKeyPrefixStartsWith('attendance-'));
         } catch (error: unknown) {
             dispatch({
                 type: 'TOAST_ADD',

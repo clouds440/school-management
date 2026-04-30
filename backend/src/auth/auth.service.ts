@@ -205,6 +205,7 @@ export class AuthService {
         const isNewDevice = !deviceSessions.some(
           (s) => s.deviceId === loginDto.deviceId,
         );
+        const isFirstLogin = deviceSessions.length === 0;
 
         // Create new session
         await this.prisma.session.create({
@@ -222,8 +223,8 @@ export class AuthService {
           },
         });
 
-        // Send notification if this is a new device
-        if (isNewDevice) {
+        // Send notification if this is a new device (but not on first ever login)
+        if (isNewDevice && !isFirstLogin) {
           await this.prisma.notification.create({
             data: {
               userId: user.id,

@@ -33,6 +33,7 @@ export type PresenceStateEvent = {
 export type PresenceUpdateEvent = {
     userId: string;
     isOnline: boolean;
+    lastSeenAt: string | null;
 };
 export type ChatTypingEvent = {
     chatId: string;
