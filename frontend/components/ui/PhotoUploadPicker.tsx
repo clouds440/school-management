@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { Camera, User, Building2 } from 'lucide-react';
 import { ImageCropperModal } from './ImageCropperModal';
@@ -34,6 +34,7 @@ export function PhotoUploadPicker({
   disabled = false,
 }: PhotoUploadPickerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewObjectUrlRef = useRef<string | null>(null);
   const [rawDataUrl, setRawDataUrl] = useState<string | null>(null);   // for cropper
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);   // real-time preview
   const [pendingFilename, setPendingFilename] = useState('photo.jpg');
@@ -42,6 +43,10 @@ export function PhotoUploadPicker({
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.type === 'image/svg+xml') {
+      e.target.value = '';
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -60,7 +65,11 @@ export function PhotoUploadPicker({
     setRawDataUrl(null);
 
     // Generate local preview URL
+    if (previewObjectUrlRef.current) {
+      URL.revokeObjectURL(previewObjectUrlRef.current);
+    }
     const objectUrl = URL.createObjectURL(croppedFile);
+    previewObjectUrlRef.current = objectUrl;
     setPreviewUrl(objectUrl);
 
     onFileReady(croppedFile);
@@ -69,6 +78,15 @@ export function PhotoUploadPicker({
   const handleCropCancel = useCallback(() => {
     setShowCropper(false);
     setRawDataUrl(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewObjectUrlRef.current) {
+        URL.revokeObjectURL(previewObjectUrlRef.current);
+        previewObjectUrlRef.current = null;
+      }
+    };
   }, []);
 
   // Determine what to show in the avatar
@@ -105,7 +123,6 @@ export function PhotoUploadPicker({
                 alt="Saved photo"
                 fill
                 className="object-cover"
-                unoptimized
               />
             )
           ) : (
@@ -129,7 +146,7 @@ export function PhotoUploadPicker({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+          accept="image/jpeg,image/png,image/gif,image/webp"
           className="sr-only"
           onChange={handleFileChange}
           aria-hidden

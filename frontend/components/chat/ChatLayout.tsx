@@ -143,6 +143,7 @@ export function ChatLayout() {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const mentionDropdownRef = useRef<HTMLDivElement>(null);
     const observerRef = useRef<ResizeObserver | null>(null);
+    const readOnlyBannerObserverRef = useRef<ResizeObserver | null>(null);
 
     const [composerHeight, setComposerHeight] = useState(0);
     const [readOnlyBannerHeight, setReadOnlyBannerHeight] = useState(0);
@@ -261,6 +262,11 @@ export function ChatLayout() {
     }, []);
 
     const readOnlyBannerRefCallback = useCallback((node: HTMLDivElement | null) => {
+        if (readOnlyBannerObserverRef.current) {
+            readOnlyBannerObserverRef.current.disconnect();
+            readOnlyBannerObserverRef.current = null;
+        }
+
         if (node) {
             const observer = new ResizeObserver((entries) => {
                 for (const entry of entries) {
@@ -268,6 +274,7 @@ export function ChatLayout() {
                 }
             });
             observer.observe(node);
+            readOnlyBannerObserverRef.current = observer;
         }
     }, []);
 
@@ -275,6 +282,9 @@ export function ChatLayout() {
         return () => {
             if (observerRef.current) {
                 observerRef.current.disconnect();
+            }
+            if (readOnlyBannerObserverRef.current) {
+                readOnlyBannerObserverRef.current.disconnect();
             }
         };
     }, []);
@@ -756,6 +766,18 @@ export function ChatLayout() {
         [activeChat, typingUsers]
     );
     const { messageDraft, stagedFiles, replyToMessage, editingMessage, mentionedUsers } = activeChatComposerState;
+    const stagedFilePreviewUrls = useMemo(
+        () => stagedFiles.map(file => file instanceof File && file.type.startsWith('image/') ? URL.createObjectURL(file) : null),
+        [stagedFiles]
+    );
+
+    useEffect(() => {
+        return () => {
+            stagedFilePreviewUrls.forEach(url => {
+                if (url) URL.revokeObjectURL(url);
+            });
+        };
+    }, [stagedFilePreviewUrls]);
 
     // Check if user can send messages (not read-only or has admin/mod role)
     const currentUserParticipant = useMemo(
@@ -962,8 +984,7 @@ export function ChatLayout() {
                         'image/jpg',
                         'image/png',
                         'image/gif',
-                        'image/webp',
-                        'image/svg+xml'
+                        'image/webp'
                     ].includes(file.type);
 
                     if (isImage) return `\n![${safeName}](${url})`;
@@ -1093,14 +1114,39 @@ export function ChatLayout() {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
         if (!chatId) return;
+        const allowedTypes = new Set([
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+            'application/pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        ]);
+        const allowedExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.docx', '.xlsx', '.pptx']);
+        const validFiles = files.filter(file => {
+            const lowerName = file.name.toLowerCase();
+            const hasAllowedExtension = Array.from(allowedExtensions).some(ext => lowerName.endsWith(ext));
+            return allowedTypes.has(file.type) || (!file.type && hasAllowedExtension);
+        });
 
-        if (stagedFiles.length + files.length > 5) {
+        if (validFiles.length < files.length) {
+            dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Some attachments were skipped because the file type is not allowed.', type: 'info' } });
+        }
+        if (validFiles.length === 0) {
+            e.target.value = '';
+            return;
+        }
+
+        if (stagedFiles.length + validFiles.length > 5) {
             dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Maximum 5 attachments allowed', type: 'info' } });
             return;
         }
 
         updateComposerStateForChat(chatId, {
-            stagedFiles: [...stagedFiles, ...files]
+            stagedFiles: [...stagedFiles, ...validFiles]
         });
         e.target.value = '';
     };
@@ -1854,9 +1900,9 @@ export function ChatLayout() {
                                         <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-1.5 sm:mb-1 mr-2">
                                             {stagedFiles.map((file, i) => (
                                                 <div key={i} className="group relative flex items-center bg-muted border border-border pl-2 pr-1 py-1 rounded-xl hover:border-primary/30 transition-all">
-                                                    {file.type.startsWith('image/') ? (
+                                                    {file instanceof File && file.type.startsWith('image/') && stagedFilePreviewUrls[i] ? (
                                                         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg overflow-hidden bg-muted-foreground/10 mr-1.5 sm:mr-2 relative">
-                                                            <Image src={URL.createObjectURL(file)} alt="" fill className="object-cover" unoptimized />
+                                                            <Image src={stagedFilePreviewUrls[i]} alt="" fill className="object-cover" unoptimized />
                                                         </div>
                                                     ) : (
                                                         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary mr-1.5 sm:mr-2">
@@ -1864,8 +1910,8 @@ export function ChatLayout() {
                                                         </div>
                                                     )}
                                                     <div className="flex flex-col mr-1 sm:mr-1.5 max-w-16 sm:max-w-20">
-                                                        <span className="text-[11px] sm:text-[13px] font-semibold text-foreground truncate">{file.name}</span>
-                                                        <span className="text-[10px] sm:text-[11px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
+                                                        <span className="text-[11px] sm:text-[13px] font-semibold text-foreground truncate">{file.name || 'Attachment'}</span>
+                                                        <span className="text-[10px] sm:text-[11px] text-muted-foreground">{file.size ? (file.size / 1024).toFixed(0) : '0'} KB</span>
                                                     </div>
                                                     <button
                                                         type="button"
@@ -1897,6 +1943,7 @@ export function ChatLayout() {
                                             id="chat-file-upload"
                                             className="hidden"
                                             onChange={handleFileUpload}
+                                            accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.docx,.xlsx,.pptx"
                                             multiple
                                         />
 

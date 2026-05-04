@@ -6,6 +6,50 @@ Scope: `frontend/` source, current `package-lock.json`, current build/lint artif
 
 This document is written for implementation agents. Each finding includes recognition signals, why it matters, and the least risky fix sequence.
 
+## Implementation Status After Master Pull
+
+Updated: 2026-05-04 after re-validating the pulled frontend tree.
+
+Applied:
+
+1. `SEC-02`: fixed the `getStudentFinalGrades` argument order so the JWT is no longer sent in the URL path.
+2. `SEC-03`: hardened markdown by escaping raw HTML before parsing, rejecting unsafe link/image URLs, and cleaning image error listeners.
+3. `SEC-04`: disabled `dangerouslyAllowSVG` and removed SVG from client-side avatar/chat image upload paths.
+4. `SEC-05`: added `frontend/lib/safeUrl.ts` and applied it to markdown links/images, external assessment/submission links, notification/announcement action URLs, schemas, downloads, and public URL handling.
+5. `SEC-07`: changed socket token updates to reconnect with fresh auth and prevented duplicate listener reattachment.
+6. `PERF-01`: removed global SWR polling while leaving per-page polling available.
+7. `PERF-03`: revoked preview object URLs in avatar/chat preview flows and removed inline object URL creation during chat render.
+8. `PERF-05`: fixed the socket listener duplication path.
+9. `PERF-06`: reduced markdown renderer global mutation/listener leaks as part of the XSS hardening.
+10. `PERF-07`: removed unnecessary `unoptimized` from saved avatar/logo images; kept it only where blob/data previews require it.
+11. `PERF-08`: cleaned up the read-only banner `ResizeObserver`.
+12. `PERF-09`: memoized the SWR fetcher and config object.
+
+Skipped or partially skipped:
+
+1. `SEC-01` was skipped because moving JWT storage from `localStorage` to `HttpOnly` cookies requires backend/session endpoint changes and would break login/API auth if done frontend-only.
+2. `SEC-04` CSP/header hardening was skipped because the current deployment origins, socket origins, iframe/video policy, and image hosts need confirmation; an incorrect CSP can silently break chat, uploads, videos, and remote images.
+3. `SEC-06` was only partially addressed for chat/avatar SVG rejection. A full upload policy was skipped because backend upload limits and accepted file contracts are not visible from the frontend and strict frontend-only limits could break existing assessment/material/mail workflows.
+4. `SEC-07` backend room authorization was skipped because it must be enforced and tested in the backend socket gateway; frontend changes cannot prove room access control.
+5. `SEC-09` was skipped because removing chat/draft persistence changes chat resume behavior and needs a product decision or IndexedDB/sessionStorage replacement plan.
+6. `SEC-10` was skipped because the client device ID appears to be display/session metadata; hardening it safely requires confirming whether backend session management trusts it.
+7. `PERF-02` was skipped with `SEC-09` because it shares the same chat persistence behavior.
+8. `PERF-04` was skipped because replacing eager `limit: 1000` fetches with remote search changes modal/form UX and requires backend search/pagination contracts for each selector.
+9. `PERF-08` scroll throttling was skipped because chat scrolling/read receipts are delicate; the observer leak was fixed, but scroll behavior should be profiled before changing read-state timing.
+10. `PERF-10` was skipped because global background visuals are design-facing and should be changed with visual QA.
+
+Verification after implementation:
+
+1. `npm audit --json`: passed with `0` vulnerabilities.
+2. `npm audit --omit=dev --json`: passed with `0` vulnerabilities.
+3. `npm run build`: passed after running outside the sandbox because the sandboxed build hit `spawn EPERM`.
+4. `npm run lint`: still fails on pulled-code React Compiler lint errors unrelated to these fixes:
+   - `frontend/app/(org)/mail/page.tsx`
+   - `frontend/app/admin/mail/page.tsx`
+   - `frontend/components/ui/CustomMultiSelect.tsx`
+   - `frontend/components/ui/CustomSelect.tsx`
+   - `frontend/components/ui/SearchBar.tsx`
+
 ## Priority Map
 
 Fix in this order:
@@ -624,4 +668,3 @@ Manual checks:
 6. Notification and announcement links.
 7. Idle dashboard network tab for unwanted polling.
 8. Browser memory while repeatedly selecting/removing upload previews.
-

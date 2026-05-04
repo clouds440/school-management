@@ -10,9 +10,13 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Upload, FileCheck } from 'lucide-react';
 import { Submission } from '@/types';
+import { isSafeHttpUrl } from '@/lib/safeUrl';
 
 const submissionSchema = z.object({
-    fileUrl: z.string().url('Please provide a valid URL for your submission').or(z.literal('')),
+    fileUrl: z.string()
+        .url('Please provide a valid URL for your submission')
+        .refine(isSafeHttpUrl, 'Only safe http(s) URLs are allowed')
+        .or(z.literal('')),
 });
 
 type SubmissionFormValues = z.infer<typeof submissionSchema>;

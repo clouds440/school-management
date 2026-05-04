@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { normalizeSafeUrl } from './safeUrl';
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -12,8 +13,8 @@ export function cn(...inputs: ClassValue[]) {
 export function getPublicUrl(path: string | null | undefined, updatedAt?: string | Date | null): string {
     if (!path) return '';
 
-    // If it's already a full URL (http/https), return as is
-    if (path.startsWith('http')) return path;
+    // If it's already a full URL, only return safe http(s) URLs.
+    if (path.startsWith('http')) return normalizeSafeUrl(path, { allowRelative: false }) || '';
 
     // Frontend static assets (like /assets/) should be returned as-is
     if (path.startsWith('/assets/')) return path;
@@ -105,7 +106,9 @@ export function getUserColor(userId: string | undefined | null): string {
  */
 export async function downloadFile(url: string, filename: string): Promise<void> {
     try {
-        const response = await fetch(url);
+        const safeUrl = normalizeSafeUrl(url, { allowRelative: true });
+        if (!safeUrl) throw new Error('Unsafe download URL');
+        const response = await fetch(safeUrl);
         const blob = await response.blob();
         const blobUrl = window.URL.createObjectURL(blob);
         const a = document.createElement('a');

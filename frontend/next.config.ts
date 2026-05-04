@@ -22,8 +22,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-    // Allow blob: and data: object URLs for local crop previews
-    dangerouslyAllowSVG: true,
+    dangerouslyAllowSVG: false,
   },
 };
 

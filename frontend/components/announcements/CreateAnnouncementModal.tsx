@@ -12,6 +12,7 @@ import { CustomSelect, DropdownOption } from '@/components/ui/CustomSelect';
 import { TargetType, Role, AnnouncementPriority } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
 import { Send, Type, Megaphone, Globe, Building2, Shield, Layout, User } from 'lucide-react';
+import { normalizeSafeUrl } from '@/lib/safeUrl';
 
 interface Props {
     isOpen: boolean;
@@ -106,6 +107,14 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!token) return;
+        const normalizedActionUrl = actionUrl.trim()
+            ? normalizeSafeUrl(actionUrl, { allowRelative: true }) || undefined
+            : undefined;
+
+        if (actionUrl.trim() && !normalizedActionUrl) {
+            dispatch({ type: 'TOAST_ADD', payload: { message: 'Action URL must be a safe https URL or internal path.', type: 'error' } });
+            return;
+        }
 
         try {
             dispatch({ type: 'UI_START_PROCESSING', payload: 'announcement-submit' });
@@ -114,7 +123,7 @@ export function CreateAnnouncementModal({ isOpen, onClose, onSuccess }: Props) {
                 body,
                 targetType,
                 targetId: targetId || undefined,
-                actionUrl: actionUrl || undefined,
+                actionUrl: normalizedActionUrl,
                 priority
             }, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Announcement created successfully', type: 'success' } });

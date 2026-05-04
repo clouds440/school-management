@@ -3,6 +3,7 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import { marked } from 'marked';
 import { getPublicUrl } from '@/lib/utils';
+import { normalizeSafeUrl } from '@/lib/safeUrl';
 
 interface MarkdownRendererProps {
     content: string;
@@ -10,6 +11,18 @@ interface MarkdownRendererProps {
 }
 
 const failedMarkdownImageUrls = new Set<string>();
+
+const escapeHtml = (str?: string) => {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
+const escapeRawHtml = (str: string) => str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -19,20 +32,10 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
         try {
             const renderer = new marked.Renderer();
 
-            // Helper to escape HTML in alt/title text
-            const escapeHtml = (str?: string) => {
-                if (!str) return '';
-                return String(str)
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;')
-                    .replace(/'/g, '&#39;');
-            };
-
             // Override image rendering to use getPublicUrl and graceful fallback
             renderer.image = ({ href, title, text }) => {
-                const url = href ? getPublicUrl(href) : '';
+                const resolved = href ? getPublicUrl(href) : '';
+                const url = normalizeSafeUrl(resolved, { allowRelative: true });
                 const alt = escapeHtml(text || title || 'Image');
                 const titleAttr = escapeHtml(title || '');
 
@@ -57,33 +60,22 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
             renderer.link = ({ href, title, text }) => {
                 if (!href) return `<a title="${escapeHtml(title || '')}">${text}</a>`;
 
-                // Comprehensive external link detection
-                const isExternal = /^https?:\/\/|^\/\/|^www\.|^mailto:|^tel:/.test(href);
                 let url = href;
-
-                if (isExternal) {
-                    // Ensure 'www.' links have a protocol, otherwise they are treated as relative paths
-                    url = href.startsWith('www.') ? `https://${href}` : href;
-                } else if (href.startsWith('/uploads/') || href.startsWith('uploads/') || href.includes('/chat-files/') || href.includes('/mail-files/')) {
+                if (href.startsWith('/uploads/') || href.startsWith('uploads/') || href.includes('/chat-files/') || href.includes('/mail-files/')) {
                     // Only use getPublicUrl for known backend asset patterns
                     url = getPublicUrl(href);
-                } else {
-                    // Regular platform internal links (e.g. /dashboard) should stay relative to the frontend
-                    url = href;
                 }
 
+                const safeUrl = normalizeSafeUrl(url, { allowRelative: true, allowMailTo: true, allowTel: true });
+                if (!safeUrl) return `<span>${text}</span>`;
+
+                const isExternal = /^[a-z][a-z\d+.-]*:/i.test(safeUrl) || safeUrl.startsWith('www.');
                 const targetAttr = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
-                return `<a href="${escapeHtml(url)}" title="${escapeHtml(title || '')}" ${targetAttr}>${text}</a>`;
+                return `<a href="${escapeHtml(safeUrl)}" title="${escapeHtml(title || '')}" ${targetAttr}>${text}</a>`;
             };
 
-            // Configure marked for safe and simple rendering
-            marked.setOptions({
-                breaks: true, // Support single line breaks
-                gfm: true,   // GitHub Flavored Markdown
-                renderer,
-            });
-            // Trim trailing newlines to avoid stray empty lines inside chat bubbles
-            const sanitized = (content || '').replace(/\n+$/g, '');
+            // Trim trailing newlines and escape raw HTML before parsing markdown.
+            const markdown = escapeRawHtml((content || '').replace(/\n+$/g, ''));
             if (typeof window !== 'undefined') {
                 const failedMap = (window as Window & { __eduverseFailedMarkdownImages?: Record<string, boolean> }).__eduverseFailedMarkdownImages;
                 if (failedMap) {
@@ -92,16 +84,21 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
                     });
                 }
             }
-            return marked.parse(sanitized);
+            return marked.parse(markdown, {
+                breaks: true, // Support single line breaks
+                gfm: true,   // GitHub Flavored Markdown
+                renderer,
+            }) as string;
         } catch (error) {
             console.error('Markdown parsing error:', error);
-            return content || '';
+            return escapeHtml(content || '');
         }
     }, [content]);
 
     useEffect(() => {
         if (!containerRef.current) return;
 
+        const cleanups: Array<() => void> = [];
         const images = containerRef.current.querySelectorAll('img.markdown-image');
         images.forEach((img) => {
             const url = img.getAttribute('data-failed-url');
@@ -120,8 +117,10 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
             };
 
             img.addEventListener('error', handleError);
-            return () => img.removeEventListener('error', handleError);
+            cleanups.push(() => img.removeEventListener('error', handleError));
         });
+
+        return () => cleanups.forEach((cleanup) => cleanup());
     }, [htmlContent]);
 
     return (

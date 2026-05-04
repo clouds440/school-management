@@ -27,6 +27,12 @@ let socketSingleton: Socket | null = null;
 const listenersSingleton: Map<string, Set<EventCallback>> = new Map();
 let connected = false;
 
+function attachStoredListeners(socket: Socket) {
+    listenersSingleton.forEach((callbacks, event) => {
+        callbacks.forEach(cb => socket.on(event, cb));
+    });
+}
+
 export function useSocket(options: UseSocketOptions) {
     const { token, userId, userRole, orgId, enabled = true } = options;
     const [isConnected, setIsConnected] = useState(connected);
@@ -38,6 +44,19 @@ export function useSocket(options: UseSocketOptions) {
         if (!socketUrl.startsWith('http')) {
             console.warn('[WS] Invalid socket URL:', socketUrl);
             return;
+        }
+
+        if (socketSingleton) {
+            // If socket exists but token changed, reconnect with the new auth.
+            const currentAuth = socketSingleton.auth;
+            const isAuthObject = typeof currentAuth === 'object' && currentAuth !== null;
+            const needsUpdate = isAuthObject && (currentAuth as { token?: string }).token !== token;
+
+            if (needsUpdate) {
+                socketSingleton.disconnect();
+                socketSingleton = null;
+                connected = false;
+            }
         }
 
         if (!socketSingleton) {
@@ -62,26 +81,8 @@ export function useSocket(options: UseSocketOptions) {
                 connected = false;
                 setIsConnected(false);
             });
-        } else {
-            // If socket exists but token changed, update auth by reconnecting
-            // (socket.io doesn't support changing auth token on the fly reliably)
-            const currentAuth = socketSingleton.auth;
-            const isAuthObject = typeof currentAuth === 'object' && currentAuth !== null;
-            const needsUpdate = isAuthObject && (currentAuth as { token?: string }).token !== token;
-            
-            if (needsUpdate) {
-                try {
-                    socketSingleton.auth = { token };
-                } catch {
-                    // Ignore auth update failures and keep the existing socket alive.
-                }
-            }
+            attachStoredListeners(socketSingleton);
         }
-
-        // Attach any existing listeners to the socket singleton
-        listenersSingleton.forEach((callbacks, event) => {
-            callbacks.forEach(cb => socketSingleton?.on(event, cb));
-        });
 
         // Auto-join rooms for this caller
         if (socketSingleton) {

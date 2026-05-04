@@ -8,6 +8,7 @@ import { Assessment, Section, Grade, Submission, Role } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
 import { useParams } from 'next/navigation';
 import { formatDate, getPublicUrl } from '@/lib/utils';
+import { normalizeSafeUrl } from '@/lib/safeUrl';
 import { Modal } from '@/components/ui/Modal';
 import GradingForm from '@/components/forms/GradingForm';
 import { BulkGradingModal } from '@/components/forms/BulkGradingModal';
@@ -50,6 +51,7 @@ export default function AssessmentDetailPage() {
     const isAssigned = section?.teachers?.some(t => t.user?.id === userId);
     const canGrade = (role === Role.TEACHER || role === Role.ORG_MANAGER) && isAssigned;
     const isTeacherOrAdmin = role === Role.TEACHER || role === Role.ORG_ADMIN || role === Role.ORG_MANAGER;
+    const safeAssessmentExternalLink = normalizeSafeUrl(assessment?.externalLink, { allowRelative: false });
 
     if (isLoading) {
         return (
@@ -105,11 +107,11 @@ export default function AssessmentDetailPage() {
                 </div>
 
                 {/* Resources Section */}
-                {(assessment.externalLink || (assessment.files && assessment.files.length > 0)) && (
+                {(safeAssessmentExternalLink || (assessment.files && assessment.files.length > 0)) && (
                     <div className="relative z-10 mt-8 pt-6 border-t border-border flex flex-wrap gap-4">
-                        {assessment.externalLink && (
+                        {safeAssessmentExternalLink && (
                             <a
-                                href={assessment.externalLink}
+                                href={safeAssessmentExternalLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-2 px-4 py-2 bg-card/40 hover:bg-card border border-border rounded-lg text-xs font-bold transition-colors text-blue-400 hover:text-blue-300 shadow-sm"
@@ -198,6 +200,7 @@ export default function AssessmentDetailPage() {
                                 header: 'Submission',
                                 accessor: (student) => {
                                     const submission = submissions.find(s => s.studentId === student.id);
+                                    const safeSubmissionUrl = normalizeSafeUrl(submission?.fileUrl, { allowRelative: false });
                                     return submission ? (
                                         (submission.files && submission.files.length > 0) ? (
                                             <a
@@ -209,9 +212,9 @@ export default function AssessmentDetailPage() {
                                             >
                                                 <LinkIcon className="w-3 h-3" /> View Work
                                             </a>
-                                        ) : submission.fileUrl ? (
+                                        ) : safeSubmissionUrl ? (
                                             <a
-                                                href={submission.fileUrl}
+                                                href={safeSubmissionUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-primary hover:text-primary-light flex items-center gap-1.5 underline-offset-2 hover:underline font-black italic tracking-widest"
@@ -261,8 +264,9 @@ export default function AssessmentDetailPage() {
                         keyExtractor={(student) => student.id}
                         onRowClick={(student) => {
                             const submission = submissions.find(s => s.studentId === student.id);
-                            if (submission?.fileUrl) {
-                                window.open(submission.fileUrl, '_blank', 'noopener,noreferrer');
+                            const safeSubmissionUrl = normalizeSafeUrl(submission?.fileUrl, { allowRelative: false });
+                            if (safeSubmissionUrl) {
+                                window.open(safeSubmissionUrl, '_blank', 'noopener,noreferrer');
                             }
                         }}
                         currentPage={1}

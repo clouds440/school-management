@@ -11,6 +11,7 @@ import { useGlobal } from '@/context/GlobalContext';
 import Link from 'next/link';
 import { CreateAnnouncementModal } from './CreateAnnouncementModal';
 import { BrandIcon } from '@/components/ui/Brand';
+import { normalizeSafeUrl } from '@/lib/safeUrl';
 
 export function AnnouncementDropdown() {
     const { token, user } = useAuth();
@@ -179,6 +180,7 @@ export function AnnouncementDropdown() {
 
                                     const bgClass = priorityColors[announcement.priority || 'NORMAL'] || priorityColors.NORMAL;
                                     const creator = announcement.creator;
+                                    const safeActionUrl = normalizeSafeUrl(announcement.actionUrl, { allowRelative: true });
 
                                     return (
                                         <div
@@ -227,10 +229,10 @@ export function AnnouncementDropdown() {
                                                 {announcement.body}
                                             </p>
 
-                                            {announcement.actionUrl && (
+                                            {safeActionUrl && (
                                                 <div className="mt-4 pt-3 border-t border-border flex justify-end">
                                                     <Link
-                                                        href={announcement.actionUrl}
+                                                        href={safeActionUrl}
                                                         className="text-[10px] font-black text-blue-600 hover:text-blue-800 tracking-widest flex items-center gap-1 group/link"
                                                     >
                                                         <span>View Full Details</span>

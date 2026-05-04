@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { OrganizationType, TeacherStatus, StudentStatus, AssessmentType, GradeStatus } from '@/types';
+import { isSafeHttpUrl } from './safeUrl';
 
 // --- Shared Patterns ---
 const phoneRegex = /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/;
@@ -160,7 +161,7 @@ export const assessmentSchema = z.object({
     weightage: z.string().min(1, 'Weightage is required').refine(val => !isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 100, 'Must be between 0 and 100'),
     dueDate: z.string().optional().or(z.literal('')),
     allowSubmissions: z.boolean(),
-    externalLink: z.string().url('Invalid URL').optional().or(z.literal('')),
+    externalLink: z.string().url('Invalid URL').refine(isSafeHttpUrl, 'Only safe http(s) URLs are allowed').optional().or(z.literal('')),
     isVideoLink: z.boolean().optional(),
 });
 

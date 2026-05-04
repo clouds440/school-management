@@ -8,6 +8,7 @@ import { Notification } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import notificationsStore from '@/lib/notificationsStore';
+import { normalizeSafeUrl } from '@/lib/safeUrl';
 
 export function NotificationDropdown() {
     const { token, user } = useAuth();
@@ -154,10 +155,11 @@ export function NotificationDropdown() {
                                         if (!notif.isRead) markAsRead(notif.id);
                                         setIsOpen(false);
                                     };
+                                    const safeActionUrl = normalizeSafeUrl(notif.actionUrl, { allowRelative: true });
 
-                                    if (notif.actionUrl) {
+                                    if (safeActionUrl) {
                                         return (
-                                            <Link key={notif.id} href={notif.actionUrl} onClick={handleClick} className={className}>
+                                            <Link key={notif.id} href={safeActionUrl} onClick={handleClick} className={className}>
                                                 {content}
                                             </Link>
                                         );

@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { SWRConfig } from 'swr';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
@@ -139,7 +139,7 @@ function createFetcher(token: string | null) {
                 case 'student-sections':
                     return await api.org.getSections(token, args[1] as object) as T;
                 case 'student-grades':
-                    return await api.org.getStudentFinalGrades(token, args[0] as string) as T;
+                    return await api.org.getStudentFinalGrades(args[0] as string, token) as T;
                 case 'student-assessments':
                     return await api.org.getAssessments(token, args[0] as object) as T;
                 case 'student-insights':
@@ -177,34 +177,32 @@ interface SWRProviderProps {
 export function SWRProvider({ children }: SWRProviderProps) {
     const { token } = useAuth();
 
-    const fetcher = createFetcher(token);
+    const fetcher = useMemo(() => createFetcher(token), [token]);
+    const swrConfig = useMemo(() => ({
+        fetcher,
+        revalidateOnFocus: true,
+        errorRetryCount: 3,
+        dedupingInterval: 2000, // 2 seconds
+        shouldRetryOnError: (err: unknown) => {
+            // Don't retry on 401 (unauthorized) or 403 (forbidden)
+            if (err && typeof err === 'object' && 'status' in err) {
+                const status = (err as { status: number }).status;
+                if (status === 401 || status === 403) return false;
+            }
+            return true;
+        },
+        onError: (err: unknown) => {
+            // Log errors but let components handle UI
+            if (err && typeof err === 'object' && 'message' in err) {
+                console.warn('SWR Error:', (err as Error).message);
+            }
+        },
+        // Null key pattern: when token is null, don't fetch
+        suspense: false,
+    }), [fetcher]);
 
     return (
-        <SWRConfig
-            value={{
-                fetcher,
-                refreshInterval: 30000, // 30 seconds
-                revalidateOnFocus: true,
-                errorRetryCount: 3,
-                dedupingInterval: 2000, // 2 seconds
-                shouldRetryOnError: (err: unknown) => {
-                    // Don't retry on 401 (unauthorized) or 403 (forbidden)
-                    if (err && typeof err === 'object' && 'status' in err) {
-                        const status = (err as { status: number }).status;
-                        if (status === 401 || status === 403) return false;
-                    }
-                    return true;
-                },
-                onError: (err: unknown) => {
-                    // Log errors but let components handle UI
-                    if (err && typeof err === 'object' && 'message' in err) {
-                        console.warn('SWR Error:', (err as Error).message);
-                    }
-                },
-                // Null key pattern: when token is null, don't fetch
-                suspense: false,
-            }}
-        >
+        <SWRConfig value={swrConfig}>
             {children}
         </SWRConfig>
     );

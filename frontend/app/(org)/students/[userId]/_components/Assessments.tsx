@@ -11,6 +11,7 @@ import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { Modal } from '@/components/ui/Modal';
 import { getPublicUrl } from '@/lib/utils';
+import { normalizeSafeUrl } from '@/lib/safeUrl';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 
 const getGradeColors = (marks: number, total: number) => {
@@ -147,14 +148,15 @@ export default function Assessments({ sections, assessments }: { sections: Secti
         if (!url) return '';
         if (url.includes('youtube.com/watch?v=')) {
             const videoId = url.split('v=')[1]?.split('&')[0];
-            return `https://www.youtube.com/embed/${videoId}`;
+            return normalizeSafeUrl(`https://www.youtube.com/embed/${videoId}`, { allowRelative: false }) || '';
         }
         if (url.includes('youtu.be/')) {
             const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-            return `https://www.youtube.com/embed/${videoId}`;
+            return normalizeSafeUrl(`https://www.youtube.com/embed/${videoId}`, { allowRelative: false }) || '';
         }
-        return url;
+        return normalizeSafeUrl(url, { allowRelative: false }) || '';
     };
+    const safeSelectedExternalLink = normalizeSafeUrl(selectedAssessment?.externalLink, { allowRelative: false });
 
     return (
         <div className="max-w-7xl mx-auto space-y-8 pb-10 px-4 sm:px-6">
@@ -398,20 +400,20 @@ export default function Assessments({ sections, assessments }: { sections: Secti
                             </div>
                         )}
 
-                        {selectedAssessment.externalLink && (
+                        {safeSelectedExternalLink && (
                             <div className="space-y-3">
                                 <h3 className="text-sm font-bold text-foreground tracking-widest">External Resource</h3>
                                 {selectedAssessment.isVideoLink ? (
                                     <div className="w-full aspect-video rounded-xl overflow-hidden border border-border shadow-inner bg-black">
                                         <iframe
-                                            src={getVideoEmbedUrl(selectedAssessment.externalLink)}
+                                            src={getVideoEmbedUrl(safeSelectedExternalLink)}
                                             className="w-full h-full"
                                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                             allowFullScreen
                                         ></iframe>
                                     </div>
                                 ) : (
-                                    <a href={selectedAssessment.externalLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 bg-primary/10 border border-primary/20 rounded-xl hover:bg-primary/20 transition-colors">
+                                    <a href={safeSelectedExternalLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 bg-primary/10 border border-primary/20 rounded-xl hover:bg-primary/20 transition-colors">
                                         <PlayCircle className="w-6 h-6 text-primary" />
                                         <span className="text-sm font-bold text-primary italic">Open External Link</span>
                                     </a>
