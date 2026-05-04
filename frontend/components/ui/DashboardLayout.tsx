@@ -112,7 +112,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                     ${isMobileOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0'}
                     ${effectiveExpanded ? 'lg:w-72' : 'lg:w-20'}
                     h-full shrink-0 overflow-hidden
-                    transition-transform duration-300 ease-in-out lg:transition-none
+                    transition-all duration-300 ease-in-out
                 `}
             >
                 {/* Sidebar Header - Branded */}

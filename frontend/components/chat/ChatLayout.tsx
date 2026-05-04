@@ -112,6 +112,7 @@ export function ChatLayout() {
 
     const touchStartTimeRef = useRef<number>(0);
     const touchMessageIdRef = useRef<string | null>(null);
+    const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
     const [confirmConfig, setConfirmConfig] = useState<{
         isOpen: boolean;
         title: string;
@@ -1294,19 +1295,32 @@ export function ChatLayout() {
                             e.stopPropagation();
                             touchStartTimeRef.current = Date.now();
                             touchMessageIdRef.current = msg.id;
+                            const touch = e.touches[0];
+                            touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
                         }
                     }}
                     onTouchEnd={(e) => {
                         if (!isDesktop && !isDeleted) {
                             e.stopPropagation();
                             const touchDuration = Date.now() - touchStartTimeRef.current;
-                            if (touchDuration >= 300 && touchMessageIdRef.current === msg.id) {
+                            const touch = e.changedTouches[0];
+                            const touchEndPos = { x: touch.clientX, y: touch.clientY };
+                            const movementDistance = touchStartPosRef.current
+                                ? Math.sqrt(
+                                    Math.pow(touchEndPos.x - touchStartPosRef.current.x, 2) +
+                                    Math.pow(touchEndPos.y - touchStartPosRef.current.y, 2)
+                                )
+                                : Infinity;
+
+                            // Only trigger if held for 300ms+ AND moved less than 10px (not scrolling)
+                            if (touchDuration >= 300 && movementDistance < 10 && touchMessageIdRef.current === msg.id) {
                                 e.preventDefault();
                                 // Small delay to prevent touch end from triggering menu item click
                                 setTimeout(() => setContextMenu({ msg, x: 0, y: 0 }), 50);
                             }
                             touchStartTimeRef.current = 0;
                             touchMessageIdRef.current = null;
+                            touchStartPosRef.current = null;
                         }
                     }}
                     className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-3.5' : 'mb-0.5'} px-3 md:px-5 -mx-3 md:-mx-5 ${highlightedMessageId === msg.id || contextMenu?.msg.id === msg.id ? 'bg-primary/20 rounded-sm' : ''}`}

@@ -136,7 +136,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const refreshTheme = useCallback(async () => {
         if (!token || userRole === Role.SUPER_ADMIN || userRole === Role.PLATFORM_ADMIN) {
-            setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
+            // For admins, just apply the current theme state, don't reset to defaults
+            const computedSecondary = themeMode === ThemeMode.DARK ? adjustBrightness(primaryColor, -85) : adjustBrightness(primaryColor, 90);
+            applyTheme(primaryColor, computedSecondary, themeMode);
             return;
         }
 
@@ -157,7 +159,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             console.error('Failed to fetch theme settings:', error);
             setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
         }
-    }, [applyTheme, setThemeColors, themeMode, token, userRole]);
+    }, [applyTheme, setThemeColors, themeMode, token, userRole, primaryColor]);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
