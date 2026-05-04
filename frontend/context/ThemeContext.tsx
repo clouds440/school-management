@@ -15,8 +15,8 @@ interface ThemeContextType {
     refreshTheme: () => Promise<void>;
 }
 
-const DEFAULT_PRIMARY = '#4f46e5'; // indigo-600
-const DEFAULT_SECONDARY = '#f0f0f0';
+const DEFAULT_PRIMARY = '#0052FF'; // Crypto Blue - Coinbase Blue
+const DEFAULT_SECONDARY = '#5B616E'; // Cool Slate
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
@@ -42,9 +42,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
         // Base Colors
         root.style.setProperty('--primary', primary);
+        root.style.setProperty('--primary-hover', '#003ECB'); // Primary Hover
         root.style.setProperty('--secondary', secondary);
+        root.style.setProperty('--neutral', '#8A919E'); // Neutral
+        root.style.setProperty('--success', '#05B169'); // Success
+        root.style.setProperty('--warning', '#F0AD4E'); // Warning
+        root.style.setProperty('--error', '#DF2935'); // Error
 
-        // RBG for opacity support
+        // RGB for opacity support
         const primaryRgb = hexToRgb(primary);
         const secondaryRgb = hexToRgb(secondary);
         if (primaryRgb) root.style.setProperty('--primary-rgb', `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`);
@@ -61,43 +66,47 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // --- Semantic Variable Injection ---
         const isDark = effectiveMode === ThemeMode.DARK;
 
-        // 1. Core Backgrounds & Foregrounds
+        // 1. Core Backgrounds & Foregrounds - Crypto Blue Design System
         if (isDark) {
-            root.style.setProperty('--background', '#030816'); // Very dark slate
-            root.style.setProperty('--foreground', '#f8fafc'); // slate-50
-            root.style.setProperty('--card-bg', '#0f172a'); // slate-900
-            root.style.setProperty('--card-text', '#f1f5f9'); // slate-100
-            root.style.setProperty('--muted-bg', '#1e293b'); // slate-800
-            root.style.setProperty('--muted-text', '#94a3b8'); // slate-400
-            root.style.setProperty('--accent-bg', '#1e293b');
-            root.style.setProperty('--accent-text', '#f1f5f9');
-            root.style.setProperty('--border-color', 'rgba(255, 255, 255, 0.15)');
-            root.style.setProperty('--input-bg', '#020617');
+            // Dark Mode Palette
+            root.style.setProperty('--background', '#0A0E1A'); // Dark background
+            root.style.setProperty('--foreground', '#F9FAFB'); // Light text
+            root.style.setProperty('--card-bg', '#111827'); // Dark card surface
+            root.style.setProperty('--card-text', '#F3F4F6'); // Card text
+            root.style.setProperty('--muted-bg', '#1F2937'); // Muted background
+            root.style.setProperty('--muted-text', '#9CA3AF'); // Muted text
+            root.style.setProperty('--accent-bg', '#1F2937');
+            root.style.setProperty('--accent-text', '#F3F4F6');
+            root.style.setProperty('--border-color', 'rgba(255, 255, 255, 0.1)');
+            root.style.setProperty('--input-bg', '#111827');
+            root.style.setProperty('--text-primary', '#F9FAFB');
+            root.style.setProperty('--text-secondary', '#9CA3AF');
         } else {
-            root.style.setProperty('--background', '#ffffff');
-            root.style.setProperty('--foreground', '#0f172a'); // slate-900
-            root.style.setProperty('--card-bg', '#ffffff');
-            root.style.setProperty('--card-text', '#1e293b'); // slate-800
-            root.style.setProperty('--muted-bg', '#f1f5f9'); // slate-100
-            root.style.setProperty('--muted-text', '#64748b'); // slate-500
-            root.style.setProperty('--accent-bg', '#f1f5f9');
-            root.style.setProperty('--accent-text', '#0f172a');
-            root.style.setProperty('--border-color', 'rgba(0, 0, 0, 0.1)'); // More subtle slate-200
-            root.style.setProperty('--input-bg', '#ffffff');
+            // Light Mode Palette - Crypto Blue Design System
+            root.style.setProperty('--background', '#F9FAFB'); // Page background
+            root.style.setProperty('--foreground', '#050F1A'); // Text primary
+            root.style.setProperty('--card-bg', '#FFFFFF'); // Surface
+            root.style.setProperty('--card-text', '#050F1A'); // Card text
+            root.style.setProperty('--muted-bg', '#F3F4F6'); // Muted background
+            root.style.setProperty('--muted-text', '#6B7280'); // Muted text
+            root.style.setProperty('--accent-bg', '#F3F4F6');
+            root.style.setProperty('--accent-text', '#050F1A');
+            root.style.setProperty('--border-color', '#D1D5DB'); // Border
+            root.style.setProperty('--input-bg', '#FFFFFF');
+            root.style.setProperty('--text-primary', '#050F1A');
+            root.style.setProperty('--text-secondary', '#5B616E');
         }
 
         root.style.setProperty('--primary-text', primaryText);
         root.style.setProperty('--secondary-text', secondaryText);
 
-
         // Tints & Atmospherics
-        // Set doodle
         root.style.setProperty('--chat-doodle', "url('/assets/chat-doodle.svg')");
-        root.style.setProperty('--theme-bg', '#020617');
+        root.style.setProperty('--theme-bg', isDark ? '#0A0E1A' : '#F9FAFB');
 
         // Navbar defaults
-        root.style.setProperty('--navbar-bg', isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)');
-        root.style.setProperty('--navbar-text', isDark ? '#f8fafc' : '#0f172a');
+        root.style.setProperty('--navbar-bg', isDark ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.9)');
+        root.style.setProperty('--navbar-text', isDark ? '#F9FAFB' : '#050F1A');
 
         // Shadows
         root.style.setProperty('--shadow-color', isDark ? 'rgba(0,0,0,0.5)' : `rgba(${primaryRgb?.r || 0}, ${primaryRgb?.g || 0}, ${primaryRgb?.b || 0}, 0.15)`);

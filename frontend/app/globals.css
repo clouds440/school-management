@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --font-geist-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --font-geist-mono: "Cascadia Code", "Fira Code", Consolas, monospace;
+  --font-geist-sans: var(--font-dm-sans), "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-geist-mono: var(--font-jetbrains-mono), "Cascadia Code", "Fira Code", Consolas, monospace;
   --background: #f8fafc;
   /* slate-50 */
   --foreground: #0f172a;
@@ -18,6 +18,11 @@
   --secondary-hover: #f1f5f9;
   --secondary-rgb: 255, 255, 255;
   --secondary-text: #0f172a;
+
+  --neutral: #8A919E;
+  --success: #05B169;
+  --warning: #F0AD4E;
+  --error: #DF2935;
 
   --card-bg: #babadb;
   --card-text: #1e293b;
@@ -47,18 +52,22 @@
   --color-popover-foreground: var(--card-text);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-text);
+  --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-text);
   --color-muted: var(--muted-bg);
   --color-muted-foreground: var(--muted-text);
   --color-accent: var(--accent-bg);
   --color-accent-foreground: var(--accent-text);
-  --color-destructive: #ef4444;
+  --color-destructive: var(--error);
   --color-destructive-foreground: #ffffff;
   --color-border: var(--border-color);
   --color-input: var(--input-bg);
   --color-ring: var(--primary);
   --color-theme-bg: var(--theme-bg);
+  --color-neutral: var(--neutral);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

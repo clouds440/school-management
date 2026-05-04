@@ -1,5 +1,20 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { DM_Sans, JetBrains_Mono } from "next/font/google";
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-dm-sans',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-jetbrains-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   description: "Manage your school efficiently",
@@ -21,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="min-h-full">
       <body
-        className="antialiased h-screen flex flex-col bg-theme-bg transition-colors duration-500 overflow-hidden"
+        className={`${dmSans.variable} ${jetbrainsMono.variable} antialiased h-screen flex flex-col bg-theme-bg transition-colors duration-500 overflow-hidden`}
       >
         <Providers>
           <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
