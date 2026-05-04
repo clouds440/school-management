@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 import { Button } from '../ui/Button';
+import { Badge } from '../ui/Badge';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { NewChatModal } from './NewChatModal';
 import { ChatSettingsModal } from './ChatSettingsModal';
@@ -1607,8 +1608,10 @@ export function ChatLayout() {
                                                 })()}
                                             </p>
                                             {hasUnread && (
-                                                <span className="ml-1.5 sm:ml-2 flex items-center justify-center min-w-4 h-4 sm:min-w-5 sm:h-5 px-1 sm:px-1.5 text-[11px] sm:text-[13px] font-bold text-foreground bg-primary/30 rounded-full">
-                                                    {chat.unreadCount}
+                                                <span className="ml-1.5 sm:ml-2">
+                                                    <Badge variant="primary" size="sm">
+                                                        {chat.unreadCount}
+                                                    </Badge>
                                                 </span>
                                             )}
                                         </div>

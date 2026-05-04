@@ -8,6 +8,7 @@ import { Monitor, Smartphone, Laptop, Globe, Shield, Trash2, LogOut, RefreshCw, 
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Loading } from '@/components/ui/Loading';
+import { Badge } from '@/components/ui/Badge';
 import { formatDistanceToNow } from "date-fns";
 
 interface Session {
@@ -194,10 +195,9 @@ export default function SessionManagement({ userId }: SessionManagementProps) {
                                                                 {session.deviceName || 'Unknown Device'}
                                                             </p>
                                                             {isCurrentSession(session) && (
-                                                                <span className="inline-flex items-center text-[10px] sm:text-xs font-black tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
-                                                                    <span className="w-1.5 h-1.5 bg-primary rounded-full mr-1.5 animate-pulse" />
+                                                                <Badge variant="primary" dot className="animate-pulse">
                                                                     Current
-                                                                </span>
+                                                                </Badge>
                                                             )}
                                                         </div>
                                                         <div className="flex flex-wrap items-center gap-2 mt-2 text-xs sm:text-sm text-muted-foreground">

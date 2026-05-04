@@ -68,34 +68,44 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
         // 1. Core Backgrounds & Foregrounds - Crypto Blue Design System
         if (isDark) {
-            // Dark Mode Palette
-            root.style.setProperty('--background', '#0A0E1A'); // Dark background
-            root.style.setProperty('--foreground', '#F9FAFB'); // Light text
-            root.style.setProperty('--card-bg', '#111827'); // Dark card surface
-            root.style.setProperty('--card-text', '#F3F4F6'); // Card text
-            root.style.setProperty('--muted-bg', '#1F2937'); // Muted background
-            root.style.setProperty('--muted-text', '#9CA3AF'); // Muted text
-            root.style.setProperty('--accent-bg', '#1F2937');
-            root.style.setProperty('--accent-text', '#F3F4F6');
-            root.style.setProperty('--border-color', 'rgba(255, 255, 255, 0.1)');
-            root.style.setProperty('--input-bg', '#111827');
-            root.style.setProperty('--text-primary', '#F9FAFB');
-            root.style.setProperty('--text-secondary', '#9CA3AF');
-        } else {
-            // Light Mode Palette - Crypto Blue Design System
-            root.style.setProperty('--background', '#F9FAFB'); // Page background
-            root.style.setProperty('--foreground', '#050F1A'); // Text primary
-            root.style.setProperty('--card-bg', '#FFFFFF'); // Surface
-            root.style.setProperty('--card-text', '#050F1A'); // Card text
-            root.style.setProperty('--muted-bg', '#F3F4F6'); // Muted background
-            root.style.setProperty('--muted-text', '#6B7280'); // Muted text
-            root.style.setProperty('--accent-bg', '#F3F4F6');
-            root.style.setProperty('--accent-text', '#050F1A');
-            root.style.setProperty('--border-color', '#D1D5DB'); // Border
-            root.style.setProperty('--input-bg', '#FFFFFF');
-            root.style.setProperty('--text-primary', '#050F1A');
-            root.style.setProperty('--text-secondary', '#5B616E');
+            root.style.setProperty('--background', '#0B0F19'); // slightly richer than pure black
+            root.style.setProperty('--foreground', '#E6EAF2');
+
+            root.style.setProperty('--card-bg', '#121826'); // lifted surface
+            root.style.setProperty('--card-text', '#E6EAF2');
+
+            root.style.setProperty('--muted-bg', '#1A2233'); // subtle separation
+            root.style.setProperty('--muted-text', '#94A3B8');
+
+            root.style.setProperty('--accent-bg', '#1E293B'); // cooler tone
+            root.style.setProperty('--accent-text', '#E2E8F0');
+
+            root.style.setProperty('--border-color', 'rgba(148, 163, 184, 0.2)');
+            root.style.setProperty('--input-bg', '#0F172A');
+
+            root.style.setProperty('--text-primary', '#F1F5F9');
+            root.style.setProperty('--text-secondary', '#94A3B8');
         }
+        else {
+            root.style.setProperty('--background', '#F6F8FB'); // softer than pure white
+            root.style.setProperty('--foreground', '#0B1220');
+
+            root.style.setProperty('--card-bg', '#FFFFFF');
+            root.style.setProperty('--card-text', '#0B1220');
+
+            root.style.setProperty('--muted-bg', '#EEF2F7'); // subtle gray-blue
+            root.style.setProperty('--muted-text', '#64748B');
+
+            root.style.setProperty('--accent-bg', '#E2E8F0');
+            root.style.setProperty('--accent-text', '#0F172A');
+
+            root.style.setProperty('--border-color', '#E2E8F0');
+            root.style.setProperty('--input-bg', '#FFFFFF');
+
+            root.style.setProperty('--text-primary', '#0F172A');
+            root.style.setProperty('--text-secondary', '#64748B');
+        }
+
 
         root.style.setProperty('--primary-text', primaryText);
         root.style.setProperty('--secondary-text', secondaryText);

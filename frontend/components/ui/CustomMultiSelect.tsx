@@ -4,6 +4,7 @@ import * as React from "react";
 import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { LucideIcon, ChevronDown, X, Check } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
 
 export interface MultiSelectOption {
     value: string;
@@ -152,20 +153,22 @@ export const CustomMultiSelect = React.memo(function CustomMultiSelect({
                 <div className="flex flex-wrap gap-1.5 sm:gap-2 flex-1 items-center overflow-hidden py-1">
                     {selectedOptions.length > 0 ? (
                         selectedOptions.map(opt => (
-                            <span
+                            <Badge
                                 key={opt.value}
-                                className="inline-flex items-center bg-primary/10 text-primary border border-primary/20 px-1.5 sm:px-2 py-0.5 rounded-2xl text-[10px] sm:text-xs font-semibold animate-in zoom-in-95 duration-100"
+                                variant="secondary"
+                                size="sm"
+                                className="animate-in zoom-in-95 duration-100 pr-1"
                             >
                                 {opt.label}
                                 <button
                                     type="button"
                                     onClick={(e) => removeOption(opt.value, e)}
-                                    className="ml-1 sm:ml-1.5 hover:bg-primary/20 p-0.5 rounded-2xl transition-colors"
+                                    className="ml-1 hover:bg-indigo-200/50 dark:hover:bg-indigo-400/20 p-0.5 rounded-full transition-colors"
                                     title="Remove option"
                                 >
-                                    <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                    <X className="h-3 w-3" />
                                 </button>
-                            </span>
+                            </Badge>
                         ))
                     ) : (
                         <span className="text-muted-foreground text-sm sm:text-base font-medium">{placeholder}</span>

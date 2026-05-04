@@ -9,6 +9,7 @@ import { ApiError, SectionAttendanceResponse, AttendanceStatus, Role, Section, R
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { Loading } from '@/components/ui/Loading';
+import { Badge } from '@/components/ui/Badge';
 import AttendanceSheet from '@/components/sections/AttendanceSheet';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -146,10 +147,9 @@ export default function SectionAttendancePage() {
 
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                            <span className="text-[10px] font-black tracking-widest text-primary">{section?.course?.name || 'Course'}</span>
-                        </div>
+                        <Badge variant="primary" dot className="mb-2 tracking-widest uppercase">
+                            {section?.course?.name || 'Course'}
+                        </Badge>
                         <h1 className="text-3xl font-black tracking-tighter text-foreground">{section?.name || 'Loading Section...'}</h1>
                         <div className="flex items-center gap-2 mt-2">
                             {!isStudent && (

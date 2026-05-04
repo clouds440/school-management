@@ -652,9 +652,9 @@ export interface SectionAttendanceResponse {
     students: SectionAttendanceStudent[];
 }
 export interface RangeAttendanceResponse {
-    sessions: { 
-        id: string; 
-        date: string; 
+    sessions: {
+        id: string;
+        date: string;
         isAdhoc?: boolean;
         startTime?: string;
         endTime?: string;
@@ -665,6 +665,7 @@ export interface RangeAttendanceResponse {
         } | null;
     }[];
     students: {
+        avatarUrl: string | null | undefined;
         studentId: string;
         name: string;
         email: string;

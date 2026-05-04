@@ -419,7 +419,7 @@ export class AttendanceService {
           ? { student: { userId: user.id } }
           : {}),
       },
-      include: { student: { include: { user: { select: { name: true, email: true } } } } },
+      include: { student: { include: { user: { select: { name: true, email: true, avatarUrl: true } } } } },
     });
 
     return {
@@ -441,6 +441,7 @@ export class AttendanceService {
         studentId: e.student.id,
         name: e.student.user.name,
         email: e.student.user.email,
+        avatarUrl: e.student.user.avatarUrl,
         registrationNumber: e.student.registrationNumber,
         rollNumber: e.student.rollNumber,
         records: sessions.map(s => {

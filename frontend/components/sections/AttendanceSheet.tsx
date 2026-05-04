@@ -4,9 +4,11 @@ import React, { useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { SectionAttendanceStudent, AttendanceStatus, RangeAttendanceResponse, Role } from '@/types';
 import { Button } from '@/components/ui/Button';
-import { Check, X, Clock, FileWarning, Save, CheckSquare, Calendar, User, Activity } from 'lucide-react';
+import { Check, X, Clock, FileWarning, Save, CheckSquare, Calendar, User, Activity, Search } from 'lucide-react';
 import { BrandIcon } from '../ui/Brand';
 import { DataTable } from '@/components/ui/DataTable';
+import { Badge } from '../ui/Badge';
+import { Input } from '../ui/Input';
 
 interface AttendanceSheetProps {
     students: SectionAttendanceStudent[];
@@ -30,12 +32,27 @@ export default function AttendanceSheet({
     const { user } = useAuth();
     const isStudent = user?.role === Role.STUDENT;
     const readOnly = forcedReadOnly || isStudent;
-    
-    const students = initialStudents;
 
-    const displayRangeStudents = (mode === 'monthly' && rangeData)
-        ? rangeData.students
-        : [];
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const students = useMemo(() => {
+        if (!searchTerm) return initialStudents;
+        const lowSearch = searchTerm.toLowerCase();
+        return initialStudents.filter(s =>
+            s.name.toLowerCase().includes(lowSearch) ||
+            (s.rollNumber || s.registrationNumber || '').toLowerCase().includes(lowSearch)
+        );
+    }, [initialStudents, searchTerm]);
+
+    const displayRangeStudents = useMemo(() => {
+        const base = (mode === 'monthly' && rangeData) ? rangeData.students : [];
+        if (!searchTerm) return base;
+        const lowSearch = searchTerm.toLowerCase();
+        return base.filter(s =>
+            s.name.toLowerCase().includes(lowSearch) ||
+            (s.rollNumber || s.registrationNumber || '').toLowerCase().includes(lowSearch)
+        );
+    }, [mode, rangeData, searchTerm]);
 
     const dailySeedKey = useMemo(
         () => students.map((student) => `${student.studentId}:${student.status ?? 'null'}`).join('|'),
@@ -167,14 +184,27 @@ export default function AttendanceSheet({
 
     // Helper to get readable session type badge
     const getSessionTypeBadge = (isAdhoc: boolean) => {
-        return isAdhoc 
-            ? <span className="text-[9px] font-black tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-full">adhoc</span>
-            : <span className="text-[9px] font-black tracking-wider bg-primary/15 text-primary/80 px-1.5 py-0.5 rounded-full">scheduled</span>;
+        return (
+            <Badge variant={isAdhoc ? 'warning' : 'secondary'} size="sm" className="uppercase tracking-wider">
+                {isAdhoc ? 'adhoc' : 'scheduled'}
+            </Badge>
+        );
     };
 
     if (mode === 'monthly' && rangeData) {
         return (
             <div className="flex flex-col border border-border rounded-2xl overflow-hidden bg-card shadow-lg">
+                <div className="p-4 bg-muted/5 border-b border-border flex items-center gap-4">
+                    <div className="relative flex-1 max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 z-20 text-muted-foreground" />
+                        <Input
+                            placeholder="Search students..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 h-10 bg-background/50 border-border/50 focus:border-primary/50 transition-all text-sm font-medium"
+                        />
+                    </div>
+                </div>
                 <div className="overflow-x-auto scrollbar-thin scrollbar-track-muted/20 scrollbar-thumb-primary/30">
                     <table className="w-full text-left text-sm border-separate border-spacing-0">
                         <thead className="sticky top-0 z-20">
@@ -198,14 +228,14 @@ export default function AttendanceSheet({
                                             <span className="text-[9px] opacity-70 font-mono">{new Date(dateKey).toLocaleDateString('en-US', { weekday: 'short' })}</span>
                                             <div className="mt-1 flex flex-wrap justify-center gap-1">
                                                 {sessions.map((session) => (
-                                                    <span
+                                                    <Badge
                                                         key={session.id}
-                                                        className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${
-                                                            session.isAdhoc ? 'bg-amber-500/20 text-amber-600' : 'bg-primary/20 text-primary/80'
-                                                        }`}
+                                                        variant={session.isAdhoc ? 'warning' : 'secondary'}
+                                                        size="sm"
+                                                        className="uppercase"
                                                     >
                                                         {getSessionLabel(session).replace(/[—–]/g, '-')}
-                                                    </span>
+                                                    </Badge>
                                                 ))}
                                             </div>
                                         </div>
@@ -229,7 +259,7 @@ export default function AttendanceSheet({
                                     const session = sessionById.get(record.sessionId);
                                     return session && !session.isAdhoc && record.status !== null;
                                 });
-                                
+
                                 const markedRecords = student.records.filter(r => r.status !== null);
 
                                 const officialTotal = officialRecords.length;
@@ -251,8 +281,18 @@ export default function AttendanceSheet({
                                             {sIdx + 1}
                                         </td>
                                         <td className="sticky left-12 z-10 px-4 py-4 border-l border-border/50 bg-card group-hover:bg-muted/5">
-                                            <div className="font-bold text-foreground line-clamp-1">{student.name}</div>
-                                            <div className="text-[10px] text-muted-foreground tracking-wider font-mono mt-0.5">Roll: {student.rollNumber || student.registrationNumber}</div>
+                                            <div className="flex items-center gap-3">
+                                                <BrandIcon
+                                                    variant="user"
+                                                    size="sm"
+                                                    user={{ avatarUrl: student.avatarUrl, name: student.name }}
+                                                    className="w-8 h-8 shadow-sm"
+                                                />
+                                                <div>
+                                                    <div className="font-bold text-foreground line-clamp-1">{student.name}</div>
+                                                    <div className="text-[10px] text-muted-foreground tracking-wider font-mono mt-0.5">Roll: {student.rollNumber || student.registrationNumber}</div>
+                                                </div>
+                                            </div>
                                         </td>
                                         {groupedSessionDates.map(({ dateKey, sessions }) => (
                                             <td key={dateKey} className="px-3 py-3 border-l border-border/30 align-top bg-card">
@@ -262,15 +302,14 @@ export default function AttendanceSheet({
                                                         const record = recordsBySessionId.get(session.id);
                                                         const sessionStatus = record?.status || null;
                                                         const isAdhoc = session.isAdhoc;
-                                                        
+
                                                         return (
                                                             <div
                                                                 key={session.id}
-                                                                className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 transition-all ${
-                                                                    isAdhoc
-                                                                        ? 'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10'
-                                                                        : 'border-border/70 bg-muted/10 hover:bg-muted/20'
-                                                                }`}
+                                                                className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 transition-all ${isAdhoc
+                                                                    ? 'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10'
+                                                                    : 'border-border/70 bg-muted/10 hover:bg-muted/20'
+                                                                    }`}
                                                             >
                                                                 <div className="flex flex-col">
                                                                     <span className="text-[11px] font-bold leading-tight font-mono">
@@ -295,13 +334,10 @@ export default function AttendanceSheet({
                                         <td className="px-3 py-3 border-l border-primary/20 bg-primary/5">
                                             <div className="flex flex-col items-center gap-2">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="flex flex-col items-center px-2 py-1 rounded-lg bg-background/80 shadow-sm" title="Official sessions (scheduled)">
-                                                        <span className="text-[8px] font-black text-muted-foreground/60">Official</span>
-                                                        <span className="text-sm font-black">{officialTotal}</span>
-                                                    </div>
-                                                    <div className="flex flex-col items-center justify-center px-3 py-1 rounded-full bg-primary text-primary-foreground text-sm font-black shadow-md">
+                                                    <Badge variant="secondary" className="shadown-md" title='Total Scheduled Sessions'>{officialTotal} Official</Badge>
+                                                    <Badge variant="primary" size="md" className="shadow-md">
                                                         {officialPercentage}%
-                                                    </div>
+                                                    </Badge>
                                                 </div>
                                                 {overallTotal > officialTotal && (
                                                     <div className="text-[9px] font-black opacity-50 flex items-center gap-1" title="Total including ad-hoc sessions">
@@ -352,6 +388,17 @@ export default function AttendanceSheet({
     // Daily mode with responsive improvements
     return (
         <div className="flex flex-col border border-border rounded-2xl overflow-hidden bg-card shadow-lg">
+            <div className="p-4 bg-muted/5 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-4 h-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search students..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 h-10 bg-background/50 border-border/50 focus:border-primary/50 transition-all text-sm font-medium"
+                    />
+                </div>
+            </div>
             {!readOnly && (
                 <div className="p-4 bg-muted/10 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
@@ -365,10 +412,10 @@ export default function AttendanceSheet({
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
                         <Button
-                            variant="success"
+                            variant="secondary"
                             onClick={handleMarkAllPresent}
                             icon={CheckSquare}
-                            className="bg-background text-xs font-bold shadow-sm hover:shadow-md transition-all"
+                            className="text-xs font-bold shadow-sm hover:shadow-md hover:bg-success transition-all"
                         >
                             Mark All Present
                         </Button>
@@ -462,7 +509,7 @@ export default function AttendanceSheet({
                 totalPages={1}
                 totalResults={students.length}
                 pageSize={students.length || 10}
-                onPageChange={() => {}}
+                onPageChange={() => { }}
                 disableZebra={true}
                 showSerialNumber
             />

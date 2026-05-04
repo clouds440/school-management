@@ -1,38 +1,23 @@
 'use client';
 
 import { MailStatus, ThemeMode } from '@/types';
+import { Badge } from '@/components/ui/Badge';
 import { useTheme } from '@/context/ThemeContext';
 
-const STATUS_CONFIG_LIGHT: Record<MailStatus, { label: string; bg: string; text: string; border: string }> = {
-    [MailStatus.OPEN]: { label: 'Open', bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/50' },
-    [MailStatus.IN_PROGRESS]: { label: 'In Progress', bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/50' },
-    [MailStatus.AWAITING_RESPONSE]: { label: 'Awaiting', bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/50' },
-    [MailStatus.RESOLVED]: { label: 'Resolved', bg: 'bg-green-500/10', text: 'text-green-600', border: 'border-green-500/50' },
-    [MailStatus.CLOSED]: { label: 'Closed', bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-border' },
-    [MailStatus.NO_REPLY]: { label: 'Notice (No Reply)', bg: 'bg-neutral-500/10', text: 'text-neutral-600', border: 'border-neutral-500/50' },
+const STATUS_CONFIG: Record<MailStatus, { label: string; variant: 'info' | 'warning' | 'purple' | 'success' | 'neutral' }> = {
+    [MailStatus.OPEN]: { label: 'Open', variant: 'info' },
+    [MailStatus.IN_PROGRESS]: { label: 'In Progress', variant: 'warning' },
+    [MailStatus.AWAITING_RESPONSE]: { label: 'Awaiting', variant: 'purple' },
+    [MailStatus.RESOLVED]: { label: 'Resolved', variant: 'success' },
+    [MailStatus.CLOSED]: { label: 'Closed', variant: 'neutral' },
+    [MailStatus.NO_REPLY]: { label: 'Notice (No Reply)', variant: 'neutral' },
 };
 
-const STATUS_CONFIG_DARK: Record<MailStatus, { label: string; bg: string; text: string; border: string }> = {
-    [MailStatus.OPEN]: { label: 'Open', bg: 'bg-blue-950/30', text: 'text-blue-400', border: 'border-blue-500/30' },
-    [MailStatus.IN_PROGRESS]: { label: 'In Progress', bg: 'bg-amber-950/30', text: 'text-amber-400', border: 'border-amber-500/30' },
-    [MailStatus.AWAITING_RESPONSE]: { label: 'Awaiting', bg: 'bg-purple-950/30', text: 'text-purple-400', border: 'border-purple-500/30' },
-    [MailStatus.RESOLVED]: { label: 'Resolved', bg: 'bg-emerald-950/30', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-    [MailStatus.CLOSED]: { label: 'Closed', bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-border' },
-    [MailStatus.NO_REPLY]: { label: 'Notice (No Reply)', bg: 'bg-neutral-800/30', text: 'text-neutral-400', border: 'border-neutral-500/30' },
-};
-
-const PRIORITY_CONFIG_LIGHT: Record<string, { label: string; bg: string; text: string; border: string }> = {
-    LOW: { label: 'Low', bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-border' },
-    NORMAL: { label: 'Normal', bg: 'bg-blue-50', text: 'text-blue-500', border: 'border-blue-100' },
-    HIGH: { label: 'High', bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' },
-    URGENT: { label: 'Urgent', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200' },
-};
-
-const PRIORITY_CONFIG_DARK: Record<string, { label: string; bg: string; text: string; border: string }> = {
-    LOW: { label: 'Low', bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-border' },
-    NORMAL: { label: 'Normal', bg: 'bg-blue-950/30', text: 'text-blue-400', border: 'border-blue-500/30' },
-    HIGH: { label: 'High', bg: 'bg-orange-950/30', text: 'text-orange-400', border: 'border-orange-500/30' },
-    URGENT: { label: 'Urgent', bg: 'bg-red-950/30', text: 'text-red-400', border: 'border-red-500/30' },
+const PRIORITY_CONFIG: Record<string, { label: string; variant: 'neutral' | 'info' | 'warning' | 'error' }> = {
+    LOW: { label: 'Low', variant: 'neutral' },
+    NORMAL: { label: 'Normal', variant: 'info' },
+    HIGH: { label: 'High', variant: 'warning' },
+    URGENT: { label: 'Urgent', variant: 'error' },
 };
 
 interface StatusBadgeProps {
@@ -41,14 +26,11 @@ interface StatusBadgeProps {
 }
 
 export function MailStatusBadge({ status, className = '' }: StatusBadgeProps) {
-    const { themeMode } = useTheme();
-    const isDark = themeMode === ThemeMode.DARK || (themeMode === ThemeMode.SYSTEM && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    const config = isDark ? STATUS_CONFIG_DARK : STATUS_CONFIG_LIGHT;
-    const cfg = config[status] || config[MailStatus.OPEN];
+    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG[MailStatus.OPEN];
     return (
-        <span className={`inline-flex items-center justify-center px-2 py-0.75 rounded-full text-[10px] font-black tracking-widest border leading-none ${cfg.bg} ${cfg.text} ${cfg.border} ${className}`}>
+        <Badge variant={cfg.variant} className={className} size="sm">
             {cfg.label}
-        </span>
+        </Badge>
     );
 }
 
@@ -58,14 +40,11 @@ interface PriorityBadgeProps {
 }
 
 export function MailPriorityBadge({ priority, className = '' }: PriorityBadgeProps) {
-    const { themeMode } = useTheme();
-    const isDark = themeMode === ThemeMode.DARK || (themeMode === ThemeMode.SYSTEM && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    const config = isDark ? PRIORITY_CONFIG_DARK : PRIORITY_CONFIG_LIGHT;
-    const cfg = config[priority] || config.NORMAL;
+    const cfg = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.NORMAL;
     return (
-        <span className={`inline-flex items-center justify-center px-2 py-0.75 rounded-full text-[10px] font-black tracking-widest border leading-none ${cfg.bg} ${cfg.text} ${cfg.border} ${className}`}>
+        <Badge variant={cfg.variant} className={className} size="sm">
             {cfg.label}
-        </span>
+        </Badge>
     );
 }
 

@@ -1,6 +1,7 @@
 'use client';
 import { Reveal } from '@/components/ui/Reveal';
 import { Target, Eye, Heart, Shield, Users } from 'lucide-react';
+import { Badge } from '@/components/ui/Badge';
 
 export default function AboutPage() {
   return (
@@ -9,9 +10,9 @@ export default function AboutPage() {
       <section className="pt-24 pb-16 md:pt-32 md:pb-40 bg-theme-bg border-b border-border">
         <div className="container mx-auto px-6 text-center max-w-4xl space-y-6">
           <Reveal>
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-bold mb-4 tracking-wide">
+            <Badge variant="primary" className="mb-4">
               Our Identity
-            </div>
+            </Badge>
           </Reveal>
           <Reveal delay={200}>
             <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight">Revolutionizing <span className="text-primary">Institutional Management</span></h1>

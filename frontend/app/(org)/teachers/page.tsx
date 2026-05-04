@@ -15,6 +15,7 @@ import { TableActions } from '@/components/ui/TableActions';
 import useSWR, { mutate } from 'swr';
 import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { Loading } from '@/components/ui/Loading';
+import { Badge } from '@/components/ui/Badge';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -166,18 +167,18 @@ export default function TeachersPage() {
             sortKey: 'status',
             accessor: (row: Teacher) => {
                 const status = row.status || TeacherStatus.ACTIVE;
-                const config: Record<TeacherStatus, { label: string; bg: string; text: string; border: string }> = {
-                    [TeacherStatus.ACTIVE]: { label: 'Active', bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/20' },
-                    [TeacherStatus.SUSPENDED]: { label: 'Suspended', bg: 'bg-red-500/10', text: 'text-red-600', border: 'border-red-500/20' },
-                    [TeacherStatus.ON_LEAVE]: { label: 'On Leave', bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20' },
-                    [TeacherStatus.EMERITUS]: { label: 'Emeritus', bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/20' },
-                    [TeacherStatus.DELETED]: { label: 'Deleted', bg: 'bg-gray-500/10', text: 'text-gray-600', border: 'border-gray-500/20' },
+                const config: Record<TeacherStatus, { label: string; variant: 'success' | 'error' | 'warning' | 'secondary' | 'neutral' }> = {
+                    [TeacherStatus.ACTIVE]: { label: 'Active', variant: 'success' },
+                    [TeacherStatus.SUSPENDED]: { label: 'Suspended', variant: 'error' },
+                    [TeacherStatus.ON_LEAVE]: { label: 'On Leave', variant: 'warning' },
+                    [TeacherStatus.EMERITUS]: { label: 'Emeritus', variant: 'secondary' },
+                    [TeacherStatus.DELETED]: { label: 'Deleted', variant: 'neutral' },
                 };
-                const { label, bg, text, border } = config[status];
+                const { label, variant } = config[status];
                 return (
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${bg} ${text} ${border}`}>
+                    <Badge variant={variant}>
                         {label}
-                    </span>
+                    </Badge>
                 );
             }
         },
@@ -200,9 +201,9 @@ export default function TeachersPage() {
                 return sectionsList.length > 0 ? (
                     <div className="flex flex-wrap gap-1 max-w-50">
                         {sectionsList.map(sec => (
-                            <span key={sec?.id || Math.random()} className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10 truncate max-w-37.5" title={sec?.name}>
+                            <Badge key={sec?.id || Math.random()} variant="secondary" size="sm" className="truncate max-w-37.5" title={sec?.name}>
                                 {sec?.name || 'Unknown'}
-                            </span>
+                            </Badge>
                         ))}
                     </div>
                 ) : <span className="text-muted-foreground/30 italic">Unassigned</span>;

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, CalendarDays, Sparkles, TrendingUp } from 'lucide-react';
 import { DashboardInsights, DashboardInsightItem } from '@/types';
+import { Badge } from '@/components/ui/Badge';
 
 interface InsightsOverviewProps {
     insights: DashboardInsights;
@@ -24,7 +25,7 @@ function InsightLinkCard({
     compact?: boolean;
 }) {
     const content = (
-        <div className={`rounded-2xl border p-4 transition-all hover:shadow-lg ${toneClasses[item.tone || 'default']}`}>
+        <div className={`rounded-2xl hover:scale-102 border p-4 transition-all hover:shadow-lg group ${toneClasses[item.tone || 'default']}`}>
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <p className={`font-black tracking-tight ${compact ? 'text-sm' : 'text-base'} text-foreground`}>
@@ -37,15 +38,15 @@ function InsightLinkCard({
                     )}
                 </div>
                 {item.badge && (
-                    <span className="rounded-full bg-background/80 px-2 py-1 text-[10px] font-black tracking-widest text-muted-foreground border border-border">
+                    <Badge variant="warning" size="sm" className="bg-background/80">
                         {item.badge}
-                    </span>
+                    </Badge>
                 )}
             </div>
             {(item.meta || item.href) && (
                 <div className="mt-4 flex items-center justify-between gap-3">
                     <span className="text-xs font-bold text-muted-foreground">{item.meta}</span>
-                    {item.href && <ArrowRight className="h-4 w-4 text-muted-foreground" />}
+                    {item.href && <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-2 transition-all duration-200" />}
                 </div>
             )}
         </div>
@@ -65,10 +66,9 @@ export default function InsightsOverview({ insights }: InsightsOverviewProps) {
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div>
                         {insights.headline.eyebrow && (
-                            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[10px] font-black tracking-[0.25em] text-primary">
-                                <Sparkles className="h-3.5 w-3.5" />
+                            <Badge variant="primary" icon={Sparkles} className="mb-3 tracking-[0.25em] uppercase">
                                 {insights.headline.eyebrow}
-                            </div>
+                            </Badge>
                         )}
                         <h1 className="text-4xl font-black tracking-tighter text-foreground">
                             {insights.headline.title}
@@ -121,10 +121,9 @@ export default function InsightsOverview({ insights }: InsightsOverviewProps) {
                 <section className="rounded-3xl border border-primary/20 bg-linear-to-br from-primary/10 via-card to-card p-6 shadow-xl">
                     <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                         <div>
-                            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/70 px-3 py-1 text-[10px] font-black tracking-[0.22em] text-primary">
-                                <TrendingUp className="h-3.5 w-3.5" />
+                            <Badge variant="primary" icon={TrendingUp} className="mb-3 tracking-[0.22em] uppercase bg-background/70">
                                 Spotlight
-                            </div>
+                            </Badge>
                             <h2 className="text-2xl font-black tracking-tight text-foreground">
                                 {insights.spotlight.title}
                             </h2>
@@ -144,7 +143,7 @@ export default function InsightsOverview({ insights }: InsightsOverviewProps) {
                                 href={insights.spotlight.href}
                                 className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-black tracking-[0.18em] text-primary-foreground shadow-lg transition hover:bg-primary/90"
                             >
-                                Take Attendance
+                                Take Action
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                         )}
@@ -163,10 +162,10 @@ export default function InsightsOverview({ insights }: InsightsOverviewProps) {
                                 {group.description}
                             </p>
                         )}
-                        <div className="mt-5 space-y-3">
+                        <div className="flex flex-col mt-3 gap-2">
                             {group.items.length > 0 ? (
                                 group.items.map((item) => (
-                                    <InsightLinkCard key={item.id} item={item} compact />
+                                    <InsightLinkCard key={item.id} item={item} />
                                 ))
                             ) : (
                                 <div className="rounded-2xl border border-dashed border-border bg-background/50 p-6 text-center text-xs font-black tracking-[0.22em] text-muted-foreground">

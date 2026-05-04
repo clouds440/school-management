@@ -19,6 +19,7 @@ import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { useGlobal } from '@/context/GlobalContext';
 import { Toggle } from '@/components/ui/Toggle';
 import { Loading } from '@/components/ui/Loading';
+import { Badge } from '@/components/ui/Badge';
 import useSWR, { mutate } from 'swr';
 import { matchesCacheKeyPrefix } from '@/lib/swr';
 
@@ -203,9 +204,9 @@ export default function SectionsPage() {
                 <div className="flex flex-wrap gap-1">
                     {row.teachers && row.teachers.length > 0 ? (
                         row.teachers.map((teacher, idx) => (
-                            <span key={idx} className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10">
+                            <Badge key={idx} variant="secondary" size="sm">
                                 {teacher.user.name}
-                            </span>
+                            </Badge>
                         ))
                     ) : (
                         <span className="text-muted-foreground/50 text-sm italic">No teachers</span>
@@ -218,24 +219,11 @@ export default function SectionsPage() {
             sortable: false,
             accessor: (row: Section) => {
                 const studentsList = row.students || [];
-                return studentsList.length > 0 && studentsList.length < 2 ? (
+                return studentsList.length > 0 ? (
                     <div className="flex flex-wrap gap-1 max-w-50">
-                        {studentsList.map(student => (
-                            <span key={student.id} className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10 truncate max-w-37.5" title={student.user.name}>
-                                {student.user.name}
-                            </span>
-                        ))}
-                    </div>
-                ) : studentsList.length >= 2 ? (
-                    <div className="flex flex-wrap gap-1 max-w-50">
-                        {studentsList.slice(0, 1).map(student => (
-                            <span key={student.id} className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10 truncate max-w-37.5" title={student.user.name}>
-                                {student.user.name}
-                            </span>
-                        ))}
-                        <span className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10 truncate max-w-37.5" title='Click to view all students'>
-                            +{studentsList.length - 1} more
-                        </span>
+                                <Badge variant="secondary" size="sm" className="truncate max-w-37.5" title='Click to view all'>
+                                    {studentsList.length === 1 ? '1 Student' : studentsList.length + ' Students'}
+                                </Badge>
                     </div>
                 ) : <span className="text-muted-foreground/30 italic">No students</span>;
             }

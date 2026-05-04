@@ -10,6 +10,7 @@ import Image from 'next/image';
 import { BrandIcon } from '@/components/ui/Brand';
 import { ADMIN_REPLY_TEMPLATES } from './MailTemplates';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 
 interface MailThreadProps {
     mail: MailDetail;
@@ -74,7 +75,7 @@ function MessageBubble({ message, isOwn }: { message: MailMessageType; isOwn: bo
                         </span>
                     )}
                     {isOwn && (
-                        <span className="text-[8px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded-full tracking-tighter">You</span>
+                        <Badge variant="primary" size="sm" className="tracking-tighter py-0 h-4">You</Badge>
                     )}
                 </div>
                 <div className={`inline-block text-foreground! p-4 rounded-lg shadow-sm ${isOwn ? 'bg-primary/10 border border-border/50' : 'bg-card border border-border'} text-left w-full`}>
@@ -226,12 +227,13 @@ export const MailThread = forwardRef<MailThreadHandle, MailThreadProps>(
                     </div>
                     <div className="text-right">
                         <p className="text-[10px] font-black text-muted-foreground tracking-widest leading-none mb-1">Priority</p>
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${mail.priority === 'URGENT' ? 'bg-red-100 text-red-600' :
-                            mail.priority === 'HIGH' ? 'bg-orange-100 text-orange-600' :
-                                'bg-blue-100 text-blue-600'
-                            }`}>
+                        <Badge 
+                            variant={mail.priority === 'URGENT' ? 'error' : mail.priority === 'HIGH' ? 'warning' : 'info'}
+                            size="sm"
+                            className="uppercase"
+                        >
                             {mail.priority}
-                        </span>
+                        </Badge>
                     </div>
                 </div>
 

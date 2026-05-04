@@ -3,6 +3,7 @@ import { Reveal } from '@/components/ui/Reveal';
 import { Briefcase, MapPin, Search, ArrowRight, Zap, Shield, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { PLATFORM_NAME } from '@/lib/constants';
+import { Badge } from '@/components/ui/Badge';
 
 export default function CareersPage() {
   return (
@@ -14,9 +15,9 @@ export default function CareersPage() {
         </div>
         <div className="container mx-auto px-6 text-center max-w-4xl space-y-6 relative z-10">
           <Reveal>
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary-foreground text-xs font-bold mb-4 tracking-wide border border-primary/20 backdrop-blur-md">
+            <Badge variant="primary" className="mb-4">
               Join the Mission
-            </div>
+            </Badge>
           </Reveal>
           <Reveal delay={200}>
             <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight leading-tight">Help Us Build the <span className="text-primary bg-clip-text bg-linear-to-r from-primary via-indigo-400 to-purple-400">Future of Education</span></h1>

@@ -16,6 +16,7 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import useSWR, { mutate } from 'swr';
 import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { Loading } from '@/components/ui/Loading';
+import { Badge } from '@/components/ui/Badge';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
 import { Toggle } from '@/components/ui/Toggle';
@@ -134,17 +135,17 @@ export default function StudentsPage() {
             sortKey: 'status',
             accessor: (row: Student) => {
                 const status = row.status || StudentStatus.ACTIVE;
-                const config: Record<StudentStatus, { label: string; bg: string; text: string; border: string }> = {
-                    [StudentStatus.ACTIVE]: { label: 'Active', bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/20' },
-                    [StudentStatus.SUSPENDED]: { label: 'Suspended', bg: 'bg-red-500/10', text: 'text-red-600', border: 'border-red-500/20' },
-                    [StudentStatus.ALUMNI]: { label: 'Alumni', bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/20' },
-                    [StudentStatus.DELETED]: { label: 'Deleted', bg: 'bg-gray-500/10', text: 'text-gray-600', border: 'border-gray-500/20' },
+                const config: Record<StudentStatus, { label: string; variant: 'success' | 'error' | 'secondary' | 'neutral' }> = {
+                    [StudentStatus.ACTIVE]: { label: 'Active', variant: 'success' },
+                    [StudentStatus.SUSPENDED]: { label: 'Suspended', variant: 'error' },
+                    [StudentStatus.ALUMNI]: { label: 'Alumni', variant: 'secondary' },
+                    [StudentStatus.DELETED]: { label: 'Deleted', variant: 'neutral' },
                 };
-                const { label, bg, text, border } = config[status];
+                const { label, variant } = config[status];
                 return (
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${bg} ${text} ${border}`}>
+                    <Badge variant={variant}>
                         {label}
-                    </span>
+                    </Badge>
                 );
             }
         },
@@ -186,21 +187,25 @@ export default function StudentsPage() {
                 return sectionsList.length > 0 && sectionsList.length < 2 ? (
                     <div className="flex flex-wrap gap-1 max-w-50">
                         {sectionsList.map(sec => (
-                            <span key={sec?.id || Math.random()} className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10 truncate max-w-37.5" title={sec?.name}>
-                                {sec?.name || 'Unknown'}
+                            <span key={sec?.id || Math.random()} title={sec?.name}>
+                                <Badge variant="secondary" size="sm" className="truncate max-w-37.5">
+                                    {sec?.name || 'Unknown'}
+                                </Badge>
                             </span>
                         ))}
                     </div>
                 ) : sectionsList.length >= 2 ? (
                     <div className="flex flex-wrap gap-1 max-w-50">
                         {sectionsList.slice(0, 1).map(sec => (
-                            <span key={sec?.id || Math.random()} className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10 truncate max-w-37.5" title={sec?.name}>
-                                {sec?.name || 'Unknown'}
+                            <span key={sec?.id || Math.random()} title={sec?.name}>
+                                <Badge variant="secondary" size="sm" className="truncate max-w-37.5">
+                                    {sec?.name || 'Unknown'}
+                                </Badge>
                             </span>
                         ))}
-                        <span className="bg-primary/5 text-primary px-2 py-1 rounded-lg text-xs font-medium border border-primary/10 truncate max-w-37.5" title='Click to view all sections'>
+                        <Badge variant="secondary" size="sm" className="truncate max-w-37.5" title='Click to view all sections'>
                             +{sectionsList.length - 1} more
-                        </span>
+                        </Badge>
                     </div>
                 ) : <span className="text-muted-foreground/30 italic">Not enrolled</span>;
             }

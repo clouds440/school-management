@@ -11,6 +11,7 @@ import { Role } from '@/types';
 import { BackButton } from './BackButton';
 import { DataViewModal } from './DataViewModal';
 import { BrandIcon } from './Brand';
+import { Badge } from './Badge';
 
 export interface SidebarLink {
     id: string;
@@ -43,7 +44,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
-    const [isBottomSectionCollapsed, setIsBottomSectionCollapsed] = useState(false);
+    const [isBottomSectionCollapsed, setIsBottomSectionCollapsed] = useState(true);
 
     const mailCount = state.stats.mail || { unread: 0, total: 0 };
 
@@ -121,7 +122,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                         <div className="ml-auto opacity-40 hover:opacity-100 transition-opacity">
                             <BackButton
                                 {...(effectiveExpanded ? { label: activeLink?.label } : { label: "" })}
-                                className="bg-transparent! border-none! shadow-none! text-foreground! py-1.5! px-2.5! outline-none! focus:outline-none!"
+                                className="bg-transparent! border-none! rounded-md! shadow-none! text-foreground! py-1.5! px-3.5! outline-none! focus:outline-none!"
                             />
                         </div>
                     </div>
@@ -141,9 +142,9 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     router.push(link.href);
                                 }}
                                 className={`
-                                    flex items-center rounded-full transition-all group relative hover:bg-primary/10
+                                    flex items-center rounded-md transition-all group relative hover:bg-primary/10
                                     ${isActive
-                                        ? 'bg-primary/30 text-primary shadow-[0_8px_16px_var(--shadow-color)]'
+                                        ? 'bg-primary/30 border-l-3 border-primary text-primary shadow-[0_8px_16px_var(--shadow-color)]'
                                         : 'text-sidebar-text/70 hover:text-foreground/70 hover:text-sidebar-text'
                                     }
                                     ${!effectiveExpanded ? 'lg:justify-center p-3' : 'px-4 py-3 space-x-3'}
@@ -158,13 +159,17 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     <span className={`
                                         flex items-center justify-center shrink-0
                                         ${!effectiveExpanded
-                                            ? 'absolute -top-0.5 -right-1.5 min-w-4.5 h-4.5 px-1 rounded-full'
-                                            : 'ml-auto px-2 py-0.5 rounded-full'
+                                            ? 'absolute -top-0.5 -right-1.5'
+                                            : 'ml-auto'
                                         } 
-                                        text-[10px] font-black tracking-tighter animate-in zoom-in duration-300 
-                                        ${link.badge === 0 ? 'bg-muted text-muted-foreground' : `${link.label === 'Messages' ? 'bg-red-500/40' : 'bg-primary/20'} text-primary shadow-sm ring-2 ring-primary/60`}
+                                        animate-in zoom-in duration-300
                                     `}>
-                                        {link.badge}
+                                        <Badge 
+                                            variant={link.badge === 0 ? 'neutral' : link.label === 'Messages' ? 'error' : 'primary'} 
+                                            size="sm"
+                                        >
+                                            {link.badge}
+                                        </Badge>
                                     </span>
                                 )}
                             </Link>
@@ -173,17 +178,19 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                 </div>
 
                 {/* Branded Sidebar Footer */}
-                <div className="p-4 border-t border-border shrink-0 relative">
+                <div className={`${isBottomSectionCollapsed ? 'p-1' : 'p-4'} border-t border-border shrink-0 relative`}>
                     {/* Toggle button sitting on top of border */}
                     <button
                         onClick={() => setIsBottomSectionCollapsed(!isBottomSectionCollapsed)}
-                        className={`absolute -top-3 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-sidebar-text/60 bg-background hover:bg-card transition-all border border-border shadow-sm`}
+                        className={`absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md text-sidebar-text/60 bg-background hover:bg-card transition-all shadow-sm`}
                         title={isBottomSectionCollapsed ? "Show more" : "Show less"}
                     >
                         {isBottomSectionCollapsed ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronUp className="w-4 h-4 shrink-0" />}
                         {isBottomSectionCollapsed && mailCount.unread > 0 && (
-                            <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-black">
-                                {mailCount.unread > 99 ? '99+' : mailCount.unread}
+                            <span className="absolute -top-1 -right-1">
+                                <Badge variant="error" size="sm">
+                                    {mailCount.unread > 99 ? '99+' : mailCount.unread}
+                                </Badge>
                             </span>
                         )}
                     </button>
@@ -211,14 +218,16 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                             e.preventDefault();
                                             router.push('/mail');
                                         }}
-                                        className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-full text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'} transition-all py-3 border border-transparent shadow-sm relative`}
+                                        className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-md text-sidebar-text/60 transition-colors py-3 shadow-sm relative ${pathname.includes('/mail') ? 'bg-primary/30 text-primary border-l-3 border-primary' : 'bg-background hover:text-foreground/70 border border-transparent'}`}
                                         title="Mail"
                                     >
                                         <Mail className="w-4 h-4 shrink-0 text-primary/80" />
                                         {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Mail</span>}
                                         {/* Always show a mail count; gray when zero */}
-                                        <span className={`ml-auto ${mailCount.unread > 0 ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground'} ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
-                                            {mailCount.unread > 99 ? '99+' : mailCount.unread}
+                                        <span className={`ml-auto ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''}`}>
+                                            <Badge variant={mailCount.unread > 0 ? 'error' : 'neutral'} size="sm">
+                                                {mailCount.unread > 99 ? '99+' : mailCount.unread}
+                                            </Badge>
                                         </span>
                                     </Link>
 
@@ -229,7 +238,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                                 e.preventDefault();
                                                 router.push('/contact');
                                             }}
-                                            className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-full text-sidebar-text/60 ${pathname === '/contact' ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
+                                            className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-md text-sidebar-text/60 transition-colors py-3 shadow-sm ${pathname === '/contact' ? 'bg-primary/30 text-primary border-l-3 border-primary' : 'bg-background hover:text-foreground/70 border border-transparent'}`}
                                             title="Contact Us"
                                         >
                                             <MessageCircleQuestionMark className="w-4 h-4 shrink-0 text-primary/80" />
@@ -244,26 +253,26 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     e.preventDefault();
                                     router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : '/change-password');
                                 }}
-                                className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-full text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
+                                className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-md text-sidebar-text/60 transition-colors py-3 shadow-sm ${pathname.includes('/change-password') ? 'bg-primary/30 text-primary border-l-3 border-primary' : 'bg-background hover:text-foreground/70 border border-transparent'}`}
                                 title="Change Password"
                             >
                                 <Key className="w-4 h-4 shrink-0 text-primary/80" />
                                 {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Change Password</span>}
                             </Link>
+
+                            {/* log out button separater */}
+                            <div className="border-t-2 my-2 border-border"></div>
+
+                            <button
+                                onClick={handleLogout}
+                                className={`flex items-center cursor-pointer ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} w-full rounded-md text-red-500 bg-red-500/10 hover:bg-red-500/30 transition-all py-3 border border-transparent shadow-sm`}
+                                title="Log out"
+                            >
+                                <LogOut className="w-4 h-4 shrink-0 text-red-500/80" />
+                                {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Log out</span>}
+                            </button>
                         </div>
                     </div>
-
-                    {/* log out button separater */}
-                    <div className="border-t-2 my-2 border-border"></div>
-
-                    <button
-                        onClick={handleLogout}
-                        className={`flex items-center cursor-pointer ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} w-full rounded-full text-red-500 bg-red-500/10 hover:bg-red-500/30 transition-all py-3 border border-transparent shadow-sm`}
-                        title="Log out"
-                    >
-                        <LogOut className="w-4 h-4 shrink-0 text-red-500/80" />
-                        {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Log out</span>}
-                    </button>
                 </div>
             </aside>
 
