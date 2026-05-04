@@ -18,7 +18,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 <input
                     type={type}
                     className={`
-            block w-full rounded-xl border bg-input
+            block w-full rounded-2xl border bg-input
             ${Icon ? 'pl-11' : 'pl-4'} pr-4 py-3
             text-card-foreground placeholder:text-muted-foreground
             transition-all duration-200 shadow-sm outline-none

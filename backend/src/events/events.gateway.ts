@@ -293,6 +293,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const payload = {
       userId: user.id,
       isOnline: becameOnline,
+      lastSeenAt: becameOffline ? new Date().toISOString() : null,
     };
 
     if (user.organizationId) {
@@ -302,6 +303,16 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     this.emitToUser(user.id, 'presence:update', payload);
+
+    // Update lastSeenAt only when user goes offline
+    if (becameOffline) {
+      this.prisma.chatParticipant.updateMany({
+        where: { userId: user.id, isActive: true },
+        data: { lastSeenAt: new Date() }
+      }).catch(err => {
+        console.error('Failed to update lastSeenAt:', err);
+      });
+    }
 
     // Also emit to all chat rooms the user is a participant of
     this.prisma.chatParticipant.findMany({

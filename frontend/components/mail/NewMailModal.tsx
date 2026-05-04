@@ -374,7 +374,7 @@ export function NewMailModal({
                                 value={subject}
                                 onChange={(e) => setSubject(e.target.value)}
                                 placeholder="Explain your issue briefly"
-                                className="w-full px-5 py-4 rounded-lg bg-card/5 border border-border focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground font-bold text-base"
+                                className="w-full px-5 py-4 rounded-2xl bg-card/5 border border-border focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none text-foreground font-bold text-base"
                             />
                         </div>
 
@@ -429,7 +429,7 @@ export function NewMailModal({
                             {/* No Reply Option for Admins/Managers */}
                             {showNoReply && (
                                 <div 
-                                    className="px-4 py-3 select-none hover:bg-card border border-border cursor-pointer rounded-lg mt-3"
+                                    className="px-4 py-3 select-none hover:bg-card border border-border cursor-pointer rounded-2xl mt-3"
                                     onClick={() => setNoReply(!noReply)}
                                 >
                                     <Toggle
@@ -468,7 +468,7 @@ export function NewMailModal({
                                     <button
                                         type="button"
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="h-8.5 flex items-center gap-2 px-4 border border-dashed border-border rounded-lg text-muted-foreground hover:border-indigo-500 hover:text-indigo-600 hover:bg-card/80 transition-all group"
+                                        className="h-8.5 flex items-center gap-2 px-4 border border-dashed border-border rounded-2xl text-muted-foreground hover:border-indigo-500 hover:text-indigo-600 hover:bg-card/80 transition-all group"
                                     >
                                         <Paperclip className="w-3.5 h-3.5" />
                                         <span className="text-[10px] font-black tracking-wider">Add File</span>

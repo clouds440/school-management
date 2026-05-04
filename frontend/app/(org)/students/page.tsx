@@ -14,6 +14,7 @@ import { api } from '@/lib/api';
 import { TableActions } from '@/components/ui/TableActions';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import useSWR, { mutate } from 'swr';
+import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { Loading } from '@/components/ui/Loading';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
@@ -275,7 +276,7 @@ export default function StudentsPage() {
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Student removed successfully', type: 'success' } });
             setIsDeleteDialogOpen(false);
             // Invalidate all students-related cache keys
-            mutate((key: any) => Array.isArray(key) && key[0] === 'students');
+            mutate(matchesCacheKeyPrefix('students'));
         } catch (error: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to delete student', type: 'error' } });
         }
@@ -286,7 +287,7 @@ export default function StudentsPage() {
         try {
             await api.org.restoreStudent(id, StudentStatus.ACTIVE, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Student restored successfully', type: 'success' } });
-            mutate((key: any) => Array.isArray(key) && key[0] === 'students');
+            mutate(matchesCacheKeyPrefix('students'));
         } catch (err: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: err instanceof Error ? err.message : 'Failed to restore student', type: 'error' } });
         }
@@ -319,7 +320,7 @@ export default function StudentsPage() {
                                         placeholder="Filter Status"
                                     />
                                 </div>
-                                <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-lg border border-border/50">
+                                <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-2xl border border-border/50">
                                     <Toggle
                                         checked={showAlumni}
                                         onCheckedChange={(val) => updateQueryParams({ showAlumni: val ? 'true' : undefined, page: 1 })}
@@ -356,7 +357,7 @@ export default function StudentsPage() {
                             )}
 
                             {user?.role === Role.ORG_MANAGER && (
-                                <div className="bg-primary/5 p-2 pr-4 rounded-lg border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
+                                <div className="bg-primary/5 p-2 pr-4 rounded-2xl border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
                                     <Toggle
                                         checked={showOnlyMyStudents}
                                         onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
@@ -391,6 +392,7 @@ export default function StudentsPage() {
                         totalPages={fetchedData?.totalPages || 1}
                         totalResults={fetchedData?.totalRecords || 0}
                         pageSize={pageSize}
+                        showSerialNumber
                         onPageChange={(p) => updateQueryParams({ page: p })}
                         onPageSizeChange={handlePageSizeChange}
                         maxHeight="100%"

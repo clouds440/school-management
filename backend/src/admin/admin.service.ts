@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { Prisma, User as UserEntity, Organization } from '@prisma/client';
 import { OrgStatus, Role, MailCategory } from '../common/enums';
-import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserService } from '../users/user.service';
@@ -14,7 +13,6 @@ import {
   getPaginationOptions,
   formatPaginatedResponse,
   mapStatusCounts,
-  BCRYPT_ROUNDS,
   PaginationOptions,
 } from '../common/utils';
 import { MailService } from '../mail/mail.service';
@@ -339,9 +337,7 @@ export class AdminService {
     if (data.name) updateData.name = data.name;
     if (data.email) updateData.email = data.email;
     if (data.phone) updateData.phone = data.phone;
-    if (data.password) {
-      updateData.password = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
-    }
+    if (data.password) updateData.password = data.password;
 
     return this.userService.updateUser(id, updateData);
   }

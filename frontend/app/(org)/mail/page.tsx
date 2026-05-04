@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { MessageSquare, ArrowUpRight, CheckCircle2, XCircle, Tag, Calendar, Filter, Clock, MailPlus } from 'lucide-react';
 import useSWR, { mutate } from 'swr';
+import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { api } from '@/lib/api';
 import { MailItem, MailStatus, PaginatedResponse } from '@/types';
 import { DataTable, Column } from '@/components/ui/DataTable';
@@ -84,10 +85,10 @@ export default function OrgMailPage() {
     useEffect(() => {
         // Socket events trigger SWR revalidation directly
         const unsubs = [
-            subscribe('unread:update', () => mutate((key: any) => Array.isArray(key) && key[0] === 'mails')),
-            subscribe('mail:new', () => mutate((key: any) => Array.isArray(key) && key[0] === 'mails')),
-            subscribe('mail:message', () => mutate((key: any) => Array.isArray(key) && key[0] === 'mails')),
-            subscribe('mail:update', () => mutate((key: any) => Array.isArray(key) && key[0] === 'mails'))
+            subscribe('unread:update', () => mutate(matchesCacheKeyPrefix('mails'))),
+            subscribe('mail:new', () => mutate(matchesCacheKeyPrefix('mails'))),
+            subscribe('mail:message', () => mutate(matchesCacheKeyPrefix('mails'))),
+            subscribe('mail:update', () => mutate(matchesCacheKeyPrefix('mails')))
         ];
 
         return () => {
@@ -265,14 +266,14 @@ export default function OrgMailPage() {
                     const query = params.toString();
                     router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
                 }}
-                onUpdate={() => mutate((key: any) => Array.isArray(key) && key[0] === 'mails')}
+                onUpdate={() => mutate(matchesCacheKeyPrefix('mails'))}
             />
 
             <NewMailModal
                 isOpen={newMailOpen}
                 onClose={() => setNewMailOpen(false)}
                 onSuccess={() => {
-                    mutate((key: any) => Array.isArray(key) && key[0] === 'mails');
+                    mutate(matchesCacheKeyPrefix('mails'));
                     dispatch({ type: 'TOAST_ADD', payload: { message: 'Mail sent', type: 'success' } });
                 }}
             />

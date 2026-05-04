@@ -13,7 +13,7 @@ interface ModalFormProps {
     submitText?: string;
     isSubmitting?: boolean;
     loadingId?: string;
-    variant?: 'info' | 'danger' | 'warning' | 'success';
+    variant?: 'primary' | 'danger' | 'warning' | 'success';
     showCancel?: boolean;
     showSubmit?: boolean;
     maxWidth?: string;
@@ -30,7 +30,7 @@ export function ModalForm({
     submitText = 'Save',
     isSubmitting = false,
     loadingId,
-    variant = 'info',
+    variant = 'primary',
     showCancel = true,
     showSubmit = true,
     maxWidth = 'max-w-lg',
@@ -56,12 +56,7 @@ export function ModalForm({
                     isLoading={isSubmitting}
                     loadingId={loadingId}
                     requireWrite={requireWrite !== false}
-                    className={`w-full sm:w-auto px-6 sm:px-10 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold tracking-wider text-primary-foreground border-none shadow-lg hover:scale-105 active:scale-95 ${
-                        variant === 'danger' ? 'bg-destructive hover:bg-destructive/90 shadow-destructive/20' :
-                        variant === 'warning' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' :
-                        variant === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20' :
-                        'bg-primary hover:bg-primary/90 shadow-primary/20'
-                    }`}
+                    variant={variant}
                 >
                     {submitText}
                 </Button>

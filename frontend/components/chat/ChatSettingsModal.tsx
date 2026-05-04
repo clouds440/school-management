@@ -184,7 +184,7 @@ export function ChatSettingsModal({
                 {isGroupAdmin && chat.type === ChatType.GROUP && (
                     <div className="flex items-center justify-between p-3 rounded-lg border border-border/10 bg-card/30">
                         <div className="flex items-center space-x-3">
-                            <div className={`p-2 rounded-lg ${readOnly ? 'bg-primary/10 text-primary' : 'bg-muted/10 text-muted-foreground'}`}>
+                            <div className={`p-2 rounded-2xl ${readOnly ? 'bg-primary/10 text-primary' : 'bg-muted/10 text-muted-foreground'}`}>
                                 {readOnly ? <Lock size={16} /> : <Unlock size={16} />}
                             </div>
                             <div>

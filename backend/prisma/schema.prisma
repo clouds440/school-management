@@ -473,6 +473,7 @@ model ChatParticipant {
   role              ChatParticipantRole     @default(MEMBER)
   isActive          Boolean                  @default(true)
   lastReadMessageId String?
+  lastSeenAt        DateTime?
   joinedAt          DateTime                 @default(now())
   membershipHistory ChatMembershipHistory[]
 

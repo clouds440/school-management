@@ -13,6 +13,7 @@ import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { TableActions } from '@/components/ui/TableActions';
 import useSWR, { mutate } from 'swr';
+import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { Loading } from '@/components/ui/Loading';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
@@ -114,7 +115,7 @@ export default function TeachersPage() {
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Teacher removed from organization', type: 'success' } });
             setDeleteDialogOpen(false);
             // Invalidate all teachers-related cache keys
-            mutate((key: any) => Array.isArray(key) && key[0] === 'teachers');
+            mutate(matchesCacheKeyPrefix('teachers'));
         } catch (err: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: err instanceof Error ? err.message : 'Failed to delete teacher', type: 'error' } });
         }
@@ -125,7 +126,7 @@ export default function TeachersPage() {
         try {
             await api.org.restoreTeacher(id, TeacherStatus.ACTIVE, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Teacher restored successfully', type: 'success' } });
-            mutate((key: any) => Array.isArray(key) && key[0] === 'teachers');
+            mutate(matchesCacheKeyPrefix('teachers'));
         } catch (err: unknown) {
             dispatch({ type: 'TOAST_ADD', payload: { message: err instanceof Error ? err.message : 'Failed to restore teacher', type: 'error' } });
         }
@@ -277,7 +278,7 @@ export default function TeachersPage() {
                                         placeholder="Filter Status"
                                     />
                                 </div>
-                                <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-lg border border-border/50">
+                                <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-2xl border border-border/50">
                                     <Toggle
                                         checked={showEmeritus}
                                         onCheckedChange={(val) => updateQueryParams({ showEmeritus: val ? 'true' : undefined, page: 1 })}
@@ -321,6 +322,7 @@ export default function TeachersPage() {
                         totalPages={fetchedData?.totalPages || 1}
                         totalResults={fetchedData?.totalRecords || 0}
                         pageSize={pageSize}
+                        showSerialNumber
                         onPageChange={(p) => updateQueryParams({ page: p })}
                         onPageSizeChange={handlePageSizeChange}
                         maxHeight="100%"
@@ -336,7 +338,7 @@ export default function TeachersPage() {
                 onConfirm={handleDeleteConfirm}
                 title={<>Remove Faculty Member <strong>{deletingTeacher?.user?.name}</strong></>}
                 description={<>Are you really sure you want to remove <strong>{deletingTeacher?.user?.email}</strong>?</>}
-                confirmText="Permanently Delete"
+                confirmText="Delete"
                 isDestructive={true}
             />
 

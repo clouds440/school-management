@@ -107,12 +107,11 @@ export function ChatLayout() {
     // Modal state for image preview
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
-    // Mobile: tap-to-show actions
-    const [tappedMessageId, setTappedMessageId] = useState<string | null>(null);
+    // Context menu for message actions
     const [contextMenu, setContextMenu] = useState<{ msg: ChatMessageWithMeta, x: number, y: number } | null>(null);
 
-    const scrollTimeoutRef = useRef<NodeJS.Timeout>(null);
-    const lastScrollTopRef = useRef<number>(0);
+    const touchStartTimeRef = useRef<number>(0);
+    const touchMessageIdRef = useRef<string | null>(null);
     const [confirmConfig, setConfirmConfig] = useState<{
         isOpen: boolean;
         title: string;
@@ -128,7 +127,7 @@ export function ChatLayout() {
 
     // Pagination & Smart Scroll States
     const [messagesPage, setMessagesPage] = useState(1);
-    const [hasMoreMessages, setHasMoreMessages] = useState(true);
+    const [hasMoreMessages, setHasMoreMessages] = useState<boolean | null>(null);
     const [hasMoreAfter, setHasMoreAfter] = useState(false);
     const [unreadSinceScroll, setUnreadSinceScroll] = useState(0);
     const [isAtBottom, setIsAtBottom] = useState(true);
@@ -161,6 +160,20 @@ export function ChatLayout() {
             markAsReadGuard(activeChatId, '', token);
         }
     }, [activeChatId, token]);
+
+    // Helper to update messages with read status
+    const updateMessagesWithReadStatus = useCallback((messages: ChatMessage[], readData: { messageId: string; userId: string }): ChatMessage[] => {
+        const readMessage = messages.find(candidate => candidate.id === readData.messageId);
+        const readAt = readMessage ? new Date(readMessage.createdAt).getTime() : null;
+        return messages.map(m => {
+            const messageAt = new Date(m.createdAt).getTime();
+            if (m.senderId !== readData.userId && readAt !== null && readAt >= messageAt) {
+                const readBy = Array.from(new Set([...(m.readBy || []), readData.userId]));
+                return { ...m, readBy };
+            }
+            return m;
+        });
+    }, []);
 
     const scrollToMessage = useCallback(async (messageId: string) => {
         const element = document.getElementById(`msg-${messageId}`);
@@ -401,6 +414,15 @@ export function ChatLayout() {
             if (!event.isOnline) {
                 setTypingByChatId(prev => removeTypingUserFromAllChats(prev, event.userId));
             }
+            // Update participant lastSeenAt in all chats
+            if (event.lastSeenAt) {
+                setChats(prev => prev.map(chat => ({
+                    ...chat,
+                    participants: chat.participants?.map(p =>
+                        p.userId === event.userId ? { ...p, lastSeenAt: event.lastSeenAt } : p
+                    )
+                })));
+            }
         });
 
         return () => unsubscribePresenceUpdate();
@@ -508,6 +530,12 @@ export function ChatLayout() {
         const unsubMessage = subscribe('chat:message', (newMsg: unknown) => {
             const message = newMsg as ChatMessage & { sender?: User };
 
+            // Always update cached messages for the chat, regardless of active chat
+            // This ensures messages are available when switching to that chat later
+            const cachedMessages = getCachedMessages(message.chatId);
+            const updatedCached = reconcileIncomingMessage(cachedMessages, message, user.id, null);
+            setCachedMessages(message.chatId, updatedCached);
+
             if (message.chatId === activeChatId) {
                 setMessages(prev => {
                     const pendingId = message.senderId === user.id ? pendingMessageIdRef.current : null;
@@ -560,18 +588,7 @@ export function ChatLayout() {
             const readData = data as { chatId: string; userId: string; messageId: string };
             // Update messages if chat is active
             if (readData.chatId === activeChatId) {
-                setMessages(prev => {
-                    const readMessage = prev.find(candidate => candidate.id === readData.messageId);
-                    const readAt = readMessage ? new Date(readMessage.createdAt).getTime() : null;
-                    return prev.map(m => {
-                        const messageAt = new Date(m.createdAt).getTime();
-                        if (m.senderId !== readData.userId && readAt !== null && readAt >= messageAt) {
-                            const readBy = Array.from(new Set([...(m.readBy || []), readData.userId]));
-                            return { ...m, readBy };
-                        }
-                        return m;
-                    });
-                });
+                setMessages(prev => updateMessagesWithReadStatus(prev, readData));
             }
             // Update unread count for the current user
             if (readData.userId === user.id) {
@@ -585,7 +602,6 @@ export function ChatLayout() {
             // Update chat list messages for read status (for sender to see double ticks)
             setChats(prev => prev.map(c => {
                 if (c.id === readData.chatId && c.messages?.[0]) {
-                    const readAt = new Date(c.messages[0].createdAt).getTime();
                     if (c.messages[0].senderId === user.id && readData.userId !== user.id) {
                         // This is the sender's message being read by someone else
                         const readBy = Array.from(new Set([...(c.messages[0].readBy || []), readData.userId]));
@@ -597,16 +613,7 @@ export function ChatLayout() {
             // Update cached messages for the chat so read status persists
             const cachedMessages = getCachedMessages(readData.chatId);
             if (cachedMessages.length > 0) {
-                const readMessage = cachedMessages.find(candidate => candidate.id === readData.messageId);
-                const readAt = readMessage ? new Date(readMessage.createdAt).getTime() : null;
-                const updatedMessages = cachedMessages.map(m => {
-                    const messageAt = new Date(m.createdAt).getTime();
-                    if (m.senderId !== readData.userId && readAt !== null && readAt >= messageAt) {
-                        const readBy = Array.from(new Set([...(m.readBy || []), readData.userId]));
-                        return { ...m, readBy };
-                    }
-                    return m;
-                });
+                const updatedMessages = updateMessagesWithReadStatus(cachedMessages, readData);
                 setCachedMessages(readData.chatId, updatedMessages);
             }
         });
@@ -1208,8 +1215,8 @@ export function ChatLayout() {
             return (
                 <div key={msg.id}>
                     {showDateSep && <div className="chat-date-separator"><span>{formatChatDateLabel(msg.createdAt)}</span></div>}
-                    <div className="flex justify-center py-2 px-3">
-                        <div className="bg-card/80 backdrop-blur-sm text-muted-foreground px-4 py-1.5 rounded-full text-[13px] font-medium flex items-center border border-border shadow-sm max-w-[90%] sm:max-w-[80%] md:max-w-[70%] text-center overflow-hidden">
+                    <div className="flex justify-center py-2 px-3 rounded-xl">
+                        <div className="bg-background backdrop-blur-sm text-foreground px-4 py-1.5 rounded-full text-[13px] font-medium flex items-center border border-border shadow-sm max-w-[90%] sm:max-w-[80%] md:max-w-[70%] text-center overflow-hidden">
                             <span className="whitespace-normal wrap-break-word">{msg.content}</span> <sub className='text-[10px] ml-2 shrink-0 whitespace-nowrap'>{formatChatTimestamp(msg.createdAt)}</sub>
                         </div>
                     </div>
@@ -1221,27 +1228,41 @@ export function ChatLayout() {
         const showAvatar = !isMine && (i === 0 || messages[i - 1].senderId !== msg.senderId || messages[i - 1].type === ChatMessageType.SYSTEM);
         const isLastInGroup = i === messages.length - 1 || messages[i + 1].senderId !== msg.senderId || messages[i + 1].type === ChatMessageType.SYSTEM;
         const isDeleted = !!msg.deletedAt;
-        const showActionsOnMobile = tappedMessageId === msg.id;
         const isSendingMessage = msg.clientStatus === 'sending';
         const isFailedMessage = msg.clientStatus === 'failed';
+        const isMineRepliedTo = msg.replyTo?.senderId === user?.id;
 
         return (
             <div key={msg.id}>
-                {showDateSep && <div className="chat-date-separator"><span>{formatChatDateLabel(msg.createdAt)}</span></div>}
+                {showDateSep && <div className="chat-date-separator"><span className='bg-background text-foreground'>{formatChatDateLabel(msg.createdAt)}</span></div>}
                 <div
                     id={`msg-${msg.id}`}
                     onContextMenu={(e) => {
-                        if (isDesktop && !isDeleted) {
+                        if (!isDeleted) {
                             e.preventDefault();
                             setContextMenu({ msg, x: e.clientX, y: e.clientY });
                         }
                     }}
-                    onClick={(e) => {
+                    onTouchStart={(e) => {
                         if (!isDesktop && !isDeleted) {
-                            setContextMenu({ msg, x: 0, y: 0 });
+                            e.stopPropagation();
+                            touchStartTimeRef.current = Date.now();
+                            touchMessageIdRef.current = msg.id;
                         }
                     }}
-                    onTouchStart={(e) => { e.stopPropagation(); setTappedMessageId(msg.id); }}
+                    onTouchEnd={(e) => {
+                        if (!isDesktop && !isDeleted) {
+                            e.stopPropagation();
+                            const touchDuration = Date.now() - touchStartTimeRef.current;
+                            if (touchDuration >= 300 && touchMessageIdRef.current === msg.id) {
+                                e.preventDefault();
+                                // Small delay to prevent touch end from triggering menu item click
+                                setTimeout(() => setContextMenu({ msg, x: 0, y: 0 }), 50);
+                            }
+                            touchStartTimeRef.current = 0;
+                            touchMessageIdRef.current = null;
+                        }
+                    }}
                     className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-3.5' : 'mb-0.5'} px-3 md:px-5 -mx-3 md:-mx-5 ${highlightedMessageId === msg.id || contextMenu?.msg.id === msg.id ? 'bg-primary/20 rounded-sm' : ''}`}
                 >
                     {!isMine && (
@@ -1257,24 +1278,6 @@ export function ChatLayout() {
                                         {msg.sender?.name}
                                     </span>
                                 )}
-                                {msg.replyTo && !isDeleted && (() => {
-                                    const isMineRepliedTo = msg.replyTo.senderId === user?.id;
-                                    return (
-                                        <div
-                                            onClick={(e) => { e.stopPropagation(); void scrollToMessage(msg.replyTo!.id); }}
-                                            className={`mb-0.5 mt-3 px-3 py-1.5 rounded-lg border-l-5 text-[14px] bg-muted max-w-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity text-foreground
-                                                        ${isMineRepliedTo ? 'border-primary' : 'border-foreground/70'}`}
-                                        >
-                                            <p className="font-semibold mb-0.5 text-[14px] flex items-center">
-                                                <Reply size={13} className='mr-1 rotate-180' />
-                                                {msg.replyTo.sender?.name || 'Someone'}
-                                            </p>
-                                            <div className="truncate line-clamp-1 opacity-95">
-                                                <MarkdownRenderer content={getTruncatedMessagePreview(msg.replyTo.deletedAt ? 'Message deleted' : msg.replyTo.content, isDesktop ? 70 : 35)} className={`${msg.replyTo.deletedAt ? 'text-muted-foreground!' : 'text-foreground!'}`} />
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
                                 {isDeleted ? (
                                     <div className={`px-3.5 py-2 rounded-2xl text-[13px] leading-relaxed my-1 bg-card text-muted-foreground border border-border ${isMine ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
                                         <div className="flex items-center space-x-1.5">
@@ -1300,6 +1303,7 @@ export function ChatLayout() {
                                                 )}
                                                 {segments.map((segment, idx) => {
                                                     const isImage = segment.match(/^!\[.*?\]\(.*?\)$/);
+                                                    const isFirstSegment = idx === 0;
                                                     if (isImage) {
                                                         return (
                                                             <div key={idx} className={`naked-image-container max-w-full rounded-xl relative ${isSendingMessage && isMine ? 'animate-in fade-in slide-in-from-bottom-1 duration-200' : ''}`}>
@@ -1327,20 +1331,37 @@ export function ChatLayout() {
                                                     return (
                                                         <div
                                                             key={idx}
-                                                            className={`message-bubble px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl leading-relaxed relative shadow-sm
+                                                            className={`message-bubble px-1 py-1.5 rounded-2xl leading-relaxed relative shadow-sm
                                                                         ${isMine
                                                                     ? 'bg-primary text-primary-foreground rounded-tr-md rounded-br-xs'
                                                                     : 'bg-card border border-border rounded-tl-md rounded-bl-xs text-foreground'
                                                                 }
                                                                         ${isSendingMessage && isMine ? 'animate-in fade-in slide-in-from-bottom-1 duration-200' : ''}
                                                                         `}>
+                                                            {isFirstSegment && msg.replyTo && !isDeleted && (() => {
+                                                                return (
+                                                                    <div
+                                                                        onClick={(e) => { e.stopPropagation(); void scrollToMessage(msg.replyTo!.id); }}
+                                                                        className={`px-2 py-1 rounded-lg text-[12px] bg-muted text-foreground! border-l-5 max-w-full overflow-hidden cursor-pointer hover:opacity-90 transition-opacity
+                                                                                    ${isMineRepliedTo ? 'border-green-600' : 'broder-border'}`}
+                                                                    >
+                                                                        <p className="font-semibold mb-0.5 text-[11px] flex items-center opacity-80">
+                                                                            <Reply size={11} className='mr-1 rotate-180' />
+                                                                            {msg.replyTo.sender?.id === user?.id ? 'You' : msg.replyTo.sender?.name || 'Someone'}
+                                                                        </p>
+                                                                        <div className="truncate line-clamp-1 opacity-90">
+                                                                            <MarkdownRenderer content={getTruncatedMessagePreview(msg.replyTo.deletedAt ? 'Message deleted' : msg.replyTo.content, isDesktop ? 400 : 200)} className={`${msg.replyTo.deletedAt ? 'text-muted-foreground!' : 'text-foreground!'}`} />
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })()}
 
-                                                            <div className={`prose prose-sm max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground!'}`}>
+                                                            <div className={`prose prose-sm mx-2 max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground!'}`}>
                                                                 <MarkdownRenderer content={segment} className={`${isMine ? 'text-primary-foreground!' : 'text-foreground!'} whitespace-pre-wrap wrap-break-word`} />
                                                             </div>
-                                                            <div className={`flex items-center justify-end space-x-1 mt-0.5 -mb-0.5 sm:-mb-1 ${isMine ? 'text-primary-foreground/75' : 'text-muted-foreground'}`}>
+                                                            <div className={`flex items-center mx-2 justify-end space-x-1 mt-0.5 -mb-0.5 text-foreground`}>
                                                                 {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
-                                                                    <span className="text-[9px] sm:text-[10px] rounded-lg px-2 bg-card/70 text-foreground!">Edited</span>
+                                                                    <span className={`text-[9px] sm:text-[10px] rounded-lg px-1.5 py-0 ${isMine ? 'bg-card/70 text-foreground!' : 'bg-foreground/70 text-background!'}`}>Edited</span>
                                                                 )}
                                                                 <span className='text-[9.5px] sm:text-[10px] font-medium tracking-wide'>
                                                                     {formatChatTimestamp(msg.createdAt)}
@@ -1381,7 +1402,7 @@ export function ChatLayout() {
                 </div>
             </div>
         );
-    }), [messages, user, user?.id, user?.role, tappedMessageId, contextMenu, highlightedMessageId, isDesktop, activeChat?.type, scrollToMessage, isSending, isUploading, handleReply, handleCopyText, handleEditMessage, handleDownload, handleDeleteMessage, handleSendMessage, onlineUsers]);
+    }), [messages, user, user?.id, user?.role, contextMenu, highlightedMessageId, isDesktop, activeChat?.type, scrollToMessage, isSending, isUploading, handleReply, handleCopyText, handleEditMessage, handleDownload, handleDeleteMessage, handleSendMessage, onlineUsers]);
 
     if (!user) return null;
 
@@ -1548,7 +1569,7 @@ export function ChatLayout() {
                     <>
                         {/* Chat Header */}
                         <div
-                            className="relative w-full px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border flex items-center justify-between z-20 bg-background/95 backdrop-blur-md transition-all duration-200"
+                            className="relative w-full px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border flex items-center justify-between z-20 bg-background/80 backdrop-blur-md transition-all duration-200"
                         >
                             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
                                 {!isDesktop && (
@@ -1590,9 +1611,15 @@ export function ChatLayout() {
                                             </span>
                                         ) : activeChat.type === ChatType.GROUP
                                             ? `${activeChat.participants?.filter(p => p.isActive).length || 0} members`
-                                            : onlineUsers[directChatTarget?.id || '']
-                                                ? 'Online'
-                                                : activeChat.participants?.find(p => p.userId !== user.id)?.user?.role?.replace('_', ' ').toLowerCase() || 'member'}
+                                            : (() => {
+                                                const otherParticipant = activeChat.participants?.find(p => p.userId !== user.id);
+                                                const isOnline = onlineUsers[directChatTarget?.id || ''];
+                                                const role = otherParticipant?.user?.role?.replace('_', ' ').toLowerCase() || 'member';
+                                                const status = isOnline ? 'Online' : otherParticipant?.lastSeenAt
+                                                    ? `Last seen ${formatDistanceToNow(new Date(otherParticipant.lastSeenAt), { addSuffix: true })}`
+                                                    : null;
+                                                return status ? `${role} • ${status}` : role;
+                                            })()}
                                     </button>
                                 </div>
                             </div>
@@ -1617,7 +1644,7 @@ export function ChatLayout() {
                             <div
                                 ref={messagesContainerRef}
                                 onScroll={handleScroll}
-                                className="flex-1 overflow-y-auto overflow-x-hidden px-2 sm:px-3 md:px-4 lg:px-5 py-2 sm:py-3 space-y-0.5 custom-scrollbar chat-bg-pattern"
+                                className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-10 md:px-12 lg:px-14 py-2 sm:py-3 space-y-0.5 custom-scrollbar chat-bg-pattern"
                                 style={{
                                     paddingBottom: !isDesktop
                                         ? `calc(${(canSendMessage ? composerHeight : readOnlyBannerHeight) + 16}px + env(safe-area-inset-bottom, 0px))`
@@ -1706,7 +1733,7 @@ export function ChatLayout() {
                                 >
                                     <ArrowDown size={18} className="group-hover:translate-y-0.5 transition-transform text-primary/80" />
                                     {!isViewingHistory && unreadSinceScroll > 0 && (
-                                        <span className="absolute -top-1.5 -right-1.5 bg-primary/30 text-primary text-[9px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-card shadow-sm">
+                                        <span className="absolute -top-1.5 -right-1.5 bg-red-500/60 text-white text-[9px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-card shadow-sm">
                                             {unreadSinceScroll}
                                         </span>
                                     )}

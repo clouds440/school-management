@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LogOut, Key, Mail, MessageCircleQuestionMark, Eye } from 'lucide-react';
+import { LogOut, Key, Mail, MessageCircleQuestionMark, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useUI } from '@/context/UIContext';
 import { useGlobal } from '@/context/GlobalContext';
@@ -43,6 +43,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
+    const [isBottomSectionCollapsed, setIsBottomSectionCollapsed] = useState(false);
 
     const mailCount = state.stats.mail || { unread: 0, total: 0 };
 
@@ -140,7 +141,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                     router.push(link.href);
                                 }}
                                 className={`
-                                    flex items-center rounded-lg transition-all group relative hover:bg-primary/10
+                                    flex items-center rounded-full transition-all group relative hover:bg-primary/10
                                     ${isActive
                                         ? 'bg-primary/30 text-primary shadow-[0_8px_16px_var(--shadow-color)]'
                                         : 'text-sidebar-text/70 hover:text-foreground/70 hover:text-sidebar-text'
@@ -172,9 +173,23 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                 </div>
 
                 {/* Branded Sidebar Footer */}
-                <div className="p-4 border-t border-border shrink-0">
+                <div className="p-4 border-t border-border shrink-0 relative">
+                    {/* Toggle button sitting on top of border */}
+                    <button
+                        onClick={() => setIsBottomSectionCollapsed(!isBottomSectionCollapsed)}
+                        className={`absolute -top-3 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-sidebar-text/60 bg-background hover:bg-card transition-all border border-border shadow-sm`}
+                        title={isBottomSectionCollapsed ? "Show more" : "Show less"}
+                    >
+                        {isBottomSectionCollapsed ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronUp className="w-4 h-4 shrink-0" />}
+                        {isBottomSectionCollapsed && mailCount.unread > 0 && (
+                            <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-black">
+                                {mailCount.unread > 99 ? '99+' : mailCount.unread}
+                            </span>
+                        )}
+                    </button>
+
                     {user && (
-                        <div className={`flex items-center ${!effectiveExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
+                        <div className={`flex items-center mt-2 ${!effectiveExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
                             <div className={`w-9 h-9 flex items-center justify-center shrink-0 shadow-inner relative`}>
                                 <BrandIcon variant="user" user={user} size="sm" className="w-9 h-9" />
                             </div>
@@ -185,68 +200,70 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                         </div>
                     )}
 
-                    <div className="space-y-2">
-                        {user?.role !== Role.SUPER_ADMIN && user?.role !== Role.PLATFORM_ADMIN && (
-                            <>
-                                <Link
-                                    href="/mail"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        router.push('/mail');
-                                    }}
-                                    className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-lg text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'} transition-all py-3 border border-transparent shadow-sm relative`}
-                                    title="Mail"
-                                >
-                                    <Mail className="w-4 h-4 shrink-0 text-primary/80" />
-                                    {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Mail</span>}
-                                    {/* Always show a mail count; gray when zero */}
-                                    <span className={`ml-auto ${mailCount.unread > 0 ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground'} ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
-                                        {mailCount.unread > 99 ? '99+' : mailCount.unread}
-                                    </span>
-                                </Link>
-
-                                {user?.role != Role.STUDENT &&
+                    {/* Collapsible bottom links */}
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isBottomSectionCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'}`}>
+                        <div className="space-y-2">
+                            {user?.role !== Role.SUPER_ADMIN && user?.role !== Role.PLATFORM_ADMIN && (
+                                <>
                                     <Link
-                                        href="/contact"
+                                        href="/mail"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            router.push('/contact');
+                                            router.push('/mail');
                                         }}
-                                        className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-lg text-sidebar-text/60 ${pathname === '/contact' ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
-                                        title="Contact Us"
+                                        className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-full text-sidebar-text/60 ${pathname.includes('/mail') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'} transition-all py-3 border border-transparent shadow-sm relative`}
+                                        title="Mail"
                                     >
-                                        <MessageCircleQuestionMark className="w-4 h-4 shrink-0 text-primary/80" />
-                                        {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Contact Us</span>}
-                                    </Link>}
-                            </>
-                        )}
+                                        <Mail className="w-4 h-4 shrink-0 text-primary/80" />
+                                        {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Mail</span>}
+                                        {/* Always show a mail count; gray when zero */}
+                                        <span className={`ml-auto ${mailCount.unread > 0 ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground'} ${!effectiveExpanded ? 'absolute top-0 -right-0.5' : ''} px-1.5 py-0.5 rounded-full text-[9px] font-black text-center`}>
+                                            {mailCount.unread > 99 ? '99+' : mailCount.unread}
+                                        </span>
+                                    </Link>
 
-                        <Link
-                            href={user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : '/change-password'}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : '/change-password');
-                            }}
-                            className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-lg text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
-                            title="Change Password"
-                        >
-                            <Key className="w-4 h-4 shrink-0 text-primary/80" />
-                            {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Change Password</span>}
-                        </Link>
+                                    {user?.role != Role.STUDENT &&
+                                        <Link
+                                            href="/contact"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                router.push('/contact');
+                                            }}
+                                            className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-full text-sidebar-text/60 ${pathname === '/contact' ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
+                                            title="Contact Us"
+                                        >
+                                            <MessageCircleQuestionMark className="w-4 h-4 shrink-0 text-primary/80" />
+                                            {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Contact Us</span>}
+                                        </Link>}
+                                </>
+                            )}
 
-
-                        {/* log out button separater */}
-                        <div className="border-t-2 border-border"></div>
-
-                        <button
-                            onClick={handleLogout}
-                            className={`flex items-center cursor-pointer ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} w-full rounded-lg text-red-500 bg-red-500/10 hover:bg-red-500/30 transition-all py-3 border border-transparent shadow-sm`}
-                            title="Log out"
-                        >
-                            <LogOut className="w-4 h-4 shrink-0 text-red-500/80" />
-                            {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Log out</span>}
-                        </button>
+                            <Link
+                                href={user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : '/change-password'}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    router.push(user?.role === Role.SUPER_ADMIN || user?.role === Role.PLATFORM_ADMIN ? '/admin/change-password' : '/change-password');
+                                }}
+                                className={`flex items-center hover:bg-primary/10 ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} rounded-full text-sidebar-text/60 ${pathname.includes('/change-password') ? 'bg-primary/30 text-primary' : 'bg-background hover:text-foreground/70'}  transition-all py-3 border border-transparent shadow-sm`}
+                                title="Change Password"
+                            >
+                                <Key className="w-4 h-4 shrink-0 text-primary/80" />
+                                {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Change Password</span>}
+                            </Link>
+                        </div>
                     </div>
+
+                    {/* log out button separater */}
+                    <div className="border-t-2 my-2 border-border"></div>
+
+                    <button
+                        onClick={handleLogout}
+                        className={`flex items-center cursor-pointer ${!effectiveExpanded ? 'justify-center' : 'justify-start px-3'} w-full rounded-full text-red-500 bg-red-500/10 hover:bg-red-500/30 transition-all py-3 border border-transparent shadow-sm`}
+                        title="Log out"
+                    >
+                        <LogOut className="w-4 h-4 shrink-0 text-red-500/80" />
+                        {effectiveExpanded && <span className="ml-2 font-bold text-[10px] tracking-wider">Log out</span>}
+                    </button>
                 </div>
             </aside>
 

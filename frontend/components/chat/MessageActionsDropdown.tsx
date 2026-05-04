@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { Reply, Copy, Pencil, Download, Trash2, X } from 'lucide-react';
 import { ChatMessage, Role } from '@/types';
 import { JwtPayload } from '@/context/GlobalContext';
@@ -24,7 +25,18 @@ export function MessageContextMenu({
     onClose, onReply, onCopyText, onEditMessage, onDownload, onDeleteMessage
 }: MessageContextMenuProps) {
 
+    const ignoreFirstClickRef = useRef(true);
+
+    useEffect(() => {
+        ignoreFirstClickRef.current = true;
+        const timer = setTimeout(() => {
+            ignoreFirstClickRef.current = false;
+        }, 100);
+        return () => clearTimeout(timer);
+    }, []);
+
     const handleAction = (action: () => void) => {
+        if (ignoreFirstClickRef.current) return;
         onClose();
         action();
     };
@@ -71,8 +83,8 @@ export function MessageContextMenu({
     if (isMobile) {
         return (
             <>
-                <div className="fixed inset-0 z-100 bg-background/40 backdrop-blur-sm" onClick={onClose} />
-                <div className="fixed bottom-0 left-0 right-0 z-101 bg-card border-t border-border rounded-t-2xl shadow-2xl p-4 animate-in fade-in slide-in-from-bottom-8 duration-150 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+                <div className="fixed inset-0 z-50 bg-background/1 backdrop-blur-xs" onClick={onClose} />
+                <div className="fixed bottom-0 left-0 right-0 z-51 bg-card border-t border-border rounded-t-2xl shadow-2xl p-4 animate-in fade-in slide-in-from-bottom-8 duration-150 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
                     <div className="flex items-center justify-between mb-4 px-2">
                         <span className="text-sm font-bold text-muted-foreground tracking-wide">Message Options</span>
                         <button onClick={onClose} className="p-1 rounded-full bg-muted text-muted-foreground"><X size={16} /></button>

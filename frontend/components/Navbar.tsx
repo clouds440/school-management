@@ -21,11 +21,12 @@ export default function Navbar() {
     const pathname = usePathname();
     const { themeMode, setThemeMode } = useTheme();
     const chatUnread = state.stats.chat?.unread || 0;
+    const mailUnread = state.stats.mail?.unread || 0;
 
     const isDashboard = new RegExp(`^/(${DASHBOARD_MODULES.join('|')})(/|$)`).test(pathname);
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-100 flex items-center justify-between pl-2 pr-4 py-3 md:pr-10 backdrop-blur-xl bg-navbar border-b border-border shadow-sm h-16 transition-all duration-300 text-navbar-foreground">
+        <nav className="fixed top-0 left-0 right-0 z-100 flex items-center justify-between pl-2 pr-4 py-3 md:pr-10 backdrop-blur-xl bg-background/50 border-b border-border shadow-sm h-16 transition-all duration-300 text-navbar-foreground">
             <div className="flex space-x-2">
                 {isDashboard && (
                     <button
@@ -40,9 +41,9 @@ export default function Navbar() {
                         title={mounted ? (isDesktop ? (isExpanded ? "Collapse Sidebar" : "Expand Sidebar") : (isMobileOpen ? "Close Menu" : "Open Menu")) : "Menu"}
                     >
                         {isDesktop ? (<Menu className="w-6 h-6" />) : (isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />)}
-                        {!isDesktop && !isMobileOpen && chatUnread > 0 && (
+                        {!isDesktop && !isMobileOpen && (chatUnread + mailUnread) > 0 && (
                             <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-black shadow-sm">
-                                {chatUnread > 99 ? '99+' : chatUnread}
+                                {chatUnread + mailUnread > 99 ? '99+' : chatUnread + mailUnread}
                             </span>
                         )}
                     </button>

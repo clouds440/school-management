@@ -35,7 +35,7 @@
   --item-hover: #f1f5f9;
   --shadow-color: rgba(0, 0, 0, 0.1);
   --theme-bg: #f8fafc;
-  --chat-doodle: url('/assets/chat-doodle-light.jpg');
+  --chat-doodle: url('/assets/chat-doodle.svg');
 }
 
 @theme {
@@ -421,7 +421,8 @@ body {
   /* --- Modern Chat Background Pattern --- */
   .chat-bg-pattern {
     background-image: var(--chat-doodle);
-    background-color: transparent;
+    background-color: rgba(40, 40, 50, 0.6);
+    background-blend-mode: overlay;
     background-size: cover;
     background-position: center;
     background-attachment: fixed;

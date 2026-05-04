@@ -123,7 +123,7 @@ function CustomSelectComponent<T extends string = string>({
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 disabled={disabled}
                 className={cn(
-                    "flex items-center w-full px-3 sm:px-4 py-2.5 rounded-xl border transition-all duration-200 outline-none",
+                    "flex items-center w-full px-3 sm:px-4 py-2.5 rounded-2xl border transition-all duration-200 outline-none",
                     isOpen
                         ? 'border-primary ring-4 ring-primary/10 bg-background'
                         : error
@@ -169,7 +169,7 @@ function CustomSelectComponent<T extends string = string>({
                         width: coords.width,
                         zIndex: 9999
                     }}
-                    className="py-2 bg-linear-to-br from-background to-background/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl max-h-80 sm:max-h-96 flex flex-col animate-in fade-in zoom-in duration-100"
+                    className="py-2 bg-linear-to-br from-background to-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl max-h-80 sm:max-h-96 flex flex-col animate-in fade-in zoom-in duration-100"
                 >
                     {searchable && (
                         <div className="px-3 sm:px-4 pb-2 sm:pb-3 border-b border-border/50">
@@ -181,7 +181,7 @@ function CustomSelectComponent<T extends string = string>({
                                 </div>
                                 <input
                                     type="text"
-                                    className="block w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-border/50 rounded-lg text-xs sm:text-sm bg-primary/5 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                                    className="block w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-border/50 rounded-2xl text-xs sm:text-sm bg-primary/5 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                                     placeholder="Search..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -202,7 +202,7 @@ function CustomSelectComponent<T extends string = string>({
                                     type="button"
                                     onClick={() => handleSelect(option.value)}
                                     className={`
-                                    flex items-center w-full px-3 sm:px-4 rounded-lg py-2.5 sm:py-3 text-sm sm:text-base font-semibold transition-all
+                                    flex items-center w-full px-3 sm:px-4 rounded-2xl py-2.5 sm:py-3 text-sm sm:text-base font-semibold transition-all
                                     ${option.value === value
                                             ? 'bg-primary text-primary-foreground'
                                             : 'text-foreground hover:bg-primary/10'

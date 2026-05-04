@@ -92,8 +92,12 @@ export class UserService {
       data: updateData,
     });
 
-    // Revoke all sessions if status or role changes, so they get a new JWT
-    if (data.status !== undefined || data.role !== undefined) {
+    // Revoke all sessions if status, role, or password actually changed
+    const statusChanged = data.status !== undefined && data.status !== user.status;
+    const roleChanged = data.role !== undefined && data.role !== user.role;
+    const passwordChanged = data.password !== undefined;
+
+    if (statusChanged || roleChanged || passwordChanged) {
       await db.session.updateMany({
         where: { userId, isActive: true },
         data: { isActive: false },

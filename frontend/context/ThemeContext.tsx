@@ -91,14 +91,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 
         // Tints & Atmospherics
-        // Set doodle based on mode
-        if (isDark) {
-            root.style.setProperty('--chat-doodle', "url('/assets/chat-doodle-dark.jpg')");
-            root.style.setProperty('--theme-bg', '#020617');
-        } else {
-            root.style.setProperty('--chat-doodle', "url('/assets/chat-doodle-light.jpg')");
-            root.style.setProperty('--theme-bg', '#f8fafc');
-        }
+        // Set doodle
+        root.style.setProperty('--chat-doodle', "url('/assets/chat-doodle.svg')");
+        root.style.setProperty('--theme-bg', '#020617');
 
         // Navbar defaults
         root.style.setProperty('--navbar-bg', isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)');

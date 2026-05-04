@@ -136,7 +136,7 @@ export const CustomMultiSelect = React.memo(function CustomMultiSelect({
             <div
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={`
-                    flex items-center w-full min-h-12 sm:min-h-13 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border transition-all duration-200 outline-none
+                    flex items-center w-full min-h-12 sm:min-h-13 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl border transition-all duration-200 outline-none
                     ${isOpen
                         ? 'border-primary/60 ring-4 ring-primary/10 bg-background shadow-lg'
                         : 'border-border/50 bg-background/5 hover:border-primary/50'
@@ -154,13 +154,13 @@ export const CustomMultiSelect = React.memo(function CustomMultiSelect({
                         selectedOptions.map(opt => (
                             <span
                                 key={opt.value}
-                                className="inline-flex items-center bg-primary/10 text-primary border border-primary/20 px-1.5 sm:px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-semibold animate-in zoom-in-95 duration-100"
+                                className="inline-flex items-center bg-primary/10 text-primary border border-primary/20 px-1.5 sm:px-2 py-0.5 rounded-2xl text-[10px] sm:text-xs font-semibold animate-in zoom-in-95 duration-100"
                             >
                                 {opt.label}
                                 <button
                                     type="button"
                                     onClick={(e) => removeOption(opt.value, e)}
-                                    className="ml-1 sm:ml-1.5 hover:bg-primary/20 p-0.5 rounded-lg transition-colors"
+                                    className="ml-1 sm:ml-1.5 hover:bg-primary/20 p-0.5 rounded-2xl transition-colors"
                                     title="Remove option"
                                 >
                                     <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
@@ -197,7 +197,7 @@ export const CustomMultiSelect = React.memo(function CustomMultiSelect({
                         width: coords.width,
                         zIndex: 9999
                     }}
-                    className={`py-2 bg-linear-to-br from-background to-background/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl max-h-[60vh] sm:max-h-[70vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-100 ${coords.isMobile ? '' : ''}`}
+                    className={`py-2 bg-linear-to-br from-background to-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl max-h-[60vh] sm:max-h-[70vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-100 ${coords.isMobile ? '' : ''}`}
                 >
                     <div className="px-3 sm:px-4 pb-2 sm:pb-3 border-b border-border/50">
                         <div className="relative">
@@ -208,7 +208,7 @@ export const CustomMultiSelect = React.memo(function CustomMultiSelect({
                             </div>
                             <input
                                 type="text"
-                                className="block w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-border/50 rounded-lg text-sm sm:text-base bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                                className="block w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-border/50 rounded-2xl text-sm sm:text-base bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                                 placeholder="Search..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -230,7 +230,7 @@ export const CustomMultiSelect = React.memo(function CustomMultiSelect({
                                         type="button"
                                         onClick={() => toggleOption(option.value)}
                                         className={`
-                                            flex items-center justify-between rounded-lg w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold transition-all
+                                            flex items-center justify-between rounded-2xl w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-semibold transition-all
                                             ${isSelected
                                                 ? 'bg-primary/10 text-primary'
                                                 : 'text-foreground hover:bg-primary/5'

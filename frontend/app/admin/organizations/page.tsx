@@ -18,6 +18,7 @@ import { DataField, useUI } from '@/context/UIContext';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
 import useSWR, { mutate } from 'swr';
+import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Loading } from '@/components/ui/Loading';
 import { NewMailModal } from '@/components/mail/NewMailModal';
@@ -110,7 +111,7 @@ export default function OrganizationsPage() {
             dispatch({ type: 'UI_START_PROCESSING', payload: `approve-${id}` });
             await api.admin.approveOrganization(id, token);
             dispatch({ type: 'TOAST_ADD', payload: { message: `${name} approved successfully`, type: 'success' } });
-                mutate((key: any) => Array.isArray(key) && key[0] === 'admin-organizations');
+                mutate(matchesCacheKeyPrefix('admin-organizations'));
             // Also refresh admin stats
             if (token) {
                 statsStore.fetchAll(token).then(({ admin }) => {
@@ -142,11 +143,11 @@ export default function OrganizationsPage() {
             if (modalMode === 'REJECT') {
                 await api.admin.rejectOrganization(operatingOrg.id, reason, token);
                 dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingOrg.name} rejected`, type: 'info' } });
-                    mutate((key: any) => Array.isArray(key) && key[0] === 'admin-organizations');
+                    mutate(matchesCacheKeyPrefix('admin-organizations'));
             } else if (modalMode === 'SUSPEND') {
                 await api.admin.suspendOrganization(operatingOrg.id, reason, token);
                 dispatch({ type: 'TOAST_ADD', payload: { message: `${operatingOrg.name} suspended`, type: 'info' } });
-                    mutate((key: any) => Array.isArray(key) && key[0] === 'admin-organizations');
+                    mutate(matchesCacheKeyPrefix('admin-organizations'));
             } else {
                 if (activeStatusTab === OrgStatus.REJECTED) {
                     await api.admin.rejectOrganization(operatingOrg.id, reason, token);
@@ -154,7 +155,7 @@ export default function OrganizationsPage() {
                     await api.admin.suspendOrganization(operatingOrg.id, reason, token);
                 }
                 dispatch({ type: 'TOAST_ADD', payload: { message: `Status message updated for ${operatingOrg.name}`, type: 'success' } });
-                    mutate((key: any) => Array.isArray(key) && key[0] === 'admin-organizations');
+                    mutate(matchesCacheKeyPrefix('admin-organizations'));
             }
             setIsModalOpen(false);
             setOperatingOrg(null);
@@ -506,7 +507,7 @@ return (
       onSubmit={handleModalSubmit}
       title={modalMode === 'REJECT' ? `Reject ${operatingOrg?.name}` : modalMode === 'SUSPEND' ? `Suspend ${operatingOrg?.name}` : 'Edit Status Message'}
       submitText={modalMode === 'REJECT' ? 'Confirm Rejection' : modalMode === 'SUSPEND' ? 'Confirm Suspension' : 'Update Message'}
-      variant={modalMode === 'REJECT' ? 'danger' : modalMode === 'SUSPEND' ? 'warning' : 'info'}
+      variant={modalMode === 'REJECT' ? 'danger' : modalMode === 'SUSPEND' ? 'warning' : 'primary'}
       isSubmitting={actionLoading}
       maxWidth="max-w-[95vw] sm:max-w-2xl md:max-w-3xl"
     >
