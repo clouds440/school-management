@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, IsUUID } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsUUID, IsBoolean } from 'class-validator';
 
 export class CreateCourseMaterialDto {
   @IsUUID()
@@ -19,4 +19,8 @@ export class CreateCourseMaterialDto {
   @IsString({ each: true })
   @IsOptional()
   links?: string[];
+
+  @IsBoolean()
+  @IsOptional()
+  isVideoLink?: boolean;
 }

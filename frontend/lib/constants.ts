@@ -14,6 +14,7 @@ export const DASHBOARD_MODULES = [
     'tasks',
     'chat',
     'change-password',
+    'course-materials',
     'courses',
     'grades',
     'schedules',

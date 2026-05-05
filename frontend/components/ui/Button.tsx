@@ -28,17 +28,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         
         let variantClasses = "";
         if (variant === 'primary') {
-            variantClasses = "bg-linear-to-r from-primary to-primary/90 text-primary-foreground hover:from-primary/90 hover:to-primary hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-primary/30";
+            variantClasses = "bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-primary/60 focus:ring-4 focus:ring-primary/30";
         } else if (variant === 'secondary') {
-            variantClasses = "bg-linear-to-r from-accent to-accent/80 text-foreground border-border/50 hover:from-accent/90 hover:to-accent/70 hover:shadow-lg hover:shadow-secondary/20 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-secondary/20 disabled:from-secondary/50 disabled:to-secondary/40 disabled:text-muted-foreground";
+            variantClasses = "bg-accent text-foreground border border-border/50 hover:bg-accent/90 disabled:bg-accent/60 disabled:text-muted-foreground focus:ring-4 focus:ring-secondary/20";
         } else if (variant === 'danger') {
-            variantClasses = "bg-linear-to-r from-destructive to-destructive/90 text-destructive-foreground hover:from-destructive/90 hover:to-destructive hover:shadow-xl hover:shadow-destructive/30 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-destructive/30 disabled:from-destructive/30";
+            variantClasses = "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:bg-destructive/60 focus:ring-4 focus:ring-destructive/30";
         } else if (variant === 'success') {
-            variantClasses = "bg-linear-to-r from-emerald-600 to-emerald-500 text-foreground hover:from-emerald-700 hover:to-emerald-600 hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-emerald-500/30 disabled:from-emerald-300";
+            variantClasses = "bg-emerald-600 text-foreground hover:bg-emerald-600/90 disabled:bg-emerald-600/60 focus:ring-4 focus:ring-emerald-500/30";
         } else if (variant === 'warning') {
-            variantClasses = "bg-linear-to-r from-amber-600 to-amber-500 text-foreground hover:from-amber-700 hover:to-amber-600 hover:shadow-xl hover:shadow-amber-500/30 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-amber-500/30 disabled:from-amber-300";
+            variantClasses = "bg-amber-600 text-foreground hover:bg-amber-600/90 disabled:bg-amber-600/60 focus:ring-4 focus:ring-amber-500/30";
         } else if (variant === 'black') {
-            variantClasses = "bg-linear-to-r from-black/70 to-black/60 text-background hover:text-foreground hover:from-black/80 hover:to-black/70 border-border/50 hover:shadow-lg hover:shadow-foreground/10 hover:-translate-y-0.5 active:translate-y-0 focus:ring-4 focus:ring-foreground/20 disabled:opacity-50";
+            variantClasses = "bg-black text-background hover:bg-black/90 hover:text-foreground disabled:bg-black/60 disabled:opacity-70 border border-border/50 focus:ring-4 focus:ring-foreground/20";
         }
 
         return (

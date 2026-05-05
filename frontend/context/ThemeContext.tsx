@@ -2,17 +2,17 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { api } from '@/lib/api';
+import { useGlobal } from './GlobalContext';
 import { Role, ThemeMode } from '@/types';
 
 interface ThemeContextType {
     primaryColor: string;
     secondaryColor: string;
     themeMode: ThemeMode;
-    setThemeMode: (mode: ThemeMode) => Promise<void>;
-    setPrimaryColor: (primary: string) => Promise<void>;
+    setThemeMode: (mode: ThemeMode) => void;
+    setPrimaryColor: (primary: string) => void;
     setThemeColors: (primary: string, secondary: string) => void;
-    refreshTheme: () => Promise<void>;
+    refreshTheme: () => void;
 }
 
 const DEFAULT_PRIMARY = '#0052FF'; // Crypto Blue - Coinbase Blue
@@ -22,6 +22,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const { user, token } = useAuth();
+    const { state } = useGlobal();
     const userRole = user?.role;
     const [primaryColor, setPrimaryColorState] = useState(DEFAULT_PRIMARY);
     const [secondaryColor, setSecondaryColor] = useState(DEFAULT_SECONDARY);
@@ -132,7 +133,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }, [applyTheme]);
 
     // Save primary only; secondary is computed
-    const setPrimaryColor = useCallback(async (primary: string) => {
+    const setPrimaryColor = useCallback((primary: string) => {
         const mode = themeMode;
         // Compute secondary based on mode
         const computedSecondary = mode === ThemeMode.DARK ? adjustBrightness(primary, -85) : adjustBrightness(primary, 90);
@@ -142,7 +143,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }, [applyTheme, themeMode]);
 
     // Preview-only: set theme mode locally (no DB persistence). Settings form will persist on save.
-    const setThemeMode = useCallback(async (mode: ThemeMode) => {
+    const setThemeMode = useCallback((mode: ThemeMode) => {
         setThemeModeState(mode);
         if (typeof window !== 'undefined') {
             localStorage.setItem('themeMode', mode);
@@ -153,32 +154,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         applyTheme(primaryColor, computedSecondary, mode);
     }, [applyTheme, primaryColor]);
 
-    const refreshTheme = useCallback(async () => {
-        if (!token || userRole === Role.SUPER_ADMIN || userRole === Role.PLATFORM_ADMIN) {
-            // For admins, just apply the current theme state, don't reset to defaults
-            const computedSecondary = themeMode === ThemeMode.DARK ? adjustBrightness(primaryColor, -85) : adjustBrightness(primaryColor, 90);
-            applyTheme(primaryColor, computedSecondary, themeMode);
-            return;
-        }
-
-        try {
-            const settings = await api.org.getOrgData(token);
-            if (settings.accentColor) {
-                const primary = settings.accentColor.primary || DEFAULT_PRIMARY;
-                // Use the component's state or user's preferred theme, don't force from org settings if not present
-                const mode = themeMode ?? ThemeMode.SYSTEM;
-                const secondary = settings.accentColor.secondary || (mode === ThemeMode.DARK ? adjustBrightness(primary, -85) : adjustBrightness(primary, 90));
-                setPrimaryColorState(primary);
-                setSecondaryColor(secondary);
-                applyTheme(primary, secondary, mode);
-            } else {
-                setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
-            }
-        } catch (error: unknown) {
-            console.error('Failed to fetch theme settings:', error);
+    const refreshTheme = useCallback(() => {
+        // Read org data from GlobalContext
+        const orgData = state.stats.orgData;
+        if (orgData?.accentColor?.primary) {
+            const primary = orgData.accentColor.primary;
+            const mode = themeMode ?? ThemeMode.SYSTEM;
+            const secondary = orgData.accentColor.secondary || (mode === ThemeMode.DARK ? adjustBrightness(primary, -85) : adjustBrightness(primary, 90));
+            setPrimaryColorState(primary);
+            setSecondaryColor(secondary);
+            applyTheme(primary, secondary, mode);
+        } else {
+            // Fallback to defaults if no org data or no primary color
             setThemeColors(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
         }
-    }, [applyTheme, setThemeColors, themeMode, token, userRole, primaryColor]);
+    }, [applyTheme, setThemeColors, themeMode, state.stats.orgData]);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect

@@ -185,6 +185,8 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
         setPendingPhoto(file);
     }, []);
 
+    const currentUserAvatarUrl = isProfile ? currentUser?.avatarUrl : '';
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 md:space-y-12" noValidate>
             {/* Mandatory Information */}
@@ -195,7 +197,8 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
                             <PhotoUploadPicker
                                 onFileReady={handlePhotoReady}
                                 type="user"
-                                currentImageUrl={initialData?.user?.avatarUrl}
+                                currentImageUrl={initialData?.user?.avatarUrl || currentUserAvatarUrl}
+                                updatedAt={initialData?.user?.avatarUpdatedAt}
                             />
                             <p className="mt-3 text-xs text-center font-semibold tracking-wider text-muted-foreground group-hover:text-primary transition-colors">
                                 {teacherId ? 'Update Photo' : 'Upload Photo'}

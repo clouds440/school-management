@@ -158,9 +158,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
     const { state, dispatch } = useGlobal();
     const pathname = usePathname();
 
-    const stats = state.stats.org;
     const orgData = state.stats.orgData;
-    const userProfile = state.auth.userProfile;
     const chatStats = state.stats.chat;
     const accessLevel = user?.accessLevel ?? 2;
     const isApproved = accessLevel >= 1;
@@ -183,11 +181,6 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             if (!currentToken) return;
 
             if (currentToken && (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER || user?.role === Role.TEACHER || user?.role === Role.STUDENT)) {
-                // Fetch Org Stats
-                api.org.getStats(currentToken)
-                    .then(data => { if (mounted) dispatch({ type: 'STATS_SET_ORG', payload: data }); })
-                    .catch(err => console.error('Failed to fetch org stats:', err));
-
                 // Fetch Org Data
                 api.org.getOrgData(currentToken)
                     .then((data: Organization) => {
@@ -204,13 +197,6 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
                 api.chat.getUnreadCount(currentToken)
                     .then(data => { if (mounted) dispatch({ type: 'STATS_SET_CHAT', payload: data }); })
                     .catch(err => console.error('Failed to fetch chat stats:', err));
-
-                // Fetch User Profile (if Teacher or Student)
-                if ((user?.role === Role.TEACHER || user?.role === Role.STUDENT || user?.role === Role.ORG_MANAGER) && !userProfile) {
-                    api.org.getProfile(currentToken)
-                        .then(data => { if (mounted) dispatch({ type: 'AUTH_SET_PROFILE', payload: data as Teacher | Student }); })
-                        .catch(err => console.error('Failed to fetch profile:', err));
-                }
             }
         };
 
@@ -243,7 +229,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             window.removeEventListener('stats-updated', refreshOnEvent);
             if (timerRef.current) window.clearTimeout(timerRef.current);
         };
-    }, [token, user?.role, user?.id, dispatch, subscribe, userProfile]);
+    }, [token, user?.role, user?.id, dispatch, subscribe]);
 
     const links = (): SidebarLink[] => {
         const orgLinks: SidebarLink[] = [];
@@ -279,10 +265,10 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
 
         // Management View (Admins & Managers)
         if (isManagement) {
-            orgLinks.push({ id: 'COURSES', label: 'Courses', href: '/courses', icon: LibraryBig, badge: stats?.COURSES });
-            orgLinks.push({ id: 'SECTIONS', label: 'Sections', href: '/sections', icon: Layers, badge: stats?.SECTIONS });
-            orgLinks.push({ id: 'TEACHERS', label: 'Teachers', href: '/teachers', icon: Users, badge: stats?.TEACHERS });
-            orgLinks.push({ id: 'STUDENTS', label: 'Students', href: '/students', icon: GraduationCap, badge: stats?.STUDENTS });
+            orgLinks.push({ id: 'COURSES', label: 'Courses', href: '/courses', icon: LibraryBig });
+            orgLinks.push({ id: 'SECTIONS', label: 'Sections', href: '/sections', icon: Layers });
+            orgLinks.push({ id: 'TEACHERS', label: 'Teachers', href: '/teachers', icon: Users });
+            orgLinks.push({ id: 'STUDENTS', label: 'Students', href: '/students', icon: GraduationCap });
             orgLinks.push({ id: 'ATTENDANCE', label: 'Attendance', href: '/attendance', icon: CheckCircle });
             orgLinks.push({ id: 'SCHEDULES', label: 'Schedules', href: '/schedules', icon: CalendarDays });
 
@@ -293,9 +279,9 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
 
         // Academic/Teaching View (Teachers & Managers)
         if (user?.role === Role.TEACHER) {
-            orgLinks.push({ id: 'COURSES', label: 'My Courses', href: '/courses', icon: LibraryBig, badge: stats?.COURSES });
-            orgLinks.push({ id: 'SECTIONS', label: 'My Sections', href: '/sections', icon: Layers, badge: stats?.SECTIONS });
-            orgLinks.push({ id: 'STUDENTS', label: 'My Students', href: '/students', icon: GraduationCap, badge: stats?.STUDENTS });
+            orgLinks.push({ id: 'COURSES', label: 'My Courses', href: '/courses', icon: LibraryBig });
+            orgLinks.push({ id: 'SECTIONS', label: 'My Sections', href: '/sections', icon: Layers });
+            orgLinks.push({ id: 'STUDENTS', label: 'My Students', href: '/students', icon: GraduationCap });
             orgLinks.push({ id: 'ATTENDANCE', label: 'Attendance', href: '/attendance', icon: CheckCircle });
         }
 
@@ -308,8 +294,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
 
         // Student View
         if (user?.role === Role.STUDENT) {
-            orgLinks.push({ id: 'COURSES', label: 'My Courses', href: `/students/${user.id}?tab=courses`, icon: Book, badge: stats?.SECTIONS });
-            orgLinks.push({ id: 'ASSESSMENTS', label: 'Assessments', href: `/students/${user.id}?tab=assessments`, icon: BookOpen, badge: stats?.PENDING_ASSESSMENTS });
+            orgLinks.push({ id: 'COURSES', label: 'My Courses', href: `/students/${user.id}?tab=courses`, icon: Book });
+            orgLinks.push({ id: 'ASSESSMENTS', label: 'Assessments', href: `/students/${user.id}?tab=assessments`, icon: BookOpen });
             orgLinks.push({ id: 'GRADES', label: 'Grades', href: `/students/${user.id}?tab=grades`, icon: Trophy });
             orgLinks.push({ id: 'ATTENDANCE', label: 'Attendance', href: `/students/${user.id}?tab=attendance`, icon: CheckCircle });
             orgLinks.push({ id: 'TIMETABLE', label: 'Timetable', href: '/timetable', icon: Clock });

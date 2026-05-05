@@ -195,24 +195,23 @@ export class OrgService {
         },
       });
 
-      // Instant Revocation: Revoke all sessions for organization users
-      await tx.session.updateMany({
-        where: { user: { organizationId: orgId } },
-        data: { isActive: false },
-      });
-
       return updatedOrg;
     });
 
     return result;
   }
 
-  async rejectOrganization(orgId: string, reason: string, admin: { name: string | null; email: string; role: string; id: string }) {
+  async updateOrganizationStatus(
+    orgId: string,
+    status: OrgStatus.SUSPENDED | OrgStatus.REJECTED,
+    reason: string,
+    admin: { name: string | null; email: string; role: string; id: string },
+  ) {
     const org = await this.getOrganizationById(orgId);
 
     const history = (org.statusHistory as Prisma.JsonArray) || [];
     const newEntry = {
-      status: OrgStatus.REJECTED,
+      status,
       message: reason,
       adminName: admin.name || admin.email,
       adminRole: admin.role,
@@ -223,7 +222,7 @@ export class OrgService {
       const updatedOrg = await tx.organization.update({
         where: { id: orgId },
         data: {
-          status: OrgStatus.REJECTED,
+          status,
           statusHistory: [...history, newEntry] as Prisma.InputJsonValue,
         },
       });
@@ -239,104 +238,4 @@ export class OrgService {
 
     return result;
   }
-
-  async suspendOrganization(orgId: string, reason: string, admin: { name: string | null; email: string; role: string; id: string }) {
-    const org = await this.getOrganizationById(orgId);
-
-    const history = (org.statusHistory as Prisma.JsonArray) || [];
-    const newEntry = {
-      status: OrgStatus.SUSPENDED,
-      message: reason,
-      adminName: admin.name || admin.email,
-      adminRole: admin.role,
-      createdAt: new Date(),
-    };
-
-    const result = await this.prisma.$transaction(async (tx) => {
-      const updatedOrg = await tx.organization.update({
-        where: { id: orgId },
-        data: {
-          status: OrgStatus.SUSPENDED,
-          statusHistory: [...history, newEntry] as Prisma.InputJsonValue,
-        },
-      });
-
-      // Instant Revocation for all Org users
-      await tx.session.updateMany({
-        where: { user: { organizationId: orgId } },
-        data: { isActive: false },
-      });
-
-      return updatedOrg;
-    });
-
-    return result;
-  }
-
-  async getStats(orgId: string, user: { id: string; role: string }) {
-    const isTeacher = user.role === Role.TEACHER;
-    const teacherSectionFilter: Prisma.SectionWhereInput = isTeacher
-      ? { teachers: { some: { userId: user.id } } }
-      : {};
-
-    const [teachers, courses, sections, students] = await Promise.all([
-      isTeacher
-        ? 1 // Non-manager teacher only counts themselves
-        : this.prisma.teacher.count({
-            where: {
-              organizationId: orgId,
-              status: { not: TeacherStatus.DELETED },
-            },
-          }),
-      this.prisma.course.count({
-        where: {
-          organizationId: orgId,
-          ...(isTeacher ? { sections: { some: teacherSectionFilter } } : {}),
-        },
-      }),
-      this.prisma.section.count({
-        where: {
-          course: { organizationId: orgId },
-          ...teacherSectionFilter,
-        },
-      }),
-      this.prisma.student.count({
-        where: {
-          organizationId: orgId,
-          status: { not: StudentStatus.DELETED },
-          ...(isTeacher
-            ? { enrollments: { some: { section: teacherSectionFilter } } }
-            : {}),
-        },
-      }),
-    ]);
-
-    let pendingAssessments = 0;
-    if (user.role === Role.STUDENT) {
-      const student = await this.prisma.student.findUnique({
-        where: { userId: user.id },
-        select: { id: true, enrollments: { select: { sectionId: true } } },
-      });
-
-      if (student) {
-        const sectionIds = student.enrollments.map((e) => e.sectionId);
-        pendingAssessments = await this.prisma.assessment.count({
-          where: {
-            sectionId: { in: sectionIds },
-            submissions: { none: { studentId: student.id } },
-          },
-        });
-      }
-    }
-
-    return {
-      TEACHERS: teachers,
-      COURSES: courses,
-      SECTIONS: sections,
-      STUDENTS: students,
-      PENDING_ASSESSMENTS: pendingAssessments,
-    };
-  }
-
-
 }

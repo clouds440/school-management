@@ -90,7 +90,7 @@ export default function InsightsOverview({ insights }: InsightsOverviewProps) {
             </section>
 
             <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-5">
-                {insights.summaryCards.map((card) => {
+                {insights.summaryCards.map((card, index) => {
                     const content = (
                         <div className={`rounded-2xl border p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg ${toneClasses[card.tone || 'default']}`}>
                             <p className="text-[10px] font-black tracking-[0.22em] text-muted-foreground">
@@ -107,12 +107,15 @@ export default function InsightsOverview({ insights }: InsightsOverviewProps) {
                         </div>
                     );
 
+                    // Use index as fallback to prevent duplicate key errors
+                    const uniqueKey = card.id || `summary-${index}`;
+
                     return card.href ? (
-                        <Link key={card.id} href={card.href}>
+                        <Link key={uniqueKey} href={card.href}>
                             {content}
                         </Link>
                     ) : (
-                        <div key={card.id}>{content}</div>
+                        <div key={uniqueKey}>{content}</div>
                     );
                 })}
             </section>

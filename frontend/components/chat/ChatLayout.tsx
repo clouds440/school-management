@@ -183,7 +183,7 @@ export function ChatLayout() {
         if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
             setHighlightedMessageId(messageId);
-            setTimeout(() => setHighlightedMessageId(null), 2500);
+            setTimeout(() => setHighlightedMessageId(null), 1000);
         } else {
             // Jump to history context
             if (!token || !activeChatId) return;

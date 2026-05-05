@@ -15,6 +15,7 @@ import { TableActions } from '@/components/ui/TableActions';
 import useSWR, { mutate } from 'swr';
 import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { Loading } from '@/components/ui/Loading';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Badge } from '@/components/ui/Badge';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
@@ -73,7 +74,7 @@ export default function TeachersPage() {
 
     // SWR for teachers data - replaces usePaginatedData
     const teachersKey = token ? ['teachers', teacherParams] as const : null;
-    const { data: fetchedData, isLoading: isFetching } = useSWR<
+    const { data: fetchedData, isLoading: isFetching, error: teachersError, mutate: mutateTeachers } = useSWR<
         { data: Teacher[]; totalPages: number; totalRecords: number }
     >(teachersKey);
 
@@ -253,6 +254,10 @@ export default function TeachersPage() {
 
     if ((!token && !user) || (isFetching && !fetchedData)) {
         return <Loading className="h-full" text="Loading Faculty..." size="lg" />;
+    }
+
+    if (teachersError) {
+        return <ErrorState error={teachersError} onRetry={() => mutateTeachers()} />;
     }
 
     return (

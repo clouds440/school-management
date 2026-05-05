@@ -72,7 +72,7 @@ export class AdminController {
     @Body('reason') reason: string,
     @User() admin: UserEntity,
   ) {
-    return this.adminService.rejectOrganization(id, reason, admin);
+    return this.adminService.updateOrganizationStatus(id, OrgStatus.REJECTED, reason, admin);
   }
 
   @Roles(Role.SUPER_ADMIN, Role.PLATFORM_ADMIN)
@@ -82,7 +82,7 @@ export class AdminController {
     @Body('reason') reason: string,
     @User() admin: UserEntity,
   ) {
-    return this.adminService.suspendOrganization(id, reason, admin);
+    return this.adminService.updateOrganizationStatus(id, OrgStatus.SUSPENDED, reason, admin);
   }
 
   // --- Platform Admins ---

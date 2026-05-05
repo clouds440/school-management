@@ -185,58 +185,35 @@ export class AdminService {
     return result;
   }
 
-  async rejectOrganization(id: string, reason: string, admin: UserEntity) {
+  async updateOrganizationStatus(
+    id: string,
+    status: OrgStatus.SUSPENDED | OrgStatus.REJECTED,
+    reason: string,
+    admin: UserEntity,
+  ) {
     const org = await this.prisma.organization.findUnique({ where: { id } });
     if (!org) {
       throw new NotFoundException('Organization not found');
     }
 
-    const result = await this.orgService.rejectOrganization(id, reason, admin);
+    const result = await this.orgService.updateOrganizationStatus(id, status, reason, admin);
 
     // Find any admin user of this organization to be the target of the mail
     const orgAdmins = await this.userService.getUsersByOrgAndRole(id, Role.ORG_ADMIN);
     const orgAdmin = orgAdmins[0];
 
     // Create a Mail thread (Notice) - No Reply
+    const subject = status === OrgStatus.REJECTED
+      ? 'Application Status Update: REJECTED'
+      : 'Organization Status Update: SUSPENDED';
+    const category = status === OrgStatus.REJECTED
+      ? 'System Notice'
+      : 'Security/Admin Notice';
+
     await this.mailService.createMail(
       {
-        subject: 'Application Status Update: REJECTED',
-        category: 'System Notice',
-        priority: 'URGENT',
-        message: reason,
-        noReply: true,
-        assigneeIds: orgAdmin ? [orgAdmin.id] : [],
-        targetRole: Role.ORG_ADMIN,
-      },
-      {
-        id: admin.id,
-        role: admin.role,
-        name: admin.name || null,
-        email: admin.email,
-        organizationId: id,
-      },
-    );
-
-    return result;
-  }
-
-  async suspendOrganization(id: string, reason: string, admin: UserEntity) {
-    const org = await this.prisma.organization.findUnique({ where: { id } });
-    if (!org) {
-      throw new NotFoundException('Organization not found');
-    }
-
-    const result = await this.orgService.suspendOrganization(id, reason, admin);
-
-    // Find any admin user of this organization to be the target of the mail
-    const orgAdmins = await this.userService.getUsersByOrgAndRole(id, Role.ORG_ADMIN);
-    const orgAdmin = orgAdmins[0];
-
-    // Create a Mail thread (Notice) - No Reply
-    await this.mailService.createMail(
-      {
-        subject: 'Organization Status Update: SUSPENDED',
-        category: 'Security/Admin Notice',
+        subject,
+        category,
         priority: 'URGENT',
         message: reason,
         noReply: true,

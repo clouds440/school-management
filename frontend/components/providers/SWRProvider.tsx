@@ -4,6 +4,7 @@ import { ReactNode, useMemo } from 'react';
 import { SWRConfig } from 'swr';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { Teacher, Student } from '@/types';
 
 // Generic fetcher type that handles our API patterns
 // Format: [resource, ...args]
@@ -35,6 +36,8 @@ type FetcherKey =
     | readonly ['student-grades', string]
     | readonly ['student-attendance', string]
     | readonly ['section-attendance-range', string]
+    | readonly ['teacher-profile', string]
+    | readonly ['student-profile', string]
     // Multi-param resources
     | readonly ['attendance-daily', string, string, string | undefined]  // [sectionId, date, scheduleId?]
     | readonly ['attendance-monthly', string, string, string]  // [sectionId, start, end]
@@ -137,7 +140,7 @@ function createFetcher(token: string | null) {
 
                 // Student portal data
                 case 'student-sections':
-                    return await api.org.getSections(token, args[1] as object) as T;
+                    return await api.org.getSections(token, { ...args[1] as object, userId: args[0] as string }) as T;
                 case 'student-grades':
                     return await api.org.getStudentFinalGrades(args[0] as string, token) as T;
                 case 'student-assessments':
@@ -148,6 +151,12 @@ function createFetcher(token: string | null) {
                     return await api.org.getInsights(token) as T;
                 case 'teacher-sections':
                     return await api.org.getSections(token, args[0] as object) as T;
+
+                // Profile
+                case 'teacher-profile':
+                    return await api.org.getProfile<Teacher>(token) as T;
+                case 'student-profile':
+                    return await api.org.getProfile<Student>(token) as T;
 
                 // Attendance component
                 case 'student-attendance':

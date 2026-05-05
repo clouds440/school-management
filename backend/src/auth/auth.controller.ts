@@ -15,6 +15,8 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Public } from '../common/decorators/public.decorator';
+import { AccessLevel } from 'src/common/access-control/access-level.enum';
+import { Access } from 'src/common/access-control/access.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -62,6 +64,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Access(AccessLevel.NONE)
   @Post('change-password')
   async changePassword(
     @Request()
@@ -95,12 +98,14 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Access(AccessLevel.NONE)
   @Get('sessions')
   async getSessions(@Request() req: { user: { id: string } }) {
     return this.authService.getSessions(req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
+  @Access(AccessLevel.NONE)
   @Delete('sessions/:sessionId')
   async revokeSession(
     @Request()
@@ -113,6 +118,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Access(AccessLevel.NONE)
   @Delete('sessions')
   async revokeAllSessions(
     @Request()

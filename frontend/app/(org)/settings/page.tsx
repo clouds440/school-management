@@ -106,6 +106,11 @@ export default function SettingsPage() {
     // We'll use ThemeContext to preview primary and mode
     const { setPrimaryColor, setThemeMode, themeMode } = useTheme();
 
+    // Update theme immediately when color changes (real-time preview)
+    useEffect(() => {
+        setPrimaryColor(formData.accentColor.primary);
+    }, [formData.accentColor.primary, setPrimaryColor]);
+
     const handleLogoReady = useCallback((file: File) => {
         setPendingLogoFile(file);
     }, []);
@@ -268,8 +273,6 @@ export default function SettingsPage() {
                                         onChange={(e) => {
                                             const newPrimary = e.target.value;
                                             setFormData({ ...formData, accentColor: { ...formData.accentColor, primary: newPrimary } });
-                                            // live preview
-                                            setPrimaryColor(newPrimary).catch(() => { });
                                         }}
                                         className="w-full h-12 rounded-xl border border-border/50 cursor-pointer"
                                     />
@@ -286,7 +289,7 @@ export default function SettingsPage() {
                                     currentMode={themeMode}
                                     onModeChange={(mode) => {
                                         setFormData({ ...formData, accentColor: { ...formData.accentColor, mode } });
-                                        setThemeMode(mode).catch(() => { });    
+                                        setThemeMode(mode);
                                     }}
                                 />
                             </div>

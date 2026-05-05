@@ -5,11 +5,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { api } from '@/lib/api';
 import { Role, CourseMaterial } from '@/types';
-import { FileText, Download, Trash2, Plus, Upload, X, FileImage, FileCode, Archive, Edit, Eye } from 'lucide-react';
+import { FileText, Download, Trash2, Plus, Upload, X, FileImage, FileCode, Archive, Edit, Eye, PlayCircle, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ExternalLinkInput } from '@/components/ui/ExternalLinkInput';
 import { downloadFile } from '@/lib/utils';
 
 // Helper function to get file icon based on MIME type
@@ -28,12 +29,31 @@ function formatFileSize(bytes: number) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
+// Helper function to get video embed URL
+function getVideoEmbedUrl(url: string): string {
+  if (!url) return '';
+  if (url.includes('youtube.com/watch?v=')) {
+    const videoId = url.split('v=')[1]?.split('&')[0];
+    return `https://www.youtube.com/embed/${videoId}`;
+  }
+  if (url.includes('youtu.be/')) {
+    const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+    return `https://www.youtube.com/embed/${videoId}`;
+  }
+  if (url.includes('vimeo.com/')) {
+    const videoId = url.split('vimeo.com/')[1]?.split('?')[0];
+    return `https://player.vimeo.com/video/${videoId}`;
+  }
+  return url;
+}
+
 interface CourseMaterialsProps {
   sectionId: string;
   role: Role;
+  isTeacherAssigned?: boolean;
 }
 
-export default memo(function CourseMaterials({ sectionId, role }: CourseMaterialsProps) {
+export default memo(function CourseMaterials({ sectionId, role, isTeacherAssigned = false }: CourseMaterialsProps) {
   const { token } = useAuth();
   const { dispatch } = useGlobal();
   const dispatchRef = useRef(dispatch);
@@ -51,9 +71,10 @@ export default memo(function CourseMaterials({ sectionId, role }: CourseMaterial
     try {
       const data = await api.courseMaterials.getMaterials(sectionId, token);
       setMaterials(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch materials:', error);
-      dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Failed to load materials', type: 'error' } });
+      const message = error?.response?.data?.message || error?.message || 'Failed to load materials';
+      dispatchRef.current({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
     } finally {
       setIsLoading(false);
     }
@@ -89,9 +110,7 @@ export default memo(function CourseMaterials({ sectionId, role }: CourseMaterial
       console.error(error)
     }
   };
-
-  const canUpload = role === Role.TEACHER || role === Role.ORG_ADMIN || role === Role.ORG_MANAGER;
-  const canDelete = role === Role.TEACHER || role === Role.ORG_ADMIN || role === Role.ORG_MANAGER;
+  
   const canViewDetails = true; // All users can view material details
 
   if (isLoading) {
@@ -106,7 +125,7 @@ export default memo(function CourseMaterials({ sectionId, role }: CourseMaterial
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        {canUpload && (
+        {isTeacherAssigned && (
           <Button
             onClick={() => setShowUploadModal(true)}
             icon={Plus}
@@ -121,7 +140,7 @@ export default memo(function CourseMaterials({ sectionId, role }: CourseMaterial
         <div className="bg-primary/5 border border-dashed border-border rounded-xl p-12 text-center">
           <FileText className="w-12 h-12 text-card-text/20 mx-auto mb-4" />
           <p className="text-card-text/40 font-bold tracking-widest text-xs">No materials uploaded yet</p>
-          {canUpload && (
+          {isTeacherAssigned && (
             <p className="text-card-text/30 text-sm mt-2">Click &quot;Add Material&quot; to upload your first resource</p>
           )}
         </div>
@@ -144,7 +163,7 @@ export default memo(function CourseMaterials({ sectionId, role }: CourseMaterial
                     <p className="text-sm text-card-text/60 line-clamp-2">{material.description}</p>
                   )}
                 </div>
-                {(canViewDetails || canDelete) && (
+                {(canViewDetails || isTeacherAssigned) && (
                   <div className="flex gap-2 opacity-40 group-hover:opacity-100 transition-all duration-300">
                     {canViewDetails && (
                       <button
@@ -155,7 +174,7 @@ export default memo(function CourseMaterials({ sectionId, role }: CourseMaterial
                         <Eye className="w-4 h-4" />
                       </button>
                     )}
-                    {canDelete && (
+                    {isTeacherAssigned && (
                       <>
                         <button
                           onClick={() => setEditingMaterial(material)}
@@ -186,7 +205,7 @@ export default memo(function CourseMaterials({ sectionId, role }: CourseMaterial
               {material.files && material.files.length > 0 && (
                 <div className="pt-4 border-t border-border/50">
                   <p className="text-[10px] font-black text-card-text/40 tracking-widest mb-3">ATTACHED FILES</p>
-                  <div className="space-y-2">
+                  <div className="space-y-2 mb-3  ">
                     {material.files.map((file) => {
                       const FileIcon = getFileIcon(file.mimeType);
                       return (
@@ -205,6 +224,41 @@ export default memo(function CourseMaterials({ sectionId, role }: CourseMaterial
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* External Links */}
+              {material.links && material.links.length > 0 && (
+                <div className="pt-4 border-t border-border/50">
+                  <p className="text-[10px] font-black text-card-text/40 tracking-widest mb-3">EXTERNAL LINKS</p>
+                  <div className="space-y-3">
+                    {material.links.map((link, idx) => (
+                      <div key={idx}>
+                        {material.isVideoLink ? (
+                          <div className="w-full aspect-video rounded-lg overflow-hidden border border-border shadow-sm bg-black">
+                            <iframe
+                              src={getVideoEmbedUrl(link)}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            ></iframe>
+                          </div>
+                        ) : (
+                          <a
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-primary/5 transition-colors w-full text-left"
+                          >
+                            <Globe className="w-4 h-4 text-card-text/40 shrink-0" />
+                            <span className="text-sm text-card-text/70 flex-1 truncate">
+                              External Link
+                            </span>
+                          </a>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -230,12 +284,12 @@ export default memo(function CourseMaterials({ sectionId, role }: CourseMaterial
         <Modal
           isOpen={true}
           onClose={() => setViewingMaterial(null)}
-          title="Material Details"
+          title="Course Material Detials"
           maxWidth="max-w-2xl"
         >
           <div className="space-y-6">
             <div>
-              <h3 className="text-xl font-black text-card-text mb-2">{viewingMaterial.title}</h3>
+              <h3 className="text-xl font-black text-card-text mb-2">{viewingMaterial.title} ({viewingMaterial.section?.name})</h3>
               {viewingMaterial.description && (
                 <p className="text-card-text/70">{viewingMaterial.description}</p>
               )}
@@ -270,6 +324,41 @@ export default memo(function CourseMaterials({ sectionId, role }: CourseMaterial
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {viewingMaterial.links && viewingMaterial.links.length > 0 && (
+              <div>
+                <p className="text-[10px] font-black text-card-text/40 tracking-widest mb-3">EXTERNAL LINKS</p>
+                <div className="space-y-3">
+                  {viewingMaterial.links.map((link, idx) => (
+                    <div key={idx}>
+                      {viewingMaterial.isVideoLink ? (
+                        <div className="w-full aspect-video rounded-lg overflow-hidden border border-border shadow-sm bg-black">
+                          <iframe
+                            src={getVideoEmbedUrl(link)}
+                            className="w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
+                        </div>
+                      ) : (
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50 hover:bg-primary/5 transition-colors"
+                        >
+                          <Globe className="w-5 h-5 text-primary shrink-0" />
+                          <span className="text-sm text-card-text/70 flex-1 truncate">
+                            External Link
+                          </span>
+                          <Download className="w-4 h-4 text-card-text/30" />
+                        </a>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -330,12 +419,16 @@ function UploadMaterialModal({
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [existingFiles, setExistingFiles] = useState<Array<{id: string, filename: string, path: string, mimeType: string, size: number}>>(material?.files || []);
   const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
+  const [externalLink, setExternalLink] = useState('');
+  const [isVideoLink, setIsVideoLink] = useState(false);
 
   useEffect(() => {
     if (material) {
       setTitle(material.title);
       setDescription(material.description || '');
       setExistingFiles(material.files || []);
+      setExternalLink(material.links?.[0] || '');
+      setIsVideoLink(material.isVideoLink || false);
     }
   }, [material]);
 
@@ -362,11 +455,11 @@ function UploadMaterialModal({
         // Edit existing material
         const orgId = state.auth.user?.orgId || state.auth.user?.organizationId;
         const uploadedFileIds: string[] = [];
-        
-        // Upload new files
+
+        // Upload new files with material ID as entityId
         if (orgId && pendingFiles.length > 0) {
           for (const file of pendingFiles) {
-            const data = await api.files.uploadFile(orgId, 'COURSE_MATERIAL', 'temp', file, token);
+            const data = await api.files.uploadFile(orgId, 'COURSE_MATERIAL', material.id, file, token);
             uploadedFileIds.push(data.id!);
           }
         }
@@ -374,7 +467,7 @@ function UploadMaterialModal({
         // Update material
         await api.courseMaterials.updateMaterial(
           material.id,
-          { title, description, fileIds: uploadedFileIds, filesToRemove },
+          { title, description, fileIds: uploadedFileIds, filesToRemove, links: externalLink ? [externalLink] : [], isVideoLink },
           token,
         );
 
@@ -384,7 +477,7 @@ function UploadMaterialModal({
         // Create new material
         const orgId = state.auth.user?.orgId || state.auth.user?.organizationId;
         const uploadedFileIds: string[] = [];
-        
+
         if (orgId && pendingFiles.length > 0) {
           for (const file of pendingFiles) {
             const data = await api.files.uploadFile(orgId, 'COURSE_MATERIAL', 'temp', file, token);
@@ -395,7 +488,7 @@ function UploadMaterialModal({
         // Create material with fileIds
         await api.courseMaterials.createMaterial(
           sectionId,
-          { title, description, fileIds: uploadedFileIds },
+          { title, description, fileIds: uploadedFileIds, links: externalLink ? [externalLink] : [], isVideoLink },
           token,
         );
 
@@ -435,6 +528,14 @@ function UploadMaterialModal({
             rows={4}
           />
         </div>
+
+        <ExternalLinkInput
+          value={externalLink}
+          onChange={setExternalLink}
+          isVideo={isVideoLink}
+          onIsVideoChange={setIsVideoLink}
+          disabled={state.ui.processing['material-create'] || state.ui.processing['material-edit']}
+        />
 
         <div>
           <label className="block text-sm font-semibold mb-2">Files</label>

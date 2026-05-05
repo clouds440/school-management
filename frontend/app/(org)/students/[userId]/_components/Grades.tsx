@@ -85,7 +85,7 @@ export default function Grades({ grades }: { grades: FinalGradeResponse[] }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {filteredGrades.map((grade, index) => (
                             <Card
-                                key={grade.sectionId}
+                                key={`${grade.sectionId}-${index}`}
                                 accentColor="bg-primary"
                                 padding="md"
                                 className="group hover:border-primary/50 transition-all duration-300 h-auto"

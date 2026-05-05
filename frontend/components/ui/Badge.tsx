@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 type BadgeVariant = 'success' | 'error' | 'warning' | 'neutral' | 'primary' | 'secondary' | 'info' | 'purple';
-type BadgeSize = 'sm' | 'md';
+type BadgeSize = 'xs' | 'sm' | 'md';
 
 interface BadgeProps {
     children: React.ReactNode;
@@ -39,6 +39,7 @@ const dotColors: Record<BadgeVariant, string> = {
 };
 
 const sizeStyles: Record<BadgeSize, string> = {
+    xs: "h-3 px-1 text-[10px] gap-1",
     sm: "h-5 px-1.5 text-[11px] gap-1",
     md: "h-6 px-2 text-[12px] gap-1.5",
 };

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { BookOpen, Calendar, Type, FileText, Percent, UploadCloud, Link as LinkIcon, Check, X } from 'lucide-react';
+import { BookOpen, Calendar, BookType, FileText, Percent, UploadCloud, Check, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
 import { Assessment, AssessmentType, CreateAssessmentRequest, UpdateAssessmentRequest } from '@/types';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { ExternalLinkInput } from '@/components/ui/ExternalLinkInput';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { assessmentSchema, AssessmentFormData } from '@/lib/schemas';
@@ -146,7 +147,7 @@ export default function AssessmentForm({
                             value={formData.type}
                             onChange={(val) => setValue('type', val as AssessmentType)}
                             error={!!errors.type}
-                            icon={Type}
+                            icon={BookType}
                         />
                         {errors.type && <p className="text-xs text-red-500 font-semibold">{errors.type.message}</p>}
                     </div>
@@ -197,30 +198,17 @@ export default function AssessmentForm({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2 md:space-y-3">
-                        <div className="flex justify-between items-center mb-1">
-                            <Label htmlFor="externalLink">External Link (Optional)</Label>
-                            <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground font-semibold hover:text-foreground transition-colors">
-                                <span className={watch('isVideoLink') ? 'text-primary' : 'text-muted-foreground'}>Embed as Video</span>
-                                <div className="relative inline-flex items-center">
-                                    <input type="checkbox" className="sr-only peer" {...register('isVideoLink')} />
-                                    <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-card after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                                </div>
-                            </label>
-                        </div>
-                        <Input
-                            id="externalLink"
-                            type="url"
-                            {...register('externalLink')}
-                            error={!!errors.externalLink}
-                            icon={LinkIcon}
-                            placeholder="https://youtube.com/..."
+                        <ExternalLinkInput
+                            value={watch('externalLink') || ''}
+                            onChange={(value) => setValue('externalLink', value)}
+                            isVideo={watch('isVideoLink') || false}
+                            onIsVideoChange={(isVideo) => setValue('isVideoLink', isVideo)}
                             disabled={isProcessing}
-                            className="font-medium"
+                            error={errors.externalLink?.message}
                         />
-                        {errors.externalLink && <p className="text-xs text-red-500 font-semibold">{errors.externalLink.message}</p>}
                     </div>
 
-                    <div className="space-y-2 md:space-y-3">
+                    <div className="space-y-1">
                         <div className="flex items-center justify-between gap-2">
                             <Label>Attachment (Optional)</Label>
                             {selectedFile && (
@@ -253,9 +241,9 @@ export default function AssessmentForm({
                                 htmlFor="file-upload"
                                 className={`flex items-center gap-2 px-4 py-2.5 border rounded-xl cursor-pointer transition-all flex-1 ${selectedFile ? 'border-primary/50 bg-primary/5 text-primary shadow-sm' : 'border-border hover:border-primary/30 text-muted-foreground bg-card/50 hover:bg-card'}`}
                             >
-                                <UploadCloud className="w-4 h-4" />
-                                <span className="truncate text-sm font-semibold flex-1">
-                                    {selectedFile ? selectedFile.name : 'Choose file...'}
+                                <UploadCloud className="ml-3 w-4 h-4 text-primary" />
+                                <span className="truncate py-0.5 rounded-xl text-sm font-semibold flex-1">
+                                    {selectedFile ? selectedFile.name.length > 25 ? selectedFile.name.slice(0, 25) + '...' : selectedFile.name : 'Choose file...'}
                                 </span>
                                 {selectedFile && <Check className="w-4 h-4 text-emerald-500" />}
                             </Label>
@@ -265,12 +253,13 @@ export default function AssessmentForm({
 
                 <div className="flex items-center justify-between p-4 md:p-5 bg-linear-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-2xl relative overflow-hidden">
                     <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-transparent opacity-50" />
-                    <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+                    <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full select-none">
                         <Toggle
                             checked={watch('allowSubmissions')}
                             onCheckedChange={(checked) => setValue('allowSubmissions', checked)}
                             label="Allow Submissions"
                             description="Enable students to upload work for this assessment"
+                            textColor='text-muted-foreground'
                         />
                     </div>
                 </div>

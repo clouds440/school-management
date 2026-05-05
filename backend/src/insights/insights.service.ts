@@ -1077,8 +1077,8 @@ export class InsightsService {
           title: 'Needs attention',
           description: 'Low-attendance or low-grade sections that may affect standing.',
           items: [
-            ...lowAttendanceSections.map((section) => ({
-              id: `attendance-risk:${section.sectionId}`,
+            ...lowAttendanceSections.map((section, idx) => ({
+              id: `attendance-risk:${section.sectionId}-${idx}`,
               title: `${section.sectionName} attendance is low`,
               description: section.courseName,
               meta: this.formatPercent(section.percent),
@@ -1086,8 +1086,8 @@ export class InsightsService {
               badge: 'Attendance risk',
               tone: InsightTone.DANGER,
             })),
-            ...lowGradeSections.map((grade) => ({
-              id: `grade-risk:${grade.sectionId}`,
+            ...lowGradeSections.map((grade, idx) => ({
+              id: `grade-risk:${grade.sectionId}-${idx}`,
               title: `${grade.sectionName} grade is below target`,
               description: grade.courseName,
               meta: this.formatPercent(grade.finalPercentage, 1),

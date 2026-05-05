@@ -9,6 +9,7 @@ import { Section, FinalGradeResponse, Student, Role, Assessment, DashboardInsigh
 import { ShieldOff, GraduationCap } from 'lucide-react';
 import { Loading } from '@/components/ui/Loading';
 import { NotFound } from '@/components/NotFound';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 import Overview from './_components/Overview';
 import Courses from './_components/Courses';
@@ -28,28 +29,38 @@ function StudentPortalContent() {
     const profile = state.auth.userProfile as Student | null;
     const userId = params.userId as string;
 
+    // SWR: Fetch student profile if not already in state
+    const profileKey = token && user?.role === 'STUDENT' ? ['student-profile', user.id] as const : null;
+    const { data: fetchedProfile, isLoading: profileLoading, error: profileError, mutate: mutateProfile } = useSWR<Student>(profileKey);
+
+    // Use fetched profile if available, otherwise use state
+    const effectiveProfile = fetchedProfile || profile;
+
     // SWR: Validation fetch (runs in parallel with data, NOT blocking)
     const validationKey = token && userId ? ['validate-student', userId] as const : null;
     const { data: studentData, error: validationError, isLoading: validating } = useSWR<Student>(validationKey);
 
-    // SWR: Data fetches (run in parallel, NOT gated on validation)
+    // SWR: Data fetches - lazy loaded per tab
     const shouldFetchData = token && user;
 
-    const sectionsKey = shouldFetchData ? ['student-sections', { my: true }] as const : null;
-    const { data: sectionsData, isLoading: sectionsLoading } = useSWR<PaginatedResponse<Section>>(sectionsKey);
+    // Only fetch sections when on courses tab
+    const sectionsKey = shouldFetchData && tab === 'courses' && user?.id ? ['student-sections', user.id, { my: true }] as const : null;
+    const { data: sectionsData, isLoading: sectionsLoading, error: sectionsError, mutate: mutateSections } = useSWR<PaginatedResponse<Section>>(sectionsKey);
 
-    const gradesKey = shouldFetchData && user?.id ? ['student-grades', user.id] as const : null;
-    const { data: grades, isLoading: gradesLoading } = useSWR<FinalGradeResponse[]>(gradesKey);
+    // Only fetch grades when on grades tab
+    const gradesKey = shouldFetchData && tab === 'grades' && user?.id ? ['student-grades', user.id] as const : null;
+    const { data: grades, isLoading: gradesLoading, error: gradesError, mutate: mutateGrades } = useSWR<FinalGradeResponse[]>(gradesKey);
 
-    const assessmentsKey = shouldFetchData ? ['student-assessments', {}] as const : null;
-    const { data: assessments, isLoading: assessmentsLoading } = useSWR<Assessment[]>(assessmentsKey);
+    // Only fetch assessments when on assessments tab
+    const assessmentsKey = shouldFetchData && tab === 'assessments' ? ['student-assessments', {}] as const : null;
+    const { data: assessments, isLoading: assessmentsLoading, error: assessmentsError, mutate: mutateAssessments } = useSWR<Assessment[]>(assessmentsKey);
 
-    const insightsKey = shouldFetchData ? ['student-insights'] as const : null;
-    const { data: insights, isLoading: insightsLoading } = useSWR<DashboardInsights>(insightsKey);
+    // Only fetch insights when on overview tab
+    const insightsKey = shouldFetchData && tab === 'overview' ? ['student-insights'] as const : null;
+    const { data: insights, isLoading: insightsLoading, error: insightsError, mutate: mutateInsights } = useSWR<DashboardInsights>(insightsKey);
 
     // Derived states
     const studentExists = validationError ? false : (studentData ? true : null);
-    const isDataLoading = sectionsLoading || gradesLoading || assessmentsLoading || insightsLoading;
     const sections = sectionsData?.data || [];
 
     // Handle hash scroll
@@ -103,7 +114,7 @@ function StudentPortalContent() {
         );
     }
 
-    if (isDataLoading || state.auth.loading) {
+    if (state.auth.loading) {
         return (
             <div className="flex flex-1 items-center justify-center h-full py-20">
                 <Loading size="lg" />
@@ -126,12 +137,62 @@ function StudentPortalContent() {
             )}
 
             <div className="mt-4">
-                {tab === 'overview' && <Overview insights={insights || null} />}
-                {tab === 'courses' && <Courses sections={sections} />}
-                {tab === 'assessments' && <Assessments assessments={assessments || []} sections={sections} />}
-                {tab === 'grades' && <Grades grades={grades || []} />}
+                {tab === 'overview' && (
+                    insightsLoading ? (
+                        <div className="flex flex-1 items-center justify-center h-full py-20">
+                            <Loading size="lg" />
+                        </div>
+                    ) : insightsError ? (
+                        <ErrorState error={insightsError} onRetry={() => mutateInsights()} />
+                    ) : (
+                        <Overview insights={insights || null} />
+                    )
+                )}
+                {tab === 'courses' && (
+                    sectionsLoading ? (
+                        <div className="flex flex-1 items-center justify-center h-full py-20">
+                            <Loading size="lg" />
+                        </div>
+                    ) : sectionsError ? (
+                        <ErrorState error={sectionsError} onRetry={() => mutateSections()} />
+                    ) : (
+                        <Courses sections={sections} />
+                    )
+                )}
+                {tab === 'assessments' && (
+                    assessmentsLoading ? (
+                        <div className="flex flex-1 items-center justify-center h-full py-20">
+                            <Loading size="lg" />
+                        </div>
+                    ) : assessmentsError ? (
+                        <ErrorState error={assessmentsError} onRetry={() => mutateAssessments()} />
+                    ) : (
+                        <Assessments assessments={assessments || []} sections={sections} />
+                    )
+                )}
+                {tab === 'grades' && (
+                    gradesLoading ? (
+                        <div className="flex flex-1 items-center justify-center h-full py-20">
+                            <Loading size="lg" />
+                        </div>
+                    ) : gradesError ? (
+                        <ErrorState error={gradesError} onRetry={() => mutateGrades()} />
+                    ) : (
+                        <Grades grades={grades || []} />
+                    )
+                )}
                 {tab === 'attendance' && <Attendance />}
-                {tab === 'profile' && <Profile profile={profile} />}
+                {tab === 'profile' && (
+                    profileLoading ? (
+                        <div className="flex flex-1 items-center justify-center h-full py-20">
+                            <Loading size="lg" />
+                        </div>
+                    ) : profileError ? (
+                        <ErrorState error={profileError} onRetry={() => mutateProfile()} />
+                    ) : (
+                        <Profile profile={effectiveProfile} />
+                    )
+                )}
             </div>
         </div>
     );

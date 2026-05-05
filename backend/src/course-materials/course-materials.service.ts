@@ -45,6 +45,8 @@ export class CourseMaterialsService {
         sectionId,
         title: dto.title,
         description: dto.description,
+        links: dto.links || [],
+        isVideoLink: dto.isVideoLink || false,
         createdBy: userId,
       },
     });
@@ -258,7 +260,7 @@ export class CourseMaterialsService {
    */
   async updateMaterial(
     materialId: string,
-    dto: { title?: string; description?: string; fileIds?: string[]; filesToRemove?: string[] },
+    dto: { title?: string; description?: string; fileIds?: string[]; filesToRemove?: string[]; links?: string[]; isVideoLink?: boolean },
     userId: string,
     userRole: string,
     organizationId: string,
@@ -294,9 +296,16 @@ export class CourseMaterialsService {
     }
 
     // Update material fields
-    const updateData: any = {};
+    const updateData: {
+      title?: string;
+      description?: string | null;
+      links?: string[];
+      isVideoLink?: boolean;
+    } = {};
     if (dto.title !== undefined) updateData.title = dto.title;
     if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.links !== undefined) updateData.links = dto.links;
+    if (dto.isVideoLink !== undefined) updateData.isVideoLink = dto.isVideoLink;
 
     const updatedMaterial = await this.prisma.courseMaterial.update({
       where: { id: materialId },

@@ -56,7 +56,7 @@ export default function Navbar() {
                     <div className="flex items-center space-x-1 md:space-x-3 pr-2">
                         <ThemeDropdown
                             currentMode={themeMode}
-                            onModeChange={(mode) => setThemeMode(mode).catch(() => { /* swallow */ })}
+                            onModeChange={(mode) => setThemeMode(mode)}
                             variant="compact"
                         />
                         <AnnouncementDropdown />

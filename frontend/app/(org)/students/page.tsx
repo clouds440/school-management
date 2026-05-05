@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Filter } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useGlobal } from '@/context/GlobalContext';
@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/Badge';
 import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
 import { Toggle } from '@/components/ui/Toggle';
+import { Modal } from '@/components/ui/Modal';
 
 interface StudentParams {
     page: number;
@@ -42,11 +43,12 @@ export default function StudentsPage() {
 
     // Redundant paginatedData state removed
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
-    // SWR for sections (for filter dropdown) - replaces useEffect
+    // SWR for sections (for filter dropdown) - reduced limit for performance
     const sectionsKey = token && (user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER)
-        ? ['sections', { my: user.role === Role.TEACHER, limit: 100 }] as const
+        ? ['sections', { my: user.role === Role.TEACHER, limit: 50 }] as const
         : null;
     const { data: sectionsData } = useSWR<{ data: Section[] }>(sectionsKey);
     const sections = sectionsData?.data || [];
@@ -305,83 +307,227 @@ export default function StudentsPage() {
     return (
         <div className="flex flex-col h-full w-full">
             <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
-                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+                <div className="mb-2 flex flex-col gap-4 shrink-0">
+                {/* ========== DESKTOP LAYOUT (md and above) ========== */}
+                <div className="hidden lg:block">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 shrink-0">
                     <div className="flex flex-wrap items-center gap-4 flex-1">
                         <div className="w-full md:w-72">
-                            <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search students..." />
+                        <SearchBar
+                            value={searchTerm}
+                            onChange={(val) => updateQueryParams({ search: val, page: 1 })}
+                            placeholder="Search students..."
+                        />
                         </div>
 
                         {!isDeletedView && (
-                            <>
-                                <div className="w-40">
-                                    <CustomSelect
-                                        options={[
-                                            { label: 'All Statuses', value: '' },
-                                            { label: 'Active', value: StudentStatus.ACTIVE },
-                                            { label: 'Suspended', value: StudentStatus.SUSPENDED },
-                                        ]}
-                                        value={statusFilter}
-                                        onChange={(val) => updateQueryParams({ status: val, page: 1 })}
-                                        placeholder="Filter Status"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-2xl border border-border/50">
-                                    <Toggle
-                                        checked={showAlumni}
-                                        onCheckedChange={(val) => updateQueryParams({ showAlumni: val ? 'true' : undefined, page: 1 })}
-                                        label="Show Alumni"
-                                    />
-                                </div>
-                            </>
+                        <>
+                            <div className="w-40">
+                            <CustomSelect
+                                options={[
+                                { label: 'All Statuses', value: '' },
+                                { label: 'Active', value: StudentStatus.ACTIVE },
+                                { label: 'Suspended', value: StudentStatus.SUSPENDED },
+                                ]}
+                                value={statusFilter}
+                                onChange={(val) => updateQueryParams({ status: val, page: 1 })}
+                                placeholder="Filter Status"
+                            />
+                            </div>
+                            <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-2xl border border-border/50">
+                            <Toggle
+                                checked={showAlumni}
+                                onCheckedChange={(val) =>
+                                updateQueryParams({ showAlumni: val ? 'true' : undefined, page: 1 })
+                                }
+                                label="Show Alumni"
+                            />
+                            </div>
+                        </>
                         )}
 
                         <button
-                            onClick={() => updateQueryParams({ deleted: isDeletedView ? undefined : 'true', page: 1, status: undefined, showAlumni: undefined, sectionId: undefined })}
-                            className={`text-xs font-bold tracking-tighter hover:underline hover:text-primary cursor-pointer ${isDeletedView ? 'text-primary' : 'text-muted-foreground/40'}`}
+                        onClick={() =>
+                            updateQueryParams({
+                            deleted: isDeletedView ? undefined : 'true',
+                            page: 1,
+                            status: undefined,
+                            showAlumni: undefined,
+                            sectionId: undefined,
+                            })
+                        }
+                        className={`text-xs font-bold tracking-tighter hover:underline hover:text-primary cursor-pointer ${
+                            isDeletedView ? 'text-primary' : 'text-muted-foreground/40'
+                        }`}
                         >
-                            {isDeletedView ? '← Back to Active Students' : 'View Deleted Students'}
+                        {isDeletedView ? '← Back to Active Students' : 'View Deleted Students'}
                         </button>
                     </div>
 
                     {!isDeletedView && (
                         <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                            {(user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER) && (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-muted-foreground/40 tracking-wider whitespace-nowrap">Section:</span>
-                                    <CustomSelect
-                                        value={sectionId}
-                                        onChange={(val) => updateQueryParams({ sectionId: val, page: 1 })}
-                                        options={[
-                                            { value: '', label: 'All My Sections' },
-                                            ...sections.map(sec => ({ value: sec.id, label: sec.name }))
-                                        ]}
-                                        placeholder="All My Sections"
-                                        className="flex-1 px-5"
-                                    />
-                                </div>
-                            )}
+                        {(user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER) && (
+                            <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-muted-foreground/40 tracking-wider whitespace-nowrap">
+                                Section:
+                            </span>
+                            <CustomSelect
+                                value={sectionId}
+                                onChange={(val) => updateQueryParams({ sectionId: val, page: 1 })}
+                                options={[
+                                { value: '', label: 'All My Sections' },
+                                ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
+                                ]}
+                                placeholder="All My Sections"
+                                className="flex-1 px-5"
+                            />
+                            </div>
+                        )}
 
-                            {user?.role === Role.ORG_MANAGER && (
-                                <div className="bg-primary/5 p-2 pr-4 rounded-2xl border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
-                                    <Toggle
-                                        checked={showOnlyMyStudents}
-                                        onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
-                                        label="My Students"
-                                    />
-                                </div>
-                            )}
+                        {user?.role === Role.ORG_MANAGER && (
+                            <div className="bg-primary/5 p-2 pr-4 rounded-2xl border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
+                            <Toggle
+                                checked={showOnlyMyStudents}
+                                onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
+                                label="My Students"
+                            />
+                            </div>
+                        )}
 
-                            {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
-                                <Button
-                                    onClick={() => router.push('/students/add')}
-                                    icon={UserPlus}
-                                    className="px-8 w-full md:w-auto text-xs font-black tracking-widest"
-                                >
-                                    Add Student
-                                </Button>
-                            )}
+                        {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
+                            <Button
+                            onClick={() => router.push('/students/add')}
+                            icon={UserPlus}
+                            >
+                            Add Student
+                            </Button>
+                        )}
                         </div>
                     )}
+                    </div>
+                </div>
+
+                {/* ========== MOBILE LAYOUT (below md) ========== */}
+                <div className="block lg:hidden">
+                    {/* Row 1: Search + Add Button */}
+                    <div className="flex justify-between items-center gap-2">
+                    <div className="flex-1">
+                        <SearchBar
+                        value={searchTerm}
+                        onChange={(val) => updateQueryParams({ search: val, page: 1 })}
+                        placeholder="Search students..."
+                        />
+                    </div>
+                    {!isDeletedView &&
+                        (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
+                        <Button
+                            onClick={() => router.push('/students/add')}
+                            icon={UserPlus}
+                            className="px-4 text-xs font-black tracking-widest shrink-0"
+                        >
+                            Add Student
+                        </Button>
+                        )}
+                    </div>
+
+                    {/* Row 2: Filters button + View Deleted Students button */}
+                    {!isDeletedView && (
+                    <div className="flex justify-between p-1.5 mt-1.5 items-center">
+                        <button
+                        onClick={() => setIsFilterDrawerOpen(true)}
+                        className="flex items-center gap-2 text-xs bg-primary/30 px-2 py-1 rounded-lg font-bold tracking-tighter hover:text-primary cursor-pointer"
+                        >
+                        <Filter size={16} />
+                        Filters
+                        </button>
+                        <button
+                        onClick={() =>
+                            updateQueryParams({
+                            deleted: isDeletedView ? undefined : 'true',
+                            page: 1,
+                            status: undefined,
+                            showAlumni: undefined,
+                            sectionId: undefined,
+                            })
+                        }
+                        className={`text-xs font-bold tracking-tighter hover:underline hover:text-primary cursor-pointer ${
+                            isDeletedView ? 'text-primary' : 'text-muted-foreground/40'
+                        }`}
+                        >
+                        {isDeletedView ? '← Back to Active Students' : 'View Deleted Students'}
+                        </button>
+                    </div>
+                    )}
+
+                    {/* Filters Modal (Drawer) */}
+                    <Modal
+                    isOpen={isFilterDrawerOpen}
+                    onClose={() => setIsFilterDrawerOpen(false)}
+                    title="Filters"
+                    >
+                    <div className="flex flex-col gap-4">
+                        {/* Status Filter */}
+                        <div>
+                        <label className="text-xs font-bold text-muted-foreground mb-1 block">
+                            Status
+                        </label>
+                        <CustomSelect
+                            options={[
+                            { label: 'All Statuses', value: '' },
+                            { label: 'Active', value: StudentStatus.ACTIVE },
+                            { label: 'Suspended', value: StudentStatus.SUSPENDED },
+                            ]}
+                            value={statusFilter}
+                            onChange={(val) => {
+                            updateQueryParams({ status: val, page: 1 });
+                            // optional: close drawer here? keep open for multiple selections
+                            }}
+                            placeholder="Filter Status"
+                        />
+                        </div>
+
+                        {/* Show Alumni Toggle */}
+                        <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Show Alumni</span>
+                        <Toggle
+                            checked={showAlumni}
+                            onCheckedChange={(val) =>
+                            updateQueryParams({ showAlumni: val ? 'true' : undefined, page: 1 })
+                            }
+                        />
+                        </div>
+
+                        {/* Section Select (if role allows) */}
+                        {(user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER) && (
+                        <div>
+                            <label className="text-xs font-bold text-muted-foreground mb-1 block">
+                            Section
+                            </label>
+                            <CustomSelect
+                            value={sectionId}
+                            onChange={(val) => updateQueryParams({ sectionId: val, page: 1 })}
+                            options={[
+                                { value: '', label: 'All My Sections' },
+                                ...sections.map((sec) => ({ value: sec.id, label: sec.name })),
+                            ]}
+                            placeholder="All My Sections"
+                            />
+                        </div>
+                        )}
+
+                        {/* My Students Toggle (if ORG_MANAGER) */}
+                        {user?.role === Role.ORG_MANAGER && (
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">My Students</span>
+                            <Toggle
+                            checked={showOnlyMyStudents}
+                            onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
+                            />
+                        </div>
+                        )}
+                    </div>
+                    </Modal>
+                </div>
                 </div>
 
                 <div className="relative overflow-x-hidden flex-1 min-h-0">

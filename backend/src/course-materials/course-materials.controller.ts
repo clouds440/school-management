@@ -15,6 +15,8 @@ import { CreateCourseMaterialDto } from './dto/create-course-material.dto';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { Access } from '../common/access-control/access.decorator';
 import { AccessLevel } from '../common/access-control/access-level.enum';
+import { Role } from '../common/enums';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('course-materials')
 @UseGuards(JwtAuthGuard)
@@ -46,6 +48,7 @@ export class CourseMaterialsController {
    * Get all materials for a section
    */
   @Get('section/:sectionId')
+  @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
   async getSectionMaterials(
     @Param('sectionId') sectionId: string,
     @Request() req: AuthenticatedRequest,
@@ -84,7 +87,7 @@ export class CourseMaterialsController {
   @Access(AccessLevel.WRITE)
   async updateMaterial(
     @Param('materialId') materialId: string,
-    @Body() dto: { title?: string; description?: string; fileIds?: string[]; filesToRemove?: string[] },
+    @Body() dto: { title?: string; description?: string; fileIds?: string[]; filesToRemove?: string[]; links?: string[]; isVideoLink?: boolean },
     @Request() req: AuthenticatedRequest,
   ) {
     return this.courseMaterialsService.updateMaterial(

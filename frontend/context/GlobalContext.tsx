@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, ReactNode, useEffect, useCallback } from 'react';
-import { AdminStats, OrgStats, Role, Organization, Teacher, Student, Section, Course, ThemeMode } from '@/types';
+import { AdminStats, Role, Organization, Teacher, Student, Section, Course, ThemeMode } from '@/types';
 import { Toast, ToastType } from '@/components/ui/Toast';
 
 // --- Types ---
@@ -61,7 +61,6 @@ export interface GlobalState {
     };
     stats: {
         admin: AdminStats | null;
-        org: OrgStats | null;
         orgData: Organization | null;
         mail: { unread: number; total: number; countsByStatus?: Record<string, number> } | null;
         chat: { unread: number } | null;
@@ -89,7 +88,6 @@ type Action =
     | { type: 'AUTH_SET_LOADING'; payload: boolean }
     | { type: 'AUTH_SET_PROFILE'; payload: Teacher | Student | null }
     | { type: 'STATS_SET_ADMIN'; payload: AdminStats }
-    | { type: 'STATS_SET_ORG'; payload: OrgStats }
     | { type: 'STATS_SET_ORG_DATA'; payload: Organization }
     | { type: 'STATS_SET_MAIL'; payload: { unread: number; total: number; countsByStatus?: Record<string, number> } }
     | { type: 'STATS_SET_CHAT'; payload: { unread: number } }
@@ -116,7 +114,6 @@ const initialState: GlobalState = {
     },
     stats: {
         admin: null,
-        org: null,
         orgData: null,
         mail: null,
         chat: null,
@@ -152,7 +149,7 @@ function globalReducer(state: GlobalState, action: Action): GlobalState {
             return {
                 ...state,
                 auth: { user: null, token: null, loading: false, userProfile: null },
-                stats: { admin: null, org: null, orgData: null, mail: null, chat: null }
+                stats: { admin: null, orgData: null, mail: null, chat: null }
             };
         case 'AUTH_UPDATE_USER':
             return {
@@ -176,8 +173,6 @@ function globalReducer(state: GlobalState, action: Action): GlobalState {
                     mail: { unread: action.payload.UNREAD_MAIL, total: action.payload.TOTAL_MAIL }
                 }
             };
-        case 'STATS_SET_ORG':
-            return { ...state, stats: { ...state.stats, org: action.payload } };
         case 'STATS_SET_ORG_DATA':
             return { ...state, stats: { ...state.stats, orgData: action.payload } };
         case 'STATS_SET_MAIL':

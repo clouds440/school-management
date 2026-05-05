@@ -13,6 +13,7 @@ interface ToggleProps {
     offColor?: string;
     knobColor?: string;
     className?: string;
+    textColor?: string;
 }
 
 export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(
@@ -25,9 +26,10 @@ export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(
             description,
             size = 'md',
             onColor = 'bg-primary',
-            offColor = 'bg-muted',
-            knobColor = 'bg-background',
+            offColor = 'bg-background',
+            knobColor = 'bg-foreground',
             className = '',
+            textColor = 'text-foreground',
         },
         ref
     ) => {
@@ -60,7 +62,7 @@ export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(
                     onClick={() => !disabled && onCheckedChange(!checked)}
                     className={`
                         relative inline-flex items-center rounded-full transition-colors
-                        focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+                        focus:outline-none
                         ${sizeClasses[size]}
                         ${checked ? onColor : offColor}
                         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
@@ -78,7 +80,7 @@ export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(
                 {(label || description) && (
                     <div className="flex flex-col">
                         {label && (
-                            <span className="text-xs font-bold text-card-foreground tracking-wider">
+                            <span className={`text-xs font-bold ${textColor} tracking-wider`}>
                                 {label}
                             </span>
                         )}

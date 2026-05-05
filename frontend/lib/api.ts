@@ -1,6 +1,6 @@
 import {
     Teacher, Student, Organization, RegisterRequest, LoginRequest, AuthResponse,
-    UpdateOrgSettingsRequest, PlatformAdmin, AdminStats, OrgStats, Section, Course,
+    UpdateOrgSettingsRequest, PlatformAdmin, AdminStats, Section, Course,
     CreateTeacherRequest, UpdateTeacherRequest, CreateStudentRequest, UpdateStudentRequest,
     CreateSectionRequest, UpdateSectionRequest, CreateCourseRequest, UpdateCourseRequest,
     PaginatedResponse, OrgStatus, MailItem, MailDetail, CreateMailPayload, UpdateMailPayload,
@@ -172,8 +172,6 @@ export const api = {
             request<void>('/org/settings', { method: 'PATCH', body: JSON.stringify(data), token }),
         reapply: (token: string) =>
             request<void>('/org/reapply', { method: 'PATCH', token }),
-        getStats: (token: string) =>
-            request<OrgStats>('/org/stats', { token }),
 
         // FIX 3 applied: was duplicating raw fetch + 401 handling
         uploadLogo: (file: File, token: string): Promise<{ logoUrl: string; avatarUpdatedAt: string }> => {
@@ -216,7 +214,7 @@ export const api = {
 
         getSection: (id: string, token: string) =>
             request<Section>(`/org/sections/${id}`, { token }),
-        getSections: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean } = {}) =>
+        getSections: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean, userId?: string } = {}) =>
             request<PaginatedResponse<Section>>(`/org/sections${buildQueryString(params)}`, { token }),
         createSection: (data: CreateSectionRequest, token: string) =>
             request<Section>('/org/sections', { method: 'POST', body: JSON.stringify(data), token }),

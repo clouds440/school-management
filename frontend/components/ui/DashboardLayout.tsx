@@ -111,7 +111,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                     fixed lg:relative inset-y-0 left-0 z-90 transform
                     flex flex-col bg-background text-sidebar-text border-r border-border shadow-[4px_0_24px_var(--shadow-color)]
                     ${isMobileOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0'}
-                    ${effectiveExpanded ? 'lg:w-72' : 'lg:w-20'}
+                    ${effectiveExpanded ? 'lg:w-64' : 'lg:w-18'}
                     h-full shrink-0 overflow-hidden
                     transition-all duration-300 ease-in-out
                 `}
@@ -178,25 +178,27 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                 </div>
 
                 {/* Branded Sidebar Footer */}
-                <div className={`${isBottomSectionCollapsed ? 'p-1' : 'p-4'} border-t border-border shrink-0 relative`}>
+                <div className={`px-3 border-t border-border shrink-0 relative`}>
                     {/* Toggle button sitting on top of border */}
                     <button
                         onClick={() => setIsBottomSectionCollapsed(!isBottomSectionCollapsed)}
-                        className={`absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-md text-sidebar-text/60 bg-background hover:bg-card transition-all shadow-sm`}
+                        className={`absolute -top-3 left-1/2 -translate-x-1/2 px-1 py-0 rounded-md text-sidebar-text/60 bg-background hover:bg-card transition-all shadow-sm`}
                         title={isBottomSectionCollapsed ? "Show more" : "Show less"}
                     >
                         {isBottomSectionCollapsed ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronUp className="w-4 h-4 shrink-0" />}
                         {isBottomSectionCollapsed && mailCount.unread > 0 && (
-                            <span className="absolute -top-1 -right-1">
-                                <Badge variant="error" size="sm">
-                                    {mailCount.unread > 99 ? '99+' : mailCount.unread}
+                            <span className="absolute -top-2.5 -right-1.5">
+                                <Badge variant="error" size="xs">
+                                    {mailCount.unread > 9 ? '9+' : mailCount.unread}
                                 </Badge>
                             </span>
                         )}
                     </button>
 
                     {user && (
-                        <div className={`flex items-center mt-2 ${!effectiveExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}>
+                        <div className={`flex items-center mt-2 cursor-pointer ${!effectiveExpanded ? 'lg:justify-center' : 'mb-4 space-x-3 px-1'} mb-4`}
+                            onClick={() => setIsBottomSectionCollapsed(!isBottomSectionCollapsed)}
+                        >
                             <div className={`w-9 h-9 flex items-center justify-center shrink-0 shadow-inner relative`}>
                                 <BrandIcon variant="user" user={user} size="sm" className="w-9 h-9" />
                             </div>
@@ -209,7 +211,7 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
 
                     {/* Collapsible bottom links */}
                     <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isBottomSectionCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'}`}>
-                        <div className="space-y-2">
+                        <div className="space-y-2 pb-4">
                             {user?.role !== Role.SUPER_ADMIN && user?.role !== Role.PLATFORM_ADMIN && (
                                 <>
                                     <Link

@@ -642,6 +642,8 @@ model CourseMaterial {
   sectionId   String
   title       String
   description String?
+  links       String[]
+  isVideoLink Boolean  @default(false)
   createdBy   String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

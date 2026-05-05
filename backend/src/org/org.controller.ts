@@ -66,11 +66,6 @@ export class OrgController {
     private readonly attendanceService: AttendanceService,
   ) { }
 
-  @Get('stats')
-  getStats(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
-    return this.orgService.getStats(orgId, req.user);
-  }
-
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER, Role.TEACHER, Role.STUDENT)
   @Get('insights')
   getInsights(@OrgId() orgId: string, @Request() req: AuthenticatedRequest) {
@@ -85,7 +80,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
-  @Access(AccessLevel.WRITE)
+  @Access(AccessLevel.NONE)
   @Patch('settings')
   updateSettings(
     @OrgId() orgId: string,
@@ -95,7 +90,7 @@ export class OrgController {
   }
 
   @Roles(Role.ORG_ADMIN, Role.ORG_MANAGER)
-  @Access(AccessLevel.WRITE)
+  @Access(AccessLevel.NONE)
   @Patch('settings/logo')
   @UseInterceptors(
     FileInterceptor('file', {

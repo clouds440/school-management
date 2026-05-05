@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Loading } from '@/components/ui/Loading';
 import { Badge } from '@/components/ui/Badge';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { formatDistanceToNow } from "date-fns";
 
 interface Session {
@@ -35,6 +36,7 @@ export default function SessionManagement({ userId }: SessionManagementProps) {
     const { dispatch } = useGlobal();
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
     const [showRevokeAllDialog, setShowRevokeAllDialog] = useState(false);
 
     const targetUserId = userId || user?.id;
@@ -42,16 +44,17 @@ export default function SessionManagement({ userId }: SessionManagementProps) {
     const fetchSessions = useCallback(async () => {
         if (!token || !targetUserId) return;
         setLoading(true);
+        setError(null);
         try {
             const data = await api.auth.getSessions(token);
             setSessions(data);
         } catch (error) {
             console.error('Failed to fetch sessions', error);
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to load sessions', type: 'error' } });
+            setError(error as Error);
         } finally {
             setLoading(false);
         }
-    }, [dispatch, targetUserId, token]);
+    }, [targetUserId, token]);
 
     useEffect(() => {
         void fetchSessions();
@@ -156,6 +159,8 @@ export default function SessionManagement({ userId }: SessionManagementProps) {
                         <div className="flex justify-center items-center h-40">
                             <Loading size="md" />
                         </div>
+                    ) : error ? (
+                        <ErrorState error={error} onRetry={fetchSessions} />
                     ) : sessions.length === 0 ? (
                         <div className="text-center py-16">
                             <div className="relative inline-block mb-6">

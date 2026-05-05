@@ -1,17 +1,33 @@
 'use client';
 
-import { Teacher } from '@/types';
+import { Role, Teacher } from '@/types';
 import { useGlobal } from '@/context/GlobalContext';
+import { useAuth } from '@/context/AuthContext';
 import TeacherForm from '@/components/forms/TeacherForm';
 import SessionManagement from '@/components/SessionManagement';
 import { Settings, UserCircle } from 'lucide-react';
 import { Loading } from '@/components/ui/Loading';
 import { useEffect } from 'react';
+import useSWR from 'swr';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 export default function TeacherProfilePage() {
     const { state } = useGlobal();
+    const { user, token } = useAuth();
     const teacherData = state.auth.userProfile as Teacher | null;
     const loading = state.auth.loading;
+
+    // Fetch teacher profile if not already in state
+    const profileKey = token && (user?.role === Role.TEACHER || user?.role === Role.ORG_MANAGER) ? ['teacher-profile', user?.id] as const : null;
+    const { data: fetchedProfile, isLoading: profileLoading, error: profileError, mutate } = useSWR<Teacher>(profileKey);
+
+    // Use fetched profile if available, otherwise use state
+    const effectiveTeacherData = fetchedProfile || teacherData;
+
+    // Log error for debugging
+    if (profileError) {
+        console.error('Failed to fetch teacher profile:', profileError);
+    }
 
     // Scroll to section if hash is present
     useEffect(() => {
@@ -52,30 +68,25 @@ export default function TeacherProfilePage() {
 
                 {/* Content */}
                 <div className="p-6 md:p-8">
-                    {loading ? (
+                    {loading || profileLoading ? (
                         <div className="py-20 flex justify-center">
                             <Loading size="lg" />
                         </div>
-                    ) : teacherData ? (
+                    ) : effectiveTeacherData ? (
                         <TeacherForm
-                            initialData={teacherData}
+                            initialData={effectiveTeacherData}
                             isProfile={true}
                         />
                     ) : (
-                        <div className="py-20 text-center">
-                            <div className="text-red-500/10 mb-4">
-                                <UserCircle className="w-16 h-16 mx-auto" />
-                            </div>
-                            <p className="text-red-500 font-semibold">Failed to load teacher profile data</p>
-                        </div>
+                        <ErrorState error={profileError} onRetry={() => mutate()} />
                     )}
                 </div>
             </div>
 
             {/* Session Management */}
-            {!loading && teacherData && (
+            {!loading && !profileLoading && effectiveTeacherData && (
                 <div id="sessions">
-                    <SessionManagement userId={teacherData.id} />
+                    <SessionManagement userId={effectiveTeacherData.id} />
                 </div>
             )}
         </div>

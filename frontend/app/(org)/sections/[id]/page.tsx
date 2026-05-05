@@ -31,6 +31,9 @@ export default function SectionDetailPage() {
 
     if (!section) return <NotFound page="Section"/>;
 
+    // Check if teacher is assigned to this section
+    const isTeacherAssigned = section.teachers?.some(t => t.userId === user?.id)
+
     return (
         <div className="flex flex-col w-full space-y-8">
             {/* Header Card - Premium Design */}
@@ -129,7 +132,7 @@ export default function SectionDetailPage() {
                         </div>
                     </div>
                     <div className="p-8 md:p-10">
-                        <CourseMaterials sectionId={sectionId} role={user?.role as Role} />
+                        <CourseMaterials sectionId={sectionId} role={user?.role as Role} isTeacherAssigned={isTeacherAssigned} />
                     </div>
                 </div>
             </div>

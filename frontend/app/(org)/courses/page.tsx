@@ -18,6 +18,7 @@ import { useGlobal } from '@/context/GlobalContext';
 import useSWR, { mutate } from 'swr';
 import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { Loading } from '@/components/ui/Loading';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Toggle } from '@/components/ui/Toggle';
 
 interface CourseParams {
@@ -64,7 +65,7 @@ export default function CoursesPage() {
 
     // SWR for courses data - replaces usePaginatedData
     const coursesKey = token ? ['courses', courseParams] as const : null;
-    const { data: fetchedData, isLoading: isFetching } = useSWR<
+    const { data: fetchedData, isLoading: isFetching, error: coursesError, mutate: mutateCourses } = useSWR<
         { data: Course[]; totalPages: number; totalRecords: number }
     >(coursesKey);
 
@@ -210,6 +211,10 @@ export default function CoursesPage() {
 
     if ((!token && !user) || (isFetching && !fetchedData)) {
         return <Loading className="h-full" text="Loading Courses..." size="lg" />;
+    }
+
+    if (coursesError) {
+        return <ErrorState error={coursesError} onRetry={() => mutateCourses()} />;
     }
 
     return (

@@ -235,7 +235,7 @@ export default memo(function AssessmentList({ section, role }: AssessmentListPro
                 onClose={() => setIsCreateModalOpen(false)}
                 title="New Assessment"
                 subtitle={`${section.name} • ${section.course?.name}`}
-                maxWidth="max-w-2xl"
+                maxWidth="max-w-3xl"
             >
                 <AssessmentForm
                     sectionId={section.id}

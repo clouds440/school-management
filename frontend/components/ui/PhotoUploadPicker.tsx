@@ -19,6 +19,8 @@ interface PhotoUploadPickerProps {
   sizeClassName?: string;
   /** Whether the picker is disabled */
   disabled?: boolean;
+  /** Timestamp for cache-busting the image URL */
+  updatedAt?: string | Date | null;
 }
 
 /**
@@ -32,6 +34,7 @@ export function PhotoUploadPicker({
   type = 'user',
   sizeClassName = 'w-24 h-24',
   disabled = false,
+  updatedAt,
 }: PhotoUploadPickerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewObjectUrlRef = useRef<string | null>(null);
@@ -94,7 +97,7 @@ export function PhotoUploadPicker({
 
   const resolvedSrc = (displaySrc?.startsWith('blob:') || displaySrc?.startsWith('data:'))
     ? displaySrc
-    : getPublicUrl(displaySrc);
+    : getPublicUrl(displaySrc, updatedAt);
 
   return (
     <>

@@ -19,6 +19,7 @@ import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { useGlobal } from '@/context/GlobalContext';
 import { Toggle } from '@/components/ui/Toggle';
 import { Loading } from '@/components/ui/Loading';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Badge } from '@/components/ui/Badge';
 import useSWR, { mutate } from 'swr';
 import { matchesCacheKeyPrefix } from '@/lib/swr';
@@ -43,7 +44,7 @@ export default function SectionsPage() {
 
     // SWR for courses (for edit form dropdown) - replaces useCallback + useEffect
     const coursesKey = token ? ['courses', { limit: 1000 }] as const : null;
-    const { data: coursesData } = useSWR<PaginatedResponse<Course>>(coursesKey);
+    const { data: coursesData, error: coursesError, mutate: mutateCourses } = useSWR<PaginatedResponse<Course>>(coursesKey);
     const courses = coursesData?.data || [];
 
     // Students state remains (on-demand fetch for enrollment)
@@ -75,7 +76,7 @@ export default function SectionsPage() {
 
     // SWR for sections data - replaces usePaginatedData
     const sectionsKey = token ? ['sections', sectionParams] as const : null;
-    const { data: fetchedData, isLoading: isFetching } = useSWR<
+    const { data: fetchedData, isLoading: isFetching, error: sectionsError, mutate: mutateSections } = useSWR<
         PaginatedResponse<Section>
     >(sectionsKey);
 
@@ -221,7 +222,7 @@ export default function SectionsPage() {
                 const studentsList = row.students || [];
                 return studentsList.length > 0 ? (
                     <div className="flex flex-wrap gap-1 max-w-50">
-                                <Badge variant="secondary" size="sm" className="truncate max-w-37.5" title='Click to view all'>
+                                <Badge variant="secondary" size="sm" className="truncate max-w-37.5" title='Click edit icon to view all'>
                                     {studentsList.length === 1 ? '1 Student' : studentsList.length + ' Students'}
                                 </Badge>
                     </div>
@@ -290,6 +291,13 @@ export default function SectionsPage() {
 
     if ((!token && !user) || (isFetching && !fetchedData)) {
         return <Loading className="h-full" text="Loading Sections..." size="lg" />;
+    }
+
+    if (sectionsError) {
+        return <ErrorState error={sectionsError} onRetry={() => {
+            mutateSections();
+            mutateCourses();
+        }} />;
     }
 
     return (

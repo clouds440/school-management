@@ -198,6 +198,7 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
     }, []);
 
     const isWatchMode = !isProfile && currentUser?.role === Role.TEACHER;
+    const currentUserAvatarUrl = isProfile ? currentUser?.avatarUrl : '';
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 md:space-y-12" noValidate>
@@ -209,7 +210,8 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
                             <PhotoUploadPicker
                                 onFileReady={handlePhotoReady}
                                 type="user"
-                                currentImageUrl={initialData?.user?.avatarUrl}
+                                currentImageUrl={initialData?.user?.avatarUrl || currentUserAvatarUrl}
+                                updatedAt={initialData?.user?.avatarUpdatedAt}
                                 disabled={isWatchMode}
                             />
                             {!isWatchMode && (

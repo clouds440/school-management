@@ -180,14 +180,6 @@ export interface AdminStats {
     PLATFORM_ADMINS: number;
 }
 
-export interface OrgStats {
-    TEACHERS: number;
-    COURSES: number;
-    SECTIONS: number;
-    STUDENTS: number;
-    PENDING_ASSESSMENTS?: number;
-}
-
 export interface DashboardInsightCard {
     id: string;
     label: string;
@@ -688,6 +680,7 @@ export interface CourseMaterial {
     description?: string | null;
     files?: Attachment[];
     links?: string[];
+    isVideoLink?: boolean;
     createdAt: string;
     updatedAt: string;
     createdBy?: string;
@@ -704,6 +697,7 @@ export interface CreateCourseMaterialRequest {
     description?: string;
     fileIds?: string[];
     links?: string[];
+    isVideoLink?: boolean;
 }
 
 export interface UpdateCourseMaterialRequest {
@@ -711,4 +705,6 @@ export interface UpdateCourseMaterialRequest {
     description?: string;
     fileIds?: string[];
     filesToRemove?: string[];
+    links?: string[];
+    isVideoLink?: boolean;
 }

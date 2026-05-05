@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import { useAuth } from '@/context/AuthContext';
 import { useGlobal } from '@/context/GlobalContext';
 import { Loading } from '@/components/ui/Loading';
+import { ErrorState } from '@/components/ui/ErrorState';
 import AttendanceSheet from '@/components/sections/AttendanceSheet';
 import { AttendanceRecord, Role, RangeAttendanceResponse, AttendanceStatus } from '@/types';
 import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
@@ -20,27 +21,13 @@ export default function Attendance() {
     const attendanceKey = token && user?.role === Role.STUDENT
         ? ['student-attendance', user.id] as const
         : null;
-    const { data: records = [], isLoading: fetching } = useSWR<AttendanceRecord[]>(attendanceKey, {
-        onError: (error) => {
-            dispatch({
-                type: 'TOAST_ADD',
-                payload: { message: error?.message || 'Failed to fetch attendance', type: 'error' }
-            });
-        }
-    });
+    const { data: records = [], isLoading: fetching, error: attendanceError, mutate: mutateAttendance } = useSWR<AttendanceRecord[]>(attendanceKey);
 
     // SWR: Dependent fetch for monthly range data (drill-down when section selected)
     const rangeKey = token && selectedSectionId
         ? ['section-attendance-range', selectedSectionId] as const
         : null;
-    const { data: rangeData, isLoading: fetchingDetail } = useSWR<RangeAttendanceResponse>(rangeKey, {
-        onError: (error) => {
-            dispatch({
-                type: 'TOAST_ADD',
-                payload: { message: error?.message || 'Failed to fetch section details', type: 'error' }
-            });
-        }
-    });
+    const { data: rangeData, isLoading: fetchingDetail, error: rangeError, mutate: mutateRange } = useSWR<RangeAttendanceResponse>(rangeKey);
 
     // Group records by section for overview cards
     const sectionSummaries = useMemo(() => {
@@ -96,6 +83,10 @@ export default function Attendance() {
         return <div className="py-20 flex justify-center"><Loading size="lg" /></div>;
     }
 
+    if (attendanceError) {
+        return <ErrorState error={attendanceError} onRetry={() => mutateAttendance()} />;
+    }
+
     // --- Detailed Monthly View ---
     if (selectedSectionId && rangeData) {
         const summary = sectionSummaries.find(s => s.id === selectedSectionId);
@@ -137,6 +128,8 @@ export default function Attendance() {
 
                 {fetchingDetail ? (
                     <div className="py-20 flex justify-center"><Loading size="md" /></div>
+                ) : rangeError ? (
+                    <ErrorState error={rangeError} onRetry={() => mutateRange()} />
                 ) : (
                     <AttendanceSheet mode="monthly" rangeData={rangeData} students={[]} readOnly={true} />
                 )}
