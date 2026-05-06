@@ -20,6 +20,7 @@ import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { Loading } from '@/components/ui/Loading';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Toggle } from '@/components/ui/Toggle';
+import { Drawer } from '@/components/ui/Drawer';
 
 interface CourseParams {
     page: number;
@@ -220,26 +221,30 @@ export default function CoursesPage() {
     return (
         <div className="flex flex-col h-full w-full">
             <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
-                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
-                    <div className="flex-1 max-w-xl">
-                        <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name or description..." />
-                    </div>
+                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-2 shrink-0">
+                        <div className="flex-1 w-full">
+                            <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name or description..." />
+                        </div>
 
-                    <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                    <div className='flex w-full md:w-auto gap-2 justify-between'>
                         {user?.role === Role.ORG_MANAGER && (
-                            <div className="bg-primary/5 p-2 pr-4 rounded-2xl border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
-                                <Toggle
-                                    checked={showOnlyMyCourses}
-                                    onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
-                                    label="My Courses"
-                                />
-                            </div>
+                            <Drawer position='left'>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium">My Courses</span>
+                                        <Toggle
+                                            checked={showOnlyMyCourses}
+                                            onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
+                                        />
+                                    </div>
+                                </div>
+                            </Drawer>
                         )}
                         {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                             <Button
                                 onClick={() => router.push(`/courses/create`)}
                                 icon={Plus}
-                                className="px-8 w-full md:w-auto text-xs font-black tracking-widest"
+                                className="shrink-0"
                             >
                                 Create Course
                             </Button>

@@ -22,6 +22,7 @@ import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Loading } from '@/components/ui/Loading';
 import { NewMailModal } from '@/components/mail/NewMailModal';
+import { Drawer } from '@/components/ui/Drawer';
 
 interface AdminOrgParams {
     page: number;
@@ -469,7 +470,7 @@ return (
               value={searchQuery}
               onChange={(val) => updateQueryParams({ search: val, page: 1 })}
               placeholder="Search organizations..."
-              className="w-full"
+              className="max-w-full md:max-w-sm"
             />
           </div>
         </div>

@@ -123,14 +123,14 @@ function CustomSelectComponent<T extends string = string>({
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 disabled={disabled}
                 className={cn(
-                    "flex items-center w-full px-3 sm:px-4 py-2.5 rounded-2xl border transition-all duration-200 outline-none",
+                    "flex items-center w-full px-4 py-3 rounded-2xl border transition-all duration-200 outline-none",
                     isOpen
                         ? 'border-primary ring-4 ring-primary/10 bg-background'
                         : error
                             ? 'border-destructive ring-2 ring-destructive/20 bg-destructive/5'
                             : 'border-border/50 bg-primary/5 hover:border-primary/50',
                     disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
-                    "text-foreground font-semibold text-left text-sm sm:text-base",
+                    "text-foreground font-semibold text-left text-base",
                     className
                 )}
             >
@@ -138,9 +138,9 @@ function CustomSelectComponent<T extends string = string>({
                 {(selectedOption?.icon || Icon) && (
                     <div className="mr-2 sm:mr-3 shrink-0">
                         {selectedOption?.icon ? (
-                            <selectedOption.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", selectedOption.iconClassName || (isOpen ? 'text-primary' : 'text-muted-foreground'))} />
+                            <selectedOption.icon className={cn("h-5 w-5", selectedOption.iconClassName || (isOpen ? 'text-primary' : 'text-muted-foreground'))} />
                         ) : (
-                            Icon && <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5 transition-colors", isOpen ? 'text-primary' : error ? 'text-destructive' : 'text-muted-foreground group-focus-within:text-primary')} />
+                            Icon && <Icon className={cn("h-5 w-5 transition-colors", isOpen ? 'text-primary' : error ? 'text-destructive' : 'text-muted-foreground group-focus-within:text-primary')} />
                         )}
                     </div>
                 )}
@@ -151,12 +151,12 @@ function CustomSelectComponent<T extends string = string>({
 
                 {/* Selected Option Badge (Visible when closed too) */}
                 {selectedOption?.badge !== undefined && (
-                    <span className="mx-1.5 sm:mx-2 px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-primary/10 text-primary shrink-0">
+                    <span className="mx-2 px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary shrink-0">
                         {selectedOption.badge}
                     </span>
                 )}
 
-                <ChevronDown className={cn("h-4 w-4 sm:h-4 sm:w-4 ml-2 sm:ml-2.5 transition-transform duration-200 text-muted-foreground", isOpen && "rotate-180")} />
+                <ChevronDown className={cn("h-4 w-4 ml-2 sm:ml-2.5 transition-transform duration-200 text-muted-foreground", isOpen && "rotate-180")} />
             </button>
 
             {isOpen && coords && createPortal(
@@ -169,7 +169,7 @@ function CustomSelectComponent<T extends string = string>({
                         width: coords.width,
                         zIndex: 9999
                     }}
-                    className="py-2 bg-linear-to-br from-background to-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl max-h-80 sm:max-h-96 flex flex-col animate-in fade-in zoom-in duration-100"
+                    className="py-2 bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl max-h-80 sm:max-h-96 flex flex-col animate-in fade-in zoom-in duration-100"
                 >
                     {searchable && (
                         <div className="px-3 sm:px-4 pb-2 sm:pb-3 border-b border-border/50">
@@ -194,7 +194,7 @@ function CustomSelectComponent<T extends string = string>({
 
                     <div className="overflow-y-auto flex-1 custom-scrollbar">
                         {filteredOptions.length === 0 ? (
-                            <div className="px-4 py-3 sm:py-4 text-sm sm:text-base text-muted-foreground text-center text-balance">{searchable ? `No results found for "${searchTerm}"` : 'No options available'}</div>
+                            <div className="px-4 py-4 text-sm sm:text-base text-muted-foreground text-center text-balance">{searchable ? `No results found for "${searchTerm}"` : 'No options available'}</div>
                         ) : (
                             filteredOptions.map((option) => (
                                 <button
@@ -210,10 +210,10 @@ function CustomSelectComponent<T extends string = string>({
                                     text-left
                                 `}
                                 >
-                                    {option.icon && <option.icon className={cn("h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3", option.iconClassName)} />}
+                                    {option.icon && <option.icon className={cn("h-5 w-5 mr-2 sm:mr-3", option.iconClassName)} />}
                                     <span className="flex-1">{option.label}</span>
                                     {option.badge !== undefined && (
-                                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold ${option.value === value ? 'bg-card/20 text-card-text' : 'bg-primary/10 text-primary'
+                                        <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${option.value === value ? 'bg-card/20 text-card-text' : 'bg-primary/10 text-primary'
                                             }`}>
                                             {option.badge}
                                         </span>

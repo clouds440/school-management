@@ -21,6 +21,7 @@ import { NewMailModal } from '@/components/mail/NewMailModal';
 import { BrandIcon } from '@/components/ui/Brand';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Toggle } from '@/components/ui/Toggle';
+import { Drawer } from '@/components/ui/Drawer';
 
 interface TeacherParams {
     page: number;
@@ -263,54 +264,76 @@ export default function TeachersPage() {
     return (
         <div className="flex flex-col h-full w-full">
             <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
-                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
-                    <div className="flex flex-wrap items-center gap-4 flex-1">
-                        <div className="w-full md:w-72">
-                            <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search faculty..." />
-                        </div>
-
-                        {!isDeletedView && (
-                            <>
-                                <div className="w-40">
-                                    <CustomSelect
-                                        options={[
-                                            { label: 'All Statuses', value: '' },
-                                            { label: 'Active', value: TeacherStatus.ACTIVE },
-                                            { label: 'Suspended', value: TeacherStatus.SUSPENDED },
-                                            { label: 'On Leave', value: TeacherStatus.ON_LEAVE },
-                                        ]}
-                                        value={statusFilter}
-                                        onChange={(val) => updateQueryParams({ status: val, page: 1 })}
-                                        placeholder="Filter Status"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2 px-3 py-2 bg-card/50 rounded-2xl border border-border/50">
-                                    <Toggle
-                                        checked={showEmeritus}
-                                        onCheckedChange={(val) => updateQueryParams({ showEmeritus: val ? 'true' : undefined, page: 1 })}
-                                        label="Show Emeritus"
-                                    />
-                                </div>
-                            </>
-                        )}
-
-                        <button
-                            onClick={() => updateQueryParams({ deleted: isDeletedView ? undefined : 'true', page: 1, status: undefined, showEmeritus: undefined })}
-                            className={`text-xs font-bold tracking-tighter hover:underline hover:text-primary cursor-pointer ${isDeletedView ? 'text-primary' : 'text-muted-foreground/40'}`}
-                        >
-                            {isDeletedView ? '← Back to Active Faculty' : 'View Deleted Faculty'}
-                        </button>
+                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-2 shrink-0">
+                    <div className="flex-1 w-full">
+                        <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search faculty..." />
                     </div>
 
-                    {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && !isDeletedView && (
-                        <Button
-                            onClick={() => router.push('/teachers/add')}
-                            icon={UserPlus}
-                            className="px-8 w-full md:w-auto text-xs font-black tracking-widest"
-                        >
-                            Add Teacher
-                        </Button>
-                    )}
+                    <div className='flex w-full md:w-auto gap-2 justify-between'>
+                        {!isDeletedView && (
+                            <Drawer position='left'>
+                                <div className="flex flex-col gap-8">
+                                    {/* Status Filter */}
+                                    <div>
+                                        <label className="text-xs font-bold text-muted-foreground mb-1 block">
+                                            Status
+                                        </label>
+                                        <CustomSelect
+                                            options={[
+                                                { label: 'All Statuses', value: '' },
+                                                { label: 'Active', value: TeacherStatus.ACTIVE },
+                                                { label: 'Suspended', value: TeacherStatus.SUSPENDED },
+                                                { label: 'On Leave', value: TeacherStatus.ON_LEAVE },
+                                            ]}
+                                            value={statusFilter}
+                                            onChange={(val) => updateQueryParams({ status: val, page: 1 })}
+                                            placeholder="Filter Status"
+                                        />
+                                    </div>
+
+                                    {/* Show Emeritus Toggle */}
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium">Show Emeritus</span>
+                                        <Toggle
+                                            checked={showEmeritus}
+                                            onCheckedChange={(val) => updateQueryParams({ showEmeritus: val ? 'true' : undefined, page: 1 })}
+                                        />
+                                    </div>
+
+                                    {/* View Deleted Faculty */}
+                                    <button
+                                        onClick={() => updateQueryParams({ deleted: isDeletedView ? undefined : 'true', page: 1, status: undefined, showEmeritus: undefined })}
+                                        className={`text-xs font-bold tracking-tighter hover:underline hover:text-primary cursor-pointer ${
+                                            isDeletedView ? 'text-primary' : 'text-muted-foreground/40'
+                                        }`}
+                                    >
+                                        {isDeletedView ? '← Back to Active Faculty' : 'View Deleted Faculty'}
+                                    </button>
+                                </div>
+                            </Drawer>
+                        )}
+
+                        {isDeletedView && (
+                            <button
+                                onClick={() => updateQueryParams({ deleted: undefined, page: 1 })}
+                                className={`text-xs font-bold tracking-tighter hover:underline hover:text-primary cursor-pointer ${
+                                    isDeletedView ? 'text-primary' : 'text-muted-foreground/40'
+                                }`}
+                            >
+                                ← Back to Active Faculty
+                            </button>
+                        )}
+
+                        {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && !isDeletedView && (
+                            <Button
+                                onClick={() => router.push('/teachers/add')}
+                                icon={UserPlus}
+                                className="shrink-0"
+                            >
+                                Add Teacher
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 <div className="relative overflow-x-hidden flex-1 min-h-0">

@@ -19,6 +19,7 @@ import { CustomMultiSelect } from '@/components/ui/CustomMultiSelect';
 import { useGlobal } from '@/context/GlobalContext';
 import { Toggle } from '@/components/ui/Toggle';
 import { Loading } from '@/components/ui/Loading';
+import { Drawer } from '@/components/ui/Drawer';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Badge } from '@/components/ui/Badge';
 import useSWR, { mutate } from 'swr';
@@ -222,9 +223,9 @@ export default function SectionsPage() {
                 const studentsList = row.students || [];
                 return studentsList.length > 0 ? (
                     <div className="flex flex-wrap gap-1 max-w-50">
-                                <Badge variant="secondary" size="sm" className="truncate max-w-37.5" title='Click edit icon to view all'>
-                                    {studentsList.length === 1 ? '1 Student' : studentsList.length + ' Students'}
-                                </Badge>
+                        <Badge variant="secondary" size="sm" className="truncate max-w-37.5" title='Click edit icon to view all'>
+                            {studentsList.length === 1 ? '1 Student' : studentsList.length + ' Students'}
+                        </Badge>
                     </div>
                 ) : <span className="text-muted-foreground/30 italic">No students</span>;
             }
@@ -303,27 +304,32 @@ export default function SectionsPage() {
     return (
         <div className="flex flex-col h-full w-full">
             <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
-                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
-                    <div className="flex-1 max-w-xl">
+                <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-2 shrink-0">
+                    <div className="flex-1 w-full">
                         <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, course, or room..." />
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                    <div className='flex w-full md:w-auto gap-2 justify-between'>
                         {user?.role === Role.ORG_MANAGER && (
-                            <div className="bg-primary/5 p-2 pr-4 rounded-2xl border border-primary/10 self-start md:self-auto hover:bg-primary/10 transition-all select-none">
-                                <Toggle
-                                    checked={showOnlyMySections}
-                                    onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
-                                    label="My Sections"
-                                />
-                            </div>
+                            <Drawer position='left'>
+                                <div className="flex flex-col">
+                                    {/* My Sections Toggle */}
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium">My Sections</span>
+                                        <Toggle
+                                            checked={showOnlyMySections}
+                                            onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
+                                        />
+                                    </div>
+                                </div>
+                            </Drawer>
                         )}
 
                         {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                             <Button
                                 onClick={() => router.push('/sections/create')}
                                 icon={Plus}
-                                className="px-8 w-full md:w-auto text-xs font-black tracking-widest"
+                                className="shrink-0"
                             >
                                 Create Section
                             </Button>
