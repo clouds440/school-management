@@ -23,7 +23,7 @@ import { BrandIcon } from '../ui/Brand';
 import { Chat, ChatMessage, ChatParticipant, ChatType, ChatMessageType, PaginatedResponse, Role, User, ChatParticipantRole } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import {
-    Search, Plus, Paperclip, MessageSquarePlus, SendHorizonal as Send, MoreVertical, X, Loader2,
+    Search, Plus, Paperclip, MessageSquarePlus, MessageSquareDashed, SendHorizonal as Send, MoreVertical, X, Loader2,
     UserMinus, Trash2, Info, ChevronLeft, Check, CheckCheck, ArrowDown, Pencil, Reply, ArrowUp, RotateCcw,
     Lock as LockIcon
 } from 'lucide-react';
@@ -1394,7 +1394,7 @@ export function ChatLayout() {
                                                             key={idx}
                                                             className={`message-bubble px-1 py-1.5 rounded-2xl leading-relaxed relative shadow-sm
                                                                         ${isMine
-                                                                    ? 'bg-primary text-primary-foreground rounded-tr-md rounded-br-xs'
+                                                                    ? 'bg-chat-bubble text-primary-foreground rounded-tr-md rounded-br-xs'
                                                                     : 'bg-card border border-border rounded-tl-md rounded-bl-xs text-foreground'
                                                                 }
                                                                         ${isSendingMessage && isMine ? 'animate-in fade-in slide-in-from-bottom-1 duration-200' : ''}
@@ -1418,13 +1418,13 @@ export function ChatLayout() {
                                                             })()}
 
                                                             <div className={`prose prose-sm mx-2 max-w-full prose-p:mb-0 ${isMine && highlightedMessageId !== msg.id ? 'prose-invert' : 'prose-p:text-foreground!'}`}>
-                                                                <MarkdownRenderer content={segment} className={`${isMine ? 'text-primary-foreground!' : 'text-foreground!'} whitespace-pre-wrap wrap-break-word`} />
+                                                                <MarkdownRenderer content={segment} className={`${isMine ? 'text-white!' : 'text-foreground!'} whitespace-pre-wrap wrap-break-word`} />
                                                             </div>
                                                             <div className={`flex items-center mx-2 justify-end space-x-1 mt-0.5 -mb-0.5 text-foreground`}>
                                                                 {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
                                                                     <span className={`text-[9px] sm:text-[10px] rounded-lg px-1.5 py-0 ${isMine ? 'bg-card/70 text-foreground!' : 'bg-foreground/70 text-background!'}`}>Edited</span>
                                                                 )}
-                                                                <span className='text-[9.5px] sm:text-[10px] font-medium tracking-wide'>
+                                                                <span className={`text-[9.5px] sm:text-[10px] font-medium tracking-wide ${isMine ? 'text-white!' : 'text-foreground!'}`}>
                                                                     {formatChatTimestamp(msg.createdAt)}
                                                                 </span>
                                                                 {isMine && (
@@ -1437,16 +1437,16 @@ export function ChatLayout() {
                                                                                 type="button"
                                                                                 onClick={() => { void handleSendMessage(msg); }}
                                                                                 disabled={sendLockRef.current || isSending || isUploading}
-                                                                                className="inline-flex items-center gap-1 rounded-full border border-primary-foreground/30 px-1 py-0.5 text-[9px] hover:bg-primary-foreground/10 disabled:opacity-50 transition-colors"
+                                                                                className="inline-flex items-center gap-1 rounded-full border border-foreground/30 px-1 py-0.5 text-[9px] hover:bg-primary-foreground/10 disabled:opacity-50 transition-colors"
                                                                                 title="Retry send"
                                                                             >
                                                                                 <RotateCcw className="w-2.5 h-2.5" strokeWidth={2.5} />
                                                                             </button>
                                                                         </span>
                                                                     ) : msg.readBy && msg.readBy.length > 0 ? (
-                                                                        <CheckCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-300 transform translate-y-px" strokeWidth={2.5} />
+                                                                        <CheckCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-chat-tick transform translate-y-px" strokeWidth={2.5} />
                                                                     ) : (
-                                                                        <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 opacity-80 transform translate-y-px" strokeWidth={2.5} />
+                                                                        <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 opacity-80 transform text-white! translate-y-px" strokeWidth={2.5} />
                                                                     )
                                                                 )}
                                                             </div>
@@ -1486,7 +1486,7 @@ export function ChatLayout() {
                     {user.role !== Role.STUDENT && (
                         <button
                             onClick={() => setIsNewChatModalOpen(true)}
-                            className="p-2.5 bg-primary/30 text-primary rounded-xl hover:bg-primary-hover transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 active:scale-95"
+                            className="p-2.5 bg-primary/30 text-primary rounded-xl hover:bg-primary/50 cursor-pointer transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 active:scale-95"
                             title="New Chat"
                         >
                             <MessageSquarePlus size={18} className="text-primary/80 hover:text-primary" />
@@ -1525,7 +1525,7 @@ export function ChatLayout() {
                     ) : filteredChats.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
                             <div className="w-16 h-16 bg-primary/30 rounded-2xl flex items-center justify-center mb-4">
-                                <MessageSquarePlus size={28} className="text-primary/80" />
+                                <MessageSquareDashed size={28} className="text-primary/80" />
                             </div>
                             <p className="text-sm font-semibold text-foreground mb-1">No conversations yet</p>
                             <p className="text-xs text-muted-foreground">Start a new chat to begin messaging</p>

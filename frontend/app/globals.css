@@ -47,6 +47,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card-bg);
+  --color-chat-bubble: var(--chat-bubble);
+  --color-chat-tick: var(--chat-tick);
   --color-card-foreground: var(--card-text);
   --color-popover: var(--card-bg);
   --color-popover-foreground: var(--card-text);

@@ -53,6 +53,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // Text Contrast (Automatic black/white text based on background)
         const primaryText = getContrastColor(primary);
         const secondaryText = getContrastColor(secondary);
+        
+        // Chat tick color (white if primary is blue shade, else blue)
+        const chatTickColor = isBlueShade(primary) ? '#ffffff' : '#0952C8';
 
         // Global foreground (text) color depends on mode
         const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -60,6 +63,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
         // --- Semantic Variable Injection ---
         const isDark = effectiveMode === ThemeMode.DARK;
+
+        
+        // Chat bubble background (dimmer version of primary if too bright)
+        const chatBubbleBg = isColorTooBright(primary) ? adjustBrightness(primary, isDark ? -60 : -25) : primary;
 
         // 1. Core Backgrounds & Foregrounds - Crypto Blue Design System
         if (isDark) {
@@ -101,9 +108,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             root.style.setProperty('--text-secondary', '#64748B');
         }
 
-
         root.style.setProperty('--primary-text', primaryText);
         root.style.setProperty('--secondary-text', secondaryText);
+        root.style.setProperty('--chat-bubble', chatBubbleBg);
+        root.style.setProperty('--chat-tick', chatTickColor);
 
         // Tints & Atmospherics
         root.style.setProperty('--chat-doodle', "url('/assets/chat-doodle.svg')");
@@ -202,7 +210,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 
     return (
-        <ThemeContext.Provider value={{ primaryColor, secondaryColor, themeMode, setThemeMode, setPrimaryColor, setThemeColors, refreshTheme }}>
+        <ThemeContext.Provider value={{ 
+            primaryColor, 
+            secondaryColor, 
+            themeMode, 
+            setThemeMode, 
+            setPrimaryColor, 
+            setThemeColors, 
+            refreshTheme
+        }}>
             {children}
         </ThemeContext.Provider>
     );
@@ -236,6 +252,17 @@ function getBrightness(hex: string) {
 function getContrastColor(hex: string) {
     const yiq = getBrightness(hex);
     return (yiq >= 128) ? '#111827' : '#ffffff';
+}
+
+function isColorTooBright(hex: string, threshold: number = 100): boolean {
+    return getBrightness(hex) > threshold;
+}
+
+function isBlueShade(hex: string): boolean {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return false;
+    // Check if blue is the dominant color
+    return rgb.b > rgb.r && rgb.b > rgb.g;
 }
 
 // Utility to darken/lighten hex colors
