@@ -1,8 +1,7 @@
 'use client';
 
-import { MailStatus, ThemeMode } from '@/types';
+import { MailStatus } from '@/types';
 import { Badge } from '@/components/ui/Badge';
-import { useTheme } from '@/context/ThemeContext';
 
 const STATUS_CONFIG: Record<MailStatus, { label: string; variant: 'info' | 'warning' | 'purple' | 'success' | 'neutral' }> = {
     [MailStatus.OPEN]: { label: 'Open', variant: 'info' },
@@ -49,32 +48,20 @@ export function MailPriorityBadge({ priority, className = '' }: PriorityBadgePro
 }
 
 export function useMailRowClassName() {
-    const { themeMode } = useTheme();
-
     return (status: MailStatus) => {
-        const isDark = themeMode === ThemeMode.DARK || (themeMode === ThemeMode.SYSTEM && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
+        const base = 'shadow-sm transition-colors';
+        
         switch (status) {
             case MailStatus.OPEN:
-                return isDark
-                    ? '!bg-blue-950/30 border-l-4 border-l-blue-500 shadow-sm transition-colors'
-                    : '!bg-blue-200/50 border-l-4 border-l-blue-500 shadow-sm transition-colors';
+                return `bg-blue-200/50 dark:bg-blue-950/30 border-l-4 border-l-blue-500 ${base}`;
             case MailStatus.IN_PROGRESS:
-                return isDark
-                    ? '!bg-amber-950/30 border-l-4 border-l-amber-400 transition-colors'
-                    : '!bg-amber-200/50 border-l-4 border-l-amber-400 transition-colors';
+                return `bg-amber-200/50 dark:bg-amber-950/30 border-l-4 border-l-amber-400 ${base}`;
             case MailStatus.AWAITING_RESPONSE:
-                return isDark
-                    ? '!bg-indigo-950/30 border-l-4 border-l-indigo-400 transition-colors'
-                    : '!bg-indigo-200/50 border-l-4 border-l-indigo-400 transition-colors';
+                return `bg-indigo-200/50 dark:bg-indigo-950/30 border-l-4 border-l-indigo-400 ${base}`;
             case MailStatus.RESOLVED:
-                return isDark
-                    ? '!bg-emerald-950/30 border-l-4 border-l-emerald-500 transition-colors'
-                    : '!bg-emerald-200/50 border-l-4 border-l-emerald-500 transition-colors';
+                return `bg-emerald-200/50 dark:bg-emerald-950/30 border-l-4 border-l-emerald-500 ${base}`;
             case MailStatus.CLOSED:
-                return isDark
-                    ? '!bg-slate-800/50 border-l-4 border-l-slate-400 opacity-80 transition-colors'
-                    : '!bg-slate-200/50 border-l-4 border-l-slate-400 opacity-80 transition-colors';
+                return `bg-slate-200/50 dark:bg-slate-800/50 border-l-4 border-l-slate-400 opacity-80 ${base}`;
             default:
                 return 'transition-colors hover:bg-muted/40';
         }

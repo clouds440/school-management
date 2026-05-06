@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getPublicUrl, getUserColor } from '@/lib/utils';
 import Link from 'next/link';
 import { Role } from '@/types';
-import { useTheme } from '@/context/ThemeContext';
+
 
 type BrandSize = 'sm' | 'md' | 'lg' | 'xl' | 'hero';
 
@@ -154,7 +154,7 @@ export const Brand = React.memo(function Brand({
 }: BrandProps) {
   const { user: sessionUser } = useAuth();
   const pathname = usePathname();
-  const { themeMode } = useTheme();
+
 
   const activeUser = user || sessionUser;
 
@@ -205,12 +205,7 @@ export const Brand = React.memo(function Brand({
               src="/assets/eduverse.png"
               alt={PLATFORM_NAME}
               fill
-              className={`${themeMode === 'DARK' ||
-                (themeMode === 'SYSTEM' &&
-                  window.matchMedia('(prefers-color-scheme: dark)').matches)
-                ? 'filter invert'
-                : ''
-                } object-contain transition-all duration-300`}
+              className="dark:invert object-contain transition-all duration-300"
               priority={size === 'hero' || size === 'xl'}
               sizes="(max-width: 768px) 150px, 300px"
             />

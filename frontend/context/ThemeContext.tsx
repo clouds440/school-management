@@ -1,9 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { useAuth } from './AuthContext';
 import { useGlobal } from './GlobalContext';
-import { Role, ThemeMode } from '@/types';
+import { ThemeMode } from '@/types';
 
 interface ThemeContextType {
     primaryColor: string;
@@ -21,9 +20,7 @@ const DEFAULT_SECONDARY = '#5B616E'; // Cool Slate
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const { user, token } = useAuth();
     const { state } = useGlobal();
-    const userRole = user?.role;
     const [primaryColor, setPrimaryColorState] = useState(DEFAULT_PRIMARY);
     const [secondaryColor, setSecondaryColor] = useState(DEFAULT_SECONDARY);
     const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
@@ -50,12 +47,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         root.style.setProperty('--warning', '#F0AD4E'); // Warning
         root.style.setProperty('--error', '#DF2935'); // Error
 
-        // RGB for opacity support
+        // RGB for opacity support (used for shadow)
         const primaryRgb = hexToRgb(primary);
-        const secondaryRgb = hexToRgb(secondary);
-        if (primaryRgb) root.style.setProperty('--primary-rgb', `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`);
-        if (secondaryRgb) root.style.setProperty('--secondary-rgb', `${secondaryRgb.r}, ${secondaryRgb.g}, ${secondaryRgb.b}`);
-
+        
         // Text Contrast (Automatic black/white text based on background)
         const primaryText = getContrastColor(primary);
         const secondaryText = getContrastColor(secondary);
@@ -121,9 +115,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
         // Shadows
         root.style.setProperty('--shadow-color', isDark ? 'rgba(0,0,0,0.5)' : `rgba(${primaryRgb?.r || 0}, ${primaryRgb?.g || 0}, ${primaryRgb?.b || 0}, 0.15)`);
-
-        // Toggle dark class on html for Tailwind utilities
-        if (isDark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
     }, []);
 
     const setThemeColors = useCallback((primary: string, secondary: string) => {
@@ -175,17 +166,40 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         refreshTheme();
     }, [refreshTheme]);
 
+    // Centralized theme class management
     useEffect(() => {
-        if (themeMode !== ThemeMode.SYSTEM) return;
+        const root = document.documentElement;
 
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const handleChange = () => {
-            applyTheme(primaryColor, secondaryColor, ThemeMode.SYSTEM);
+        const updateClass = (isDark: boolean) => {
+            if (isDark) {
+                root.classList.add('dark');
+            } else {
+                root.classList.remove('dark');
+            }
         };
 
-        mediaQuery.addEventListener('change', handleChange);
-        return () => mediaQuery.removeEventListener('change', handleChange);
-    }, [themeMode, primaryColor, secondaryColor, applyTheme]);
+        if (themeMode === ThemeMode.DARK) {
+            updateClass(true);
+        } else if (themeMode === ThemeMode.LIGHT) {
+            updateClass(false);
+        } else {
+            // SYSTEM
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+            const handleSystemChange = () => {
+                const isDark = mediaQuery.matches;
+                updateClass(isDark);
+                // Also update CSS variables
+                applyTheme(primaryColor, secondaryColor, ThemeMode.SYSTEM);
+            };
+
+            handleSystemChange(); // Initial set
+
+            mediaQuery.addEventListener('change', handleSystemChange);
+            return () => mediaQuery.removeEventListener('change', handleSystemChange);
+        }
+    }, [themeMode, applyTheme, primaryColor, secondaryColor]);
+
 
     return (
         <ThemeContext.Provider value={{ primaryColor, secondaryColor, themeMode, setThemeMode, setPrimaryColor, setThemeColors, refreshTheme }}>

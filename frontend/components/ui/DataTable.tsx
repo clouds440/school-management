@@ -4,7 +4,7 @@ import { Pagination } from './Pagination';
 
 export interface Column<T> {
     header: string;
-    accessor: keyof T | ((row: T) => React.ReactNode);
+    accessor: keyof T | ((row: T, index: number) => React.ReactNode);
     sortable?: boolean;
     sortKey?: string; // Key to send to backend for sorting
     width?: number;
@@ -52,17 +52,18 @@ export function DataTable<T>({
     maxHeight,
     showSerialNumber = true
 }: DataTableProps<T>) {
-    const [columnWidths, setColumnWidths] = useState<number[]>(columns.map(c => c.width || 200));
+    // Add serial number column if enabled
+    const displayColumns = React.useMemo(() => showSerialNumber
+        ? [{ header: '#', accessor: (_: T, idx: number) => idx + 1, width: 50, sortable: false, sortKey: '' } as Column<T>, ...columns]
+        : columns, [showSerialNumber, columns]);
+
+    const [columnWidths, setColumnWidths] = useState<number[]>(displayColumns.map(c => c.width || 200));
     const [resizingIndex, setResizingIndex] = useState<number | null>(null);
 
-    // Add serial number column if enabled
-    const displayColumns = showSerialNumber
-        ? [{ header: '#', accessor: (_: T, idx: number) => idx + 1, width: 50, sortable: false, sortKey: '' }, ...columns]
-        : columns;
-
-    const displayColumnWidths = showSerialNumber
-        ? [50, ...columnWidths]
-        : columnWidths;
+    // Update widths if columns count changes
+    useEffect(() => {
+        setColumnWidths(displayColumns.map(c => c.width || 200));
+    }, [displayColumns.length]);
 
     // Check if column is serial number column
     const isSerialColumn = (index: number) => showSerialNumber && index === 0;
@@ -107,7 +108,7 @@ export function DataTable<T>({
                 const diff = e.clientX - startX;
                 setColumnWidths(prev => {
                     const next = [...prev];
-                    next[index] = Math.max(80, startWidth + diff);
+                    next[index] = Math.max(isSerialColumn(index) ? 40 : 80, startWidth + diff);
                     return next;
                 });
             }
@@ -136,8 +137,8 @@ export function DataTable<T>({
             <div className={`flex-1 min-h-0 overflow-x-auto scrollbar-thin scrollbar-thumb-border`}>
                 <table
                     ref={tableRef}
-                    className="w-full text-left text-xs sm:text-sm text-foreground table-fixed min-w-full"
-                    style={{ minWidth: '100%', width: displayColumnWidths.reduce((a, b) => a + b, 0) }}
+                    className="w-full text-left text-xs sm:text-sm text-foreground table-auto"
+                    style={{ minWidth: columnWidths.reduce((a, b) => a + b, 0) }}
                 >
                     <thead className="bg-primary/10 text-[10px] sm:text-[11px] tracking-wider font-semibold opacity-95 border-b border-border/50 select-none sticky top-0 z-100 backdrop-blur-xl shadow-md">
                         <tr>
@@ -149,7 +150,7 @@ export function DataTable<T>({
                                     <th
                                         key={index}
                                         style={{
-                                            width: isSerialColumn(index) ? displayColumnWidths[index] : (index === (showSerialNumber ? 1 : 0) || index === displayColumns.length - 1 ? displayColumnWidths[index] + 40 : displayColumnWidths[index])
+                                            width: columnWidths[index]
                                         }}
                                         className={`
                                             py-3 sm:py-5 border-b border-border/50 whitespace-nowrap relative group/th overflow-visible
@@ -159,7 +160,7 @@ export function DataTable<T>({
                                         onClick={() => handleSort(index)}
                                     >
                                         <div className={`flex items-center gap-1.5 sm:gap-2 overflow-hidden ${isSerialColumn(index) ? 'justify-center' : ''}`}>
-                                            <span className="truncate">{col.header}</span>
+                                            <span className="truncate uppercase text-muted-foreground tracking-widest">{col.header}</span>
                                             {col.sortable && (
                                                 <span className="opacity-60 group-hover/th:text-primary group-hover/th:opacity-100 transition-colors shrink-0">
                                                     {isSorted ? (
@@ -212,7 +213,7 @@ export function DataTable<T>({
                                             <td
                                                 key={index}
                                                 style={{
-                                                    width: isSerialColumn(index) ? displayColumnWidths[index] : undefined
+                                                    width: columnWidths[index]
                                                 }}
                                                 className={`py-2 sm:py-3 align-middle border border-border px-2 ${isSerialColumn(index) ? 'pl-1 text-center' : (isActions ? 'overflow-visible' : 'overflow-hidden px-3 sm:px-6')}`}
                                             >
