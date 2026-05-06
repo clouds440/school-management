@@ -9,7 +9,7 @@ export const DASHBOARD_MODULES = [
     'settings',
     'announcements',
     'assessments',
-    'timetables',
+    'timetable',
     'sections',
     'tasks',
     'chat',
