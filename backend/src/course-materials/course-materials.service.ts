@@ -43,6 +43,7 @@ export class CourseMaterialsService {
     const material = await this.prisma.courseMaterial.create({
       data: {
         sectionId,
+        academicCycleId: section.academicCycleId,
         title: dto.title,
         description: dto.description,
         links: dto.links || [],

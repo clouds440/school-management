@@ -10,7 +10,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Button } from '@/components/ui/Button';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Section, Course, Role, PaginatedResponse, Student } from '@/types';
+import { Section, Role, ApiError, AcademicCycle, Course, PaginatedResponse, Student, Cohort } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -32,6 +32,7 @@ interface SectionParams {
     sortBy: string;
     sortOrder: 'asc' | 'desc';
     my?: boolean;
+    academicCycleId?: string;
 }
 
 export default function SectionsPage() {
@@ -56,8 +57,9 @@ export default function SectionsPage() {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const searchTerm = searchParams.get('search') || '';
     const sortBy = searchParams.get('sortBy') || 'name';
-    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
     const showOnlyMySections = searchParams.get('my') === 'true';
+    const academicCycleId = searchParams.get('academicCycleId') || '';
     const [pageSize, setPageSize] = useState<number>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('edu-sections-limit');
@@ -72,14 +74,21 @@ export default function SectionsPage() {
         search: searchTerm,
         sortBy,
         sortOrder,
-        my: user?.role === Role.TEACHER ? true : showOnlyMySections
+        my: showOnlyMySections || undefined,
+        academicCycleId: academicCycleId || undefined
     };
 
     // SWR for sections data - replaces usePaginatedData
     const sectionsKey = token ? ['sections', sectionParams] as const : null;
     const { data: fetchedData, isLoading: isFetching, error: sectionsError, mutate: mutateSections } = useSWR<
-        PaginatedResponse<Section>
+        { data: Section[]; totalPages: number; totalRecords: number }
     >(sectionsKey);
+
+    const cyclesKey = token ? ['academicCycles', { limit: 100 }] as const : null;
+    const { data: cyclesData } = useSWR<{ data: AcademicCycle[] }>(cyclesKey);
+
+    const cohortsKey = token ? ['cohorts', { limit: 1000 }] as const : null;
+    const { data: cohortsData } = useSWR<{ data: Cohort[] }>(cohortsKey);
 
     useEffect(() => {
         if (user && user.role === Role.STUDENT) {
@@ -89,7 +98,7 @@ export default function SectionsPage() {
 
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingSection, setEditingSection] = useState<Section | null>(null);
-    const [editFormData, setEditFormData] = useState({ name: '', semester: '', year: '', room: '', courseId: '' });
+    const [editFormData, setEditFormData] = useState({ name: '', semester: '', year: '', room: '', courseId: '', academicCycleId: '', cohortId: '' });
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deletingSection, setDeletingSection] = useState<Section | null>(null);
@@ -185,8 +194,6 @@ export default function SectionsPage() {
         }
     };
 
-    // Redundant sections variable removed. Using fetchedData directly.
-
     const columns = [
         {
             header: 'Section Name',
@@ -256,7 +263,9 @@ export default function SectionsPage() {
                                 semester: row.semester || '',
                                 year: row.year || '',
                                 room: row.room || '',
-                                courseId: row.courseId || ''
+                                courseId: row.courseId || '',
+                                academicCycleId: row.academicCycleId || '',
+                                cohortId: row.cohortId || ''
                             });
                             // Fetch students and pre-select enrolled ones
                             fetchStudents().then(() => {
@@ -272,7 +281,9 @@ export default function SectionsPage() {
                                 semester: row.semester || '',
                                 year: row.year || '',
                                 room: row.room || '',
-                                courseId: row.courseId || ''
+                                courseId: row.courseId || '',
+                                academicCycleId: row.academicCycleId || '',
+                                cohortId: row.cohortId || ''
                             });
                             setEditModalOpen(true);
                         }}
@@ -305,20 +316,37 @@ export default function SectionsPage() {
         <div className="flex flex-col h-full w-full">
             <div className="bg-card/80 backdrop-blur-2xl rounded-lg shadow-xl border border-border p-1 md:p-2 overflow-hidden flex flex-col flex-1 min-h-0">
                 <div className="mb-2 flex flex-col md:flex-row md:items-center justify-between gap-2 shrink-0">
-                    <div className="flex-1 w-full">
-                        <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by name, course, or room..." />
+                    <div className="flex-1">
+                        <SearchBar value={searchTerm} onChange={(val) => updateQueryParams({ search: val, page: 1 })} placeholder="Search by section name, room..." />
                     </div>
 
                     <div className='flex w-full md:w-auto gap-2 justify-between'>
-                        {user?.role === Role.ORG_MANAGER && (
+                        {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                             <Drawer position='left'>
-                                <div className="flex flex-col">
+                                <div className="flex flex-col gap-6">
                                     {/* My Sections Toggle */}
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium">My Sections</span>
+                                    <div className="flex items-center justify-between bg-muted/20 p-3 rounded-lg border border-border">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold uppercase tracking-wider">My Sections</span>
+                                            <span className="text-[10px] text-muted-foreground">Only show sections assigned to me</span>
+                                        </div>
                                         <Toggle
                                             checked={showOnlyMySections}
                                             onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
+                                        />
+                                    </div>
+
+                                    {/* Academic Cycle Filter */}
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Filter by Academic Cycle</Label>
+                                        <CustomSelect
+                                            options={[
+                                                { label: 'All Academic Cycles', value: '' },
+                                                ...(cyclesData?.data?.map(cycle => ({ value: cycle.id, label: cycle.name })) || [])
+                                            ]}
+                                            value={academicCycleId}
+                                            onChange={(val) => updateQueryParams({ academicCycleId: val, page: 1 })}
+                                            placeholder="All Cycles"
                                         />
                                     </div>
                                 </div>
@@ -329,9 +357,9 @@ export default function SectionsPage() {
                             <Button
                                 onClick={() => router.push('/sections/create')}
                                 icon={Plus}
-                                className="shrink-0"
+                                className="w-auto shadow-lg shadow-primary/10"
                             >
-                                Create Section
+                                New Section
                             </Button>
                         )}
                     </div>
@@ -384,9 +412,9 @@ export default function SectionsPage() {
                     </div>
                     {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) ? (
                         <div className="space-y-2">
-                            <Label>Course</Label>
+                            <Label>Course *</Label>
                             <CustomSelect
-                                options={courses.map(c => ({ value: c.id, label: c.name, icon: BookOpen }))}
+                                options={courses.map((c: Course) => ({ value: c.id, label: c.name, icon: BookOpen }))}
                                 value={editFormData.courseId}
                                 onChange={(val) => setEditFormData({ ...editFormData, courseId: val })}
                                 placeholder="Select Course"
@@ -398,13 +426,45 @@ export default function SectionsPage() {
                         <div className="space-y-2">
                             <Label>Course</Label>
                             <Input
-                                value={courses.find(c => c.id === editFormData.courseId)?.name || 'N/A'}
+                                value={courses.find((c: Course) => c.id === editFormData.courseId)?.name || 'N/A'}
                                 readOnly
                                 disabled
                                 icon={BookOpen}
                             />
                         </div>
                     )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Academic Cycle</Label>
+                            <CustomSelect
+                                options={[
+                                    { label: 'No Cycle', value: '' },
+                                    ...(cyclesData?.data?.map((c: AcademicCycle) => ({ value: c.id, label: c.name })) || [])
+                                ]}
+                                value={editFormData.academicCycleId || ''}
+                                onChange={(val) => setEditFormData({ ...editFormData, academicCycleId: val, cohortId: '' })}
+                                placeholder="Select Cycle"
+                                disabled={user?.role === Role.TEACHER}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Cohort</Label>
+                            <CustomSelect
+                                options={[
+                                    { label: 'No Cohort', value: '' },
+                                    ...(cohortsData?.data?.filter((c: Cohort) => !editFormData.academicCycleId || c.academicCycleId === editFormData.academicCycleId).map((c: Cohort) => ({
+                                        value: c.id,
+                                        label: c.name
+                                    })) || [])
+                                ]}
+                                value={editFormData.cohortId || ''}
+                                onChange={(val) => setEditFormData({ ...editFormData, cohortId: val })}
+                                placeholder="Select Cohort"
+                                disabled={user?.role === Role.TEACHER}
+                            />
+                        </div>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="semester">Semester</Label>

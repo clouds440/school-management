@@ -110,6 +110,7 @@ export class StudentService {
             },
           }
         : {}),
+      ...(options.cohortId ? { cohortId: options.cohortId } : {}),
       ...(options.my && options.userId
         ? {
             enrollments: {
@@ -180,6 +181,7 @@ export class StudentService {
               avatarUpdatedAt: true,
             },
           },
+          cohort: true,
           enrollments: {
             include: {
               section: {
@@ -290,9 +292,6 @@ export class StudentService {
             gender: data.gender,
             feePlan: data.feePlan,
             status: data.status as unknown as StudentStatus,
-            enrollments: data.sectionIds
-              ? { create: data.sectionIds.map((sectionId) => ({ sectionId })) }
-              : undefined,
             updatedBy: userContext.name || userContext.email,
           },
           include: {
@@ -300,6 +299,41 @@ export class StudentService {
             enrollments: { include: { section: true } },
           },
         });
+
+        if (data.sectionIds && data.sectionIds.length > 0) {
+          const sections = await prisma.section.findMany({
+            where: { id: { in: data.sectionIds } },
+            select: { id: true, academicCycleId: true },
+          });
+          const sectionCycleMap = new Map(sections.map(s => [s.id, s.academicCycleId]));
+
+          await prisma.enrollment.createMany({
+            data: data.sectionIds.map((sectionId) => ({
+              studentId: student.id,
+              sectionId,
+              academicCycleId: sectionCycleMap.get(sectionId) || undefined,
+              source: 'MANUAL' as const,
+            })),
+          });
+
+          await prisma.enrollmentHistory.createMany({
+            data: data.sectionIds.map((sectionId) => ({
+              studentId: student.id,
+              sectionId,
+              academicCycleId: sectionCycleMap.get(sectionId) || undefined,
+              source: 'MANUAL' as const,
+            })),
+          });
+          
+          // Re-fetch to include the newly created manual enrollments
+          return prisma.student.findUnique({
+            where: { id: student.id },
+            include: {
+              user: { select: { email: true, name: true, phone: true } },
+              enrollments: { include: { section: true } },
+            },
+          });
+        }
 
         return student;
       });
@@ -424,12 +458,61 @@ export class StudentService {
       }
 
       if (data.sectionIds !== undefined) {
-        await tx.enrollment.deleteMany({ where: { studentId: id } });
-        if (data.sectionIds.length > 0) {
+        // Fetch current MANUAL enrollments
+        const currentManualEnrollments = await tx.enrollment.findMany({
+          where: { studentId: id, source: 'MANUAL' },
+          select: { id: true, sectionId: true, academicCycleId: true },
+        });
+
+        const currentSectionIds = new Set(currentManualEnrollments.map(e => e.sectionId));
+        const newSectionIds = new Set(data.sectionIds);
+
+        const sectionsToAdd = data.sectionIds.filter(id => !currentSectionIds.has(id));
+        const sectionsToRemove = currentManualEnrollments.filter(e => !newSectionIds.has(e.sectionId));
+
+        if (sectionsToRemove.length > 0) {
+          const idsToRemove = sectionsToRemove.map(e => e.id);
+          const sectionIdsToRemove = sectionsToRemove.map(e => e.sectionId);
+
+          // Mark as removed in history
+          await tx.enrollmentHistory.updateMany({
+            where: {
+              studentId: id,
+              sectionId: { in: sectionIdsToRemove },
+              source: 'MANUAL',
+              removedAt: null,
+            },
+            data: { removedAt: new Date() },
+          });
+
+          // Delete the manual enrollments
+          await tx.enrollment.deleteMany({
+            where: { id: { in: idsToRemove } },
+          });
+        }
+
+        if (sectionsToAdd.length > 0) {
+          const sections = await tx.section.findMany({
+            where: { id: { in: sectionsToAdd } },
+            select: { id: true, academicCycleId: true },
+          });
+          const sectionCycleMap = new Map(sections.map(s => [s.id, s.academicCycleId]));
+
           await tx.enrollment.createMany({
-            data: data.sectionIds.map((sectionId) => ({
+            data: sectionsToAdd.map((sectionId) => ({
               studentId: id,
               sectionId,
+              academicCycleId: sectionCycleMap.get(sectionId) || undefined,
+              source: 'MANUAL' as const,
+            })),
+          });
+
+          await tx.enrollmentHistory.createMany({
+            data: sectionsToAdd.map((sectionId) => ({
+              studentId: id,
+              sectionId,
+              academicCycleId: sectionCycleMap.get(sectionId) || undefined,
+              source: 'MANUAL' as const,
             })),
           });
         }
@@ -448,6 +531,7 @@ export class StudentService {
               avatarUpdatedAt: true,
             },
           },
+          cohort: { select: { id: true, name: true } },
           enrollments: { include: { section: true } },
         },
       });

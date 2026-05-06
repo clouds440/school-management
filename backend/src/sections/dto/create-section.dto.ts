@@ -20,4 +20,12 @@ export class CreateSectionDto {
   @IsString()
   @IsNotEmpty()
   courseId: string;
+
+  @IsString()
+  @IsOptional()
+  academicCycleId?: string;
+
+  @IsString()
+  @IsOptional()
+  cohortId?: string;
 }

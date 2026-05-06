@@ -163,10 +163,17 @@ export class AttendanceService {
   // --- Timetable & Attendance ---
   async createSchedule(orgId: string, sectionId: string, dto: CreateScheduleDto) {
     await this.validateScheduleConflict(sectionId, dto);
+
+    // Derive academicCycleId from section
+    const section = await this.prisma.section.findUnique({
+      where: { id: sectionId },
+      select: { academicCycleId: true },
+    });
     
     return this.prisma.sectionSchedule.create({
       data: {
         sectionId,
+        academicCycleId: section?.academicCycleId,
         day: dto.day,
         startTime: dto.startTime,
         endTime: dto.endTime,
@@ -314,6 +321,12 @@ export class AttendanceService {
     
     const isAdhoc = !scheduleId;
 
+    // Derive academicCycleId from section
+    const sectionData = await this.prisma.section.findUnique({
+      where: { id: sectionId },
+      select: { academicCycleId: true },
+    });
+
     const existing = await this.prisma.attendanceSession.findFirst({
       where: { 
         sectionId,
@@ -334,6 +347,7 @@ export class AttendanceService {
       data: {
         sectionId,
         scheduleId,
+        academicCycleId: sectionData?.academicCycleId,
         isAdhoc,
         date: sessionDate,
         startTime,

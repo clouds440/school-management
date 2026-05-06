@@ -13,6 +13,8 @@ export interface PaginationOptions {
   userId?: string;
   status?: string;
   deleted?: boolean;
+  academicCycleId?: string;
+  cohortId?: string;
 }
 
 export interface PaginatedResult<T> {

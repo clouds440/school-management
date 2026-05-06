@@ -32,6 +32,8 @@ model Organization {
   subOrgs         Organization[] @relation("ParentChildOrg")
   chats           Chat[]
   announcements   Announcement[]
+  academicCycles  AcademicCycle[]
+  cohorts         Cohort[]
 
   @@index([status])
   @@index([type])
@@ -136,43 +138,56 @@ model Course {
 }
 
 model Section {
-  id          String       @id @default(uuid())
-  name        String
-  semester    String?
-  year        String?
-  room        String?
-  courseId    String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  enrollments Enrollment[]
-  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  teachers    Teacher[]    @relation("SectionToTeacher")
+  id               String       @id @default(uuid())
+  name             String
+  semester         String?
+  year             String?
+  room             String?
+  courseId         String
+  academicCycleId  String?
+  cohortId         String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  enrollments      Enrollment[]
+  course           Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  academicCycle    AcademicCycle? @relation(fields: [academicCycleId], references: [id])
+  cohort           Cohort?      @relation(fields: [cohortId], references: [id])
+  teachers         Teacher[]    @relation("SectionToTeacher")
   schedules          SectionSchedule[]
   attendanceSessions AttendanceSession[]
   assessments        Assessment[]
-  courseMaterials     CourseMaterial[]
+  courseMaterials    CourseMaterial[]
+  enrollmentHistories EnrollmentHistory[]
 
   @@index([courseId])
+  @@index([academicCycleId])
+  @@index([cohortId])
 }
 
 model Enrollment {
-  id        String   @id @default(uuid())
-  studentId String
-  sectionId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id                    String           @id @default(uuid())
+  studentId             String
+  sectionId             String
+  academicCycleId       String?
+  source                EnrollmentSource @default(MANUAL)
+  isExcludedFromCohort  Boolean          @default(false)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  section               Section          @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  student               Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicCycle         AcademicCycle?   @relation(fields: [academicCycleId], references: [id])
 
   @@unique([studentId, sectionId])
   @@index([sectionId])
   @@index([studentId])
+  @@index([academicCycleId])
 }
 
 model Student {
   id                 String        @id @default(uuid())
   userId             String        @unique
   organizationId     String
+  cohortId           String?
   registrationNumber String        @default("TEMP_ID")
   rollNumber         String        @default("TEMP_ROLL")
   fatherName         String?
@@ -194,11 +209,15 @@ model Student {
   enrollments        Enrollment[]
   organization       Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cohort             Cohort?       @relation(fields: [cohortId], references: [id])
   grades             Grade[]
   submissions        Submission[]
   attendanceRecords  AttendanceRecord[]
+  enrollmentHistories     EnrollmentHistory[]
+  cohortMembershipHistories CohortMembershipHistory[]
 
   @@index([organizationId])
+  @@index([cohortId])
 }
 
 model Assessment {
@@ -213,11 +232,13 @@ model Assessment {
   allowSubmissions Boolean        @default(true)
   externalLink     String?
   isVideoLink      Boolean        @default(false)
+  academicCycleId  String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   section          Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   course           Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
   organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  academicCycle    AcademicCycle? @relation(fields: [academicCycleId], references: [id])
   organizationId   String
   grades           Grade[]
   submissions      Submission[]
@@ -225,33 +246,41 @@ model Assessment {
   @@index([sectionId])
   @@index([courseId])
   @@index([dueDate])
+  @@index([academicCycleId])
 }
 
 model Grade {
-  id            String      @id @default(uuid())
-  assessmentId  String
-  studentId     String
-  marksObtained Float
-  feedback      String?
-  status        GradeStatus @default(DRAFT)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  updatedBy     String? // userId
-  assessment    Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  student       Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id              String         @id @default(uuid())
+  assessmentId    String
+  studentId       String
+  marksObtained   Float
+  feedback        String?
+  status          GradeStatus    @default(DRAFT)
+  academicCycleId String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  updatedBy       String? // userId
+  assessment      Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  student         Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicCycle   AcademicCycle? @relation(fields: [academicCycleId], references: [id])
 
   @@unique([assessmentId, studentId])
   @@index([studentId])
+  @@index([academicCycleId])
 }
 
 model Submission {
-  id           String     @id @default(uuid())
-  assessmentId String
-  studentId    String
-  fileUrl      String?
-  submittedAt  DateTime   @default(now())
-  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id              String         @id @default(uuid())
+  assessmentId    String
+  studentId       String
+  fileUrl         String?
+  academicCycleId String?
+  submittedAt     DateTime       @default(now())
+  assessment      Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  student         Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicCycle   AcademicCycle? @relation(fields: [academicCycleId], references: [id])
+
+  @@index([academicCycleId])
 }
 
 // ─── Mail System ────────────────────────────────────────────────────────────────
@@ -575,8 +604,9 @@ model Announcement {
 // ─── TIMETABLE & ATTENDANCE SYSTEM ──────────────────────────────────────────
 
 model SectionSchedule {
-  id        String   @id @default(uuid())
-  sectionId String
+  id              String         @id @default(uuid())
+  sectionId       String
+  academicCycleId String?
 
   day       Int      // 0 = Sunday, 1 = Monday ... 6 = Saturday
   startTime String   // "09:00"
@@ -587,33 +617,38 @@ model SectionSchedule {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  section       Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  academicCycle AcademicCycle? @relation(fields: [academicCycleId], references: [id])
 
   @@index([sectionId])
   @@index([day])
+  @@index([academicCycleId])
 
   attendanceSessions AttendanceSession[]
 }
 
 model AttendanceSession {
-  id        String   @id @default(uuid())
-  sectionId String
-  scheduleId String?
-  isAdhoc     Boolean  @default(false)
-  date       DateTime
-  startTime  String?
-  endTime    String?
+  id              String         @id @default(uuid())
+  sectionId       String
+  scheduleId      String?
+  academicCycleId String?
+  isAdhoc         Boolean        @default(false)
+  date            DateTime
+  startTime       String?
+  endTime         String?
 
   createdAt DateTime @default(now())
 
-  section  Section          @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  schedule SectionSchedule? @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-  records  AttendanceRecord[]
+  section       Section          @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  schedule      SectionSchedule? @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  academicCycle AcademicCycle?   @relation(fields: [academicCycleId], references: [id])
+  records       AttendanceRecord[]
 
   @@unique([scheduleId, date])
   @@index([sectionId])
   @@index([scheduleId])
   @@index([date])
+  @@index([academicCycleId])
 }
 
 model AttendanceRecord {
@@ -638,17 +673,111 @@ enum AttendanceStatus {
 
 // ─── COURSE MATERIALS ────────────────────────────────────────────────────────
 model CourseMaterial {
-  id          String   @id @default(uuid())
-  sectionId   String
-  title       String
-  description String?
-  links       String[]
-  isVideoLink Boolean  @default(false)
-  createdBy   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String         @id @default(uuid())
+  sectionId       String
+  academicCycleId String?
+  title           String
+  description     String?
+  links           String[]
+  isVideoLink     Boolean        @default(false)
+  createdBy       String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
-  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  section       Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  academicCycle AcademicCycle? @relation(fields: [academicCycleId], references: [id])
 
   @@index([sectionId])
+  @@index([academicCycleId])
+}
+
+// ─── ACADEMIC LIFECYCLE SYSTEM ───────────────────────────────────────────────
+
+enum EnrollmentSource {
+  MANUAL
+  COHORT
+}
+
+model AcademicCycle {
+  id             String   @id @default(uuid())
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  isActive       Boolean  @default(false)
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization        Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cohorts             Cohort[]
+  sections            Section[]
+  enrollments         Enrollment[]
+  enrollmentHistories EnrollmentHistory[]
+  cohortMembershipHistories CohortMembershipHistory[]
+  assessments         Assessment[]
+  grades              Grade[]
+  submissions         Submission[]
+  attendanceSessions  AttendanceSession[]
+  courseMaterials     CourseMaterial[]
+  sectionSchedules    SectionSchedule[]
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model Cohort {
+  id              String   @id @default(uuid())
+  name            String
+  organizationId  String
+  academicCycleId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  academicCycle AcademicCycle @relation(fields: [academicCycleId], references: [id])
+  students      Student[]
+  sections      Section[]
+  cohortMembershipHistories CohortMembershipHistory[]
+
+  @@index([organizationId])
+  @@index([academicCycleId])
+}
+
+model EnrollmentHistory {
+  id              String    @id @default(uuid())
+  studentId       String
+  sectionId       String
+  academicCycleId String?
+
+  source          EnrollmentSource @default(MANUAL)
+  wasExcluded     Boolean          @default(false)
+
+  enrolledAt      DateTime  @default(now())
+  removedAt       DateTime?
+
+  student       Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  section       Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  academicCycle AcademicCycle? @relation(fields: [academicCycleId], references: [id])
+
+  @@index([studentId])
+  @@index([sectionId])
+  @@index([academicCycleId])
+}
+
+model CohortMembershipHistory {
+  id              String    @id @default(uuid())
+  studentId       String
+  cohortId        String
+  academicCycleId String?
+
+  joinedAt        DateTime  @default(now())
+  leftAt          DateTime?
+
+  student       Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  cohort        Cohort         @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  academicCycle AcademicCycle? @relation(fields: [academicCycleId], references: [id])
+
+  @@index([studentId])
+  @@index([cohortId])
+  @@index([academicCycleId])
 }

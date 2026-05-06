@@ -115,6 +115,7 @@ const studentBaseSchema = z.object({
     bloodGroup: z.string().optional().or(z.literal('')),
     address: z.string().optional().or(z.literal('')),
     sectionIds: z.array(z.string()).default([]),
+    cohortId: z.string().optional().or(z.literal('')),
 });
 
 // Create → password REQUIRED + metadata REQUIRED

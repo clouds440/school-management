@@ -1,6 +1,6 @@
 'use client';
 
-import { mutate } from 'swr';
+import useSWR, { mutate } from 'swr';
 import { matchesCacheKeyPrefix } from '@/lib/swr';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { User, Mail, Lock, Hash, ShieldCheck, UserX, GraduationCap, BookOpen, MapPin, Phone, Plus, Users, DollarSign } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useGlobal } from '@/context/GlobalContext';
-import { Section, Student, StudentStatus, CreateStudentRequest, UpdateStudentRequest, Role } from '@/types';
+import { Section, Student, StudentStatus, CreateStudentRequest, UpdateStudentRequest, Role, Cohort, AcademicCycle } from '@/types';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
@@ -65,7 +65,8 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
             phone: initialData.user?.phone || '',
             emergencyContact: initialData.emergencyContact || '',
             bloodGroup: initialData.bloodGroup || '',
-            address: initialData.address || ''
+            address: initialData.address || '',
+            cohortId: initialData.cohortId || ''
         } : {
             name: '',
             email: '',
@@ -86,7 +87,8 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
             phone: '',
             emergencyContact: '',
             bloodGroup: '',
-            address: ''
+            address: '',
+            cohortId: ''
         }
     });
 
@@ -112,7 +114,8 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
                 phone: initialData.user?.phone || '',
                 emergencyContact: initialData.emergencyContact || '',
                 bloodGroup: initialData.bloodGroup || '',
-                address: initialData.address || ''
+                address: initialData.address || '',
+                cohortId: initialData.cohortId || ''
             });
         }
     }, [initialData, reset]);
@@ -186,6 +189,8 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
             dispatch({ type: 'UI_STOP_PROCESSING', payload: 'student-submit' });
         }
     };
+
+    const { data: cohortsData } = useSWR<{ data: (Cohort & { academicCycle?: AcademicCycle })[] }>(token ? ['cohorts', { limit: 500 }] : null);
 
     useEffect(() => {
         if (token) {
@@ -397,24 +402,50 @@ export default function StudentForm({ studentId, initialData, isProfile }: Stude
                 </div>
 
                 <div className="p-6 md:p-8">
-                    <div className="space-y-2 md:space-y-3 max-w-2xl">
-                        <Label>Enroll in Sections</Label>
-                        <CustomMultiSelect
-                            options={sections.map(s => ({
-                                value: s.id,
-                                label: `${s.name} ${s.course?.name ? `(${s.course.name})` : ''}`
-                            }))}
-                            values={formData.sectionIds || []}
-                            onChange={(vals) => {
-                                if (isProfile || isWatchMode) return;
-                                setValue('sectionIds', vals);
-                                trigger('sectionIds');
-                            }}
-                            placeholder="Select one or more sections..."
-                            error={!!errors.sectionIds}
-                            disabled={isProfile || isWatchMode}
-                        />
-                        {errors.sectionIds && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.sectionIds.message}</p>}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Enroll in Cohort</Label>
+                            <CustomSelect
+                                options={[
+                                    { label: 'No Cohort', value: '' },
+                                    ...(cohortsData?.data?.map((c: Cohort) => ({
+                                        value: c.id,
+                                        label: `${c.name} (${c.academicCycle?.name || 'No Cycle'})`
+                                    })) || [])
+                                ]}
+                                value={formData.cohortId || ''}
+                                onChange={(val) => {
+                                    if (isProfile || isWatchMode) return;
+                                    setValue('cohortId', val);
+                                    trigger('cohortId');
+                                }}
+                                placeholder="Select a cohort..."
+                                error={!!errors.cohortId}
+                                disabled={isProfile || isWatchMode}
+                                icon={Users}
+                            />
+                            {errors.cohortId && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.cohortId.message}</p>}
+                        </div>
+
+                        <div className="space-y-2 md:space-y-3">
+                            <Label>Enroll in Individual Sections</Label>
+                            <CustomMultiSelect
+                                options={sections.map(s => ({
+                                    value: s.id,
+                                    label: `${s.name} ${s.course?.name ? `(${s.course.name})` : ''}`
+                                }))}
+                                values={formData.sectionIds || []}
+                                onChange={(vals) => {
+                                    if (isProfile || isWatchMode) return;
+                                    setValue('sectionIds', vals);
+                                    trigger('sectionIds');
+                                }}
+                                placeholder="Select one or more sections..."
+                                error={!!errors.sectionIds}
+                                disabled={isProfile || isWatchMode}
+                            />
+                            {errors.sectionIds && <p className="mt-1 text-xs text-red-500 font-semibold">{errors.sectionIds.message}</p>}
+                        </div>
                     </div>
                 </div>
             </div>

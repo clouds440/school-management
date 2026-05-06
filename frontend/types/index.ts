@@ -62,6 +62,10 @@ export interface Section {
     updatedBy?: string;
     updatedAt?: string;
     schedules?: SectionSchedule[];
+    academicCycleId?: string;
+    cohortId?: string | null;
+    academicCycle?: AcademicCycle;
+    cohort?: Cohort;
 }
 
 export interface Student {
@@ -83,9 +87,11 @@ export interface Student {
     feePlan?: string | null;
     status?: StudentStatus;
     user: User;
-    enrollments?: { section: Section }[];
+    enrollments?: { section: Section; source?: string; isExcludedFromCohort?: boolean; academicCycleId?: string }[];
     updatedBy?: string;
     updatedAt?: string;
+    cohortId?: string | null;
+    cohort?: Cohort;
 }
 
 export interface Attachment {
@@ -708,3 +714,114 @@ export interface UpdateCourseMaterialRequest {
     links?: string[];
     isVideoLink?: boolean;
 }
+
+// ─── Academic Lifecycle System Types ───────────────────────────────────────
+
+export interface AcademicCycle {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+    organizationId: string;
+    _count?: {
+        cohorts: number;
+        sections: number;
+    };
+}
+
+export interface Cohort {
+    id: string;
+    name: string;
+    organizationId: string;
+    academicCycleId: string;
+    academicCycle?: AcademicCycle;
+    students?: Student[];
+    sections?: Section[];
+    _count?: {
+        students: number;
+        sections: number;
+    };
+}
+
+export interface EnrollmentHistory {
+    id: string;
+    studentId: string;
+    sectionId: string;
+    academicCycleId: string;
+    source: 'MANUAL' | 'COHORT';
+    wasExcluded: boolean;
+    enrolledAt: string;
+    removedAt?: string | null;
+}
+
+export interface TranscriptSection {
+    sectionId: string;
+    courseName: string;
+    sectionName: string;
+    semester?: string;
+    year?: string;
+    source: string;
+    wasExcluded: boolean;
+    removedAt?: string | null;
+    totalMarks: number;
+    marksObtained: number;
+    percentage: number;
+    status: string;
+}
+
+export interface Transcript {
+    studentId: string;
+    studentName: string;
+    academicCycleId: string;
+    academicCycleName: string;
+    cohortName?: string;
+    sections: TranscriptSection[];
+    overallPercentage: number;
+    totalAssessments: number;
+}
+
+export interface CreateAcademicCycleDto {
+    name: string;
+    startDate: string;
+    endDate: string;
+    isActive?: boolean;
+}
+
+export interface UpdateAcademicCycleDto {
+    name?: string;
+    startDate?: string;
+    endDate?: string;
+    isActive?: boolean;
+}
+
+export interface CreateCohortDto {
+    name: string;
+    academicCycleId: string;
+    studentIds?: string[];
+    sectionIds?: string[];
+}
+
+export interface UpdateCohortDto {
+    name?: string;
+    studentIds?: string[];
+    sectionIds?: string[];
+}
+
+export interface PromoteStudentsDto {
+    studentIds: string[];
+    fromCycleId: string;
+    toCycleId: string;
+    toCohortId: string;
+}
+
+export interface CopyForwardDto {
+    fromCycleId: string;
+    toCycleId: string;
+    options: {
+        copySchedules: boolean;
+        copyAssessments: boolean;
+        copyMaterials: boolean;
+    };
+}
+

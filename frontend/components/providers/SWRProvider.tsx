@@ -23,6 +23,9 @@ type FetcherKey =
     | readonly ['sections-for-schedules', object]
     | readonly ['student-assessments', object]
     | readonly ['teacher-sections', object]
+    | readonly ['academicCycles', object]
+    | readonly ['cohorts', object]
+    | readonly ['studentsSearch', object]
     // Single string ID resources
     | readonly ['attendance-section', string]
     | readonly ['section-schedules', string]
@@ -38,6 +41,7 @@ type FetcherKey =
     | readonly ['section-attendance-range', string]
     | readonly ['teacher-profile', string]
     | readonly ['student-profile', string]
+    | readonly ['transcript', string]
     // Multi-param resources
     | readonly ['attendance-daily', string, string, string | undefined]  // [sectionId, date, scheduleId?]
     | readonly ['attendance-monthly', string, string, string]  // [sectionId, start, end]
@@ -73,6 +77,12 @@ function createFetcher(token: string | null) {
                     return await api.admin.getOrganizations(token, args[0] as object) as T;
                 case 'platform-admins':
                     return await api.admin.getPlatformAdmins(token, args[0] as object) as T;
+                case 'academicCycles':
+                    return await api.academicCycles.getCycles(token, args[0] as object) as T;
+                case 'cohorts':
+                    return await api.cohorts.getCohorts(token, args[0] as object) as T;
+                case 'studentsSearch':
+                    return await api.org.getStudents(token, args[0] as object) as T;
 
                 // Mail
                 case 'mails':
@@ -157,6 +167,8 @@ function createFetcher(token: string | null) {
                     return await api.org.getProfile<Teacher>(token) as T;
                 case 'student-profile':
                     return await api.org.getProfile<Student>(token) as T;
+                case 'transcript':
+                    return await api.transcripts.getStudentTranscript(args[0] as string, token) as T;
 
                 // Attendance component
                 case 'student-attendance':

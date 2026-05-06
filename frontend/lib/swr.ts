@@ -29,7 +29,11 @@ export type CacheKeyPrefix =
     | 'notifications'
     | 'chats'
     | 'messages'
-    | 'unread-count';
+    | 'unread-count'
+    | 'academicCycles'
+    | 'cohorts'
+    | 'transcript'
+    | 'studentsSearch';
 
 // Cache key can be a string, an array with a prefix, or null
 export type CacheKey = string | readonly [CacheKeyPrefix, ...unknown[]] | null;

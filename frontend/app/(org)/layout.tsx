@@ -7,7 +7,7 @@ import {
     MessageSquare, Settings, LibraryBig, Trophy,
     Clock, ShieldOff, RefreshCw, Mail, CheckCircle, Book,
     Layers,
-    CalendarDays
+    CalendarDays, Calendar, Network, FileText, ArrowRightCircle
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
@@ -271,6 +271,10 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             orgLinks.push({ id: 'STUDENTS', label: 'Students', href: '/students', icon: GraduationCap });
             orgLinks.push({ id: 'ATTENDANCE', label: 'Attendance', href: '/attendance', icon: CheckCircle });
             orgLinks.push({ id: 'SCHEDULES', label: 'Schedules', href: '/schedules', icon: CalendarDays });
+            orgLinks.push({ id: 'ACADEMIC_CYCLES', label: 'Academic Cycles', href: '/academic-cycles', icon: Calendar });
+            orgLinks.push({ id: 'COHORTS', label: 'Cohorts', href: '/cohorts', icon: Network });
+            orgLinks.push({ id: 'TRANSCRIPTS', label: 'Transcripts', href: '/transcripts', icon: FileText });
+            orgLinks.push({ id: 'PROMOTIONS', label: 'Promotions', href: '/promotions', icon: ArrowRightCircle });
 
             if (user?.role === Role.ORG_ADMIN) {
                 orgLinks.push({ id: 'SETTINGS', label: 'Settings', href: '/settings', icon: Settings });

@@ -8,7 +8,8 @@ import {
     UpdateGradeRequest, CreateSubmissionRequest, FinalGradeResponse, MailTarget,
     Chat, ChatMessage, Notification, Announcement, TargetType, AnnouncementPriority, User,
     ThemeMode, SectionSchedule, TimetableEntry, AttendanceRecord, SectionAttendanceResponse,
-    RangeAttendanceResponse, CourseMaterial, CreateCourseMaterialRequest, UpdateCourseMaterialRequest, DashboardInsights
+    RangeAttendanceResponse, CourseMaterial, CreateCourseMaterialRequest, UpdateCourseMaterialRequest, DashboardInsights,
+    AcademicCycle, Cohort, Transcript, CreateAcademicCycleDto, UpdateAcademicCycleDto, CreateCohortDto, UpdateCohortDto, PromoteStudentsDto, CopyForwardDto
 } from '@/types';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') ?? '';
@@ -201,7 +202,7 @@ export const api = {
             request<Student>(`/org/students/${id}`, { token }),
         getStudentByUserId: (userId: string, token: string) =>
             request<Student>(`/org/students/by-user/${userId}`, { token }),
-        getStudents: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean, sectionId?: string, status?: string, deleted?: boolean } = {}) =>
+        getStudents: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean, sectionId?: string, status?: string, deleted?: boolean, cohortId?: string } = {}) =>
             request<PaginatedResponse<Student>>(`/org/students${buildQueryString(params)}`, { token }),
         createStudent: (data: CreateStudentRequest, token: string) =>
             request<Student>('/org/students', { method: 'POST', body: JSON.stringify(data), token }),
@@ -214,7 +215,7 @@ export const api = {
 
         getSection: (id: string, token: string) =>
             request<Section>(`/org/sections/${id}`, { token }),
-        getSections: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean, userId?: string } = {}) =>
+        getSections: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', my?: boolean, userId?: string, academicCycleId?: string } = {}) =>
             request<PaginatedResponse<Section>>(`/org/sections${buildQueryString(params)}`, { token }),
         createSection: (data: CreateSectionRequest, token: string) =>
             request<Section>('/org/sections', { method: 'POST', body: JSON.stringify(data), token }),
@@ -402,5 +403,64 @@ export const api = {
             request<CourseMaterial>(`/course-materials/${materialId}`, { method: 'PUT', body: JSON.stringify(data), token }),
         deleteMaterial: (materialId: string, token: string) =>
             request<void>(`/course-materials/${materialId}`, { method: 'DELETE', token }),
+    },
+
+    academicCycles: {
+        getCycles: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc' } = {}) =>
+            request<PaginatedResponse<AcademicCycle>>(`/org/academic-cycles${buildQueryString(params)}`, { token }),
+        getActiveCycle: (token: string) =>
+            request<AcademicCycle>(`/org/academic-cycles/active`, { token }),
+        getCycle: (id: string, token: string) =>
+            request<AcademicCycle>(`/org/academic-cycles/${id}`, { token }),
+        createCycle: (data: CreateAcademicCycleDto, token: string) =>
+            request<AcademicCycle>(`/org/academic-cycles`, { method: 'POST', body: JSON.stringify(data), token }),
+        updateCycle: (id: string, data: UpdateAcademicCycleDto, token: string) =>
+            request<AcademicCycle>(`/org/academic-cycles/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+        activateCycle: (id: string, token: string) =>
+            request<{ message: string; cycle: AcademicCycle }>(`/org/academic-cycles/${id}/activate`, { method: 'PATCH', token }),
+        deleteCycle: (id: string, token: string) =>
+            request<void>(`/org/academic-cycles/${id}`, { method: 'DELETE', token }),
+    },
+
+    cohorts: {
+        getCohorts: (token: string, params: { page?: number, limit?: number, search?: string, sortBy?: string, sortOrder?: 'asc' | 'desc', academicCycleId?: string } = {}) =>
+            request<PaginatedResponse<Cohort>>(`/org/cohorts${buildQueryString(params)}`, { token }),
+        getCohort: (id: string, token: string) =>
+            request<Cohort>(`/org/cohorts/${id}`, { token }),
+        createCohort: (data: CreateCohortDto, token: string) =>
+            request<Cohort>(`/org/cohorts`, { method: 'POST', body: JSON.stringify(data), token }),
+        updateCohort: (id: string, data: UpdateCohortDto, token: string) =>
+            request<Cohort>(`/org/cohorts/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+        deleteCohort: (id: string, token: string) =>
+            request<void>(`/org/cohorts/${id}`, { method: 'DELETE', token }),
+        addStudents: (id: string, studentIds: string[], token: string) =>
+            request<{ message: string }>(`/org/cohorts/${id}/students`, { method: 'POST', body: JSON.stringify({ studentIds }), token }),
+        removeStudent: (id: string, studentId: string, token: string) =>
+            request<{ message: string }>(`/org/cohorts/${id}/students/${studentId}`, { method: 'DELETE', token }),
+        assignSection: (id: string, sectionId: string, token: string) =>
+            request<{ message: string }>(`/org/cohorts/${id}/sections`, { method: 'POST', body: JSON.stringify({ sectionId }), token }),
+        removeSection: (id: string, sectionId: string, token: string) =>
+            request<{ message: string }>(`/org/cohorts/${id}/sections/${sectionId}`, { method: 'DELETE', token }),
+        excludeStudentFromSection: (studentId: string, sectionId: string, token: string) =>
+            request<{ message: string }>(`/org/cohorts/enrollments/exclude`, { method: 'POST', body: JSON.stringify({ studentId, sectionId }), token }),
+        includeStudentInSection: (studentId: string, sectionId: string, token: string) =>
+            request<{ message: string }>(`/org/cohorts/enrollments/include`, { method: 'POST', body: JSON.stringify({ studentId, sectionId }), token }),
+    },
+
+    transcripts: {
+        getStudentTranscript: (studentId: string, token: string, cycleId?: string) =>
+            request<Transcript>(`/org/transcripts/students/${studentId}${buildQueryString({ cycleId })}`, { token }),
+        getCycleReport: (cycleId: string, token: string) =>
+            request<Transcript[]>(`/org/transcripts/cycles/${cycleId}/report`, { token }),
+    },
+
+    promotions: {
+        promoteStudents: (data: PromoteStudentsDto, token: string) =>
+            request<{ message: string; promoted: number; skipped: number }>(`/org/promotions`, { method: 'POST', body: JSON.stringify(data), token }),
+    },
+
+    copyForward: {
+        execute: (data: CopyForwardDto, token: string) =>
+            request<{ message: string; sectionsCopied: number; details: any }>(`/org/copy-forward`, { method: 'POST', body: JSON.stringify(data), token }),
     }
 };

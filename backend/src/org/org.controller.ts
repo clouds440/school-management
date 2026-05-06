@@ -211,6 +211,7 @@ export class OrgController {
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: 'asc' | 'desc',
     @Query('my') my?: string,
+    @Query('academicCycleId') academicCycleId?: string,
     @Request() req?: AuthenticatedRequest,
   ) {
     return this.sectionsService.getSections(orgId, {
@@ -221,6 +222,7 @@ export class OrgController {
       sortOrder,
       my: my === 'true',
       userId: req?.user?.id,
+      academicCycleId,
     });
   }
 
@@ -421,10 +423,12 @@ export class OrgController {
     @Request() req: AuthenticatedRequest,
     @Query('sectionId') sectionId?: string,
     @Query('courseId') courseId?: string,
+    @Query('academicCycleId') academicCycleId?: string,
   ) {
     return this.assessmentsService.getAssessments(orgId, req.user, {
       sectionId,
       courseId,
+      academicCycleId,
     });
   }
 
@@ -684,4 +688,3 @@ export class OrgController {
     return this.studentService.getStudentByUserId(userId);
   }
 }
-

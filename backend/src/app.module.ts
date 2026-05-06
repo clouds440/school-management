@@ -19,6 +19,11 @@ import { AccessGuard } from './common/access-control/access.guard';
 import { CourseMaterialsModule } from './course-materials/course-materials.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './auth/roles.guard';
+import { AcademicCyclesModule } from './academic-cycles/academic-cycles.module';
+import { CohortsModule } from './cohorts/cohorts.module';
+import { TranscriptsModule } from './transcripts/transcripts.module';
+import { PromotionsModule } from './promotions/promotions.module';
+import { CopyForwardModule } from './copy-forward/copy-forward.module';
 
 @Module({
   imports: [
@@ -42,6 +47,11 @@ import { RolesGuard } from './auth/roles.guard';
     NotificationsModule,
     AnnouncementsModule,
     CourseMaterialsModule,
+    AcademicCyclesModule,
+    CohortsModule,
+    TranscriptsModule,
+    PromotionsModule,
+    CopyForwardModule,
   ],
   providers: [
     {

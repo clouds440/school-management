@@ -20,4 +20,8 @@ export const DASHBOARD_MODULES = [
     'schedules',
     'attendance',
     'profile',
+    'academic-cycles',
+    'cohorts',
+    'promotions',
+    'transcripts',
 ];

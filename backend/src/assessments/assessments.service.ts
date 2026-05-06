@@ -70,10 +70,17 @@ export class AssessmentsService {
       );
     }
 
+    // Derive academicCycleId from section
+    const sectionData = await this.prisma.section.findUnique({
+      where: { id: data.sectionId },
+      select: { academicCycleId: true },
+    });
+
     const assessment = await this.prisma.assessment.create({
       data: {
         ...data,
         organizationId: orgId,
+        academicCycleId: sectionData?.academicCycleId || undefined,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
       },
     });
@@ -99,7 +106,7 @@ export class AssessmentsService {
   async getAssessments(
     orgId: string,
     user: { id: string; role: string | Role },
-    filters: { sectionId?: string; courseId?: string },
+    filters: { sectionId?: string; courseId?: string; academicCycleId?: string },
   ) {
     let allowedSectionIds: string[] | undefined = undefined;
 
@@ -118,6 +125,7 @@ export class AssessmentsService {
 
     const whereClause: import('@prisma/client').Prisma.AssessmentWhereInput = {
       organizationId: orgId,
+      ...(filters.academicCycleId ? { academicCycleId: filters.academicCycleId } : {}),
     };
     if (filters.courseId) whereClause.courseId = filters.courseId;
 
@@ -343,6 +351,7 @@ export class AssessmentsService {
         feedback: data.feedback,
         status: data.status || 'DRAFT',
         updatedBy: userId,
+        academicCycleId: assessment.academicCycleId,
       },
       update: {
         marksObtained: data.marksObtained,

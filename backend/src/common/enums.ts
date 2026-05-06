@@ -111,3 +111,8 @@ export enum GradeStatus {
   PUBLISHED = 'PUBLISHED',
   FINALIZED = 'FINALIZED',
 }
+
+export enum EnrollmentSource {
+  MANUAL = 'MANUAL',
+  COHORT = 'COHORT',
+}

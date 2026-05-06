@@ -32,6 +32,7 @@ interface StudentParams {
     sectionId?: string;
     status?: string;
     deleted?: boolean;
+    cohortId?: string;
 }
 
 export default function StudentsPage() {
@@ -66,6 +67,7 @@ export default function StudentsPage() {
     const statusFilter = searchParams.get('status') || '';
     const isDeletedView = searchParams.get('deleted') === 'true';
     const showAlumni = searchParams.get('showAlumni') === 'true';
+    const cohortId = searchParams.get('cohortId') || '';
     const [pageSize, setPageSize] = useState<number>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('edu-students-limit');
@@ -82,6 +84,7 @@ export default function StudentsPage() {
         sortOrder,
         my: user?.role === Role.TEACHER ? true : showOnlyMyStudents,
         sectionId: sectionId || undefined,
+        cohortId: cohortId || undefined,
         status: isDeletedView ? undefined : (statusFilter || (showAlumni ? undefined : 'ACTIVE,SUSPENDED')),
         deleted: isDeletedView,
     };
@@ -91,6 +94,12 @@ export default function StudentsPage() {
     const { data: fetchedData, isLoading: isFetching } = useSWR<
         { data: Student[]; totalPages: number; totalRecords: number }
     >(studentsKey);
+
+    const cohortsKey = token && (user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER)
+        ? ['cohorts', { limit: 100 }] as const
+        : null;
+    const { data: cohortsData } = useSWR<{ data: { id: string, name: string }[] }>(cohortsKey);
+    const cohorts = cohortsData?.data || [];
 
     useEffect(() => {
         if (user && user.role === Role.STUDENT) {
@@ -168,6 +177,11 @@ export default function StudentsPage() {
             sortable: true,
             sortKey: 'major',
             accessor: (row: Student) => row.major || '-'
+        },
+        {
+            header: 'Cohort',
+            sortable: false,
+            accessor: (row: Student) => row.cohort?.name || <span className="text-muted-foreground/30 italic">Independent</span>
         },
         {
             header: 'Contact',
@@ -338,6 +352,24 @@ export default function StudentsPage() {
                                                     placeholder="Filter Status"
                                                 />
                                             </div>
+
+                                            {/* Cohort Filter */}
+                                            {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
+                                                <div>
+                                                    <label className="text-xs font-bold text-muted-foreground mb-1 block">
+                                                        Cohort
+                                                    </label>
+                                                    <CustomSelect
+                                                        options={[
+                                                            { label: 'All Cohorts', value: '' },
+                                                            ...cohorts.map((c) => ({ value: c.id, label: c.name })),
+                                                        ]}
+                                                        value={cohortId}
+                                                        onChange={(val) => updateQueryParams({ cohortId: val, page: 1 })}
+                                                        placeholder="Filter Cohort"
+                                                    />
+                                                </div>
+                                            )}
 
                                             {/* Show Alumni Toggle */}
                                             <div className="flex items-center justify-between">

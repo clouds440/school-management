@@ -20,4 +20,8 @@ export class UpdateSectionDto {
   @IsString()
   @IsOptional()
   courseId?: string;
+
+  @IsString()
+  @IsOptional()
+  cohortId?: string;
 }

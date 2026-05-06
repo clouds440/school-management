@@ -39,6 +39,7 @@ export class SectionsService {
 
     const where: Prisma.SectionWhereInput = {
       course: { organizationId: orgId },
+      ...(options.academicCycleId ? { academicCycleId: options.academicCycleId } : {}),
       ...(options.my && options.userId
         ? {
             OR: [
@@ -99,6 +100,8 @@ export class SectionsService {
               },
             },
           },
+          academicCycle: true,
+          cohort: true,
           _count: { select: { enrollments: true } },
         },
         orderBy,
@@ -142,6 +145,8 @@ export class SectionsService {
         year: data.year,
         room: data.room,
         courseId: data.courseId,
+        academicCycleId: data.academicCycleId,
+        cohortId: data.cohortId,
       },
     });
   }

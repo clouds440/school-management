@@ -7,7 +7,7 @@ import { BookOpen, Calendar, MapPin, Hash } from 'lucide-react';
 import useSWR, { mutate } from 'swr';
 import { useGlobal } from '@/context/GlobalContext';
 import Link from 'next/link';
-import { Course, Role, PaginatedResponse } from '@/types';
+import { Course, Role, PaginatedResponse, AcademicCycle, Cohort } from '@/types';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
@@ -24,7 +24,9 @@ export default function CreateSectionPage() {
         semester: '',
         year: '',
         room: '',
-        courseId: ''
+        courseId: '',
+        academicCycleId: '',
+        cohortId: ''
     });
 
     // SWR for courses dropdown (only for admins/managers)
@@ -32,6 +34,12 @@ export default function CreateSectionPage() {
     const coursesKey = canFetchCourses ? ['courses', { limit: 1000 }] as const : null;
     const { data: coursesData } = useSWR<PaginatedResponse<Course>>(coursesKey);
     const courses = coursesData?.data || [];
+
+    const cyclesKey = token ? ['academicCycles', { limit: 100 }] as const : null;
+    const { data: cyclesData } = useSWR<{ data: any[] }>(cyclesKey);
+
+    const cohortsKey = token ? ['cohorts', { limit: 500 }] as const : null;
+    const { data: cohortsData } = useSWR<{ data: any[] }>(cohortsKey);
 
     useEffect(() => {
         if (!user) return;
@@ -96,17 +104,47 @@ export default function CreateSectionPage() {
                             />
                         </div>
 
-                        < div >
+                        <div>
                             <Label>Course * </Label>
                             < CustomSelect
                                 value={formData.courseId}
                                 onChange={(value) => setFormData({ ...formData, courseId: value })}
                                 icon={BookOpen}
-                                options={courses.map(c => ({ value: c.id, label: c.name }))}
+                                options={courses.map((c: Course) => ({ value: c.id, label: c.name }))}
                                 placeholder="Select a course..."
                                 required
                                 searchable
                             />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <Label>Academic Cycle</Label>
+                                <CustomSelect
+                                    value={formData.academicCycleId}
+                                    onChange={(value) => setFormData({ ...formData, academicCycleId: value, cohortId: '' })}
+                                    options={[
+                                        { label: 'No Cycle', value: '' },
+                                        ...(cyclesData?.data?.map((c: AcademicCycle) => ({ value: c.id, label: c.name })) || [])
+                                    ]}
+                                    placeholder="Select cycle..."
+                                />
+                            </div>
+                            <div>
+                                <Label>Cohort</Label>
+                                <CustomSelect
+                                    value={formData.cohortId}
+                                    onChange={(value) => setFormData({ ...formData, cohortId: value })}
+                                    options={[
+                                        { label: 'No Cohort', value: '' },
+                                        ...(cohortsData?.data?.filter((c: Cohort) => !formData.academicCycleId || c.academicCycleId === formData.academicCycleId).map((c: Cohort) => ({
+                                            value: c.id,
+                                            label: c.name
+                                        })) || [])
+                                    ]}
+                                    placeholder="Select cohort..."
+                                />
+                            </div>
                         </div>
 
                         < div className="grid grid-cols-1 md:grid-cols-2 gap-8" >
