@@ -21,6 +21,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { teacherCreateSchema, teacherUpdateSchema, teacherProfileSchema, TeacherCreateFormData, TeacherUpdateFormData, TeacherProfileFormData } from '@/lib/schemas';
 import { Toggle } from '@/components/ui/Toggle';
+import { Badge } from '../ui/Badge';
 
 interface TeacherFormProps {
     teacherId?: string;
@@ -413,9 +414,9 @@ export default function TeacherForm({ teacherId, initialData, isProfile }: Teach
                             />
                         </div>
                         {formData.isManager && (
-                            <div className="px-4 py-2 bg-primary/20 rounded-xl border border-primary/30 animate-in fade-in zoom-in w-full sm:w-auto text-center sm:text-left">
-                                <span className="text-xs font-semibold text-primary tracking-wider">Manager Mode Active</span>
-                            </div>
+                            <Badge title='' variant='success'>
+                                Manager Mode Active
+                            </Badge>
                         )}
                     </div>
                 </div>

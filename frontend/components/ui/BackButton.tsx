@@ -8,12 +8,14 @@ interface BackButtonProps {
     showHome?: boolean;
     label?: string;
     className?: string;
+    homeClasses?: string;
 }
 
 export function BackButton({
     showHome = false,
     label = "Back",
-    className = ""
+    className = "",
+    homeClasses = ""
 }: BackButtonProps) {
     const router = useRouter();
 
@@ -26,7 +28,7 @@ export function BackButton({
     };
 
     return (
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-1">
             <Button
                 onClick={handleBack}
                 className={className}
@@ -42,6 +44,7 @@ export function BackButton({
                     onClick={handleHome}
                     title="Go to home page"
                     icon={Home}
+                    className={homeClasses}
                 >
                 </Button>
             )}

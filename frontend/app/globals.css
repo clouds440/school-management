@@ -511,7 +511,7 @@ body {
   }
 
   .skeleton-shimmer {
-    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background: linear-gradient(90deg, #a9c3da 25%, #6b7d96 50%, #898f94 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
   }
@@ -524,4 +524,38 @@ body {
   .input-icon-error svg {
     color: hsl(var(--destructive)) !important;
   }
+
+  /* Input Date Styling */
+  input[type="date"] {
+    position: relative;
+    cursor: pointer;
+  }
+
+  /* Add a custom calendar icon */
+  input[type="date"]::after {
+    content: url('/assets/svgs/calendar-range.svg');
+    font-size: 1.2rem;
+    position: absolute;
+    right: 10px;
+    top: 55%;
+    transform: translateY(-50%);
+    z-index: 10;
+    pointer-events: none;
+    filter: invert(50%);
+  }
+
+  /* Hide the default WebKit icon */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    cursor: pointer;
+    position: relative;
+    z-index: 999;
+  }
+
+  /* Firefox */
+  input[type="date"]::-moz-calendar-picker-indicator {
+    opacity: 0;
+    cursor: pointer;
+  }
+
 }

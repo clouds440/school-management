@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { Role } from '@/types';
+import { BookOpen } from 'lucide-react';
 
 export function HeroButtons() {
     const { user, loading } = useAuth();
@@ -24,7 +25,7 @@ export function HeroButtons() {
                                     ? `/teachers/${user.id}`
                                     : `/students/${user.id}`
                     }
-                    className="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-lg"
+                    className="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/80 hover:-translate-y-0.5 transition-all shadow-lg"
                 >
                     Go to Your Dashboard
                 </Link>
@@ -36,15 +37,18 @@ export function HeroButtons() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
                 href="/register"
-                className="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-lg"
+                className="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/80 hover:-translate-y-0.5 transition-all shadow-lg"
             >
                 Start Free Trial
             </Link>
             <Link
                 href="#features"
-                className="bg-card/80 backdrop-blur-sm text-foreground px-8 py-3 rounded-lg font-semibold border border-border hover:bg-card transition-colors shadow-lg"
+                className="flex space-x-2 bg-card/80 backdrop-blur-sm text-foreground px-8 py-3 rounded-lg font-semibold border border-border hover:bg-card/80 hover:-translate-y-0.5 transition-all shadow-lg"
             >
-                Learn More
+                <BookOpen className='w-5 h-5 text-foreground mt-0.5' />
+                <span>
+                    Learn More
+                </span>
             </Link>
         </div>
     );

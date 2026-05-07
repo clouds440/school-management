@@ -17,25 +17,25 @@ interface BadgeProps {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-    success: "bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    error: "bg-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    warning: "bg-amber-200 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    neutral: "bg-slate-200 text-slate-700 dark:bg-slate-800/30 dark:text-slate-400",
+    success: "bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-600",
+    error: "bg-red-200 text-red-700 dark:bg-red-900/30 dark:text-red-600",
+    warning: "bg-amber-200 text-amber-700 dark:bg-amber-900/30 dark:text-amber-600",
+    neutral: "bg-slate-200 text-slate-700 dark:bg-slate-600/30 dark:text-slate-600",
     primary: "bg-indigo-600 text-white dark:bg-indigo-500",
-    secondary: "bg-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
-    info: "bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    purple: "bg-purple-200 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    secondary: "bg-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-600",
+    info: "bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:text-blue-600",
+    purple: "bg-purple-200 text-purple-700 dark:bg-purple-900/30 dark:text-purple-600",
 };
 
 const dotColors: Record<BadgeVariant, string> = {
-    success: "bg-emerald-500",
-    error: "bg-red-500",
-    warning: "bg-amber-500",
-    neutral: "bg-slate-400",
+    success: "bg-emerald-600",
+    error: "bg-red-600",
+    warning: "bg-amber-600",
+    neutral: "bg-slate-600",
     primary: "bg-white",
-    secondary: "bg-indigo-500",
-    info: "bg-blue-500",
-    purple: "bg-purple-500",
+    secondary: "bg-indigo-600",
+    info: "bg-blue-600",
+    purple: "bg-purple-600",
 };
 
 const sizeStyles: Record<BadgeSize, string> = {

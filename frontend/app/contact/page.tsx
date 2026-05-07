@@ -12,6 +12,7 @@ import {
   ArrowRight,
   MessageSquare,
   ShieldHalf,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { BackButton } from '@/components/ui/BackButton';
@@ -20,6 +21,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PLATFORM_NAME } from '@/lib/constants';
 import { MailCategory, Role } from '@/types';
+import { Reveal } from '@/components/ui/Reveal';
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -98,61 +100,91 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="h-full min-h-fit bg-linear-to-br from-background via-background to-secondary/5 flex flex-col items-center py-8 md:py-12 px-4 md:px-8 relative overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute top-20 left-20 w-64 h-64 bg-primary/10 rounded-full mix-blend-screen filter blur-3xl opacity-20"></div>
-      <div className="absolute bottom-20 right-20 w-64 h-64 bg-secondary/10 rounded-full mix-blend-screen filter blur-3xl opacity-20"></div>
-
-      <div className="max-w-4xl w-full mb-6 md:mb-8 self-start lg:ml-0 relative z-10">
-        <BackButton showHome={true} label="Back to Previous" />
-      </div>
-      <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-5 gap-8 md:gap-12 relative z-10">
-
-        {/* Left Side: Info */}
-        <div className="lg:col-span-2 space-y-6 md:space-y-8 animate-fade-in-up">
-          <div className="space-y-4">
-            <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
-              Get in <span className="text-primary">Touch</span>
-            </h1>
-            <p className="text-muted-foreground leading-relaxed text-base md:text-lg font-medium">
-              Have a question about the platform or need technical assistance?
-              Our administrative team is here to help.
-            </p>
-          </div>
-
-          <div className="space-y-4 md:space-y-6">
-            <InfoCard
-              icon={<ShieldHalf className="w-5 h-5 text-indigo-600" />}
-              title="Identity Verified"
-              description="Your message will be tied to your official account for faster resolution."
-            />
-            <InfoCard
-              icon={<MessageSquare className="w-5 h-5 text-purple-600" />}
-              title="Direct Message"
-              description="This message goes directly to our platform support team."
-            />
-          </div>
-
-          <div className="pt-6 md:pt-8 border-t border-border/50">
-            <Link
-              href="/docs"
-              className="group flex items-center p-4 md:p-6 bg-linear-to-br from-card/50 to-card/30 backdrop-blur-xl rounded-2xl shadow-lg border border-border/50 hover:border-primary/30 hover:shadow-xl transition-all"
-            >
-              <div className="w-12 h-12 bg-linear-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 transition-transform border border-primary/20">
-                <BookOpen className="w-6 h-6 text-primary" />
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <section className="relative py-18 overflow-hidden">
+        <div className="absolute inset-0 bg-background">
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-secondary/20 rounded-full blur-[120px] animate-pulse animation-delay-2000" />
+        </div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.05)_1px,transparent_1px)] bg-size-[64px_64px] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] dark:bg-size-[64px_64px]" />
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="max-w-4xl mx-auto">
+            <Reveal>
+              <div className="inline-flex items-center gap-2 px-1 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold tracking-wider uppercase">
+                <BackButton
+                  showHome
+                  className='bg-transparent hover:bg-primary/40 rounded-full'
+                  homeClasses='rounded-full'
+                />
               </div>
-              <div>
-                <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">Documentation</h4>
-                <p className="text-sm text-muted-foreground mt-1">Self-service guides and FAQs</p>
-              </div>
-              <ArrowRight className="ml-auto w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-            </Link>
+            </Reveal>
+            <Reveal delay={100}>
+              <h1 className="text-5xl md:text-7xl font-black text-foreground tracking-tight leading-[1.1]">
+                Get in &nbsp;
+                <span className="bg-linear-to-r from-primary via-primary/80 to-success bg-clip-text text-transparent">
+                  Touch
+                </span>
+              </h1>
+            </Reveal>
+            <Reveal delay={200}>
+              <p className="text-xl text-muted-foreground font-medium leading-relaxed max-w-2xl mt-6">
+                Have a question about the platform or need technical assistance?
+                Our administrative team is here to help.
+              </p>
+            </Reveal>
           </div>
         </div>
+      </section>
 
-        {/* Right Side: Form */}
-        <div className="lg:col-span-3">
-          <div className="bg-linear-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 p-6 md:p-10 relative overflow-hidden">
+      {/* Main Content */}
+      <section className="pb-18">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-8 md:gap-12">
+
+            {/* Left Side: Info */}
+            <div className="lg:col-span-2 space-y-6 md:space-y-8">
+              <Reveal>
+                <div className="space-y-6">
+                  <InfoCard
+                    icon={<ShieldHalf className="w-5 h-5 text-indigo-500" />}
+                    title="Identity Verified"
+                    description="Your message will be tied to your official account for faster resolution."
+                  />
+                  <InfoCard
+                    icon={<MessageSquare className="w-5 h-5 text-purple-500" />}
+                    title="Direct Message"
+                    description="This message goes directly to our platform support team."
+                  />
+                  <InfoCard
+                    icon={<Zap className="w-5 h-5 text-amber-500" />}
+                    title="Fast Response"
+                    description="Our team typically responds within 24 hours on business days."
+                  />
+                </div>
+              </Reveal>
+
+              <Reveal delay={200}>
+                <Link
+                  href="/docs"
+                  className="group flex items-center p-4 md:p-6 bg-linear-to-br from-card/50 to-card/30 backdrop-blur-xl rounded-2xl shadow-lg border border-border/50 hover:border-primary/30 hover:shadow-xl transition-all"
+                >
+                  <div className="w-12 h-12 bg-linear-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 transition-transform border border-primary/20">
+                    <BookOpen className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">Documentation</h4>
+                    <p className="text-sm text-muted-foreground mt-1">Self-service guides and FAQs</p>
+                  </div>
+                  <ArrowRight className="ml-auto w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </Link>
+              </Reveal>
+            </div>
+
+            {/* Right Side: Form */}
+            <div className="lg:col-span-3">
+              <Reveal delay={300}>
+                <div className="bg-linear-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/50 p-6 md:p-10 relative overflow-hidden">
             {!user ? (
               <div className="text-center py-12 space-y-6">
                 <div className="relative mx-auto w-16 h-16 mb-6">
@@ -258,22 +290,25 @@ export default function ContactPage() {
                 </p>
               </form>
             )}
+                </div>
+              </Reveal>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
 
 function InfoCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (
-    <div className="flex items-start space-x-4">
-      <div className="w-10 h-10 bg-card rounded-lg shadow-sm border border-border flex items-center justify-center shrink-0">
+    <div className="flex items-start space-x-4 p-4 bg-card border border-border rounded-xl hover:border-primary/20 hover:shadow-lg transition-all">
+      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0 border border-primary/20">
         {icon}
       </div>
       <div>
-        <h4 className="font-bold text-foreground">{title}</h4>
-        <p className="text-sm text-muted-foreground leading-relaxed mt-0.5">{description}</p>
+        <h4 className="font-black text-foreground">{title}</h4>
+        <p className="text-sm text-muted-foreground font-medium leading-relaxed mt-1">{description}</p>
       </div>
     </div>
   );

@@ -4,12 +4,28 @@ import { BookOpen, Clock, ArrowRight } from 'lucide-react';
 
 export default function BlogPage() {
   return (
-    <div className="flex flex-col bg-background">
+    <div className="min-h-screen bg-background">
       {/* Hero */}
-      <section className="pt-24 pb-16 md:pt-32 md:pb-40 bg-card border-b border-border">
-        <div className="container mx-auto px-6 text-center max-w-4xl space-y-6">
+      <section className="relative py-18 overflow-hidden">
+        <div className="absolute inset-0 bg-background">
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-secondary/20 rounded-full blur-[120px] animate-pulse animation-delay-2000" />
+        </div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.05)_1px,transparent_1px)] bg-size-[64px_64px] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] dark:bg-size-[64px_64px]" />
+        <div className="container mx-auto px-6 text-center max-w-4xl space-y-6 relative z-10">
           <Reveal>
-            <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight leading-tight">Insightful Articles for <span className="text-primary">Modern Educators</span></h1>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold tracking-wider uppercase mb-6">
+              <BookOpen className="w-3 h-3" />
+              <span>Blog</span>
+            </div>
+          </Reveal>
+          <Reveal delay={100}>
+            <h1 className="text-5xl md:text-7xl font-black text-foreground tracking-tight leading-[1.1]">
+              Insightful Articles for
+              <span className="block bg-linear-to-r from-primary via-primary/80 to-success bg-clip-text text-transparent mt-2">
+                Modern Educators
+              </span>
+            </h1>
           </Reveal>
           <Reveal delay={200}>
             <p className="text-xl text-muted-foreground font-medium leading-relaxed max-w-2xl mx-auto">
@@ -20,9 +36,9 @@ export default function BlogPage() {
       </section>
 
       {/* Grid */}
-      <section className="py-24 md:py-32">
+      <section className="py-18">
         <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
             <BlogCard
               title="Scaling Multi-Tenant School Architectures in 2026"
               excerpt="Discover the challenges and solutions of managing thousands of isolated school databases securely."
@@ -52,10 +68,10 @@ export default function BlogPage() {
       </section>
 
       {/* Newsletter */}
-      <section className="py-24 md:py-32 bg-primary/5 border-y border-primary/10">
+      <section className="py-20 md:py-32 bg-muted/30 border-t border-border">
         <div className="container mx-auto px-6 max-w-3xl text-center space-y-8">
           <Reveal>
-            <h2 className="text-3xl font-black text-foreground">Stay Ahead of the Curve</h2>
+            <h2 className="text-3xl md:text-4xl font-black text-foreground">Stay Ahead of the Curve</h2>
           </Reveal>
           <Reveal delay={200}>
             <p className="text-muted-foreground font-medium text-lg leading-relaxed">
@@ -84,12 +100,12 @@ function BlogCard({ title, excerpt, author, date, category, delay }: { title: st
   return (
     <Reveal delay={delay}>
       <div className="group cursor-pointer space-y-6 h-full flex flex-col">
-        <div className="aspect-video bg-accent rounded-3xl overflow-hidden relative border border-border shadow-sm transition-all duration-500 group-hover:shadow-xl group-hover:scale-[1.02]">
+        <div className="aspect-video bg-accent rounded-3xl overflow-hidden relative border border-border shadow-sm transition-all duration-500 group-hover:shadow-2xl group-hover:scale-[1.02]">
           <div className="absolute top-4 left-4 bg-card/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-black text-primary tracking-widest border border-border shadow-sm">
             {category}
           </div>
           <div className="w-full h-full bg-linear-to-br from-primary/5 to-secondary/10 flex items-center justify-center">
-            <BookOpen className="w-12 h-12 text-primary/20 group-hover:scale-110 transition-transform duration-500" />
+            <BookOpen className="w-12 h-12 text-primary/20 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500" />
           </div>
         </div>
         <div className="space-y-4 flex-1 flex flex-col">

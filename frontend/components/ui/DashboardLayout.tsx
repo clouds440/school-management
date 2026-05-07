@@ -164,8 +164,8 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                                         } 
                                         animate-in zoom-in duration-300
                                     `}>
-                                        <Badge 
-                                            variant={link.badge === 0 ? 'neutral' : link.label === 'Messages' ? 'error' : 'primary'} 
+                                        <Badge
+                                            variant={link.badge === 0 ? 'neutral' : link.label === 'Messages' ? 'error' : 'primary'}
                                             size="sm"
                                         >
                                             {link.badge}
@@ -187,8 +187,8 @@ export function DashboardLayout({ children, links, bottomLinks = [], showPadding
                     >
                         {isBottomSectionCollapsed ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronUp className="w-4 h-4 shrink-0" />}
                         {isBottomSectionCollapsed && mailCount.unread > 0 && (
-                            <span className="absolute -top-2.5 -right-1.5">
-                                <Badge variant="error" size="xs">
+                            <span className="absolute -top-3.5 -right-2">
+                                <Badge variant="error" size="sm">
                                     {mailCount.unread > 9 ? '9+' : mailCount.unread}
                                 </Badge>
                             </span>

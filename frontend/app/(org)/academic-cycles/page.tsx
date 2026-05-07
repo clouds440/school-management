@@ -245,12 +245,7 @@ export default function AcademicCyclesPage() {
                     <div className="shrink-0">
                         {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                             <Button
-                                onClick={() => {
-                                    setIsEditing(false);
-                                    setEditingCycle(null);
-                                    setFormData({ name: '', startDate: '', endDate: '' });
-                                    setModalOpen(true);
-                                }}
+                                onClick={() => router.push('/academic-cycles/create')}
                                 icon={Plus}
                                 className="w-auto shadow-lg shadow-primary/10"
                             >
@@ -283,11 +278,11 @@ export default function AcademicCyclesPage() {
             <ModalForm
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
-                title={isEditing ? "Update Academic Cycle" : "Create Academic Cycle"}
+                title="Update Academic Cycle"
                 onSubmit={handleSubmit}
                 isSubmitting={isProcessing}
                 loadingId="cycle-edit"
-                submitText={isEditing ? "Save Changes" : "Create Cycle"}
+                submitText="Save Changes"
             >
                 <div className="space-y-4 py-2">
                     <div className="space-y-2">

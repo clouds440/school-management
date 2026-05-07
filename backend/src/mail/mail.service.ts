@@ -1247,31 +1247,14 @@ export class MailService {
         recipient.role === Role.SUPER_ADMIN ||
         recipient.role === Role.PLATFORM_ADMIN;
 
-      // --- FILTER: Admins don't receive notifications from Org Users (User requirement) ---
+      // --- FILTER: Admins don't receive notifications from Org Users ---
       if (isAdminRecipient && isOrgSender) continue;
 
       // --- URL Logic ---
       let actionUrl = `/mail?mailId=${mailId}`;
       if (isAdminRecipient) {
         actionUrl = `/admin/mail?mailId=${mailId}`;
-      } else {
-        // Get organization from the recipient OR the mail itself as fallback
-        const org =
-          recipient.organization ||
-          (mail.organizationId
-            ? await this.prisma.organization.findUnique({
-                where: { id: mail.organizationId },
-              })
-            : null);
-        if (org?.name) {
-          const slug = org.name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '');
-          actionUrl = `/${slug}/mail?mailId=${mailId}`;
-        }
       }
-
       await this.notifications.createNotification({
         userId: recipient.id,
         title: notification.title,

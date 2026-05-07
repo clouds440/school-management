@@ -231,12 +231,7 @@ export default function CohortsPage() {
 
                         {(user?.role === Role.ORG_ADMIN || user?.role === Role.ORG_MANAGER) && (
                             <Button
-                                onClick={() => {
-                                    setIsEditing(false);
-                                    setEditingCohort(null);
-                                    setFormData({ name: '', academicCycleId: academicCycleId || '', studentIds: [], sectionIds: [] });
-                                    setModalOpen(true);
-                                }}
+                                onClick={() => router.push('/cohorts/create')}
                                 icon={Plus}
                                 className="shrink-0"
                             >
@@ -269,11 +264,11 @@ export default function CohortsPage() {
             <ModalForm
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
-                title={isEditing ? "Update Cohort" : "Create Cohort"}
+                title="Update Cohort"
                 onSubmit={handleSubmit}
                 isSubmitting={isProcessing}
                 loadingId="cohort-edit"
-                submitText={isEditing ? "Save Changes" : "Create Cohort"}
+                submitText="Save Changes"
             >
                 <div className="space-y-4 py-2">
                     <div className="space-y-2">

@@ -127,7 +127,7 @@ export default function TranscriptsPage() {
                             onClick={handlePrint} 
                             icon={Printer} 
                             disabled={!transcript}
-                            className="w-full sm:w-auto mt-0 sm:mt-5 h-[42px] shadow-lg shadow-primary/20"
+                            className="w-full sm:w-auto mt-0 sm:mt-5 h-10.5 shadow-lg shadow-primary/20"
                         >
                             Print
                         </Button>

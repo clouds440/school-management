@@ -1,4 +1,6 @@
 import { Chat, ChatMessage, ChatType, User } from '@/types';
+import { MutableRefObject } from 'react';
+import { isToday, isYesterday, format } from 'date-fns';
 
 export type ChatMessageWithMeta = ChatMessage & {
     readBy?: string[];
@@ -125,15 +127,10 @@ export function formatChatTimestamp(timestamp: string): string {
 
 export function formatChatDateLabel(dateStr: string): string {
     const date = new Date(dateStr);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today.getTime() - 86400000);
-    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    if (isToday(date)) return 'Today';
+    if (isYesterday(date)) return 'Yesterday';
 
-    if (messageDate.getTime() === today.getTime()) return 'Today';
-    if (messageDate.getTime() === yesterday.getTime()) return 'Yesterday';
-
-    return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    return format(date, 'EEE, MMM d');
 }
 
 export function getTruncatedMessagePreview(content: string | undefined, max: number): string {
@@ -254,4 +251,91 @@ export function getTypingIndicatorLabel(chat: Chat | undefined, typingUsers: Typ
     }
 
     return 'Several people are typing';
+}
+
+export interface LongPressHandlersResult {
+    onTouchStart: (e: React.TouchEvent) => void;
+    onTouchMove: (e: React.TouchEvent) => void;
+    onTouchEnd: (e: React.TouchEvent) => void;
+    onTouchCancel: (e: React.TouchEvent) => void;
+}
+
+export interface LongPressHandlersOptions {
+    isDesktop: boolean;
+    itemId: string;
+    onLongPress: (itemId: string) => void;
+    delay?: number;
+    movementThreshold?: number;
+}
+
+/**
+ * Modernized Long Press Handler
+ * Triggers DURING the hold (after delay), which is the standard mobile expectation.
+ * Automatically cancels if movement exceeds threshold (scrolling).
+ */
+export function getLongPressHandlers(
+    options: LongPressHandlersOptions,
+    timerRef: MutableRefObject<ReturnType<typeof setTimeout> | null>,
+    startPosRef: MutableRefObject<{ x: number; y: number } | null>,
+    hasTriggeredRef: MutableRefObject<boolean>
+): LongPressHandlersResult {
+    const { isDesktop, itemId, onLongPress, delay = 500, movementThreshold = 10 } = options;
+
+    const clearTimer = () => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+    };
+
+    const onTouchStart = (e: React.TouchEvent) => {
+        if (isDesktop) return;
+
+        // Reset state
+        clearTimer();
+        hasTriggeredRef.current = false;
+        const touch = e.touches[0];
+        startPosRef.current = { x: touch.clientX, y: touch.clientY };
+
+        timerRef.current = setTimeout(() => {
+            // Success! We reached the long press threshold
+            hasTriggeredRef.current = true;
+            if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+                try { window.navigator.vibrate(40); } catch (e) { /* ignore */ }
+            }
+            onLongPress(itemId);
+            timerRef.current = null;
+        }, delay);
+    };
+
+    const onTouchMove = (e: React.TouchEvent) => {
+        if (!timerRef.current || !startPosRef.current) return;
+
+        const touch = e.touches[0];
+        const dx = touch.clientX - startPosRef.current.x;
+        const dy = touch.clientY - startPosRef.current.y;
+        
+        // Use Manhattan distance for cheaper cancellation check on move
+        if (Math.abs(dx) > movementThreshold || Math.abs(dy) > movementThreshold) {
+            clearTimer();
+        }
+    };
+
+    const onTouchEnd = (e: React.TouchEvent) => {
+        if (hasTriggeredRef.current) {
+            // Prevent the subsequent click event from firing if we already handled the long press
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        clearTimer();
+        startPosRef.current = null;
+    };
+
+    const onTouchCancel = () => {
+        clearTimer();
+        startPosRef.current = null;
+        hasTriggeredRef.current = false;
+    };
+
+    return { onTouchStart, onTouchMove, onTouchEnd, onTouchCancel };
 }

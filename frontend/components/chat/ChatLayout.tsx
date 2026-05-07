@@ -55,7 +55,8 @@ import {
     updateOnlineUsersFromPresenceEvent,
     updateOnlineUsersFromPresenceState,
     type ChatComposerStateMap,
-    type ChatMessageWithMeta
+    type ChatMessageWithMeta,
+    getLongPressHandlers
 } from './chatLayoutHelpers';
 
 export function ChatLayout() {
@@ -73,6 +74,17 @@ export function ChatLayout() {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeChatId, setActiveChatId] = useState<string | null>(initialChatId);
     const [targetMessageId, setTargetMessageId] = useState<string | null>(msgIdParam);
+    const [activeGroupFilter, setActiveGroupFilter] = useState<'all' | 'groups' | 'dms'>('all');
+    const [chatMenuOpenId, setChatMenuOpenId] = useState<string | null>(null);
+    const [deleteConfirmConfig, setDeleteConfirmConfig] = useState<{
+        isOpen: boolean;
+        chatId: string | null;
+        chatName: string;
+    }>({
+        isOpen: false,
+        chatId: null,
+        chatName: ''
+    });
 
     useEffect(() => {
         if (msgIdParam) {
@@ -111,9 +123,16 @@ export function ChatLayout() {
     // Context menu for message actions
     const [contextMenu, setContextMenu] = useState<{ msg: ChatMessageWithMeta, x: number, y: number } | null>(null);
 
-    const touchStartTimeRef = useRef<number>(0);
-    const touchMessageIdRef = useRef<string | null>(null);
+    // Touch refs for message long press
+    const touchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+    const touchHasTriggeredRef = useRef<boolean>(false);
+    
+    // Touch refs for chat list long press
+    const touchChatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const touchChatStartPosRef = useRef<{ x: number; y: number } | null>(null);
+    const touchChatHasTriggeredRef = useRef<boolean>(false);
+
     const [confirmConfig, setConfirmConfig] = useState<{
         isOpen: boolean;
         title: string;
@@ -240,10 +259,18 @@ export function ChatLayout() {
                     setShowParticipants(false);
                 }
             }
+            // Close chat menu when clicking outside
+            if (chatMenuOpenId) {
+                const target = event.target as Node;
+                const menuContainer = document.querySelector(`[data-chat-menu="${chatMenuOpenId}"]`);
+                if (menuContainer && !menuContainer.contains(target)) {
+                    setChatMenuOpenId(null);
+                }
+            }
         }
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [showParticipants]);
+    }, [showParticipants, chatMenuOpenId]);
 
     // Track input composer height to adjust FAB and scroll padding dynamically
     const composerRef = useCallback((node: HTMLDivElement | null) => {
@@ -334,9 +361,6 @@ export function ChatLayout() {
 
     useEffect(() => {
         fetchChats();
-        if (token) {
-            api.notifications.clearCategory('CHAT', token).catch(console.error);
-        }
     }, [token, fetchChats]);
 
     // 2. Fetch Messages for Active Chat (Initial)
@@ -832,18 +856,49 @@ export function ChatLayout() {
         }
     }, [emit]);
 
-    const filteredChats = useMemo(() => {
-        if (!searchQuery.trim()) return chats;
-        const lowerQuery = searchQuery.toLowerCase();
-        return chats.filter(chat => {
-            if (chat.type === ChatType.GROUP) {
-                return (chat.name || '').toLowerCase().includes(lowerQuery);
+    const handleDeleteChat = async (chatId: string) => {
+        if (!token || !user?.id) return;
+        
+        try {
+            await api.chat.removeParticipant(chatId, user.id, token);
+            // Remove the chat from the local state
+            setChats(prev => prev.filter(c => c.id !== chatId));
+            // If the deleted chat was active, clear it
+            if (activeChatId === chatId) {
+                setActiveChatId(null);
             }
-            const otherUser = chat.participants?.find(p => p.userId !== user?.id)?.user;
-            return (otherUser?.name || '').toLowerCase().includes(lowerQuery) ||
-                (otherUser?.email || '').toLowerCase().includes(lowerQuery);
-        });
-    }, [chats, searchQuery, user?.id]);
+            dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Chat deleted successfully', type: 'success' } });
+        } catch (err) {
+            console.error('Failed to delete chat:', err);
+            dispatchRef.current({ type: 'TOAST_ADD', payload: { message: 'Failed to delete chat', type: 'error' } });
+        }
+    };
+
+    const filteredChats = useMemo(() => {
+        let result = chats;
+        
+        // Filter by group type
+        if (activeGroupFilter === 'groups') {
+            result = result.filter(chat => chat.type === ChatType.GROUP);
+        } else if (activeGroupFilter === 'dms') {
+            result = result.filter(chat => chat.type === ChatType.DIRECT);
+        }
+        
+        // Filter by search query
+        if (searchQuery.trim()) {
+            const lowerQuery = searchQuery.toLowerCase();
+            result = result.filter(chat => {
+                if (chat.type === ChatType.GROUP) {
+                    return (chat.name || '').toLowerCase().includes(lowerQuery);
+                }
+                const otherUser = chat.participants?.find(p => p.userId !== user?.id)?.user;
+                return (otherUser?.name || '').toLowerCase().includes(lowerQuery) ||
+                    (otherUser?.email || '').toLowerCase().includes(lowerQuery);
+            });
+        }
+        
+        return result;
+    }, [chats, searchQuery, user?.id, activeGroupFilter]);
 
     const activeChatParticipantIds = useMemo(() => activeChat?.participants?.filter(p => p.isActive).map(p => p.userId) || [], [activeChat]);
 
@@ -1291,39 +1346,15 @@ export function ChatLayout() {
                             setContextMenu({ msg, x: e.clientX, y: e.clientY });
                         }
                     }}
-                    onTouchStart={(e) => {
-                        if (!isDesktop && !isDeleted) {
-                            e.stopPropagation();
-                            touchStartTimeRef.current = Date.now();
-                            touchMessageIdRef.current = msg.id;
-                            const touch = e.touches[0];
-                            touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
-                        }
-                    }}
-                    onTouchEnd={(e) => {
-                        if (!isDesktop && !isDeleted) {
-                            e.stopPropagation();
-                            const touchDuration = Date.now() - touchStartTimeRef.current;
-                            const touch = e.changedTouches[0];
-                            const touchEndPos = { x: touch.clientX, y: touch.clientY };
-                            const movementDistance = touchStartPosRef.current
-                                ? Math.sqrt(
-                                    Math.pow(touchEndPos.x - touchStartPosRef.current.x, 2) +
-                                    Math.pow(touchEndPos.y - touchStartPosRef.current.y, 2)
-                                )
-                                : Infinity;
-
-                            // Only trigger if held for 300ms+ AND moved less than 10px (not scrolling)
-                            if (touchDuration >= 300 && movementDistance < 10 && touchMessageIdRef.current === msg.id) {
-                                e.preventDefault();
-                                // Small delay to prevent touch end from triggering menu item click
-                                setTimeout(() => setContextMenu({ msg, x: 0, y: 0 }), 50);
+                    {...getLongPressHandlers({
+                        isDesktop,
+                        itemId: msg.id,
+                        onLongPress: () => {
+                            if (!isDeleted) {
+                                setContextMenu({ msg, x: 0, y: 0 });
                             }
-                            touchStartTimeRef.current = 0;
-                            touchMessageIdRef.current = null;
-                            touchStartPosRef.current = null;
                         }
-                    }}
+                    }, touchTimerRef, touchStartPosRef, touchHasTriggeredRef)}
                     className={`flex ${isMine ? 'justify-end' : 'justify-start'} group/msg relative ${isLastInGroup ? 'mb-3.5' : 'mb-0.5'} px-3 md:px-5 -mx-3 md:-mx-5 ${highlightedMessageId === msg.id || contextMenu?.msg.id === msg.id ? 'bg-primary/20 rounded-sm' : ''}`}
                 >
                     {!isMine && (
@@ -1494,6 +1525,46 @@ export function ChatLayout() {
                     )}
                 </div>
 
+                {/* Group Filters */}
+                <div className="px-3 sm:px-4 pt-1 flex gap-2">
+                    <button
+                        onClick={() => setActiveGroupFilter('all')}
+                        className="cursor-pointer"
+                    >
+                        <Badge
+                            variant={activeGroupFilter === 'all' ? 'primary' : 'neutral'}
+                            size="sm"
+                            className="hover:opacity-80 transition-opacity"
+                        >
+                            All
+                        </Badge>
+                    </button>
+                    <button
+                        onClick={() => setActiveGroupFilter('groups')}
+                        className="cursor-pointer"
+                    >
+                        <Badge
+                            variant={activeGroupFilter === 'groups' ? 'primary' : 'neutral'}
+                            size="sm"
+                            className="hover:opacity-80 transition-opacity"
+                        >
+                            Groups
+                        </Badge>
+                    </button>
+                    <button
+                        onClick={() => setActiveGroupFilter('dms')}
+                        className="cursor-pointer"
+                    >
+                        <Badge
+                            variant={activeGroupFilter === 'dms' ? 'primary' : 'neutral'}
+                            size="sm"
+                            className="hover:opacity-80 transition-opacity"
+                        >
+                            DMs
+                        </Badge>
+                    </button>
+                </div>
+
                 {/* Search */}
                 <div className="px-3 sm:px-4 py-2 sm:py-3">
                     <div className="relative">
@@ -1542,81 +1613,121 @@ export function ChatLayout() {
                             const hasUnread = chat.unreadCount !== undefined && chat.unreadCount > 0;
 
                             return (
-                                <button
-                                    type='button'
-                                    key={chat.id}
-                                    onClick={() => setActiveChatId(chat.id)}
-                                    className={`w-full flex items-center px-3 sm:px-4 py-3 sm:py-3.5 transition-all text-left group relative
-                                        ${isActive
-                                            ? 'bg-primary/10 border-l-[3px] border-l-primary'
-                                            : 'hover:bg-muted/60 border-l-[3px] border-l-transparent'
-                                        }`}
-                                >
-                                    <div className="relative mr-2.5 sm:mr-3 shrink-0">
-                                        <UserAvatar
-                                            targetUser={chat.type === ChatType.GROUP
-                                                ? { name: displayName, avatarUrl: chat.avatarUrl, avatarUpdatedAt: chat.avatarUpdatedAt }
-                                                : otherUsers[0]?.user
+                                <div key={chat.id} className="relative group">
+                                    <button
+                                        type='button'
+                                        onClick={() => setActiveChatId(chat.id)}
+                                        {...getLongPressHandlers({
+                                            isDesktop,
+                                            itemId: chat.id,
+                                            onLongPress: (itemId: string) => {
+                                                if (itemId === chat.id) {
+                                                    setChatMenuOpenId(chat.id);
+                                                }
                                             }
-                                            className="w-10 h-10 sm:w-12 sm:h-12"
-                                            isOnline={!!(chat.type === ChatType.DIRECT && otherUsers[0]?.user?.id && onlineUsers[otherUsers[0].user.id])}
-                                        />
-                                        {hasUnread && (
-                                            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-primary rounded-full border-2 border-background" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex justify-between items-center mb-0.5">
-                                            <h4 className={`text-[12px] sm:text-[13.5px] truncate pr-2 ${isActive ? 'font-bold text-primary' : hasUnread ? 'font-bold text-foreground' : 'font-semibold text-foreground/80'}`}>
-                                                {displayName}
-                                            </h4>
-                                            {lastMsg && (
-                                                <span className={`text-[11px] sm:text-[13px] shrink-0 ${hasUnread ? 'text-primary font-bold' : 'text-muted-foreground font-medium'}`}>
-                                                    {formatDistanceToNow(new Date(lastMsg.createdAt), { addSuffix: false })}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <p className={`text-[11px] sm:text-[13px] truncate flex-1 ${hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                                                {(() => {
-                                                    const chatTypingUsers = getTypingUsersForChat(typingByChatId, chat.id, user?.id);
-                                                    if (chatTypingUsers.length > 0) {
-                                                        const typingLabel = chat.type === ChatType.GROUP
-                                                            ? `${(chatTypingUsers[0].name || 'Someone').replace(/[()`]/g, '\\$&')} ${chatTypingUsers.length === 1 ? 'is' : 'are'} typing...`
-                                                            : 'typing...';
-                                                        return <span className="text-primary font-medium">{typingLabel}</span>;
-                                                    }
-                                                    return lastMsg ? (
-                                                        <>
-                                                            <span className="text-muted-foreground">{lastMsg.senderId === user.id ? 'You: ' : <span>{lastMsg.sender?.name}: </span>}</span>
-                                                            {lastMsg.deletedAt ? (
-                                                                <span className="text-muted-foreground">Message deleted</span>
-                                                            ) : (
-                                                                (() => {
-                                                                    const content = lastMsg.content || '';
-                                                                    if (content.includes('![')) {
-                                                                        const textPart = content.replace(/!\[.*?\]\(.*?\)/g, '').trim();
-                                                                        return textPart ? `${textPart} 📷` : '📷 Photo';
-                                                                    }
-                                                                    return content;
-                                                                })()
-                                                            )}
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">Tap to start chatting</span>
-                                                    );
-                                                })()}
-                                            </p>
+                                        }, touchChatTimerRef, touchChatStartPosRef, touchChatHasTriggeredRef)}
+                                        className={`w-full flex items-center px-3 sm:px-4 py-3 sm:py-3.5 transition-all text-left
+                                            ${isActive
+                                                ? 'bg-primary/10 border-l-[3px] border-l-primary'
+                                                : 'hover:bg-muted/60 border-l-[3px] border-l-transparent'
+                                            }`}
+                                    >
+                                        <div className="relative mr-2.5 sm:mr-3 shrink-0">
+                                            <UserAvatar
+                                                targetUser={chat.type === ChatType.GROUP
+                                                    ? { name: displayName, avatarUrl: chat.avatarUrl, avatarUpdatedAt: chat.avatarUpdatedAt }
+                                                    : otherUsers[0]?.user
+                                                }
+                                                className="w-10 h-10 sm:w-12 sm:h-12"
+                                                isOnline={!!(chat.type === ChatType.DIRECT && otherUsers[0]?.user?.id && onlineUsers[otherUsers[0].user.id])}
+                                            />
                                             {hasUnread && (
-                                                <span className="ml-1.5 sm:ml-2">
-                                                    <Badge variant="primary" size="sm">
-                                                        {chat.unreadCount}
-                                                    </Badge>
-                                                </span>
+                                                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-primary rounded-full border-2 border-background" />
                                             )}
                                         </div>
-                                    </div>
-                                </button>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-center mb-0.5">
+                                                <h4 className={`text-[12px] sm:text-[13.5px] truncate pr-2 ${isActive ? 'font-bold text-primary' : hasUnread ? 'font-bold text-foreground' : 'font-semibold text-foreground/80'}`}>
+                                                    {displayName}
+                                                </h4>
+                                                {lastMsg && (
+                                                    <span className={`text-[11px] sm:text-[13px] shrink-0 ${hasUnread ? 'text-primary font-bold' : 'text-muted-foreground font-medium'}`}>
+                                                        {formatDistanceToNow(new Date(lastMsg.createdAt), { addSuffix: false })}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <p className={`text-[11px] sm:text-[13px] truncate flex-1 ${hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                                                    {(() => {
+                                                        const chatTypingUsers = getTypingUsersForChat(typingByChatId, chat.id, user?.id);
+                                                        if (chatTypingUsers.length > 0) {
+                                                            const typingLabel = chat.type === ChatType.GROUP
+                                                                ? `${(chatTypingUsers[0].name || 'Someone').replace(/[()`]/g, '\\$&')} ${chatTypingUsers.length === 1 ? 'is' : 'are'} typing...`
+                                                                : 'typing...';
+                                                            return <span className="text-primary font-medium">{typingLabel}</span>;
+                                                        }
+                                                        return lastMsg ? (
+                                                            <>
+                                                                <span className="text-muted-foreground">{lastMsg.senderId === user.id ? 'You: ' : <span>{lastMsg.sender?.name}: </span>}</span>
+                                                                {lastMsg.deletedAt ? (
+                                                                    <span className="text-muted-foreground">Message deleted</span>
+                                                                ) : (
+                                                                    (() => {
+                                                                        const content = lastMsg.content || '';
+                                                                        if (content.includes('![')) {
+                                                                            const textPart = content.replace(/!\[.*?\]\(.*?\)/g, '').trim();
+                                                                            return textPart ? `${textPart} 📷` : '📷 Photo';
+                                                                        }
+                                                                        return content;
+                                                                    })()
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">Tap to start chatting</span>
+                                                        );
+                                                    })()}
+                                                </p>
+                                                {hasUnread && (
+                                                    <span className="ml-1.5 sm:ml-2">
+                                                        <Badge variant="primary" size="sm">
+                                                            {chat.unreadCount}
+                                                        </Badge>
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </button>
+                                    <button
+                                        type='button'
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setChatMenuOpenId(chatMenuOpenId === chat.id ? null : chat.id);
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-muted/90 hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+                                    >
+                                        <MoreVertical size={16} className="text-muted-foreground" />
+                                    </button>
+                                    {chatMenuOpenId === chat.id && (
+                                        <div data-chat-menu={chat.id} className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-xl py-1 z-50 min-w-35">
+                                            <button
+                                                type='button'
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDeleteConfirmConfig({
+                                                        isOpen: true,
+                                                        chatId: chat.id,
+                                                        chatName: displayName
+                                                    });
+                                                    setChatMenuOpenId(null);
+                                                }}
+                                                className="w-full px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
+                                            >
+                                                <Trash2 size={14} />
+                                                Delete Chat
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             );
                         })
                     )}
@@ -2226,6 +2337,20 @@ export function ChatLayout() {
                 description={confirmConfig.description}
                 isDestructive={confirmConfig.isDestructive}
                 confirmText={confirmConfig.isDestructive ? 'Delete' : 'Confirm'}
+            />
+
+            <ConfirmDialog
+                isOpen={deleteConfirmConfig.isOpen}
+                onClose={() => setDeleteConfirmConfig({ isOpen: false, chatId: null, chatName: '' })}
+                onConfirm={() => {
+                    if (deleteConfirmConfig.chatId) {
+                        handleDeleteChat(deleteConfirmConfig.chatId);
+                    }
+                }}
+                title="Delete Chat"
+                description={`This will only remove you from the chat "${deleteConfirmConfig.chatName}". Other participants will still see all messages and the chat will remain in their chat list.`}
+                confirmText="Delete"
+                isDestructive
             />
 
             {contextMenu && (
