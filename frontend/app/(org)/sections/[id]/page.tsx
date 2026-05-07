@@ -66,7 +66,10 @@ export default function SectionDetailPage() {
                                 </span>
                                 <span className="flex items-center gap-2 group/item">
                                     <Calendar className="w-4 h-4 text-primary group-hover/item:scale-110 transition-transform" />
-                                    {section.semester} {section.year}
+                                    {section.academicCycle?.name || 'Academic Cycle'}
+                                    {section.cohort && (
+                                        <span className="ml-1 opacity-50 font-medium">({section.cohort.name})</span>
+                                    )}
                                 </span>
                                 {section.room && (
                                     <span className="flex items-center gap-2 group/item">

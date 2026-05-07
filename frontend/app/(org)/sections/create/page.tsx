@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Calendar, MapPin, Hash } from 'lucide-react';
+import { BookOpen, Calendar, MapPin, Hash, AlertCircle } from 'lucide-react';
 import useSWR, { mutate } from 'swr';
 import { useGlobal } from '@/context/GlobalContext';
 import Link from 'next/link';
@@ -21,8 +21,6 @@ export default function CreateSectionPage() {
 
     const [formData, setFormData] = useState({
         name: '',
-        semester: '',
-        year: '',
         room: '',
         courseId: '',
         academicCycleId: '',
@@ -50,159 +48,231 @@ export default function CreateSectionPage() {
         }
     }, [user, router]);
 
+    const [formErrors, setFormErrors] = useState<{ name?: string; academicCycleId?: string; courseId?: string; teacherId?: string; room?: string; general?: string }>({});
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setFormErrors({});
+
+        let hasError = false;
+        if (!formData.academicCycleId) {
+            setFormErrors(prev => ({ ...prev, academicCycleId: 'Academic Cycle is required' }));
+            hasError = true;
+        }
+        if (!formData.name) {
+            setFormErrors(prev => ({ ...prev, name: 'Section Name is required' }));
+            hasError = true;
+        }
+
+        if (hasError) return;
+
         dispatch({ type: 'UI_START_PROCESSING', payload: 'section-create' });
 
         try {
             if (!token) return;
-            await api.org.createSection(formData, token);
-            // Invalidate sections cache using SWR mutate
+
+            await api.org.createSection(formData as any, token);
             mutate((key) => Array.isArray(key) && key[0] === 'sections');
 
             window.dispatchEvent(new Event('stats-updated'));
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Section created successfully', type: 'success' } });
             router.push('/sections');
-        } catch (error: unknown) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to create section', type: 'error' } });
+        } catch (error: any) {
+            const message = error?.response?.data?.message || error?.message || 'Failed to create section';
+            const newErrors: typeof formErrors = {};
+
+            if (Array.isArray(message)) {
+                message.forEach((m: string) => {
+                    const msg = m.toLowerCase();
+                    if (msg.includes('name')) newErrors.name = m;
+                    else if (msg.includes('course')) newErrors.courseId = m;
+                    else if (msg.includes('teacher')) newErrors.teacherId = m;
+                    else if (msg.includes('cycle')) newErrors.academicCycleId = m;
+                    else newErrors.general = m;
+                });
+            } else {
+                const msgStr = message;
+                if (msgStr.toLowerCase().includes('name')) newErrors.name = msgStr;
+                else if (msgStr.toLowerCase().includes('course')) newErrors.courseId = msgStr;
+                else if (msgStr.toLowerCase().includes('teacher')) newErrors.teacherId = msgStr;
+                else if (msgStr.toLowerCase().includes('cycle')) newErrors.academicCycleId = msgStr;
+                else newErrors.general = msgStr;
+            }
+            setFormErrors(newErrors);
         } finally {
             dispatch({ type: 'UI_STOP_PROCESSING', payload: 'section-create' });
         }
     };
 
     return (
-        <div className="flex flex-col w-full">
-            <div className="mb-6 p-2">
-                <div className="flex items-center gap-5">
-                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-lg border border-border shadow-xl">
-                        < BookOpen className="w-10 h-10 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-4xl font-black text-primary tracking-tight drop-shadow-lg" > Create Section </h1>
-                        < p className="text-muted-foreground font-bold opacity-80 mt-1 tracking-widest text-[10px]" > Add a New Course Offering </p>
-                    </div>
+        <div className="flex flex-col w-full max-w-6xl py-10 mx-auto animate-in fade-in duration-700">
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center gap-4 px-2">
+                <div className="p-3 bg-primary/10 rounded-xl border border-primary/20 shadow-lg shadow-primary/5">
+                    <BookOpen className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-foreground leading-tight">Create New Section</h1>
+                    <p className="text-muted-foreground mt-1 text-xs md:text-sm font-bold tracking-widest uppercase opacity-70">Define a new offering for your academic catalog</p>
                 </div>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-xl rounded-lg shadow-[0_8px_30px_var(--shadow-color)] border border-border p-8 md:p-12 mb-10 text-card-text">
-                <form onSubmit={handleSubmit} className="space-y-8" >
-                    <div className="space-y-8" >
-                        <div>
-                            <Label>Section Name * </Label>
-                            < Input
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                                icon={Hash}
-                                placeholder="E.g., Section A, Group 1"
-                            />
-                        </div>
-
-                        <div>
-                            <Label>Course * </Label>
-                            < CustomSelect
-                                value={formData.courseId}
-                                onChange={(value) => setFormData({ ...formData, courseId: value })}
-                                icon={BookOpen}
-                                options={courses.map((c: Course) => ({ value: c.id, label: c.name }))}
-                                placeholder="Select a course..."
-                                required
-                                searchable
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div>
-                                <Label>Academic Cycle</Label>
-                                <CustomSelect
-                                    value={formData.academicCycleId}
-                                    onChange={(value) => setFormData({ ...formData, academicCycleId: value, cohortId: '' })}
-                                    options={[
-                                        { label: 'No Cycle', value: '' },
-                                        ...(cyclesData?.data?.map((c: AcademicCycle) => ({ value: c.id, label: c.name })) || [])
-                                    ]}
-                                    placeholder="Select cycle..."
-                                />
+            <div className="flex flex-col lg:flex-row gap-8 items-start">
+                {/* Left Side: Info Card */}
+                <div className="w-full lg:w-1/3 space-y-6">
+                    <div className="bg-primary/5 backdrop-blur-xl rounded-2xl border border-primary/10 p-6 md:p-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-700" />
+                        <h3 className="text-lg font-black tracking-tight mb-4 relative z-10">Section Placement</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed relative z-10 mb-6">
+                            Sections are specific instances of a course. They link a subject to an academic cycle, a physical room, and (optionally) a student cohort.
+                        </p>
+                        <div className="space-y-4 relative z-10">
+                            <div className="flex items-center gap-3 p-3 bg-background/50 rounded-xl border border-border/50">
+                                <div className="p-2 bg-amber-500/10 rounded-lg"><Calendar className="w-4 h-4 text-amber-500" /></div>
+                                <span className="text-xs font-bold">Cycle-specific enrollment</span>
                             </div>
-                            <div>
-                                <Label>Cohort</Label>
-                                <CustomSelect
-                                    value={formData.cohortId}
-                                    onChange={(value) => setFormData({ ...formData, cohortId: value })}
-                                    options={[
-                                        { label: 'No Cohort', value: '' },
-                                        ...(cohortsData?.data?.filter((c: Cohort) => !formData.academicCycleId || c.academicCycleId === formData.academicCycleId).map((c: Cohort) => ({
-                                            value: c.id,
-                                            label: c.name
-                                        })) || [])
-                                    ]}
-                                    placeholder="Select cohort..."
-                                />
+                            <div className="flex items-center gap-3 p-3 bg-background/50 rounded-xl border border-border/50">
+                                <div className="p-2 bg-indigo-500/10 rounded-lg"><MapPin className="w-4 h-4 text-indigo-500" /></div>
+                                <span className="text-xs font-bold">Resource Allocation</span>
                             </div>
-                        </div>
-
-                        < div className="grid grid-cols-1 md:grid-cols-2 gap-8" >
-                            <div>
-                                <Label>Semester </Label>
-                                < Input
-                                    type="text"
-                                    name="semester"
-                                    value={formData.semester}
-                                    onChange={handleChange}
-                                    icon={Calendar}
-                                    placeholder="E.g., Fall"
-                                />
-                            </div>
-
-                            < div >
-                                <Label>Year </Label>
-                                < Input
-                                    type="text"
-                                    name="year"
-                                    value={formData.year}
-                                    onChange={handleChange}
-                                    icon={Calendar}
-                                    placeholder="E.g., 2026"
-                                />
-                            </div>
-                        </div>
-
-                        < div >
-                            <Label>Room </Label>
-                            < Input
-                                type="text"
-                                name="room"
-                                value={formData.room}
-                                onChange={handleChange}
-                                icon={MapPin}
-                                placeholder="E.g., Building A - Room 101"
-                            />
                         </div>
                     </div>
 
-                    < div className="pt-10 mt-10 border-t border-border flex justify-end gap-5" >
-                        <Link
-                            href="/sections"
-                        >
-                            <Button type="button" variant="secondary" className="px-10 h-12">
-                                Cancel
-                            </Button>
-                        </Link>
-                        < Button
-                            type="submit"
-                            loadingId="section-create"
-                            className="px-10 h-12"
-                        >
-                            Create Section
-                        </Button>
+                    <div className="bg-card border border-border/50 rounded-2xl p-6 relative overflow-hidden shadow-xl shadow-primary/5">
+                        <div className="flex items-center gap-3 mb-4">
+                            <AlertCircle className="w-5 h-5 text-primary opacity-50" />
+                            <h4 className="text-sm font-black tracking-tight uppercase">Requirements</h4>
+                        </div>
+                        <ul className="space-y-3">
+                            <li className="flex items-start gap-2 text-xs font-medium text-muted-foreground">
+                                <span className="w-1 h-1 rounded-full bg-primary mt-1.5 shrink-0" />
+                                <span>Unique section name for the course</span>
+                            </li>
+                            <li className="flex items-start gap-2 text-xs font-medium text-muted-foreground">
+                                <span className="w-1 h-1 rounded-full bg-primary mt-1.5 shrink-0" />
+                                <span>Valid Academic Cycle association</span>
+                            </li>
+                        </ul>
                     </div>
-                </form>
+                </div>
+
+                {/* Right Side: Form Card */}
+                <div className="flex-1 w-full">
+                    <div className="bg-card/40 backdrop-blur-2xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden relative">
+                        <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-secondary/5 opacity-50" />
+
+                        <form onSubmit={handleSubmit} className="relative p-6 md:p-10 space-y-8" noValidate>
+                            <div className="space-y-8">
+                                {/* Academic Context Section */}
+                                <div className="space-y-4">
+                                    <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Academic Context</Label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-bold ml-1">Parent Course <span className="text-primary">*</span></Label>
+                                            <CustomSelect
+                                                value={formData.courseId}
+                                                onChange={(value) => setFormData({ ...formData, courseId: value })}
+                                                icon={BookOpen}
+                                                options={courses.map((c: Course) => ({ value: c.id, label: c.name }))}
+                                                placeholder="Select course..."
+                                                required
+                                                searchable
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-bold ml-1">Academic Cycle <span className="text-primary">*</span></Label>
+                                            <CustomSelect
+                                                value={formData.academicCycleId}
+                                                onChange={(value) => setFormData({ ...formData, academicCycleId: value, cohortId: '' })}
+                                                options={[
+                                                    ...(cyclesData?.data?.map((c: AcademicCycle) => ({ value: c.id, label: c.name })) || [])
+                                                ]}
+                                                placeholder="Select cycle..."
+                                                required
+                                                error={!!formErrors.academicCycleId}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section Details Section */}
+                                <div className="space-y-4">
+                                    <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Section Identity</Label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-bold ml-1">Section Identifier <span className="text-primary">*</span></Label>
+                                            <Input
+                                                type="text"
+                                                name="name"
+                                                value={formData.name}
+                                                onChange={handleChange}
+                                                required
+                                                icon={Hash}
+                                                placeholder="e.g. Morning - A"
+                                                error={!!formErrors.name}
+                                                className="h-12 md:h-14 font-medium"
+                                            />
+                                            {formErrors.name && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{formErrors.name}</p>}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-bold ml-1">Location / Room</Label>
+                                            <Input
+                                                type="text"
+                                                name="room"
+                                                value={formData.room}
+                                                onChange={handleChange}
+                                                icon={MapPin}
+                                                placeholder="e.g. Hall 4 / Lab 102"
+                                                className="h-12 md:h-14 font-medium"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-bold ml-1">Assigned Cohort (Optional)</Label>
+                                        <CustomSelect
+                                            value={formData.cohortId}
+                                            onChange={(value) => setFormData({ ...formData, cohortId: value })}
+                                            options={[
+                                                { label: 'None (Individual Enrollment)', value: '' },
+                                                ...(cohortsData?.data?.filter((c: Cohort) => !formData.academicCycleId || c.academicCycleId === formData.academicCycleId).map((c: Cohort) => ({
+                                                    value: c.id,
+                                                    label: c.name
+                                                })) || [])
+                                            ]}
+                                            placeholder="Select student cohort..."
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {formErrors.general && (
+                                <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl flex items-center text-sm font-bold animate-in slide-in-from-top-2">
+                                    <AlertCircle className="w-5 h-5 mr-3 shrink-0" />
+                                    {formErrors.general}
+                                </div>
+                            )}
+
+                            <div className="pt-8 border-t border-border/50 flex flex-col sm:flex-row items-center justify-end gap-4">
+                                <Link href="/sections" className="w-full sm:w-auto">
+                                    <Button type="button" variant="secondary" className="w-full sm:px-10 h-12 font-bold tracking-tight">
+                                        Cancel
+                                    </Button>
+                                </Link>
+                                <Button
+                                    type="submit"
+                                    loadingId="section-create"
+                                    className="w-full sm:px-12 h-12 font-black tracking-tight shadow-lg shadow-primary/20"
+                                >
+                                    Activate Section
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     );

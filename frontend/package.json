@@ -12,6 +12,7 @@
     "@floating-ui/react": "^0.27.19",
     "@hookform/resolvers": "^5.2.2",
     "@types/marked": "^5.0.2",
+    "@types/zxcvbn": "^4.4.5",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.577.0",
@@ -24,7 +25,8 @@
     "socket.io-client": "^4.8.3",
     "swr": "^2.4.1",
     "tailwind-merge": "^3.5.0",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

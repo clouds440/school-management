@@ -2146,11 +2146,13 @@ export function ChatLayout() {
                 ) : (
                     /* Empty State */
                     <div className="flex-1 flex flex-col items-center justify-center chat-bg-pattern px-4">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-card rounded-2xl flex items-center justify-center shadow-sm border border-border mb-4 sm:mb-5">
-                            <MessageSquarePlus size={36} className="text-primary/80" />
+                        <div className="flex flex-col items-center justify-center p-14 bg-card/60 rounded-xl shadow-lg backdrop-blur-sm">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-card rounded-2xl flex items-center justify-center shadow-sm border border-border mb-4 sm:mb-5">
+                                <MessageSquarePlus size={36} className="text-primary/80" />
+                            </div>
+                            <h3 className="text-base sm:text-lg font-bold text-foreground mb-1">Your Messages</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground max-w-xs sm:max-w-sm text-center">Select a conversation or start a new one to begin chatting</p>
                         </div>
-                        <h3 className="text-base sm:text-lg font-bold text-foreground mb-1">Your Messages</h3>
-                        <p className="text-xs sm:text-sm text-muted-foreground max-w-xs sm:max-w-sm text-center">Select a conversation or start a new one to begin chatting</p>
                     </div>
                 )}
             </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Users, Mail, MessageSquare, Calendar, UserPlus } from 'lucide-react';
+import { Users, Mail, MessageSquare, Calendar, UserPlus, Lock } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PlatformAdmin, PaginatedResponse, Role } from '@/types';
 import { TableActions } from '@/components/ui/TableActions';
@@ -14,6 +14,8 @@ import { DataTable, Column } from '@/components/ui/DataTable';
 import useSWR, { mutate } from 'swr';
 import { matchesCacheKeyPrefix } from '@/lib/swr';
 import { Button } from '@/components/ui/Button';
+import PasswordStrength from '@/components/ui/PasswordStrength';
+import { Input } from '@/components/ui/Input';
 
 interface PlatformAdminParams {
     page: number;
@@ -63,6 +65,7 @@ export default function PlatformAdminsPage() {
     const [adminModalMode, setAdminModalMode] = useState<'CREATE' | 'EDIT'>('CREATE');
     const [operatingAdmin, setOperatingAdmin] = useState<PlatformAdmin | null>(null);
     const [adminFormData, setAdminFormData] = useState({ name: '', email: '', password: '', phone: '' });
+    const [formErrors, setFormErrors] = useState<{ name?: string; email?: string; password?: string; phone?: string; general?: string }>({});
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
@@ -89,6 +92,7 @@ export default function PlatformAdminsPage() {
     const handleOpenAdminModal = (mode: 'CREATE' | 'EDIT', admin: PlatformAdmin | null = null) => {
         setAdminModalMode(mode);
         setOperatingAdmin(admin);
+        setFormErrors({});
         if (mode === 'EDIT' && admin) {
             setAdminFormData({ name: admin.name, email: admin.email, password: '', phone: admin.phone || '' });
         } else {
@@ -100,6 +104,7 @@ export default function PlatformAdminsPage() {
     const handleAdminSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!token) return;
+        setFormErrors({});
         try {
             dispatch({ type: 'UI_START_PROCESSING', payload: 'platform-admin-submit' });
             if (adminModalMode === 'CREATE') {
@@ -116,8 +121,28 @@ export default function PlatformAdminsPage() {
                 dispatch({ type: 'TOAST_ADD', payload: { message: 'Platform Admin updated successfully', type: 'success' } });
             }
             setIsAdminModalOpen(false);
-        } catch (error) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: error instanceof Error ? error.message : 'Failed to save admin', type: 'error' } });
+        } catch (err: any) {
+            const message = err?.response?.data?.message || err?.message || 'Failed to save admin';
+            const newErrors: typeof formErrors = {};
+            
+            if (Array.isArray(message)) {
+                message.forEach((m: string) => {
+                    const msg = m.toLowerCase();
+                    if (msg.includes('name')) newErrors.name = m;
+                    else if (msg.includes('email')) newErrors.email = m;
+                    else if (msg.includes('password')) newErrors.password = m;
+                    else if (msg.includes('phone')) newErrors.phone = m;
+                    else newErrors.general = m;
+                });
+            } else {
+                const msgStr = message;
+                if (msgStr.toLowerCase().includes('name')) newErrors.name = msgStr;
+                else if (msgStr.toLowerCase().includes('email')) newErrors.email = msgStr;
+                else if (msgStr.toLowerCase().includes('password')) newErrors.password = msgStr;
+                else if (msgStr.toLowerCase().includes('phone')) newErrors.phone = msgStr;
+                else newErrors.general = msgStr;
+            }
+            setFormErrors(newErrors);
         } finally {
             dispatch({ type: 'UI_STOP_PROCESSING', payload: 'platform-admin-submit' });
         }
@@ -279,52 +304,66 @@ export default function PlatformAdminsPage() {
                 <div className="space-y-4 py-2">
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-muted-foreground tracking-wider block ml-1">Full Name</label>
-                        <input
+                        <Input
                             type="text"
                             required
                             value={adminFormData.name}
                             onChange={e => setAdminFormData(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full px-4 py-3 rounded-sm bg-card/5 border border-border/10 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-bold text-foreground"
+                            error={!!formErrors.name}
+                            icon={Users}
+                            className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                             placeholder="John Doe"
                         />
+                        {formErrors.name && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{formErrors.name}</p>}
                     </div>
                     {adminModalMode === 'CREATE' && (
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground tracking-wider block ml-1">Email Address</label>
-                            <input
+                            <Input
                                 type="email"
                                 required
                                 value={adminFormData.email}
                                 onChange={e => setAdminFormData(prev => ({ ...prev, email: e.target.value }))}
-                                className="w-full px-4 py-3 rounded-sm bg-card/5 border border-border/10 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-bold text-foreground"
+                                error={!!formErrors.email}
+                                icon={Mail}
+                                className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                                 placeholder="john@example.com"
                             />
+                            {formErrors.email && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{formErrors.email}</p>}
                         </div>
                     )}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-muted-foreground tracking-wider block ml-1">Phone (Optional)</label>
-                        <input
+                        <Input
                             type="tel"
                             autoComplete='off'
                             value={adminFormData.phone}
                             onChange={e => setAdminFormData(prev => ({ ...prev, phone: e.target.value }))}
-                            className="w-full px-4 py-3 rounded-sm bg-card/5 border border-border/10 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-bold text-foreground"
+                            error={!!formErrors.phone}
+                            icon={MessageSquare}
+                            className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                             placeholder="+1 (555) 000-0000"
                         />
+                        {formErrors.phone && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{formErrors.phone}</p>}
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-muted-foreground tracking-wider block ml-1">
                             {adminModalMode === 'CREATE' ? 'Password' : 'New Password (Optional)'}
                         </label>
-                        <input
+                        <Input
                             type="password"
                             required={adminModalMode === 'CREATE'}
                             value={adminFormData.password}
                             onChange={e => setAdminFormData(prev => ({ ...prev, password: e.target.value }))}
-                            className="w-full px-4 py-3 rounded-sm bg-card/5 border border-border/10 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-bold text-foreground"
+                            error={!!formErrors.password}
+                            icon={Lock}
+                            className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                             placeholder="••••••••"
                         />
+                        {formErrors.password && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{formErrors.password}</p>}
+                        <PasswordStrength password={adminFormData.password} className="mt-2" />
                     </div>
+                    {formErrors.general && <p className="mt-2 text-sm text-red-500 font-bold text-center">{formErrors.general}</p>}
                 </div>
             </ModalForm>
 

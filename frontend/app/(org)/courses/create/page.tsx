@@ -58,68 +58,96 @@ export default function CreateCoursePage() {
     };
 
     return (
-        <div className="flex flex-col w-full">
-            <div className="mb-6 p-2">
-                <div className="flex items-center gap-5">
-                    <div className="p-4 bg-primary/10 backdrop-blur-md rounded-lg border border-border shadow-xl">
-                        <LibraryBig className="w-10 h-10 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-4xl font-black text-primary tracking-tight drop-shadow-lg">Create Course</h1>
-                        <p className="text-muted-foreground font-bold opacity-80 mt-1 tracking-widest text-[10px]">Add a New Subject to Catalog</p>
-                    </div>
+        <div className="flex flex-col w-full max-w-6xl py-10 mx-auto animate-in fade-in duration-700">
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center gap-4 px-2">
+                <div className="p-3 bg-primary/10 max-w-fit rounded-xl border border-primary/20 shadow-lg shadow-primary/5">
+                    <LibraryBig className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-foreground leading-tight">Create New Course</h1>
+                    <p className="text-muted-foreground mt-1 text-xs md:text-sm font-bold tracking-widest uppercase opacity-70">Expand your institution's academic catalog</p>
                 </div>
             </div>
 
-            <div className="bg-card/80 backdrop-blur-xl rounded-lg shadow-[0_8px_30px_var(--shadow-color)] border border-border p-8 md:p-12 mb-10 text-card-text">
-                <form onSubmit={handleSubmit} className="space-y-8">
-                    <div className="space-y-8">
-                        <div>
-                            <Label>Course Name *</Label>
-                            <Input
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                                icon={LibraryBig}
-                                placeholder="E.g., Mathematics"
-                            />
-                        </div>
-
-                        <div>
-                            <Label>Description</Label>
-                            <div>
-                                <Label className="sr-only">Course Description</Label>
-                                <Textarea
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleChange}
-                                    rows={4}
-                                    icon={FileText}
-                                    placeholder="Brief description of the course content..."
-                                />
+            <div className="flex flex-col lg:flex-row gap-8 items-start">
+                {/* Left Side: Info Card */}
+                <div className="w-full lg:w-1/3 space-y-6">
+                    <div className="bg-primary/5 backdrop-blur-xl rounded-2xl border border-primary/10 p-6 md:p-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-700" />
+                        <h3 className="text-lg font-black tracking-tight mb-4 relative z-10">Course Definition</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed relative z-10 mb-6">
+                            Courses represent the high-level subjects offered by your institution. Once created, you can assign multiple sections, teachers, and syllabi to them.
+                        </p>
+                        <div className="space-y-4 relative z-10">
+                            <div className="flex items-center gap-3 p-3 bg-background/50 rounded-xl border border-border/50">
+                                <div className="p-2 bg-emerald-500/10 rounded-lg"><FileText className="w-4 h-4 text-emerald-500" /></div>
+                                <span className="text-xs font-bold">Searchable in Catalog</span>
+                            </div>
+                            <div className="flex items-center gap-3 p-3 bg-background/50 rounded-xl border border-border/50">
+                                <div className="p-2 bg-blue-500/10 rounded-lg"><LibraryBig className="w-4 h-4 text-blue-500" /></div>
+                                <span className="text-xs font-bold">Reusable across Cycles</span>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div className="pt-10 mt-10 border-t border-border flex justify-end gap-5">
-                        <Link
-                            href="/courses"
-                        >
-                            <Button type="button" variant="secondary" className="px-10 h-12">
-                                Cancel
-                            </Button>
-                        </Link>
-                        <Button
-                            type="submit"
-                            loadingId="course-create"
-                            className="px-10 h-12"
-                        >
-                            Create Course
-                        </Button>
+                {/* Right Side: Form Card */}
+                <div className="flex-1 w-full">
+                    <div className="bg-card/40 backdrop-blur-2xl rounded-2xl shadow-2xl border border-border/50 overflow-hidden relative">
+                        <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-secondary/5 opacity-50" />
+
+                        <form onSubmit={handleSubmit} className="relative p-6 md:p-10 space-y-8" noValidate>
+                            <div className="space-y-8">
+                                <div className="space-y-3">
+                                    <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Basic Information</Label>
+                                    <div className="space-y-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-bold ml-1">Course Name <span className="text-primary">*</span></Label>
+                                            <Input
+                                                type="text"
+                                                name="name"
+                                                value={formData.name}
+                                                onChange={handleChange}
+                                                required
+                                                icon={LibraryBig}
+                                                placeholder="e.g. Advanced Mathematics"
+                                                className="h-12 md:h-14 font-medium"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-bold ml-1">Full Description</Label>
+                                            <Textarea
+                                                name="description"
+                                                value={formData.description}
+                                                onChange={handleChange}
+                                                rows={6}
+                                                icon={FileText}
+                                                placeholder="Detailed overview of learning objectives, prerequisites, and subject matter..."
+                                                className="min-h-32 md:min-h-40 font-medium py-4"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pt-8 border-t border-border/50 flex flex-col sm:flex-row items-center justify-end gap-4">
+                                <Link href="/courses" className="w-full sm:w-auto">
+                                    <Button type="button" variant="secondary" className="w-full sm:px-10 h-12 font-bold tracking-tight">
+                                        Cancel
+                                    </Button>
+                                </Link>
+                                <Button
+                                    type="submit"
+                                    loadingId="course-create"
+                                    className="w-full sm:px-12 h-12 font-black tracking-tight shadow-lg shadow-primary/20"
+                                >
+                                    Establish Course
+                                </Button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     );

@@ -80,7 +80,7 @@ export function ModalForm({
                     </div>
                 )}
 
-                <form id="modal-form" onSubmit={onSubmit} className="text-foreground">
+                <form id="modal-form" onSubmit={onSubmit} className="text-foreground" noValidate>
                     {children}
                 </form>
             </div>

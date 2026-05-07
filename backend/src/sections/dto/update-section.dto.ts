@@ -7,14 +7,6 @@ export class UpdateSectionDto {
 
   @IsString()
   @IsOptional()
-  semester?: string;
-
-  @IsString()
-  @IsOptional()
-  year?: string;
-
-  @IsString()
-  @IsOptional()
   room?: string;
 
   @IsString()
@@ -24,4 +16,8 @@ export class UpdateSectionDto {
   @IsString()
   @IsOptional()
   cohortId?: string;
+
+  @IsString()
+  @IsOptional()
+  academicCycleId?: string;
 }

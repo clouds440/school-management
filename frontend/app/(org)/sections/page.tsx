@@ -98,7 +98,7 @@ export default function SectionsPage() {
 
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingSection, setEditingSection] = useState<Section | null>(null);
-    const [editFormData, setEditFormData] = useState({ name: '', semester: '', year: '', room: '', courseId: '', academicCycleId: '', cohortId: '' });
+    const [editFormData, setEditFormData] = useState({ name: '', room: '', courseId: '', academicCycleId: '', cohortId: '' });
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deletingSection, setDeletingSection] = useState<Section | null>(null);
@@ -137,7 +137,11 @@ export default function SectionsPage() {
         if (!editingSection || !token) return;
         dispatch({ type: 'UI_START_PROCESSING', payload: 'section-edit' });
         try {
-            await api.org.updateSection(editingSection.id, editFormData, token);
+            if (!editFormData.academicCycleId) {
+                dispatch({ type: 'TOAST_ADD', payload: { message: 'Academic Cycle is required', type: 'error' } });
+                return;
+            }
+            await api.org.updateSection(editingSection.id, editFormData as any, token);
 
             // Handle student enrollment changes
             const currentlyEnrolledIds = editingSection.students?.map(s => s.id) || [];
@@ -238,10 +242,17 @@ export default function SectionsPage() {
             }
         },
         {
-            header: 'Term',
+            header: 'Placement',
             sortable: true,
-            sortKey: 'semester',
-            accessor: (row: Section) => row.semester && row.year ? `${row.semester} ${row.year}` : <span className="text-muted-foreground/50 italic">Unspecified</span>
+            sortKey: 'academicCycleId',
+            accessor: (row: Section) => (
+                <div className="flex flex-col">
+                    <span className="text-sm font-bold text-foreground truncate max-w-40">{row.academicCycle?.name || 'No Cycle'}</span>
+                    {row.cohort && (
+                        <span className="text-[10px] text-primary font-black uppercase tracking-widest">{row.cohort.name}</span>
+                    )}
+                </div>
+            )
         },
         {
             header: 'Room',
@@ -260,8 +271,6 @@ export default function SectionsPage() {
                             setEditingSection(row);
                             setEditFormData({
                                 name: row.name,
-                                semester: row.semester || '',
-                                year: row.year || '',
                                 room: row.room || '',
                                 courseId: row.courseId || '',
                                 academicCycleId: row.academicCycleId || '',
@@ -278,8 +287,6 @@ export default function SectionsPage() {
                             setEditingSection(row);
                             setEditFormData({
                                 name: row.name,
-                                semester: row.semester || '',
-                                year: row.year || '',
                                 room: row.room || '',
                                 courseId: row.courseId || '',
                                 academicCycleId: row.academicCycleId || '',
@@ -325,16 +332,18 @@ export default function SectionsPage() {
                             <Drawer position='left'>
                                 <div className="flex flex-col gap-6">
                                     {/* My Sections Toggle */}
-                                    <div className="flex items-center justify-between bg-muted/20 p-3 rounded-lg border border-border">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold uppercase tracking-wider">My Sections</span>
-                                            <span className="text-[10px] text-muted-foreground">Only show sections assigned to me</span>
+                                    {user?.role === Role.ORG_MANAGER && (
+                                        <div className="flex items-center justify-between bg-muted/20 p-3 rounded-lg border border-border">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold uppercase tracking-wider">My Sections</span>
+                                                <span className="text-[10px] text-muted-foreground">Only show sections assigned to me</span>
+                                            </div>
+                                            <Toggle
+                                                checked={showOnlyMySections}
+                                                onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
+                                            />
                                         </div>
-                                        <Toggle
-                                            checked={showOnlyMySections}
-                                            onCheckedChange={(checked) => updateQueryParams({ my: checked, page: 1 })}
-                                        />
-                                    </div>
+                                    )}
 
                                     {/* Academic Cycle Filter */}
                                     <div className="space-y-2">
@@ -436,16 +445,16 @@ export default function SectionsPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>Academic Cycle</Label>
+                            <Label>Academic Cycle *</Label>
                             <CustomSelect
                                 options={[
-                                    { label: 'No Cycle', value: '' },
                                     ...(cyclesData?.data?.map((c: AcademicCycle) => ({ value: c.id, label: c.name })) || [])
                                 ]}
                                 value={editFormData.academicCycleId || ''}
                                 onChange={(val) => setEditFormData({ ...editFormData, academicCycleId: val, cohortId: '' })}
                                 placeholder="Select Cycle"
                                 disabled={user?.role === Role.TEACHER}
+                                required
                             />
                         </div>
                         <div className="space-y-2">
@@ -460,33 +469,7 @@ export default function SectionsPage() {
                                 ]}
                                 value={editFormData.cohortId || ''}
                                 onChange={(val) => setEditFormData({ ...editFormData, cohortId: val })}
-                                placeholder="Select Cohort"
-                                disabled={user?.role === Role.TEACHER}
-                            />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="semester">Semester</Label>
-                            <Input
-                                id="semester"
-                                type="text"
-                                value={editFormData.semester}
-                                onChange={(e) => setEditFormData({ ...editFormData, semester: e.target.value })}
-                                placeholder="E.g., Fall"
-                                readOnly={user?.role === Role.TEACHER}
-                                disabled={user?.role === Role.TEACHER}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="year">Year</Label>
-                            <Input
-                                id="year"
-                                type="text"
-                                value={editFormData.year}
-                                onChange={(e) => setEditFormData({ ...editFormData, year: e.target.value })}
-                                placeholder="E.g., 2026"
-                                readOnly={user?.role === Role.TEACHER}
+                                placeholder="Select Cohort (Optional)..."
                                 disabled={user?.role === Role.TEACHER}
                             />
                         </div>

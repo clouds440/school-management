@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School, RefreshCw, ShieldOff } from 'lucide-react';
+import { Settings, Save, CheckCircle, Mail, MapPin, Phone, School, RefreshCw, ShieldOff, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Organization, Role } from '@/types';
 import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
@@ -115,9 +115,39 @@ export default function SettingsPage() {
         setPendingLogoFile(file);
     }, []);
 
+    const [formErrors, setFormErrors] = useState<{ name?: string; location?: string; contactEmail?: string; phone?: string; general?: string }>({});
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!token) return;
+        setFormErrors({});
+
+        // validation
+        let hasError = false;
+        const newErrors: typeof formErrors = {};
+
+        if (!formData.name.trim()) {
+            newErrors.name = 'Organization name is required';
+            hasError = true;
+        }
+        if (!formData.location.trim()) {
+            newErrors.location = 'Location is required';
+            hasError = true;
+        }
+        if (!formData.phone.trim()) {
+            newErrors.phone = 'Phone number is required';
+            hasError = true;
+        }
+        if (!formData.contactEmail.trim()) {
+            newErrors.contactEmail = 'Contact email is required';
+            hasError = true;
+        }
+
+        if (hasError) {
+            setFormErrors(newErrors);
+            return;
+        }
+
         dispatch({ type: 'UI_START_PROCESSING', payload: 'settings-submit' });
         try {
             // 1. Save text settings — send only primary for accentColor (no secondary)
@@ -147,8 +177,28 @@ export default function SettingsPage() {
             }
 
             dispatch({ type: 'TOAST_ADD', payload: { message: 'Settings updated successfully!', type: 'success' } });
-        } catch (error) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Failed to update settings. Please try again.', type: 'error' } });
+        } catch (error: any) {
+            const message = error?.response?.data?.message || error?.message || 'Failed to update settings. Please try again.';
+            const newErrors: typeof formErrors = {};
+
+            if (Array.isArray(message)) {
+                message.forEach((m: string) => {
+                    const msg = m.toLowerCase();
+                    if (msg.includes('name')) newErrors.name = m;
+                    else if (msg.includes('location')) newErrors.location = m;
+                    else if (msg.includes('email')) newErrors.contactEmail = m;
+                    else if (msg.includes('phone')) newErrors.phone = m;
+                    else newErrors.general = m;
+                });
+            } else {
+                const msgStr = message;
+                if (msgStr.toLowerCase().includes('name')) newErrors.name = msgStr;
+                else if (msgStr.toLowerCase().includes('location')) newErrors.location = msgStr;
+                else if (msgStr.toLowerCase().includes('email')) newErrors.contactEmail = msgStr;
+                else if (msgStr.toLowerCase().includes('phone')) newErrors.phone = msgStr;
+                else newErrors.general = msgStr;
+            }
+            setFormErrors(newErrors);
             console.error('Failed to update settings', error);
         } finally {
             dispatch({ type: 'UI_STOP_PROCESSING', payload: 'settings-submit' });
@@ -230,7 +280,7 @@ export default function SettingsPage() {
                 )}
 
 
-                <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
+                <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8" noValidate>
                     {/* Logo section */}
                     <div className="flex flex-col items-center gap-2 pb-6 border-b border-border/50">
                         <Label className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Organization Logo</Label>
@@ -259,8 +309,10 @@ export default function SettingsPage() {
                                 required
                                 icon={School}
                                 placeholder="School Name"
+                                error={!!formErrors.name}
                                 className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                             />
+                            {formErrors.name && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{formErrors.name}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -305,8 +357,10 @@ export default function SettingsPage() {
                                 required
                                 icon={MapPin}
                                 placeholder="City, State"
+                                error={!!formErrors.location}
                                 className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                             />
+                            {formErrors.location && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{formErrors.location}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -318,8 +372,10 @@ export default function SettingsPage() {
                                 onChange={handleChange}
                                 icon={Mail}
                                 placeholder="contact@example.com"
+                                error={!!formErrors.contactEmail}
                                 className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                             />
+                            {formErrors.contactEmail && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{formErrors.contactEmail}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -331,10 +387,19 @@ export default function SettingsPage() {
                                 onChange={handleChange}
                                 icon={Phone}
                                 placeholder="+1 (555) 000-0000"
+                                error={!!formErrors.phone}
                                 className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                             />
+                            {formErrors.phone && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{formErrors.phone}</p>}
                         </div>
                     </div>
+
+                    {formErrors.general && (
+                        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center text-sm font-medium animate-shake">
+                            <AlertCircle className="w-5 h-5 mr-3 shrink-0" />
+                            {formErrors.general}
+                        </div>
+                    )}
 
                     <div className="pt-4 border-t border-border/50 flex justify-end">
                         <Button

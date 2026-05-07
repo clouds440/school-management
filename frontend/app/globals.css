@@ -6,7 +6,7 @@
 :root {
   --font-geist-sans: var(--font-dm-sans), "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-geist-mono: var(--font-jetbrains-mono), "Cascadia Code", "Fira Code", Consolas, monospace;
-  --background: #f8fafc;
+  --background: #e2e8f0;
   /* slate-50 */
   --foreground: #0f172a;
   /* slate-900 */
@@ -39,7 +39,7 @@
 
   --item-hover: #f1f5f9;
   --shadow-color: rgba(0, 0, 0, 0.1);
-  --theme-bg: #f8fafc;
+  --theme-bg: #e2e8f0;
   --chat-doodle: url('/assets/chat-doodle.svg');
 }
 

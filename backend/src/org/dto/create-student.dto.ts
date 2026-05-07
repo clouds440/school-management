@@ -106,4 +106,8 @@ export class CreateStudentDto {
   @IsEnum(StudentStatus)
   @IsOptional()
   status?: StudentStatus;
+
+  @IsString()
+  @IsOptional()
+  cohortId?: string;
 }

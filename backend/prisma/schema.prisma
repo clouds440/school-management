@@ -140,17 +140,15 @@ model Course {
 model Section {
   id               String       @id @default(uuid())
   name             String
-  semester         String?
-  year             String?
   room             String?
   courseId         String
-  academicCycleId  String?
+  academicCycleId  String
   cohortId         String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   enrollments      Enrollment[]
   course           Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  academicCycle    AcademicCycle? @relation(fields: [academicCycleId], references: [id])
+  academicCycle    AcademicCycle @relation(fields: [academicCycleId], references: [id])
   cohort           Cohort?      @relation(fields: [cohortId], references: [id])
   teachers         Teacher[]    @relation("SectionToTeacher")
   schedules          SectionSchedule[]

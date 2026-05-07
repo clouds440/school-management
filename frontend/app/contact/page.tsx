@@ -16,6 +16,7 @@ import {
 import Link from 'next/link';
 import { BackButton } from '@/components/ui/BackButton';
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
+import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PLATFORM_NAME } from '@/lib/constants';
 import { MailCategory, Role } from '@/types';
@@ -34,18 +35,31 @@ export default function ContactPage() {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<{ subject?: string; message?: string; general?: string }>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
 
     setIsSubmitting(true);
-    setError(null);
+    setFormErrors({});
 
     try {
+      const newErrors: typeof formErrors = {};
+      let hasError = false;
+
+      if (!subject.trim()) {
+        newErrors.subject = 'Subject is required';
+        hasError = true;
+      }
       if (!message.trim()) {
-        setError('Message cannot be empty.');
+        newErrors.message = 'Message cannot be empty.';
+        hasError = true;
+      }
+
+      if (hasError) {
+        setFormErrors(newErrors);
+        setIsSubmitting(false);
         return;
       }
 
@@ -54,21 +68,37 @@ export default function ContactPage() {
         message: message,
         category: MailCategory.PLATFORM_SUPPORT,
         priority: 'NORMAL',
-        targetRole: Role.PLATFORM_ADMIN, // Automatically target Platform Admin Role
+        targetRole: Role.PLATFORM_ADMIN,
       }, token);
 
       setIsSuccess(true);
       setSubject('');
       setMessage('');
-    } catch (err: unknown) {
-      setError(getErrorMessage(err));
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || 'Failed to send message. Please try again.';
+      const newErrors: typeof formErrors = {};
+
+      if (Array.isArray(message)) {
+        message.forEach((m: string) => {
+          const msg = m.toLowerCase();
+          if (msg.includes('subject')) newErrors.subject = m;
+          else if (msg.includes('message')) newErrors.message = m;
+          else newErrors.general = m;
+        });
+      } else {
+        const msgStr = message;
+        if (msgStr.toLowerCase().includes('subject')) newErrors.subject = msgStr;
+        else if (msgStr.toLowerCase().includes('message')) newErrors.message = msgStr;
+        else newErrors.general = msgStr;
+      }
+      setFormErrors(newErrors);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background via-background to-secondary/5 flex flex-col items-center py-8 md:py-12 px-4 md:px-8 relative overflow-hidden">
+    <div className="h-full min-h-fit bg-linear-to-br from-background via-background to-secondary/5 flex flex-col items-center py-8 md:py-12 px-4 md:px-8 relative overflow-hidden">
       {/* Decorative elements */}
       <div className="absolute top-20 left-20 w-64 h-64 bg-primary/10 rounded-full mix-blend-screen filter blur-3xl opacity-20"></div>
       <div className="absolute bottom-20 right-20 w-64 h-64 bg-secondary/10 rounded-full mix-blend-screen filter blur-3xl opacity-20"></div>
@@ -84,7 +114,7 @@ export default function ContactPage() {
             <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
               Get in <span className="text-primary">Touch</span>
             </h1>
-              <p className="text-muted-foreground leading-relaxed text-base md:text-lg font-medium">
+            <p className="text-muted-foreground leading-relaxed text-base md:text-lg font-medium">
               Have a question about the platform or need technical assistance?
               Our administrative team is here to help.
             </p>
@@ -177,14 +207,16 @@ export default function ContactPage() {
               <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in-up" noValidate>
                 <div className="space-y-2">
                   <label className="text-xs font-semibold tracking-wider text-muted-foreground ml-1 opacity-70">Subject</label>
-                  <input
+                  <Input
                     type="text"
                     required
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder="Brief summary of your inquiry"
-                    className="w-full px-5 py-4 bg-background/50 backdrop-blur-sm border border-border/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground placeholder:text-muted-foreground font-medium"
+                    error={!!formErrors.subject}
+                    className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                   />
+                  {formErrors.subject && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{formErrors.subject}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -202,10 +234,12 @@ export default function ContactPage() {
                   />
                 </div>
 
-                {error && (
+                {formErrors.message && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{formErrors.message}</p>}
+
+                {formErrors.general && (
                   <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center text-sm font-medium animate-shake">
                     <AlertCircle className="w-5 h-5 mr-3 shrink-0" />
-                    {error}
+                    {formErrors.general}
                   </div>
                 )}
 

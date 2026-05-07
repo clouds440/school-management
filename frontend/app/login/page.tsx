@@ -22,11 +22,14 @@ export default function LoginPage() {
     password: '',
     rememberMe: false,
   });
+  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+
     if (state.ui.processing['login-submit']) return;
-        dispatch({ type: 'UI_START_PROCESSING', payload: 'login-submit' });
+    dispatch({ type: 'UI_START_PROCESSING', payload: 'login-submit' });
 
     try {
       const deviceId = getDeviceId();
@@ -42,9 +45,19 @@ export default function LoginPage() {
       const res = await api.auth.login(loginPayload);
       login(res.access_token || '');
       dispatch({ type: 'TOAST_ADD', payload: { message: 'Welcome back!', type: 'success' } });
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed';
-      dispatch({ type: 'TOAST_ADD', payload: { message: errorMessage, type: 'error' } });
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || 'Login failed';
+      const msgStr = Array.isArray(message) ? message[0] : message;
+      const newErrors: typeof errors = {};
+
+      if (msgStr.toLowerCase().includes('email')) {
+        newErrors.email = msgStr;
+      } else if (msgStr.toLowerCase().includes('password') || msgStr.toLowerCase().includes('credentials')) {
+        newErrors.password = msgStr;
+      } else {
+        newErrors.general = msgStr;
+      }
+      setErrors(newErrors);
     } finally {
       dispatch({ type: 'UI_STOP_PROCESSING', payload: 'login-submit' });
     }
@@ -84,10 +97,10 @@ export default function LoginPage() {
           <div className="relative w-full aspect-square max-w-md mx-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
             <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-secondary/10 rounded-3xl blur-3xl animate-pulse" />
             <Image
-              src="/assets/eduverse-logo.png"
-              alt="Eduverse Logo"
+              src="/assets/eduverse.png"
+              alt="Eduverse"
               fill
-              className="object-contain animate-float relative z-10"
+              className="object-contain invert relative z-10"
               sizes="(max-width: 1024px) 0px, 28rem"
             />
           </div>
@@ -108,22 +121,24 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-8 md:space-y-12 relative z-10">
           {/* Mobile Header Branding (Visible only on mobile) */}
           <div className="lg:hidden text-center mb-8">
-            <div className="relative mx-auto w-20 h-20 rounded-2xl flex items-center justify-center mb-4 bg-linear-to-br from-primary/10 to-secondary/10 border border-primary/20 shadow-xl">
-              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+            <div className="relative mx-auto w-20 h-20 mt-10 flex items-center justify-center mb-4">
+              <Image
+                src="/assets/eduverse-icon.png"
+                alt="Eduverse Logo"
+                fill
+                className="object-contain relative z-10"
+              />
             </div>
             <Brand showLogo={false} size="lg" />
           </div>
 
           <div className="space-y-3">
-            <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
-              Welcome back.
-            </h2>
             <p className="text-sm md:text-base text-muted-foreground font-medium tracking-tight">
               Sign in to your organization or student portal.
             </p>
           </div>
 
-          <form className="space-y-6 md:space-y-8" onSubmit={handleSubmit}>
+          <form className="space-y-6 md:space-y-8" onSubmit={handleSubmit} noValidate>
             <div className="space-y-5 md:space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email-address" className="text-xs font-semibold tracking-wider text-muted-foreground ml-1 opacity-70">Email</Label>
@@ -137,8 +152,10 @@ export default function LoginPage() {
                   placeholder="admin@school.edu"
                   value={formData.email}
                   onChange={handleChange}
+                  error={!!errors.email}
                   className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                 />
+                {errors.email && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{errors.email}</p>}
               </div>
 
               <div className="space-y-2">
@@ -156,8 +173,11 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleChange}
+                  error={!!errors.password}
                   className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                 />
+                {errors.password && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{errors.password}</p>}
+                {errors.general && <p className="mt-2 text-sm text-red-500 font-bold text-center">{errors.general}</p>}
               </div>
             </div>
 

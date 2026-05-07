@@ -62,12 +62,13 @@ export default function CourseMaterialsPage() {
                                     <GraduationCap className="w-4 h-4 text-primary" />
                                     {section.course?.name || 'COURSE'}
                                 </span>
-                                {section.semester && section.year && (
-                                    <span className="flex items-center gap-2">
-                                        <Calendar className="w-4 h-4 text-primary" />
-                                        {section.semester} {section.year}
-                                    </span>
-                                )}
+                                <span className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-primary" />
+                                    {section.academicCycle?.name || 'Academic Cycle'}
+                                    {section.cohort && (
+                                        <span className="ml-1 opacity-50 font-medium tracking-tight">({section.cohort.name})</span>
+                                    )}
+                                </span>
                                 {section.room && (
                                     <span className="flex items-center gap-2">
                                         <MapPin className="w-4 h-4 text-primary" />

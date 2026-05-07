@@ -51,8 +51,6 @@ export interface Course {
 export interface Section {
     id: string;
     name: string;
-    semester?: string;
-    year?: string;
     room?: string;
     courseId?: string;
     course?: Course;
@@ -378,16 +376,17 @@ export interface CreateStudentRequest {
     feePlan?: string | null;
     status?: StudentStatus;
     sectionIds?: string[];
+    cohortId?: string | null;
 }
 
 export type UpdateStudentRequest = Partial<CreateStudentRequest>;
 
 export interface CreateSectionRequest {
     name: string;
-    semester?: string;
-    year?: string;
     room?: string;
     courseId: string;
+    academicCycleId: string;
+    cohortId?: string | null;
 }
 
 export type UpdateSectionRequest = Partial<CreateSectionRequest>;
@@ -759,8 +758,6 @@ export interface TranscriptSection {
     sectionId: string;
     courseName: string;
     sectionName: string;
-    semester?: string;
-    year?: string;
     source: string;
     wasExcluded: boolean;
     removedAt?: string | null;

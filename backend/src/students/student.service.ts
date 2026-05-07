@@ -292,6 +292,7 @@ export class StudentService {
             gender: data.gender,
             feePlan: data.feePlan,
             status: data.status as unknown as StudentStatus,
+            cohortId: data.cohortId || null,
             updatedBy: userContext.name || userContext.email,
           },
           include: {
@@ -389,6 +390,7 @@ export class StudentService {
       'gender',
       'feePlan',
       'status',
+      'cohortId',
     ];
 
     const { userData, entityData: studentData } = await extractUpdateFields(
@@ -442,6 +444,10 @@ export class StudentService {
       } else {
         studentData.graduationDate = null;
       }
+    }
+
+    if (data.cohortId === '') {
+      studentData.cohortId = null;
     }
 
     const updatedStudent = await this.prisma.$transaction(async (tx) => {

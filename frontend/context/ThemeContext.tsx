@@ -89,20 +89,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             root.style.setProperty('--text-secondary', '#94A3B8');
         }
         else {
-            root.style.setProperty('--background', '#F6F8FB'); // softer than pure white
+            root.style.setProperty('--background', '#e2e8f0'); // slate-200
             root.style.setProperty('--foreground', '#0B1220');
 
-            root.style.setProperty('--card-bg', '#FFFFFF');
+            root.style.setProperty('--card-bg', '#f1f5f9'); // slate-100
             root.style.setProperty('--card-text', '#0B1220');
 
-            root.style.setProperty('--muted-bg', '#EEF2F7'); // subtle gray-blue
+            root.style.setProperty('--muted-bg', '#cbd5e1'); // slate-300
             root.style.setProperty('--muted-text', '#64748B');
 
-            root.style.setProperty('--accent-bg', '#E2E8F0');
+            root.style.setProperty('--accent-bg', '#94a3b8'); // slate-400
             root.style.setProperty('--accent-text', '#0F172A');
 
-            root.style.setProperty('--border-color', '#E2E8F0');
-            root.style.setProperty('--input-bg', '#FFFFFF');
+            root.style.setProperty('--border-color', '#cbd5e1');
+            root.style.setProperty('--input-bg', '#f8fafc'); // slightly lighter for inputs
 
             root.style.setProperty('--text-primary', '#0F172A');
             root.style.setProperty('--text-secondary', '#64748B');
@@ -115,7 +115,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
         // Tints & Atmospherics
         root.style.setProperty('--chat-doodle', "url('/assets/chat-doodle.svg')");
-        root.style.setProperty('--theme-bg', isDark ? '#0A0E1A' : '#F9FAFB');
+        root.style.setProperty('--theme-bg', isDark ? '#0A0E1A' : '#e2e8f0');
 
         // Navbar defaults
         root.style.setProperty('--navbar-bg', isDark ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.9)');

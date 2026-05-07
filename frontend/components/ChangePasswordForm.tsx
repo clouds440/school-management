@@ -6,6 +6,7 @@ import { useGlobal } from '@/context/GlobalContext';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
+import PasswordStrength from '@/components/ui/PasswordStrength';
 
 interface ChangePasswordFormProps {
     title?: string;
@@ -28,16 +29,27 @@ export default function ChangePasswordForm({
         confirmPassword: ''
     });
 
+    const [errors, setErrors] = useState<{ oldPassword?: string; newPassword?: string; confirmPassword?: string }>({});
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrors({});
+
+        let hasError = false;
+        const newErrors: typeof errors = {};
 
         if (formData.newPassword !== formData.confirmPassword) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'New passwords do not match', type: 'error' } });
-            return;
+            newErrors.confirmPassword = 'New passwords do not match';
+            hasError = true;
         }
 
-        if (formData.newPassword.length < 6) {
-            dispatch({ type: 'TOAST_ADD', payload: { message: 'Password must be at least 6 characters long', type: 'error' } });
+        if (formData.newPassword.length < 8) {
+            newErrors.newPassword = 'Password must be at least 8 characters long';
+            hasError = true;
+        }
+
+        if (hasError) {
+            setErrors(newErrors);
             return;
         }
 
@@ -48,9 +60,13 @@ export default function ChangePasswordForm({
             if (onSuccess) {
                 onSuccess();
             }
-        } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to change password';
-            dispatch({ type: 'TOAST_ADD', payload: { message: errorMessage, type: 'error' } });
+        } catch (err: any) {
+            const message = err?.response?.data?.message || err?.message || 'Failed to change password';
+            if (message.toLowerCase().includes('old password') || message.toLowerCase().includes('current password')) {
+                setErrors({ oldPassword: message });
+            } else {
+                dispatch({ type: 'TOAST_ADD', payload: { message, type: 'error' } });
+            }
         } finally {
             dispatch({ type: 'UI_STOP_PROCESSING', payload: 'password-change-submit' });
         }
@@ -77,7 +93,7 @@ export default function ChangePasswordForm({
                 </p>
             </div>
 
-            <form className="mt-8 space-y-5 md:space-y-6" onSubmit={handleSubmit}>
+            <form className="mt-8 space-y-5 md:space-y-6" onSubmit={handleSubmit} noValidate>
                 <div className="space-y-4 md:space-y-5">
                     <div className="space-y-2">
                         <Label className="text-xs font-semibold tracking-wider text-muted-foreground opacity-70">Current Password</Label>
@@ -89,8 +105,10 @@ export default function ChangePasswordForm({
                             icon={Lock}
                             value={formData.oldPassword}
                             onChange={handleChange}
+                            error={!!errors.oldPassword}
                             className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                         />
+                        {errors.oldPassword && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{errors.oldPassword}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -103,8 +121,11 @@ export default function ChangePasswordForm({
                             icon={Lock}
                             value={formData.newPassword}
                             onChange={handleChange}
+                            error={!!errors.newPassword}
                             className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                         />
+                        {errors.newPassword && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{errors.newPassword}</p>}
+                        <PasswordStrength password={formData.newPassword} className="mt-3 px-1" />
                     </div>
 
                     <div className="space-y-2">
@@ -117,8 +138,10 @@ export default function ChangePasswordForm({
                             icon={Lock}
                             value={formData.confirmPassword}
                             onChange={handleChange}
+                            error={!!errors.confirmPassword}
                             className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                         />
+                        {errors.confirmPassword && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{errors.confirmPassword}</p>}
                     </div>
                 </div>
 

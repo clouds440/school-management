@@ -100,14 +100,13 @@ export default function SchedulesPage() {
     return (
         <div className="flex flex-col h-full w-full space-y-6 pb-6">
             <div className="bg-card/80 backdrop-blur-2xl rounded-xl shadow-xl border border-border p-4 md:p-6 overflow-hidden">
-                <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-border/50">
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="p-3 bg-primary/10 rounded-lg w-fit">
+                        <CalendarDays className="w-8 h-8 text-primary" />
+                    </div>
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <span className="w-6 h-1 bg-primary rounded-full"></span>
-                            <span className="text-[10px] font-black tracking-[0.3em] text-primary">Organization Control</span>
-                        </div>
-                        <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-foreground leading-none">Global Schedules</h1>
-                        <p className="text-muted-foreground mt-2 text-sm font-bold tracking-widest max-w-md">Unified overview of all instructional timelines across the institution.</p>
+                        <h1 className="text-xl md:text-2xl font-black tracking-tighter text-foreground">Global Schedules</h1>
+                        <p className="text-muted-foreground mt-1 text-sm font-bold tracking-widest">Unified overview of all instructional timelines across the institution.</p>
                     </div>
                 </div>
 

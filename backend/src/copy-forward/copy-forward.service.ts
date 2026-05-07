@@ -96,8 +96,6 @@ export class CopyForwardService {
         const newSection = await tx.section.create({
           data: {
             name: sourceSection.name,
-            semester: sourceSection.semester,
-            year: sourceSection.year,
             room: sourceSection.room,
             courseId: sourceSection.courseId,
             academicCycleId: dto.toCycleId,

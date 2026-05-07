@@ -54,8 +54,6 @@ export class SectionsService {
         ? {
             OR: [
               { name: { contains: options.search, mode: 'insensitive' } },
-              { semester: { contains: options.search, mode: 'insensitive' } },
-              { year: { contains: options.search, mode: 'insensitive' } },
               { room: { contains: options.search, mode: 'insensitive' } },
               {
                 course: {
@@ -129,6 +127,21 @@ export class SectionsService {
   async getSectionById(id: string) {
     const section = await this.prisma.section.findUnique({
       where: { id },
+      include: {
+        course: true,
+        teachers: {
+          include: { user: { select: { email: true, name: true, avatarUrl: true } } },
+        },
+        academicCycle: true,
+        cohort: true,
+        enrollments: {
+          include: {
+            student: {
+              include: { user: { select: { id: true, name: true, email: true, avatarUrl: true } } },
+            },
+          },
+        },
+      },
     });
     if (!section) throw new NotFoundException('Section not found');
     return section;
@@ -141,12 +154,10 @@ export class SectionsService {
     return this.prisma.section.create({
       data: {
         name: data.name,
-        semester: data.semester,
-        year: data.year,
         room: data.room,
         courseId: data.courseId,
         academicCycleId: data.academicCycleId,
-        cohortId: data.cohortId,
+        cohortId: data.cohortId || null,
       },
     });
   }
@@ -154,7 +165,11 @@ export class SectionsService {
   async updateSection(orgId: string, id: string, data: UpdateSectionDto) {
     return this.prisma.section.update({
       where: { id, course: { organizationId: orgId } },
-      data,
+      data: {
+        ...data,
+        academicCycleId: data.academicCycleId === '' ? undefined : data.academicCycleId,
+        cohortId: data.cohortId === '' ? null : data.cohortId,
+      },
     });
   }
 

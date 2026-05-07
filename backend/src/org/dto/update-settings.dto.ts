@@ -4,6 +4,7 @@ import {
   IsEmail,
   IsObject,
   ValidateNested,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -19,20 +20,20 @@ class AccentColorDto {
 
 export class UpdateSettingsDto {
   @IsString()
-  @IsOptional()
-  name?: string;
+  @IsNotEmpty({ message: 'Organization name is required' })
+  name: string;
 
   @IsString()
-  @IsOptional()
-  location?: string;
+  @IsNotEmpty({ message: 'Location is required' })
+  location: string;
 
-  @IsEmail()
-  @IsOptional()
-  contactEmail?: string;
+  @IsEmail({}, { message: 'A valid contact email is required' })
+  @IsNotEmpty({ message: 'Contact email is required' })
+  contactEmail: string;
 
   @IsString()
-  @IsOptional()
-  phone?: string;
+  @IsNotEmpty({ message: 'Phone number is required' })
+  phone: string;
 
   @IsObject()
   @IsOptional()

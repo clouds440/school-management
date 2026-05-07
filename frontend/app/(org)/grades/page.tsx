@@ -75,7 +75,7 @@ export default function GradesPage() {
                                     <p className="text-[10px] font-black text-card-text/40 tracking-widest mt-2">{section.course?.name || 'Generic Course'}</p>
                                 </div>
                                 <div className="mt-4 md:mt-8 pt-4 md:pt-6 border-t border-border flex items-center justify-between text-[10px] font-black tracking-widest text-card-text/30">
-                                    <span>{section.semester} {section.year}</span>
+                                    <span>{section.cohort && `${section.cohort.name} (${section.academicCycle?.name || 'Academic Cycle'})`}</span>
                                     <span className="bg-primary/5 px-2 py-1 rounded-lg text-primary group-hover:bg-primary group-hover:text-foreground transition-all">Manage Grades</span>
                                 </div>
                             </Link>

@@ -11,6 +11,7 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
 import { PhotoUploadPicker } from '@/components/ui/PhotoUploadPicker';
+import PasswordStrength from '@/components/ui/PasswordStrength';
 import { useGlobal } from '@/context/GlobalContext';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,6 +31,7 @@ export default function RegisterPage() {
         setValue,
         watch,
         trigger,
+        setError,
         formState: { errors },
     } = useForm<RegisterFormData>({
         resolver: zodResolver(registerSchema),
@@ -82,14 +84,22 @@ export default function RegisterPage() {
             router.push('/login');
         } catch (error: unknown) {
             const apiError = error as ApiError;
-            const message = error instanceof Error
-                ? error.message
-                : (apiError?.response?.data?.message || 'Registration failed');
+            const message = (apiError?.response?.data?.message || (error instanceof Error ? error.message : 'Registration failed'));
 
             if (Array.isArray(message)) {
-                message.forEach((m: string) => dispatch({ type: 'TOAST_ADD', payload: { message: m, type: 'error' } }));
+                message.forEach((m: string) => {
+                    const msg = m.toLowerCase();
+                    if (msg.includes('email')) setError('email', { message: m });
+                    else if (msg.includes('name')) setError('name', { message: m });
+                    else if (msg.includes('adminname')) setError('adminName', { message: m });
+                    else if (msg.includes('password')) setError('password', { message: m });
+                    else dispatch({ type: 'TOAST_ADD', payload: { message: m, type: 'error' } });
+                });
             } else {
-                dispatch({ type: 'TOAST_ADD', payload: { message: message as string, type: 'error' } });
+                const msg = String(message).toLowerCase();
+                if (msg.includes('email')) setError('email', { message: String(message) });
+                else if (msg.includes('name')) setError('name', { message: String(message) });
+                else dispatch({ type: 'TOAST_ADD', payload: { message: String(message), type: 'error' } });
             }
         } finally {
             dispatch({ type: 'UI_STOP_PROCESSING', payload: 'register-submit' });
@@ -126,10 +136,10 @@ export default function RegisterPage() {
                     <div className="relative w-full aspect-square drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
                         <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-secondary/10 rounded-3xl blur-3xl animate-pulse" />
                         <Image
-                            src="/assets/eduverse-logo.png"
+                            src="/assets/eduverse.png"
                             alt="Growth Illustration"
                             fill
-                            className="object-contain animate-float relative z-10"
+                            className="object-contain invert relative z-10"
                             sizes="(max-width: 1024px) 0px, 24rem"
                         />
                     </div>
@@ -325,6 +335,7 @@ export default function RegisterPage() {
                                             className="h-12 md:h-14 font-medium border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all bg-background/50 backdrop-blur-sm"
                                         />
                                         {errors.password && <p className="mt-1 text-xs text-red-500 font-semibold ml-1">{errors.password.message}</p>}
+                                        <PasswordStrength password={formData.password} className="mt-3 px-1" />
                                     </div>
                                 </div>
                             </div>

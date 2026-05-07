@@ -7,14 +7,6 @@ export class CreateSectionDto {
 
   @IsString()
   @IsOptional()
-  semester?: string;
-
-  @IsString()
-  @IsOptional()
-  year?: string;
-
-  @IsString()
-  @IsOptional()
   room?: string;
 
   @IsString()
@@ -22,8 +14,8 @@ export class CreateSectionDto {
   courseId: string;
 
   @IsString()
-  @IsOptional()
-  academicCycleId?: string;
+  @IsNotEmpty()
+  academicCycleId: string;
 
   @IsString()
   @IsOptional()
